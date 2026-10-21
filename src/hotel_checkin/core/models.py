@@ -1,0 +1,60 @@
+"""Gedeelde types die tussen de bouwblokken doorgegeven worden."""
+
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from datetime import date, datetime
+from enum import Enum
+
+
+class ReservationStatus(str, Enum):
+    READY_FOR_CHECKIN = "ready_for_checkin"  # KLAAR OM IN TE CHECKEN
+    CHECKED_IN = "checked_in"  # INGECHECKT
+    CHECKED_OUT = "checked_out"  # UITGECHECKT
+    CANCELLED = "cancelled"
+
+
+class Channel(str, Enum):
+    EMAIL = "email"
+    SMS = "sms"
+    WHATSAPP = "whatsapp"
+
+
+@dataclass
+class Guest:
+    first_name: str
+    last_name: str
+    email: str | None = None
+    phone: str | None = None  # E.164, bv. +32470123456
+    language: str = "nl"  # nl, fr, en, de
+
+
+@dataclass
+class Reservation:
+    reservation_id: str  # Lighthouse-id (uuid uit /Customer/Reservations/Detail/{uuid})
+    guest: Guest
+    arrival: date
+    departure: date
+    rooms: list[str] = field(default_factory=list)
+    status: ReservationStatus = ReservationStatus.READY_FOR_CHECKIN
+    source: str | None = None  # Booking.com, Expedia, Booking Engine, ...
+    paid: bool | None = None  # None = nog niet gecontroleerd
+
+
+@dataclass
+class AccessCode:
+    reservation_id: str
+    room: str
+    code: str
+    valid_from: datetime
+    valid_until: datetime
+    salto_key_id: str | None = None  # referentie bij Salto, nodig om te annuleren
+
+
+@dataclass
+class SendResult:
+    channel: Channel
+    to: str
+    ok: bool
+    provider_id: str | None = None  # id bij Graph/Twilio, voor opvolging
+    error: str | None = None

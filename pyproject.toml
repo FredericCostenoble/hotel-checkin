@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "hotel-checkin"
+version = "0.1.0"
+description = "Bouwblokken voor de geautomatiseerde hotel check-in"
+requires-python = ">=3.11"
+dependencies = [
+  "httpx>=0.27",
+  "azure-identity>=1.17",
+  "azure-keyvault-secrets>=4.8",
+]
+
+[project.optional-dependencies]
+messaging = ["twilio>=9.0"]
+lighthouse = ["playwright>=1.45", "pyotp>=2.9"]
+storage = ["azure-data-tables>=12.5"]
+functions = ["azure-functions>=1.20"]
+all = ["hotel-checkin[messaging,lighthouse,storage,functions]"]
+dev = ["pytest>=8", "ruff>=0.5"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+
+[tool.ruff]
+line-length = 100
