@@ -8,6 +8,8 @@ local.settings.json
 .ruff_cache/
 # Playwright sessie (cookies), nooit committen
 storage_state*.json
+# Azure Functions (lokale pakketten)
+.python_packages
 
 # Kopie van het pakket voor de Azure-deployment van de API
 api/hotel_checkin/
