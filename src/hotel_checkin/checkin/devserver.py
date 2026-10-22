@@ -29,12 +29,17 @@ def seed() -> None:
     today = date.today()
     repo.save_reservation(Reservation(
         reservation_id="DEMO-1", token="demo",
-        guest=Guest("Anna", "Peeters", "anna@example.com", None, "nl"),
+        guest=Guest("Anna", "Peeters", "anna@example.com", None, "nl", country="BE"),
         arrival=today + timedelta(days=14), departure=today + timedelta(days=16),
         room_type="Superior Double", source="Booking.com"))
     repo.save_reservation(Reservation(
+        reservation_id="DEMO-3", token="nieuw",
+        guest=Guest("Klaus", "Becker", None, None, "de", country="DE"),
+        arrival=today + timedelta(days=30), departure=today + timedelta(days=33),
+        room_type="Historical Suite", source="Expedia"))
+    repo.save_reservation(Reservation(
         reservation_id="DEMO-2", token="annule", status=ReservationStatus.CANCELLED,
-        guest=Guest("Pierre", "Dubois", "pierre@example.com", None, "fr"),
+        guest=Guest("Pierre", "Dubois", "pierre@example.com", None, "fr", country="FR"),
         arrival=today + timedelta(days=3), departure=today + timedelta(days=5)))
 
 
@@ -67,9 +72,9 @@ class Handler(BaseHTTPRequestHandler):
             payload = json.loads(self.rfile.read(int(self.headers.get("Content-Length", 0))) or b"{}")
         except ValueError:
             return self._json(400, {"ok": False, "errors": {"body": "invalid"}})
-        ok, errors = service.submit(
-            path.rsplit("/", 1)[1], str(payload.get("email", "")), str(payload.get("phone", "")),
-            str(payload.get("language", "")), bool(payload.get("no_marketing", False)))
+        if not isinstance(payload, dict):
+            return self._json(400, {"ok": False, "errors": {"body": "invalid"}})
+        ok, errors = service.submit(path.rsplit("/", 1)[1], payload)
         self._json(200 if ok else 400, {"ok": ok, "errors": errors})
 
 
@@ -78,6 +83,7 @@ if __name__ == "__main__":
         repo.use_memory_store()
         seed()
     print(f"Check-in-formulier: http://localhost:{PORT}/?r=demo")
+    print(f"Gast zonder gekende contactgegevens: http://localhost:{PORT}/?r=nieuw")
     print(f"Geannuleerde reservatie: http://localhost:{PORT}/?r=annule")
     print(f"Ongeldige link: http://localhost:{PORT}/?r=fout")
     ThreadingHTTPServer(("0.0.0.0", PORT), Handler).serve_forever()

@@ -20,8 +20,9 @@
     document.documentElement.lang = lang;
     document.querySelectorAll("[data-t]").forEach((el) => (el.textContent = t(el.dataset.t)));
     document.querySelectorAll(".langs button").forEach((b) => b.classList.toggle("active", b.dataset.lang === lang));
+    ["phone_cc", "backup_phone_cc"].forEach((id) => fillCountrySelect($(id), lang, $(id).value || defaultCountry()));
     if (!data) return;
-    $("intro").textContent = t("intro");
+    $("intro").textContent = t(data.email || data.phone ? "intro_confirm" : "intro");
     $("r-name").textContent = data.first_name + " " + data.last_name;
     $("r-arrival").textContent = fmtDate(data.arrival);
     $("r-departure").textContent = fmtDate(data.departure);
@@ -29,6 +30,16 @@
     document.querySelectorAll(".room-row").forEach((el) => (el.hidden = !data.room_type));
     const h = data.hotel;
     $("privacy-link").href = (h.privacy_urls && h.privacy_urls[lang]) || h.privacy_url;
+  }
+
+  function defaultCountry() {
+    return (data && data.country && DIAL[data.country]) ? data.country : "BE";
+  }
+
+  function setPhone(prefix, e164) {
+    const parts = splitPhone(e164, defaultCountry());
+    fillCountrySelect($(prefix + "_cc"), lang, parts.iso);
+    $(prefix).value = parts.national;
   }
 
   function showMessage(kind) {
@@ -73,7 +84,9 @@
     render();
     if (data.state !== "open") return showMessage(data.state);
     $("email").value = data.email;
-    $("phone").value = data.phone;
+    $("backup_email").value = data.backup_email;
+    setPhone("phone", data.phone);
+    setPhone("backup_phone", data.backup_phone);
     $("language").value = lang;
     $("no_marketing").checked = data.no_marketing;
     $("already").hidden = !data.completed;
@@ -92,7 +105,7 @@
 
   $("form").addEventListener("submit", async (ev) => {
     ev.preventDefault();
-    ["err-email", "err-phone", "err-general"].forEach((id) => ($(id).hidden = true));
+    ["err-email", "err-phone", "err-backup_email", "err-backup_phone", "err-general"].forEach((id) => ($(id).hidden = true));
     const btn = $("submit");
     btn.disabled = true;
     btn.textContent = t("saving");
@@ -102,7 +115,9 @@
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           email: $("email").value,
-          phone: $("phone").value,
+          phone: composePhone($("phone_cc").value, $("phone").value),
+          backup_email: $("backup_email").value,
+          backup_phone: composePhone($("backup_phone_cc").value, $("backup_phone").value),
           language: $("language").value,
           no_marketing: $("no_marketing").checked,
         }),
@@ -114,11 +129,10 @@
         return showMessage("thanks");
       }
       const errors = body.errors || {};
-      if (errors.email) $("err-email").hidden = false;
-      if (errors.phone) $("err-phone").hidden = false;
+      ["email", "phone", "backup_email", "backup_phone"].forEach((k) => { if (errors[k]) $("err-" + k).hidden = false; });
       if (errors.state) return showMessage(errors.state);
       if (errors.token) return showMessage("notfound");
-      if (!errors.email && !errors.phone) {
+      if (!["email", "phone", "backup_email", "backup_phone"].some((k) => errors[k])) {
         $("err-general").textContent = t("err_general");
         $("err-general").hidden = false;
       }

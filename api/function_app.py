@@ -3,7 +3,7 @@
 Bij de deployment worden src/hotel_checkin en config/ naar deze map gekopieerd (zie README).
 Routes (Static Web Apps zet er /api voor):
     GET  /api/checkin/{token}
-    POST /api/checkin/{token}   body: {"email", "phone", "language", "no_marketing"}
+    POST /api/checkin/{token}   body: {"email", "phone", "backup_email", "backup_phone", "language", "no_marketing"}
 """
 
 import json
@@ -34,8 +34,7 @@ def post_checkin(req: func.HttpRequest) -> func.HttpResponse:
         p = req.get_json()
     except ValueError:
         return _json(400, {"ok": False, "errors": {"body": "invalid"}})
-    ok, errors = service.submit(
-        req.route_params.get("token", ""), str(p.get("email", "")), str(p.get("phone", "")),
-        str(p.get("language", "")), bool(p.get("no_marketing", False)),
-    )
+    if not isinstance(p, dict):
+        return _json(400, {"ok": False, "errors": {"body": "invalid"}})
+    ok, errors = service.submit(req.route_params.get("token", ""), p)
     return _json(200 if ok else 400, {"ok": ok, "errors": errors})

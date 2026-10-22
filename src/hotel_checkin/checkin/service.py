@@ -71,6 +71,9 @@ def form_data(token: str, today: date | None = None) -> dict | None:
         "room_type": r.room_type or "",
         "email": email,
         "phone": r.guest.phone or "",
+        "country": r.guest.country or "",
+        "backup_email": r.guest.backup_email or "",
+        "backup_phone": r.guest.backup_phone or "",
         "language": r.guest.language,
         "completed": r.checkin_completed_at is not None,
         "no_marketing": repo.is_opted_out(email) if email else False,
@@ -78,30 +81,48 @@ def form_data(token: str, today: date | None = None) -> dict | None:
     }
 
 
-def submit(token: str, email: str, phone: str, language: str, no_marketing: bool) -> tuple[bool, dict]:
-    """Bewaar de contactgegevens. Geeft (ok, fouten) terug; fouten per veld of 'token'/'state'."""
+def submit(token: str, form: dict) -> tuple[bool, dict]:
+    """Bewaar de contactgegevens uit het formulier. Geeft (ok, fouten) terug.
+
+    form: email, phone, backup_email, backup_phone, language, no_marketing.
+    Telefoonnummers komen normaal al in +-formaat van het formulier (landkeuze + nummer).
+    """
     data = form_data(token)
     if data is None:
         return False, {"token": "not_found"}
     if data["state"] != "open":
         return False, {"state": data["state"]}
 
+    def text(key: str) -> str:
+        return str(form.get(key) or "").strip()
+
     errors: dict[str, str] = {}
-    email = (email or "").strip().lower()
+    email = text("email").lower()
     if not EMAIL_RE.match(email):
         errors["email"] = "invalid"
-    phone_norm = None
-    if (phone or "").strip():
-        phone_norm = normalize_phone(phone)
-        if phone_norm is None:
-            errors["phone"] = "invalid"
+    backup_email = text("backup_email").lower()
+    if backup_email and not EMAIL_RE.match(backup_email):
+        errors["backup_email"] = "invalid"
+
+    phones: dict[str, str | None] = {}
+    for key in ("phone", "backup_phone"):
+        phones[key] = None
+        if text(key):
+            phones[key] = normalize_phone(text(key))
+            if phones[key] is None:
+                errors[key] = "invalid"
+
+    language = text("language")
     if language not in LANGUAGES:
         language = data["language"]
     if errors:
         return False, errors
 
     r = repo.get_by_token(token)
-    if no_marketing:
+    if form.get("no_marketing"):
         repo.add_opt_out(email, "checkin_form")
-    repo.mark_checkin_completed(r.reservation_id, email, phone_norm, language)
+    repo.mark_checkin_completed(
+        r.reservation_id, email, phones["phone"], language,
+        backup_email=backup_email or None, backup_phone=phones["backup_phone"],
+    )
     return True, {}

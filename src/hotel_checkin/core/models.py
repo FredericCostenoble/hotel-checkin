@@ -27,6 +27,9 @@ class Guest:
     email: str | None = None
     phone: str | None = None  # E.164, bv. +32470123456
     language: str = "nl"  # nl, fr, en, de
+    country: str | None = None  # land van de gast (woonland, uit de reservatiegegevens), ISO-code: BE, FR, DE
+    backup_email: str | None = None
+    backup_phone: str | None = None  # E.164
 
 
 @dataclass

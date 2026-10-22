@@ -43,10 +43,27 @@
       <p class="error" id="err-email" data-t="err_email" hidden></p>
 
       <label for="phone" data-t="phone"></label>
-      <input id="phone" name="phone" type="tel" autocomplete="tel" placeholder="+32 4.. .. .. ..">
+      <div class="phone-row">
+        <select id="phone_cc" class="cc" aria-label="Country"></select>
+        <input id="phone" name="phone" type="tel" autocomplete="tel-national" inputmode="tel">
+      </div>
       <p class="hint" data-t="phone_hint"></p>
       <p class="error" id="err-phone" data-t="err_phone" hidden></p>
 
+      <h2 data-t="backup"></h2>
+      <p class="hint" data-t="backup_hint"></p>
+      <label for="backup_email" data-t="backup_email"></label>
+      <input id="backup_email" name="backup_email" type="email" autocomplete="off">
+      <p class="error" id="err-backup_email" data-t="err_email" hidden></p>
+
+      <label for="backup_phone" data-t="backup_phone"></label>
+      <div class="phone-row">
+        <select id="backup_phone_cc" class="cc" aria-label="Country"></select>
+        <input id="backup_phone" name="backup_phone" type="tel" autocomplete="off" inputmode="tel">
+      </div>
+      <p class="error" id="err-backup_phone" data-t="err_phone" hidden></p>
+
+      <h2 data-t="preferences"></h2>
       <label for="language" data-t="language"></label>
       <select id="language" name="language">
         <option value="nl">Nederlands</option><option value="fr">Français</option>
@@ -65,11 +82,12 @@
 
 <footer class="bottom">
   <strong id="f-name">Hotel Lucca</strong><br>
-  <span id="f-address"></span><br>
-  <a id="f-phone" href="#"></a> | <a id="f-email" href="#"></a> | <a id="f-website" href="https://www.hotellucca.be">www.hotellucca.be</a>
+  <span id="f-address">Naaldenstraat 30, 8000 Brugge</span><br>
+  <a id="f-phone" href="tel:+32471181574">+32 471 18 15 74</a> | <a id="f-email" href="mailto:checkin@hotellucca.be">checkin@hotellucca.be</a> | <a id="f-website" href="https://www.hotellucca.be">www.hotellucca.be</a>
 </footer>
 
 <script src="i18n.js"></script>
+<script src="countries.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

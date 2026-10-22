@@ -35,6 +35,9 @@ h2 {
 .details [hidden] { display: none; }
 
 label { display: block; font-size: 14px; color: var(--accent-dark); margin: 16px 0 4px; }
+.phone-row { display: flex; gap: 8px; }
+.phone-row .cc { flex: 0 0 42%; min-width: 0; }
+.phone-row input { flex: 1; min-width: 0; }
 input[type="email"], input[type="tel"], select {
   width: 100%; padding: 12px; font-size: 16px; border: 1px solid #C9CED9; border-radius: 3px;
   background: #fff; color: var(--text);

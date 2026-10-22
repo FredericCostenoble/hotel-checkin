@@ -57,25 +57,26 @@ def test_form_data_states():
 
 def test_submit_ok_with_opt_out():
     _save()
-    ok, errors = service.submit("tok", " Anna.P@Example.com ", "0476 89 62 74", "fr", True)
+    ok, errors = service.submit("tok", {"email": " Anna.P@Example.com ", "phone": "0476 89 62 74", "language": "fr", "no_marketing": True, "backup_email": "Partner@Example.com", "backup_phone": "+33 6 12 34 56 78"})
     assert ok and errors == {}
     r = repo.get_reservation("R1")
     assert r.guest.email == "anna.p@example.com" and r.guest.phone == "+32476896274"
     assert r.guest.language == "fr" and r.checkin_completed_at is not None
     assert repo.is_opted_out("anna.p@example.com")
+    assert r.guest.backup_email == "partner@example.com" and r.guest.backup_phone == "+33612345678"
     assert service.form_data("tok")["completed"] and service.form_data("tok")["no_marketing"]
 
 
 def test_submit_validation_and_no_opt_out():
     _save()
-    ok, errors = service.submit("tok", "geen-mail", "12", "nl", False)
-    assert not ok and errors == {"email": "invalid", "phone": "invalid"}
-    ok, _ = service.submit("tok", "anna@example.com", "", "xx", False)
+    ok, errors = service.submit("tok", {"email": "geen-mail", "phone": "12", "backup_email": "x@", "backup_phone": "abc", "language": "nl"})
+    assert not ok and errors == {"email": "invalid", "phone": "invalid", "backup_email": "invalid", "backup_phone": "invalid"}
+    ok, _ = service.submit("tok", {"email": "anna@example.com", "phone": "", "language": "xx"})
     assert ok and not repo.is_opted_out("anna@example.com")
     assert repo.get_reservation("R1").guest.language == "nl"
 
 
 def test_submit_refused_when_not_open():
     _save(status=ReservationStatus.CANCELLED)
-    assert service.submit("tok", "a@b.be", "", "nl", False) == (False, {"state": "cancelled"})
-    assert service.submit("x", "a@b.be", "", "nl", False) == (False, {"token": "not_found"})
+    assert service.submit("tok", {"email": "a@b.be"}) == (False, {"state": "cancelled"})
+    assert service.submit("x", {"email": "a@b.be"}) == (False, {"token": "not_found"})

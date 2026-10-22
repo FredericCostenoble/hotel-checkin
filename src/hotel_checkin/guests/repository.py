@@ -91,6 +91,9 @@ def _to_entity(r: Reservation) -> dict:
         "email": (r.guest.email or "").lower(),
         "phone": r.guest.phone or "",
         "language": r.guest.language,
+        "country": (r.guest.country or "").upper(),
+        "backup_email": (r.guest.backup_email or "").lower(),
+        "backup_phone": r.guest.backup_phone or "",
         "arrival": r.arrival.isoformat(),
         "departure": r.departure.isoformat(),
         "rooms": json.dumps(r.rooms),
@@ -113,6 +116,9 @@ def _from_entity(e: dict) -> Reservation:
             email=e["email"] or None,
             phone=e["phone"] or None,
             language=e["language"],
+            country=e.get("country") or None,
+            backup_email=e.get("backup_email") or None,
+            backup_phone=e.get("backup_phone") or None,
         ),
         arrival=date.fromisoformat(e["arrival"]),
         departure=date.fromisoformat(e["departure"]),
@@ -162,8 +168,15 @@ def find_by_phone(phone: str) -> list[Reservation]:
     return [_from_entity(e) for e in _table(T_RESERVATIONS).query_entities(f"phone eq '{_q(phone)}'")]
 
 
-def mark_checkin_completed(reservation_id: str, email: str | None, phone: str | None, language: str | None) -> Reservation | None:
-    """Gegevens van het check-in-formulier bewaren."""
+def mark_checkin_completed(
+    reservation_id: str,
+    email: str | None,
+    phone: str | None,
+    language: str | None,
+    backup_email: str | None = None,
+    backup_phone: str | None = None,
+) -> Reservation | None:
+    """Gegevens van het check-in-formulier bewaren. Lege reservecontacten wissen een vorige waarde."""
     r = get_reservation(reservation_id)
     if r is None:
         return None
@@ -173,6 +186,8 @@ def mark_checkin_completed(reservation_id: str, email: str | None, phone: str | 
         r.guest.phone = phone
     if language:
         r.guest.language = language
+    r.guest.backup_email = backup_email or None
+    r.guest.backup_phone = backup_phone or None
     r.checkin_completed_at = _now()
     return save_reservation(r)
 
