@@ -22,7 +22,7 @@ function fillCountrySelect(select, lang, selected) {
   for (const [iso, dial] of sorted) {
     const opt = document.createElement("option");
     opt.value = iso;
-    opt.dataset.full = countryName(iso, lang) + " (+" + dial + ")";
+    opt.dataset.full = iso + " · " + countryName(iso, lang) + " (+" + dial + ")";
     opt.dataset.short = iso + " +" + dial;
     opt.textContent = opt.dataset.full;
     select.appendChild(opt);
