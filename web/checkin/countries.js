@@ -22,10 +22,29 @@ function fillCountrySelect(select, lang, selected) {
   for (const [iso, dial] of sorted) {
     const opt = document.createElement("option");
     opt.value = iso;
-    opt.textContent = "+" + dial + "  " + countryName(iso, lang);
+    opt.dataset.full = countryName(iso, lang) + " (+" + dial + ")";
+    opt.dataset.short = iso + " +" + dial;
+    opt.textContent = opt.dataset.full;
     select.appendChild(opt);
   }
   select.value = DIAL[selected] ? selected : "BE";
+  compactCountrySelect(select);
+}
+
+// In het gesloten veld alleen de code tonen (bv. "BE +32"); in de open lijst de volledige namen.
+function compactCountrySelect(select) {
+  for (const opt of select.options) opt.textContent = opt.selected ? opt.dataset.short : opt.dataset.full;
+}
+
+function expandCountrySelect(select) {
+  for (const opt of select.options) opt.textContent = opt.dataset.full;
+}
+
+function wireCountrySelect(select) {
+  select.addEventListener("mousedown", () => expandCountrySelect(select));
+  select.addEventListener("focus", () => expandCountrySelect(select));
+  select.addEventListener("change", () => { compactCountrySelect(select); });
+  select.addEventListener("blur", () => compactCountrySelect(select));
 }
 
 // Splits een +-nummer in land en nationaal nummer. Bij gedeelde kengetallen (+1) wint het voorkeursland.

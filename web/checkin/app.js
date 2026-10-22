@@ -19,7 +19,9 @@
   function render() {
     document.documentElement.lang = lang;
     document.querySelectorAll("[data-t]").forEach((el) => (el.textContent = t(el.dataset.t)));
-    document.querySelectorAll(".langs button").forEach((b) => b.classList.toggle("active", b.dataset.lang === lang));
+    ["phone_cc", "backup_phone_cc"].forEach((id) => wireCountrySelect($(id)));
+
+  document.querySelectorAll(".langs button").forEach((b) => b.classList.toggle("active", b.dataset.lang === lang));
     ["phone_cc", "backup_phone_cc"].forEach((id) => fillCountrySelect($(id), lang, $(id).value || defaultCountry()));
     if (!data) return;
     $("intro").textContent = t(data.email || data.phone ? "intro_confirm" : "intro");
