@@ -159,8 +159,11 @@ def _render_html(t: dict, common: dict, f: dict, config: dict, language: str) ->
                 for k, v in block["rijen"]
             )
             parts.append(
+                f'<table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>'
+                f'<td style="padding:0 0 18px 0;">'
                 f'<table role="presentation" width="100%" cellpadding="0" cellspacing="0" '
-                f'style="border-collapse:collapse;margin:0 0 14px 0;background:{c["achtergrond"]};">{rows}</table>'
+                f'style="border-collapse:collapse;background:{c["achtergrond"]};">{rows}</table>'
+                f"</td></tr></table>"
             )
         elif kind == "highlight":
             extra = "".join(
@@ -168,14 +171,16 @@ def _render_html(t: dict, common: dict, f: dict, config: dict, language: str) ->
                 for p in block.get("alineas", [])
             )
             parts.append(
-                f'<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:8px 0 18px 0;">'
+                f'<table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>'
+                f'<td style="padding:8px 0 22px 0;">'
+                f'<table role="presentation" width="100%" cellpadding="0" cellspacing="0">'
                 f'<tr><td align="center" style="padding:22px 16px;background:{c["achtergrond"]};'
                 f'border:2px solid {c["accent"]};">'
                 f'<p style="margin:0 0 8px 0;font-family:{FONT};font-size:12px;letter-spacing:2px;'
                 f'text-transform:uppercase;color:{c["accent_donker"]};">{_e(_fill(block["titel"], f))}</p>'
                 f'<p style="margin:0 0 8px 0;font-family:{FONT};font-size:36px;letter-spacing:8px;'
                 f'font-weight:bold;color:{c["tekst"]};">{_e(_fill(block["waarde"], f))}</p>'
-                f"{extra}</td></tr></table>"
+                f"{extra}</td></tr></table></td></tr></table>"
             )
         elif kind == "list":
             items = "".join(
@@ -185,13 +190,18 @@ def _render_html(t: dict, common: dict, f: dict, config: dict, language: str) ->
             )
             parts.append(f'<ul style="margin:0 0 14px 0;padding-left:20px;">{items}</ul>')
         elif kind == "button":
+            # Outlook negeert padding op links en marges rond tabellen: daarom padding op de cel
+            # en de witruimte via een omliggende cel.
             parts.append(
-                f'<table role="presentation" cellpadding="0" cellspacing="0" style="margin:8px 0 22px 0;">'
-                f'<tr><td style="background:{c["accent_donker"]};border-radius:3px;">'
-                f'<a href="{_e(_fill(block["link"], f))}" style="display:inline-block;padding:14px 28px;'
+                f'<table role="presentation" cellpadding="0" cellspacing="0"><tr>'
+                f'<td style="padding:10px 0 26px 0;">'
+                f'<table role="presentation" cellpadding="0" cellspacing="0"><tr>'
+                f'<td align="center" bgcolor="{c["accent_donker"]}" style="background:{c["accent_donker"]};'
+                f'border-radius:3px;padding:15px 32px;">'
+                f'<a href="{_e(_fill(block["link"], f))}" style="display:inline-block;'
                 f'font-family:{FONT};font-size:14px;letter-spacing:1px;text-transform:uppercase;'
                 f'font-weight:bold;color:#FFFFFF;text-decoration:none;">{_e(_fill(block["tekst"], f))}</a>'
-                f"</td></tr></table>"
+                f"</td></tr></table></td></tr></table>"
             )
     parts.append(f'<p style="{p_style}margin-top:24px;">{_e(_fill(t["afsluiting"], f))}</p>')
     parts.append(f'<p style="{p_style}font-weight:bold;">{_e(_fill(common["team"], f))}</p>')
