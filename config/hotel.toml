@@ -35,7 +35,14 @@ nummer = "+32 471 18 15 74"   # TODO: nummer voor 's avonds en 's nachts
 
 [checkin]
 # Link naar het online check-in-formulier (nog te bouwen). {token} wordt per gast ingevuld.
-formulier_url = "https://www.hotellucca.be/checkin?r={token}"
+formulier_url = "https://checkin.hotellucca.be/?r={token}"
+
+[privacy]
+# URL van de privacyverklaring per taal (komt van Wim, de webdesigner). TODO: invullen.
+url_nl = "https://www.hotellucca.be/privacy"
+url_fr = "https://www.hotellucca.be/privacy"
+url_en = "https://www.hotellucca.be/privacy"
+url_de = "https://www.hotellucca.be/privacy"
 
 [kleuren]
 accent = "#B4BCCC"        # grijsblauw van het logo

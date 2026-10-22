@@ -1,0 +1,64 @@
+/* Stijl van het check-in-formulier, in lijn met de mails. Kleuren komen uit config/hotel.toml (via de API). */
+:root {
+  --accent: #B4BCCC;
+  --accent-dark: #5C6478;
+  --text: #2B2F38;
+  --bg: #F4F5F8;
+  --error: #A33A3A;
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); font-size: 16px; line-height: 1.6; }
+
+.top { background: var(--accent); padding: 24px 16px 16px; text-align: center; }
+.top img { width: 220px; max-width: 70%; height: auto; display: block; margin: 0 auto 12px; }
+.langs { display: flex; justify-content: center; gap: 6px; }
+.langs button {
+  background: transparent; border: 1px solid var(--text); color: var(--text);
+  font-size: 12px; letter-spacing: 1px; padding: 4px 10px; cursor: pointer; border-radius: 3px;
+}
+.langs button.active { background: var(--text); color: #fff; }
+
+.card { max-width: 600px; margin: 0 auto; background: #fff; padding: 32px 24px 24px; }
+h1 { font-size: 24px; font-weight: normal; margin: 0 0 12px; }
+h2 {
+  font-size: 12px; letter-spacing: 2px; text-transform: uppercase; color: var(--accent-dark);
+  margin: 28px 0 10px;
+}
+.muted { color: #8A90A0; }
+.note { background: var(--bg); border-left: 3px solid var(--accent); padding: 10px 14px; }
+
+.details { display: grid; grid-template-columns: 40% 60%; margin: 0; background: var(--bg); }
+.details dt, .details dd { margin: 0; padding: 8px 12px; border-bottom: 1px solid #E3E6ED; font-size: 15px; }
+.details dt { color: var(--accent-dark); }
+.details dd { font-weight: bold; }
+.details [hidden] { display: none; }
+
+label { display: block; font-size: 14px; color: var(--accent-dark); margin: 16px 0 4px; }
+input[type="email"], input[type="tel"], select {
+  width: 100%; padding: 12px; font-size: 16px; border: 1px solid #C9CED9; border-radius: 3px;
+  background: #fff; color: var(--text);
+}
+input:focus, select:focus { outline: 2px solid var(--accent-dark); outline-offset: 1px; }
+.hint { font-size: 13px; color: #8A90A0; margin: 4px 0 0; }
+.check { display: flex; gap: 10px; align-items: flex-start; color: var(--text); font-size: 15px; margin-top: 24px; }
+.check input { margin-top: 5px; width: 18px; height: 18px; flex: none; }
+.privacy { font-size: 14px; }
+.privacy a, .bottom a { color: var(--text); }
+.error { color: var(--error); font-size: 14px; margin: 4px 0 0; }
+
+button[type="submit"] {
+  margin-top: 20px; width: 100%; padding: 15px 20px; font-size: 16px; font-weight: bold;
+  background: var(--accent-dark); color: #fff; border: 0; border-radius: 3px; cursor: pointer;
+}
+button[type="submit"]:disabled { opacity: 0.6; cursor: default; }
+
+.bottom {
+  max-width: 600px; margin: 0 auto 24px; background: var(--accent); padding: 20px 16px;
+  text-align: center; font-size: 13px; line-height: 1.7;
+}
+
+@media (min-width: 640px) {
+  .card { padding: 40px 40px 32px; }
+  button[type="submit"] { width: auto; }
+}

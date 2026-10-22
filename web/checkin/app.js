@@ -1,0 +1,135 @@
+// Online check-in: haalt de reservatie op via /api/checkin/<token> en bewaart de contactgegevens.
+(function () {
+  const params = new URLSearchParams(location.search);
+  const token = params.get("r") || "";
+  let lang = (params.get("lang") || (navigator.language || "en").slice(0, 2)).toLowerCase();
+  if (!I18N[lang]) lang = "en";
+  let data = null;
+  let langChosenByGuest = !!params.get("lang");
+
+  const $ = (id) => document.getElementById(id);
+  const t = (key) => (I18N[lang][key] || I18N.en[key] || "").replace("{voornaam}", data ? data.first_name : "");
+
+  function fmtDate(iso) {
+    const [y, m, d] = iso.split("-").map(Number);
+    return new Intl.DateTimeFormat(lang + "-BE", { weekday: "long", day: "numeric", month: "long", year: "numeric" })
+      .format(new Date(y, m - 1, d));
+  }
+
+  function render() {
+    document.documentElement.lang = lang;
+    document.querySelectorAll("[data-t]").forEach((el) => (el.textContent = t(el.dataset.t)));
+    document.querySelectorAll(".langs button").forEach((b) => b.classList.toggle("active", b.dataset.lang === lang));
+    if (!data) return;
+    $("intro").textContent = t("intro");
+    $("r-name").textContent = data.first_name + " " + data.last_name;
+    $("r-arrival").textContent = fmtDate(data.arrival);
+    $("r-departure").textContent = fmtDate(data.departure);
+    $("r-room").textContent = data.room_type;
+    document.querySelectorAll(".room-row").forEach((el) => (el.hidden = !data.room_type));
+    const h = data.hotel;
+    $("privacy-link").href = (h.privacy_urls && h.privacy_urls[lang]) || h.privacy_url;
+  }
+
+  function showMessage(kind) {
+    $("loading").hidden = true;
+    $("form-section").hidden = true;
+    $("message").hidden = false;
+    $("message-title").textContent = t(kind + "_title");
+    $("message-text").textContent = t(kind + "_text");
+  }
+
+  function applyHotel(h) {
+    const root = document.documentElement.style;
+    root.setProperty("--accent", h.colors.accent);
+    root.setProperty("--accent-dark", h.colors.accent_donker);
+    root.setProperty("--text", h.colors.tekst);
+    root.setProperty("--bg", h.colors.achtergrond);
+    $("logo").src = h.logo_url;
+    $("logo").alt = h.name;
+    $("logo-link").href = h.website;
+    $("f-name").textContent = h.name;
+    $("f-address").textContent = h.address;
+    $("f-phone").textContent = h.phone;
+    $("f-phone").href = "tel:" + h.phone.replace(/\s/g, "");
+    $("f-email").textContent = h.email;
+    $("f-email").href = "mailto:" + h.email;
+    $("f-website").href = h.website;
+  }
+
+  async function load() {
+    render();
+    if (!token) return showMessage("notfound");
+    let res;
+    try {
+      res = await fetch("/api/checkin/" + encodeURIComponent(token));
+    } catch (e) {
+      return showMessage("notfound");
+    }
+    if (!res.ok) return showMessage("notfound");
+    data = await res.json();
+    applyHotel(data.hotel);
+    if (!langChosenByGuest && I18N[data.language]) lang = data.language;
+    render();
+    if (data.state !== "open") return showMessage(data.state);
+    $("email").value = data.email;
+    $("phone").value = data.phone;
+    $("language").value = lang;
+    $("no_marketing").checked = data.no_marketing;
+    $("already").hidden = !data.completed;
+    $("loading").hidden = true;
+    $("form-section").hidden = false;
+  }
+
+  document.querySelectorAll(".langs button").forEach((b) =>
+    b.addEventListener("click", () => {
+      lang = b.dataset.lang;
+      langChosenByGuest = true;
+      if (!$("form-section").hidden) $("language").value = lang;
+      render();
+    })
+  );
+
+  $("form").addEventListener("submit", async (ev) => {
+    ev.preventDefault();
+    ["err-email", "err-phone", "err-general"].forEach((id) => ($(id).hidden = true));
+    const btn = $("submit");
+    btn.disabled = true;
+    btn.textContent = t("saving");
+    try {
+      const res = await fetch("/api/checkin/" + encodeURIComponent(token), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: $("email").value,
+          phone: $("phone").value,
+          language: $("language").value,
+          no_marketing: $("no_marketing").checked,
+        }),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (res.ok && body.ok) {
+        lang = $("language").value;
+        render();
+        return showMessage("thanks");
+      }
+      const errors = body.errors || {};
+      if (errors.email) $("err-email").hidden = false;
+      if (errors.phone) $("err-phone").hidden = false;
+      if (errors.state) return showMessage(errors.state);
+      if (errors.token) return showMessage("notfound");
+      if (!errors.email && !errors.phone) {
+        $("err-general").textContent = t("err_general");
+        $("err-general").hidden = false;
+      }
+    } catch (e) {
+      $("err-general").textContent = t("err_general");
+      $("err-general").hidden = false;
+    } finally {
+      btn.disabled = false;
+      btn.textContent = t("submit");
+    }
+  });
+
+  load();
+})();

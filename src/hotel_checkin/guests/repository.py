@@ -230,3 +230,34 @@ def is_opted_out(email: str) -> bool:
         return True
     except Exception:  # noqa: BLE001 - niet gevonden
         return False
+
+
+# ---------------------------------------------------------------- opslag in het geheugen
+# Voor de lokale testserver en tests: zelfde gedrag als Azure Table Storage, zonder Azure.
+
+
+class MemoryTable:
+    def __init__(self):
+        self.rows: dict[tuple[str, str], dict] = {}
+
+    def upsert_entity(self, entity):
+        self.rows[(entity["PartitionKey"], entity["RowKey"])] = dict(entity)
+
+    def get_entity(self, pk, rk):
+        if (pk, rk) not in self.rows:
+            raise KeyError("ResourceNotFound")
+        return dict(self.rows[(pk, rk)])
+
+    def query_entities(self, flt):
+        import re
+
+        field, value = re.fullmatch(r"(\w+) eq '(.*)'", flt).groups()
+        value = value.replace("''", "'")
+        return [dict(e) for e in self.rows.values() if str(e.get(field)) == value]
+
+
+def use_memory_store() -> None:
+    """Schakel over naar opslag in het geheugen (gegevens verdwijnen bij het afsluiten)."""
+    global _client_factory
+    tables: dict[str, MemoryTable] = {}
+    _client_factory = lambda name: tables.setdefault(name, MemoryTable())  # noqa: E731

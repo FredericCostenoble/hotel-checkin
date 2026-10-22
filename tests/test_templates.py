@@ -53,4 +53,4 @@ def test_html_escapes_guest_data():
 
 def test_checkin_link_from_config():
     r = render("bevestiging", "nl", sample_data("nl") | {"token": "abc"})
-    assert "checkin?r=abc" in r.html
+    assert "?r=abc" in r.html

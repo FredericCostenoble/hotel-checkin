@@ -3,7 +3,9 @@
   "image": "mcr.microsoft.com/devcontainers/python:1-3.12-bookworm",
   "features": {
     "ghcr.io/devcontainers/features/azure-cli:1": {},
-    "ghcr.io/devcontainers/features/node:1": { "version": "lts" }
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "lts"
+    }
   },
   "postCreateCommand": "npm install -g azure-functions-core-tools@4 --unsafe-perm true && pip install -e '.[all,dev]' && python -m playwright install --with-deps chromium",
   "customizations": {
@@ -15,5 +17,8 @@
       ]
     }
   },
-  "forwardPorts": [7071]
+  "forwardPorts": [
+    7071,
+    8080
+  ]
 }

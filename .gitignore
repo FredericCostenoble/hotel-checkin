@@ -8,3 +8,7 @@ local.settings.json
 .ruff_cache/
 # Playwright sessie (cookies), nooit committen
 storage_state*.json
+
+# Kopie van het pakket voor de Azure-deployment van de API
+api/hotel_checkin/
+api/config/

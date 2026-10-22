@@ -1,0 +1,81 @@
+"""Tests voor de logica van het check-in-formulier, met tabellen in het geheugen."""
+
+from datetime import date
+
+import pytest
+
+from hotel_checkin.checkin import service
+from hotel_checkin.core.models import Guest, Reservation, ReservationStatus
+from hotel_checkin.guests import repository as repo
+from tests.test_repository import FakeTable
+
+
+@pytest.fixture(autouse=True)
+def fake_tables(monkeypatch):
+    tables: dict[str, FakeTable] = {}
+    monkeypatch.setattr(repo, "_client_factory", lambda name: tables.setdefault(name, FakeTable()))
+
+
+def _save(status=ReservationStatus.READY_FOR_CHECKIN, departure=date(2099, 1, 3)):
+    r = Reservation(
+        reservation_id="R1",
+        guest=Guest("Anna", "Peeters", "anna@example.com", None, "nl"),
+        arrival=date(2099, 1, 1),
+        departure=departure,
+        status=status,
+        room_type="Twin",
+        token="tok",
+    )
+    repo.save_reservation(r)
+
+
+@pytest.mark.parametrize(
+    "raw,expected",
+    [
+        ("0476 89 62 74", "+32476896274"),
+        ("+32 476/89.62.74", "+32476896274"),
+        ("0049 151 2345678", "+491512345678"),
+        ("12", None),
+        ("abc", None),
+    ],
+)
+def test_normalize_phone(raw, expected):
+    assert service.normalize_phone(raw) == expected
+
+
+def test_form_data_states():
+    assert service.form_data("onbekend") is None
+    _save()
+    d = service.form_data("tok")
+    assert d["state"] == "open" and d["first_name"] == "Anna" and not d["completed"]
+    assert d["hotel"]["name"] == "Hotel Lucca"
+    _save(status=ReservationStatus.CANCELLED)
+    assert service.form_data("tok")["state"] == "cancelled"
+    _save(departure=date(2000, 1, 2))
+    assert service.form_data("tok")["state"] == "closed"
+
+
+def test_submit_ok_with_opt_out():
+    _save()
+    ok, errors = service.submit("tok", " Anna.P@Example.com ", "0476 89 62 74", "fr", True)
+    assert ok and errors == {}
+    r = repo.get_reservation("R1")
+    assert r.guest.email == "anna.p@example.com" and r.guest.phone == "+32476896274"
+    assert r.guest.language == "fr" and r.checkin_completed_at is not None
+    assert repo.is_opted_out("anna.p@example.com")
+    assert service.form_data("tok")["completed"] and service.form_data("tok")["no_marketing"]
+
+
+def test_submit_validation_and_no_opt_out():
+    _save()
+    ok, errors = service.submit("tok", "geen-mail", "12", "nl", False)
+    assert not ok and errors == {"email": "invalid", "phone": "invalid"}
+    ok, _ = service.submit("tok", "anna@example.com", "", "xx", False)
+    assert ok and not repo.is_opted_out("anna@example.com")
+    assert repo.get_reservation("R1").guest.language == "nl"
+
+
+def test_submit_refused_when_not_open():
+    _save(status=ReservationStatus.CANCELLED)
+    assert service.submit("tok", "a@b.be", "", "nl", False) == (False, {"state": "cancelled"})
+    assert service.submit("x", "a@b.be", "", "nl", False) == (False, {"token": "not_found"})

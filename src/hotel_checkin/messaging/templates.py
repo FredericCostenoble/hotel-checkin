@@ -24,7 +24,12 @@ from functools import lru_cache
 from pathlib import Path
 
 TEXTS_DIR = Path(__file__).parent / "texts"
-DEFAULT_CONFIG = Path(__file__).resolve().parents[3] / "config" / "hotel.toml"
+# config/hotel.toml naast src/ (repo, codespace) of naast het pakket (Azure-deployment in api/)
+_CONFIG_CANDIDATES = [
+    Path(__file__).resolve().parents[3] / "config" / "hotel.toml",
+    Path(__file__).resolve().parents[2] / "config" / "hotel.toml",
+]
+DEFAULT_CONFIG = next((p for p in _CONFIG_CANDIDATES if p.exists()), _CONFIG_CANDIDATES[0])
 LANGUAGES = ("nl", "fr", "en", "de")
 FALLBACK_LANGUAGE = "en"
 EMAIL_MESSAGES = ("bevestiging", "herinnering", "info_pincode")

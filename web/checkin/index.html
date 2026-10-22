@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Online check-in | Hotel Lucca</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="top">
+  <a id="logo-link" href="https://www.hotellucca.be"><img id="logo" src="https://hotellucca.be/wp-content/uploads/2025/06/Logo-website-hotel-lucca.png" alt="Hotel Lucca"></a>
+  <nav class="langs" aria-label="Taal">
+    <button data-lang="nl">NL</button><button data-lang="fr">FR</button><button data-lang="en">EN</button><button data-lang="de">DE</button>
+  </nav>
+</header>
+
+<main class="card">
+  <p id="loading" class="muted" data-t="loading"></p>
+
+  <section id="message" hidden>
+    <h1 id="message-title"></h1>
+    <p id="message-text"></p>
+  </section>
+
+  <section id="form-section" hidden>
+    <h1 data-t="title"></h1>
+    <p id="intro"></p>
+    <p id="already" class="note" data-t="already" hidden></p>
+
+    <h2 data-t="reservation"></h2>
+    <dl class="details">
+      <dt data-t="name"></dt><dd id="r-name"></dd>
+      <dt data-t="arrival"></dt><dd id="r-arrival"></dd>
+      <dt data-t="departure"></dt><dd id="r-departure"></dd>
+      <dt data-t="room" class="room-row"></dt><dd id="r-room" class="room-row"></dd>
+    </dl>
+
+    <h2 data-t="contact"></h2>
+    <form id="form" novalidate>
+      <label for="email" data-t="email"></label>
+      <input id="email" name="email" type="email" autocomplete="email" required>
+      <p class="error" id="err-email" data-t="err_email" hidden></p>
+
+      <label for="phone" data-t="phone"></label>
+      <input id="phone" name="phone" type="tel" autocomplete="tel" placeholder="+32 4.. .. .. ..">
+      <p class="hint" data-t="phone_hint"></p>
+      <p class="error" id="err-phone" data-t="err_phone" hidden></p>
+
+      <label for="language" data-t="language"></label>
+      <select id="language" name="language">
+        <option value="nl">Nederlands</option><option value="fr">Français</option>
+        <option value="en">English</option><option value="de">Deutsch</option>
+      </select>
+
+      <label class="check"><input id="no_marketing" type="checkbox"> <span data-t="no_marketing"></span></label>
+
+      <p class="privacy"><span data-t="privacy_before"></span> <a id="privacy-link" href="#" target="_blank" rel="noopener" data-t="privacy_link"></a>.</p>
+
+      <button type="submit" id="submit" data-t="submit"></button>
+      <p class="error" id="err-general" hidden></p>
+    </form>
+  </section>
+</main>
+
+<footer class="bottom">
+  <strong id="f-name">Hotel Lucca</strong><br>
+  <span id="f-address"></span><br>
+  <a id="f-phone" href="#"></a> | <a id="f-email" href="#"></a> | <a id="f-website" href="https://www.hotellucca.be">www.hotellucca.be</a>
+</footer>
+
+<script src="i18n.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
