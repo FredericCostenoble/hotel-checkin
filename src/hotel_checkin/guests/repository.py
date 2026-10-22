@@ -26,7 +26,13 @@ from datetime import date, datetime, timezone
 from functools import lru_cache
 from urllib.parse import quote
 
-from hotel_checkin.core.models import Guest, Reservation, ReservationStatus, SendResult
+from hotel_checkin.core.models import (
+    Guest,
+    Reservation,
+    ReservationStatus,
+    SendResult,
+    normalize_language,
+)
 
 T_RESERVATIONS = "Reservations"
 T_MESSAGES = "Messages"
@@ -90,7 +96,7 @@ def _to_entity(r: Reservation) -> dict:
         "last_name": r.guest.last_name,
         "email": (r.guest.email or "").lower(),
         "phone": r.guest.phone or "",
-        "language": r.guest.language,
+        "language": normalize_language(r.guest.language),
         "country": (r.guest.country or "").upper(),
         "backup_email": (r.guest.backup_email or "").lower(),
         "backup_phone": r.guest.backup_phone or "",
@@ -115,7 +121,7 @@ def _from_entity(e: dict) -> Reservation:
             last_name=e["last_name"],
             email=e["email"] or None,
             phone=e["phone"] or None,
-            language=e["language"],
+            language=normalize_language(e["language"]),
             country=e.get("country") or None,
             backup_email=e.get("backup_email") or None,
             backup_phone=e.get("backup_phone") or None,

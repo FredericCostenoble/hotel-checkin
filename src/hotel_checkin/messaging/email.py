@@ -40,11 +40,14 @@ def send_email(
     attachments: list[tuple[str, bytes]] | None = None,
     sender: str | None = None,
     client: httpx.Client | None = None,
+    reply_to: str | None = None,
 ) -> SendResult:
     """Stuur een mail. Geeft altijd een SendResult terug, gooit geen fout bij een mislukte verzending.
 
     attachments: lijst van (bestandsnaam, inhoud).
-    sender: standaard de instelling MAIL_SENDER (checkin@hotellucca.be).
+    sender: standaard de instelling MAIL_SENDER (checkin@hotellucca.be, puur technisch).
+    reply_to: waar antwoorden van de gast naartoe gaan; standaard het contactadres van het hotel
+              uit config/hotel.toml (info@hotellucca.be).
     client: alleen voor tests, om de HTTP-aanroep te vervangen.
     """
     sender = sender or get_setting("MAIL_SENDER")
@@ -53,6 +56,12 @@ def send_email(
         "body": {"contentType": "HTML", "content": html_body},
         "toRecipients": [{"emailAddress": {"address": to}}],
     }
+    if reply_to is None:
+        from hotel_checkin.messaging.templates import load_hotel_config
+
+        reply_to = load_hotel_config()["hotel"]["email"]
+    if reply_to and reply_to.lower() != sender.lower():
+        message["replyTo"] = [{"emailAddress": {"address": reply_to}}]
     if attachments:
         message["attachments"] = [
             {

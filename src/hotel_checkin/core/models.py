@@ -14,6 +14,15 @@ class ReservationStatus(str, Enum):
     CANCELLED = "cancelled"
 
 
+def normalize_language(code: str | None) -> str:
+    """Taal voor berichten en formulier: nl, fr of de als die meegegeven is, anders altijd en.
+
+    Varianten zoals "nl-BE", "FR" of "de_DE" worden herkend.
+    """
+    base = (code or "").strip().lower().replace("_", "-").split("-")[0]
+    return base if base in ("nl", "fr", "de") else "en"
+
+
 class Channel(str, Enum):
     EMAIL = "email"
     SMS = "sms"

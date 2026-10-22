@@ -69,6 +69,22 @@ def test_opt_out_is_case_insensitive():
     assert not repo.is_opted_out("ander@example.com")
 
 
+@pytest.mark.parametrize(
+    "given,stored",
+    [
+        ("nl", "nl"), ("NL-nl", "nl"), ("nl_BE", "nl"),
+        ("FR", "fr"), ("fr-CA", "fr"), ("FR-ch", "fr"), ("Fr", "fr"), ("fr-BE", "fr"),
+        ("de-DE", "de"), ("de-AT", "de"), ("DE-ch", "de"),
+        ("en", "en"), ("EN-us", "en"), ("it", "en"), ("es-ES", "en"), ("", "en"), (None, "en"),
+    ],
+)
+def test_language_rule(given, stored):
+    r = _reservation()
+    r.guest.language = given
+    repo.save_reservation(r)
+    assert repo.get_reservation("abc-123").guest.language == stored
+
+
 def test_ids_with_special_characters():
     repo.save_reservation(_reservation("a/b#c?d"))
     assert repo.get_reservation("a/b#c?d") is not None

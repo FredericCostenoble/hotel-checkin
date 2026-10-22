@@ -79,6 +79,9 @@ def _fill(text: str, fields: dict) -> str:
 
 def render(message: str, language: str, data: dict[str, str]) -> RenderedMessage:
     """Stel een bericht samen. `data` bevat de gastgegevens, bv. voornaam, aankomst, pincode."""
+    from hotel_checkin.core.models import normalize_language
+
+    language = normalize_language(language)
     config = load_hotel_config()
     texts = load_texts(language)
     fields = _Fields({**_config_fields(config), **data})

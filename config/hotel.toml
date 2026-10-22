@@ -7,7 +7,7 @@
 naam = "Hotel Lucca"
 adres = "Naaldenstraat 30, 8000 Brugge"
 telefoon = "+32 471 18 15 74"
-email = "checkin@hotellucca.be"
+email = "info@hotellucca.be"   # contactadres voor gasten (mails versturen gebeurt technisch via MAIL_SENDER)
 website = "https://www.hotellucca.be"
 logo_url = "https://hotellucca.be/wp-content/uploads/2025/06/Logo-website-hotel-lucca.png"
 

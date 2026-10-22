@@ -31,6 +31,7 @@ def test_send_ok():
     msg = captured["body"]["message"]
     assert msg["toRecipients"][0]["emailAddress"]["address"] == "gast@example.com"
     assert msg["attachments"][0]["contentBytes"] == "YWJj"
+    assert msg["replyTo"][0]["emailAddress"]["address"] == "info@hotellucca.be"
 
 
 def test_send_error_is_returned_not_raised():
