@@ -1,12 +1,36 @@
 """Bouwblok 3: mail sturen via Microsoft Graph vanuit de eigen M365-mailbox.
 
-Vereist een Entra app registration met applicatierechten Mail.Send, beperkt tot de
-afzendermailbox via een Exchange Application Access Policy (of RBAC for Applications).
+Opzet in de Hotel Lucca-omgeving:
+- Entra app registration `hotel-checkin` (client ID 8f92b706-81a1-443c-9ac9-6806bb2d481c).
+- GEEN Graph API-permissie Mail.Send in Entra (die zou voor alle mailboxen gelden).
+- Exchange RBAC for Applications: rol "Application Mail.Send" met scope
+  `hotel-checkin-mailbox`, die alleen checkin@hotellucca.be bevat.
+
+Aanmelden gebeurt via azure-identity (DefaultAzureCredential). In de codespace leest die
+AZURE_TENANT_ID, AZURE_CLIENT_ID en AZURE_CLIENT_SECRET uit de Codespaces-secrets.
+
+Snel testen in de codespace:
+    python -m hotel_checkin.messaging.email jouw@adres.be
 """
 
 from __future__ import annotations
 
+import base64
+import sys
+
+import httpx
+
+from hotel_checkin.core.config import get_setting
 from hotel_checkin.core.models import Channel, SendResult
+
+GRAPH_URL = "https://graph.microsoft.com/v1.0"
+GRAPH_SCOPE = "https://graph.microsoft.com/.default"
+
+
+def _get_token() -> str:
+    from azure.identity import DefaultAzureCredential
+
+    return DefaultAzureCredential().get_token(GRAPH_SCOPE).token
 
 
 def send_email(
@@ -14,9 +38,63 @@ def send_email(
     subject: str,
     html_body: str,
     attachments: list[tuple[str, bytes]] | None = None,
+    sender: str | None = None,
+    client: httpx.Client | None = None,
 ) -> SendResult:
-    """Stuur een mail. Geeft altijd een SendResult terug, gooit geen fout bij een mislukte verzending."""
-    raise NotImplementedError("Bouwblok mail: nog te implementeren (Graph sendMail)")
+    """Stuur een mail. Geeft altijd een SendResult terug, gooit geen fout bij een mislukte verzending.
+
+    attachments: lijst van (bestandsnaam, inhoud).
+    sender: standaard de instelling MAIL_SENDER (checkin@hotellucca.be).
+    client: alleen voor tests, om de HTTP-aanroep te vervangen.
+    """
+    sender = sender or get_setting("MAIL_SENDER")
+    message: dict = {
+        "subject": subject,
+        "body": {"contentType": "HTML", "content": html_body},
+        "toRecipients": [{"emailAddress": {"address": to}}],
+    }
+    if attachments:
+        message["attachments"] = [
+            {
+                "@odata.type": "#microsoft.graph.fileAttachment",
+                "name": name,
+                "contentBytes": base64.b64encode(content).decode("ascii"),
+            }
+            for name, content in attachments
+        ]
+
+    try:
+        http = client or httpx.Client(timeout=30)
+        response = http.post(
+            f"{GRAPH_URL}/users/{sender}/sendMail",
+            headers={"Authorization": f"Bearer {_get_token() if client is None else 'test'}"},
+            json={"message": message, "saveToSentItems": True},
+        )
+    except Exception as exc:  # noqa: BLE001 - netwerk- of aanmeldfout
+        return SendResult(channel=Channel.EMAIL, to=to, ok=False, error=str(exc))
+
+    if response.status_code == 202:
+        return SendResult(
+            channel=Channel.EMAIL,
+            to=to,
+            ok=True,
+            provider_id=response.headers.get("request-id"),
+        )
+    return SendResult(
+        channel=Channel.EMAIL,
+        to=to,
+        ok=False,
+        error=f"Graph {response.status_code}: {response.text[:500]}",
+    )
 
 
-__all__ = ["send_email", "Channel"]
+if __name__ == "__main__":
+    if len(sys.argv) != 2:
+        sys.exit("Gebruik: python -m hotel_checkin.messaging.email <ontvanger>")
+    result = send_email(
+        to=sys.argv[1],
+        subject="Testmail hotel-checkin",
+        html_body="<p>Dit is een testmail van het bouwblok mail.</p>",
+    )
+    print(result)
+    sys.exit(0 if result.ok else 1)
