@@ -20,5 +20,5 @@ def run(since: datetime) -> int:
     """
     reservations = lighthouse.get_new_reservations(since)
     for reservation in reservations:
-        guests.save_guest(reservation)
+        guests.save_reservation(reservation)
     return len(reservations)
