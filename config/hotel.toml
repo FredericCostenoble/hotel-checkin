@@ -1,0 +1,44 @@
+# Instellingen van het hotel die in de berichten aan gasten gebruikt worden.
+# Pas hier aan, niet in de teksten. In de teksten verwijs je ernaar met {veldnaam},
+# bv. {hotel_naam} of {receptie_van}. Elke sleutel hieronder wordt een veld met de
+# naam <sectie>_<sleutel>, behalve in [hotel] waar het hotel_<sleutel> is.
+
+[hotel]
+naam = "Hotel Lucca"
+adres = "Naaldenstraat 30, 8000 Brugge"
+telefoon = "+32 471 18 15 74"
+email = "checkin@hotellucca.be"
+website = "https://www.hotellucca.be"
+logo_url = "https://hotellucca.be/wp-content/uploads/2025/06/Logo-website-hotel-lucca.png"
+
+[receptie]
+van = "14:00"
+tot = "18:30"
+
+[checkout]
+tot = "11:00"
+
+[ontbijt]
+van = "8:30"
+tot = "10:30"
+
+[wifi]
+naam = "HotelLucca"        # TODO: juiste naam invullen
+wachtwoord = "********"    # TODO: juist wachtwoord invullen
+
+[parking]
+naam = "Biekorf"
+minuten = "2"
+
+[nood]
+nummer = "+32 471 18 15 74"   # TODO: nummer voor 's avonds en 's nachts
+
+[checkin]
+# Link naar het online check-in-formulier (nog te bouwen). {token} wordt per gast ingevuld.
+formulier_url = "https://www.hotellucca.be/checkin?r={token}"
+
+[kleuren]
+accent = "#B4BCCC"        # grijsblauw van het logo
+accent_donker = "#5C6478" # knoppen en titels
+tekst = "#2B2F38"
+achtergrond = "#F4F5F8"

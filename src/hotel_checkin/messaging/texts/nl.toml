@@ -1,0 +1,117 @@
+# Teksten van de berichten aan gasten, Nederlands.
+# Velden tussen { } worden automatisch ingevuld (gastgegevens of instellingen uit config/hotel.toml).
+# Bloktypes: text (alinea's), details (tabel), highlight (opvallend vak), list (opsomming), button.
+
+[algemeen]
+team = "Het team van {hotel_naam}"
+voettekst = "U ontvangt deze mail omdat u een reservatie hebt bij {hotel_naam}."
+
+[bevestiging]
+onderwerp = "Uw verblijf in {hotel_naam}, {aankomst} tot {vertrek}"
+voorvertoning = "Bedankt voor uw reservatie. Vul uw check-in-gegevens aan."
+aanhef = "Beste {voornaam},"
+afsluiting = "Tot binnenkort,"
+sms = "{hotel_naam}: beste {voornaam}, bedankt voor uw reservatie. Vul uw check-in-gegevens aan en ontvang voor aankomst uw persoonlijke pincode: {checkin_link}"
+
+[[bevestiging.blokken]]
+type = "text"
+alineas = ["Hartelijk dank voor uw reservatie in {hotel_naam}. We kijken ernaar uit u te verwelkomen in hartje Brugge."]
+
+[[bevestiging.blokken]]
+type = "details"
+titel = "Uw reservatie"
+rijen = [["Aankomst", "{aankomst}"], ["Vertrek", "{vertrek}"], ["Kamer", "{kamertype}"], ["Reservatienummer", "{reservatienummer}"]]
+
+[[bevestiging.blokken]]
+type = "text"
+titel = "Vlot inchecken"
+alineas = ["Om uw aankomst zo vlot mogelijk te laten verlopen, vragen we u enkele gegevens aan te vullen. Een deel hebben we al voor u ingevuld. Het duurt maar een paar minuten."]
+
+[[bevestiging.blokken]]
+type = "button"
+tekst = "Check-in gegevens aanvullen"
+link = "{checkin_link}"
+
+[[bevestiging.blokken]]
+type = "text"
+alineas = [
+  "Via deze gegevens sturen we u voor uw aankomst alle praktische informatie, waaronder een persoonlijke pincode voor de voordeur en uw kamerdeur tijdens uw verblijf. Zo kunt u op elk moment binnen, ook buiten de openingsuren van de receptie.",
+  "Onze receptie is elke dag open van {receptie_van} tot {receptie_tot}. U bent er altijd welkom voor vragen of tips over Brugge.",
+]
+
+[herinnering]
+onderwerp = "Nog een week tot uw verblijf in {hotel_naam}"
+voorvertoning = "Vul uw check-in-gegevens aan en ontvang uw persoonlijke pincode."
+aanhef = "Beste {voornaam},"
+afsluiting = "Tot volgende week,"
+sms = "{hotel_naam}: beste {voornaam}, over een week bent u onze gast. Vul uw check-in-gegevens aan en ontvang uw persoonlijke pincode: {checkin_link}"
+
+[[herinnering.blokken]]
+type = "text"
+alineas = ["Over een week bent u welkom in {hotel_naam}. We merkten dat uw check-in-gegevens nog niet volledig zijn."]
+
+[[herinnering.blokken]]
+type = "details"
+titel = "Uw reservatie"
+rijen = [["Aankomst", "{aankomst}"], ["Vertrek", "{vertrek}"], ["Reservatienummer", "{reservatienummer}"]]
+
+[[herinnering.blokken]]
+type = "text"
+alineas = ["Vul ze nu in, dan krijgt u de dag voor uw aankomst alle praktische informatie en uw persoonlijke pincode voor de voordeur en uw kamerdeur. Het duurt maar een paar minuten."]
+
+[[herinnering.blokken]]
+type = "button"
+tekst = "Check-in gegevens aanvullen"
+link = "{checkin_link}"
+
+[[herinnering.blokken]]
+type = "text"
+alineas = ["Onze receptie is elke dag open van {receptie_van} tot {receptie_tot}."]
+
+[info_pincode]
+onderwerp = "Uw pincode en praktische info voor {hotel_naam}"
+voorvertoning = "Uw persoonlijke pincode en alles wat u nodig hebt voor uw verblijf."
+aanhef = "Beste {voornaam},"
+afsluiting = "Tot morgen,"
+sms = "{hotel_naam}: beste {voornaam}, welkom morgen! Uw pincode voor de voordeur en kamer {kamernummer}: {pincode}. Geldig van {code_geldig_van} tot {code_geldig_tot}. Alle info staat in uw mail."
+
+[[info_pincode.blokken]]
+type = "text"
+alineas = ["Morgen is het zover. Hieronder vindt u alles wat u nodig hebt voor uw verblijf."]
+
+[[info_pincode.blokken]]
+type = "highlight"
+titel = "Uw persoonlijke pincode"
+waarde = "{pincode}"
+alineas = ["Met deze code opent u de voordeur en uw kamerdeur, van {code_geldig_van} tot {code_geldig_tot}.", "Uw kamer: {kamernummer}"]
+
+[[info_pincode.blokken]]
+type = "list"
+titel = "Aankomen"
+items = [
+  "Adres: {hotel_adres}",
+  "Inchecken kan vanaf {receptie_van}. De receptie is open tot {receptie_tot}. Komt u later aan, dan gaat u met uw pincode rechtstreeks naar uw kamer.",
+  "Toets uw pincode in op het klavier van de voordeur en daarna op dat van uw kamerdeur.",
+  "Ons hotel heeft geen lift. Wie hulp nodig heeft met de bagage, kan terecht aan de receptie.",
+]
+
+[[info_pincode.blokken]]
+type = "list"
+titel = "Tijdens uw verblijf"
+items = [
+  "Ontbijt: elke dag van {ontbijt_van} tot {ontbijt_tot} in onze 14de-eeuwse gewelfde kelder.",
+  "Wifi: {wifi_naam}, wachtwoord {wifi_wachtwoord}",
+  "Parkeren: het hotel heeft geen eigen parking. Parking {parking_naam} ligt op {parking_minuten} minuten wandelen.",
+]
+
+[[info_pincode.blokken]]
+type = "text"
+titel = "Vertrek"
+alineas = ["Uitchecken kan tot {checkout_tot}. U kunt uw bagage gratis bij ons achterlaten."]
+
+[[info_pincode.blokken]]
+type = "text"
+alineas = ["Hebt u een vraag? Bel ons op {hotel_telefoon} of antwoord gewoon op deze mail."]
+
+[aan_de_deur]
+sms = "{hotel_naam}: welkom, {voornaam}! Toets {pincode} op het klavier van de voordeur en daarna op dat van kamer {kamernummer}. Problemen? Bel {nood_nummer}."
