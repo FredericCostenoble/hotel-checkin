@@ -21,6 +21,26 @@
     document.querySelectorAll("[data-t]").forEach((el) => (el.textContent = t(el.dataset.t)));
     ["phone_cc", "backup_phone_cc"].forEach((id) => wireCountrySelect($(id)));
 
+  // Controle per veld zodra de gast het veld verlaat; de fout verdwijnt tijdens het verbeteren.
+  const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]{2,}$/;
+  function showFieldError(id, bad) {
+    $("err-" + id).hidden = !bad;
+    $(id).classList.toggle("invalid", bad);
+  }
+  ["email", "backup_email"].forEach((id) => {
+    $(id).addEventListener("blur", () => {
+      const v = $(id).value.trim();
+      showFieldError(id, id === "email" ? !EMAIL_RE.test(v) : !!v && !EMAIL_RE.test(v));
+    });
+    $(id).addEventListener("input", () => showFieldError(id, false));
+  });
+  ["phone", "backup_phone"].forEach((id) => {
+    const sel = $(id + "_cc");
+    $(id).addEventListener("input", () => { cleanPhoneInput(sel, $(id)); showFieldError(id, false); });
+    $(id).addEventListener("blur", () => showFieldError(id, !phoneLooksValid(sel, $(id))));
+    sel.addEventListener("change", () => { if ($(id).value) showFieldError(id, !phoneLooksValid(sel, $(id))); });
+  });
+
   document.querySelectorAll(".langs button").forEach((b) => b.classList.toggle("active", b.dataset.lang === lang));
     ["phone_cc", "backup_phone_cc"].forEach((id) => fillCountrySelect($(id), lang, $(id).value || defaultCountry()));
     if (!data) return;
@@ -132,7 +152,7 @@
         return showMessage("thanks");
       }
       const errors = body.errors || {};
-      ["email", "phone", "backup_email", "backup_phone"].forEach((k) => { if (errors[k]) $("err-" + k).hidden = false; });
+      ["email", "phone", "backup_email", "backup_phone"].forEach((k) => { if (errors[k]) showFieldError(k, true); });
       if (errors.backup_email || errors.backup_phone) $("backup-box").open = true;
       if (errors.state) return showMessage(errors.state);
       if (errors.token) return showMessage("notfound");

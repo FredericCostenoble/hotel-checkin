@@ -33,11 +33,34 @@ function fillCountrySelect(select, lang, selected) {
 // de lijst zelf toont altijd de volledige namen. Zo blijft het veld leesbaar, ook met focus.
 function updateCountryLabel(select) {
   const label = select.parentElement.querySelector(".cc-label");
-  if (label) label.textContent = select.value + " +" + (DIAL[select.value] || "");
+  if (label) label.textContent = "+" + (DIAL[select.value] || "");
 }
 
 function wireCountrySelect(select) {
   select.addEventListener("change", () => updateCountryLabel(select));
+}
+
+// Alleen cijfers in het nummerveld. Plakt de gast een internationaal nummer (+.. of 00..),
+// dan kiezen we het land automatisch en blijft enkel het nationale deel over.
+function cleanPhoneInput(select, input) {
+  const raw = input.value;
+  const intl = raw.trim().startsWith("+") ? "+" + raw.replace(/\D/g, "")
+    : raw.trim().startsWith("00") ? "+" + raw.replace(/\D/g, "").slice(2) : null;
+  if (intl && intl.length > 4) {
+    const parts = splitPhone(intl, select.value);
+    if (DIAL[parts.iso]) { select.value = parts.iso; updateCountryLabel(select); input.value = parts.national; return; }
+  }
+  const digits = raw.replace(/\D/g, "");
+  const cleaned = raw.trim().startsWith("+") ? "+" + digits : digits; // een + vooraan mag tijdens het typen
+  if (cleaned !== raw) input.value = cleaned;
+}
+
+// Klopt het nummer ongeveer? Leeg is goed (optioneel). Nationaal deel zonder 0: 6 tot 13 cijfers.
+function phoneLooksValid(select, input) {
+  const v = input.value.trim();
+  if (!v) return true;
+  const national = select.value === "IT" ? v : v.replace(/^0+/, "");
+  return /^\d{6,13}$/.test(national);
 }
 
 // Splits een +-nummer in land en nationaal nummer. Bij gedeelde kengetallen (+1) wint het voorkeursland.

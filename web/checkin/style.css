@@ -36,7 +36,7 @@ h2 {
 
 label { display: block; font-size: 14px; color: var(--accent-dark); margin: 16px 0 4px; }
 .phone-row { display: flex; gap: 8px; }
-.cc-wrap { position: relative; flex: 0 0 7.5em; min-width: 0; }
+.cc-wrap { position: relative; flex: 0 0 5.5em; min-width: 0; }
 .cc-wrap .cc {
   width: 100%; color: transparent; -webkit-appearance: none; appearance: none; padding-right: 28px;
   background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%232B2F38' stroke-width='1.6'/%3E%3C/svg%3E") no-repeat right 10px center;
@@ -47,6 +47,7 @@ label { display: block; font-size: 14px; color: var(--accent-dark); margin: 16px
   pointer-events: none; font-size: 16px; color: var(--text); white-space: nowrap; overflow: hidden;
 }
 .phone-row input { flex: 1; min-width: 0; }
+input.invalid { border-color: var(--error); }
 input[type="email"], input[type="tel"], select {
   width: 100%; padding: 12px; font-size: 16px; border: 1px solid #C9CED9; border-radius: 3px;
   background: #fff; color: var(--text);
