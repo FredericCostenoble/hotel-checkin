@@ -200,7 +200,7 @@ def _render_html(t: dict, common: dict, f: dict, config: dict, language: str) ->
             bg = c["accent_donker"]
             text = _e(_fill(block["tekst"], f))
             link = _e(_fill(block["link"], f))
-            width = len(text) * 11 + 64
+            width = len(text) * 9 + 64
             parts.append(
                 f"{_gap(8)}<div>"
                 f'<!--[if mso]><v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" '
@@ -208,11 +208,10 @@ def _render_html(t: dict, common: dict, f: dict, config: dict, language: str) ->
                 f'style="height:48px;v-text-anchor:middle;width:{width}px;" arcsize="6%" '
                 f'strokecolor="{bg}" fillcolor="{bg}"><w:anchorlock/>'
                 f'<center style="color:#FFFFFF;font-family:Arial,sans-serif;font-size:14px;'
-                f'font-weight:bold;letter-spacing:1px;">{text}</center></v:roundrect><![endif]-->'
+                f'font-weight:bold;">{text}</center></v:roundrect><![endif]-->'
                 f'<!--[if !mso]><!-- --><a href="{link}" style="display:inline-block;background:{bg};'
                 f"border-radius:3px;padding:15px 32px;font-family:{FONT};font-size:14px;"
-                f'letter-spacing:1px;text-transform:uppercase;font-weight:bold;color:#FFFFFF;'
-                f'text-decoration:none;">{text}</a><!--<![endif]-->'
+                f'font-weight:bold;color:#FFFFFF;text-decoration:none;">{text}</a><!--<![endif]-->'
                 f"</div>{_gap(26)}"
             )
     parts.append(f'<p style="{p_style}margin-top:24px;">{_e(_fill(t["afsluiting"], f))}</p>')
