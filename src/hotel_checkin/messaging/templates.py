@@ -135,8 +135,12 @@ def _e(text: str) -> str:
     return html.escape(text, quote=True)
 
 
-def _spacer(height: int) -> str:
-    return f'<td height="{height}" style="height:{height}px;font-size:0;line-height:0;">&nbsp;</td>'
+def _gap(height: int) -> str:
+    """Verticale witruimte die ook Outlook respecteert (vaste regelhoogte)."""
+    return (
+        f'<div style="height:{height}px;line-height:{height}px;font-size:{height}px;'
+        f'mso-line-height-rule:exactly;">&nbsp;</div>'
+    )
 
 
 def _render_html(t: dict, common: dict, f: dict, config: dict, language: str) -> str:
@@ -163,10 +167,9 @@ def _render_html(t: dict, common: dict, f: dict, config: dict, language: str) ->
                 for k, v in block["rijen"]
             )
             parts.append(
-                f'<table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0"><tr><td>'
                 f'<table role="presentation" width="100%" cellpadding="0" cellspacing="0" '
                 f'style="border-collapse:collapse;background:{c["achtergrond"]};">{rows}</table>'
-                f"</td></tr><tr>{_spacer(18)}</tr></table>"
+                f"{_gap(18)}"
             )
         elif kind == "highlight":
             extra = "".join(
@@ -174,8 +177,7 @@ def _render_html(t: dict, common: dict, f: dict, config: dict, language: str) ->
                 for p in block.get("alineas", [])
             )
             parts.append(
-                f'<table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0">'
-                f"<tr>{_spacer(8)}</tr><tr><td>"
+                f"{_gap(8)}"
                 f'<table role="presentation" width="100%" cellpadding="0" cellspacing="0">'
                 f'<tr><td align="center" style="padding:22px 16px;background:{c["achtergrond"]};'
                 f'border:2px solid {c["accent"]};">'
@@ -183,7 +185,7 @@ def _render_html(t: dict, common: dict, f: dict, config: dict, language: str) ->
                 f'text-transform:uppercase;color:{c["accent_donker"]};">{_e(_fill(block["titel"], f))}</p>'
                 f'<p style="margin:0 0 8px 0;font-family:{FONT};font-size:36px;letter-spacing:8px;'
                 f'font-weight:bold;color:{c["tekst"]};">{_e(_fill(block["waarde"], f))}</p>'
-                f"{extra}</td></tr></table></td></tr><tr>{_spacer(22)}</tr></table>"
+                f"{extra}</td></tr></table>{_gap(22)}"
             )
         elif kind == "list":
             items = "".join(
@@ -193,29 +195,32 @@ def _render_html(t: dict, common: dict, f: dict, config: dict, language: str) ->
             )
             parts.append(f'<ul style="margin:0 0 14px 0;padding-left:20px;">{items}</ul>')
         elif kind == "button":
-            # Outlook (Word-weergave) negeert padding en marges rond knoppen. Daarom gebruiken we
-            # vaste lege cellen met een breedte of hoogte rond de tekst en onder de knop.
+            # "Bulletproof button": Outlook (Word-weergave) krijgt een VML-knop, andere
+            # mailprogramma's een gewone HTML-knop. Breedte geschat op basis van de tekstlengte.
             bg = c["accent_donker"]
+            text = _e(_fill(block["tekst"], f))
+            link = _e(_fill(block["link"], f))
+            width = len(text) * 11 + 64
             parts.append(
-                f'<table role="presentation" border="0" cellpadding="0" cellspacing="0">'
-                f"<tr>{_spacer(10)}</tr><tr><td>"
-                f'<table role="presentation" border="0" cellpadding="0" cellspacing="0" bgcolor="{bg}" '
-                f'style="background:{bg};border-radius:3px;">'
-                f'<tr><td colspan="3" height="15" style="height:15px;font-size:0;line-height:0;">&nbsp;</td></tr>'
-                f'<tr><td width="32" style="width:32px;font-size:0;line-height:0;">&nbsp;</td>'
-                f'<td align="center"><a href="{_e(_fill(block["link"], f))}" style="'
-                f"font-family:{FONT};font-size:14px;letter-spacing:1px;text-transform:uppercase;"
-                f'font-weight:bold;color:#FFFFFF;text-decoration:none;">{_e(_fill(block["tekst"], f))}</a></td>'
-                f'<td width="32" style="width:32px;font-size:0;line-height:0;">&nbsp;</td></tr>'
-                f'<tr><td colspan="3" height="15" style="height:15px;font-size:0;line-height:0;">&nbsp;</td></tr>'
-                f"</table></td></tr><tr>{_spacer(26)}</tr></table>"
+                f"{_gap(8)}<div>"
+                f'<!--[if mso]><v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" '
+                f'xmlns:w="urn:schemas-microsoft-com:office:word" href="{link}" '
+                f'style="height:48px;v-text-anchor:middle;width:{width}px;" arcsize="6%" '
+                f'strokecolor="{bg}" fillcolor="{bg}"><w:anchorlock/>'
+                f'<center style="color:#FFFFFF;font-family:Arial,sans-serif;font-size:14px;'
+                f'font-weight:bold;letter-spacing:1px;">{text}</center></v:roundrect><![endif]-->'
+                f'<!--[if !mso]><!-- --><a href="{link}" style="display:inline-block;background:{bg};'
+                f"border-radius:3px;padding:15px 32px;font-family:{FONT};font-size:14px;"
+                f'letter-spacing:1px;text-transform:uppercase;font-weight:bold;color:#FFFFFF;'
+                f'text-decoration:none;">{text}</a><!--<![endif]-->'
+                f"</div>{_gap(26)}"
             )
     parts.append(f'<p style="{p_style}margin-top:24px;">{_e(_fill(t["afsluiting"], f))}</p>')
     parts.append(f'<p style="{p_style}font-weight:bold;">{_e(_fill(common["team"], f))}</p>')
     body = "\n".join(parts)
 
     return f"""<!DOCTYPE html>
-<html lang="{language}">
+<html lang="{language}" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>{_e(_fill(t["onderwerp"], f))}</title></head>
 <body style="margin:0;padding:0;background:{c['achtergrond']};">
