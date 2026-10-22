@@ -135,6 +135,10 @@ def _e(text: str) -> str:
     return html.escape(text, quote=True)
 
 
+def _spacer(height: int) -> str:
+    return f'<td height="{height}" style="height:{height}px;font-size:0;line-height:0;">&nbsp;</td>'
+
+
 def _render_html(t: dict, common: dict, f: dict, config: dict, language: str) -> str:
     c = config["kleuren"]
     p_style = f"margin:0 0 14px 0;font-family:{FONT};font-size:15px;line-height:1.6;color:{c['tekst']};"
@@ -159,11 +163,10 @@ def _render_html(t: dict, common: dict, f: dict, config: dict, language: str) ->
                 for k, v in block["rijen"]
             )
             parts.append(
-                f'<table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>'
-                f'<td style="padding:0 0 18px 0;">'
+                f'<table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0"><tr><td>'
                 f'<table role="presentation" width="100%" cellpadding="0" cellspacing="0" '
                 f'style="border-collapse:collapse;background:{c["achtergrond"]};">{rows}</table>'
-                f"</td></tr></table>"
+                f"</td></tr><tr>{_spacer(18)}</tr></table>"
             )
         elif kind == "highlight":
             extra = "".join(
@@ -171,8 +174,8 @@ def _render_html(t: dict, common: dict, f: dict, config: dict, language: str) ->
                 for p in block.get("alineas", [])
             )
             parts.append(
-                f'<table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>'
-                f'<td style="padding:8px 0 22px 0;">'
+                f'<table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0">'
+                f"<tr>{_spacer(8)}</tr><tr><td>"
                 f'<table role="presentation" width="100%" cellpadding="0" cellspacing="0">'
                 f'<tr><td align="center" style="padding:22px 16px;background:{c["achtergrond"]};'
                 f'border:2px solid {c["accent"]};">'
@@ -180,7 +183,7 @@ def _render_html(t: dict, common: dict, f: dict, config: dict, language: str) ->
                 f'text-transform:uppercase;color:{c["accent_donker"]};">{_e(_fill(block["titel"], f))}</p>'
                 f'<p style="margin:0 0 8px 0;font-family:{FONT};font-size:36px;letter-spacing:8px;'
                 f'font-weight:bold;color:{c["tekst"]};">{_e(_fill(block["waarde"], f))}</p>'
-                f"{extra}</td></tr></table></td></tr></table>"
+                f"{extra}</td></tr></table></td></tr><tr>{_spacer(22)}</tr></table>"
             )
         elif kind == "list":
             items = "".join(
@@ -190,18 +193,22 @@ def _render_html(t: dict, common: dict, f: dict, config: dict, language: str) ->
             )
             parts.append(f'<ul style="margin:0 0 14px 0;padding-left:20px;">{items}</ul>')
         elif kind == "button":
-            # Outlook negeert padding op links en marges rond tabellen: daarom padding op de cel
-            # en de witruimte via een omliggende cel.
+            # Outlook (Word-weergave) negeert padding en marges rond knoppen. Daarom gebruiken we
+            # vaste lege cellen met een breedte of hoogte rond de tekst en onder de knop.
+            bg = c["accent_donker"]
             parts.append(
-                f'<table role="presentation" cellpadding="0" cellspacing="0"><tr>'
-                f'<td style="padding:10px 0 26px 0;">'
-                f'<table role="presentation" cellpadding="0" cellspacing="0"><tr>'
-                f'<td align="center" bgcolor="{c["accent_donker"]}" style="background:{c["accent_donker"]};'
-                f'border-radius:3px;padding:15px 32px;">'
-                f'<a href="{_e(_fill(block["link"], f))}" style="display:inline-block;'
-                f'font-family:{FONT};font-size:14px;letter-spacing:1px;text-transform:uppercase;'
-                f'font-weight:bold;color:#FFFFFF;text-decoration:none;">{_e(_fill(block["tekst"], f))}</a>'
-                f"</td></tr></table></td></tr></table>"
+                f'<table role="presentation" border="0" cellpadding="0" cellspacing="0">'
+                f"<tr>{_spacer(10)}</tr><tr><td>"
+                f'<table role="presentation" border="0" cellpadding="0" cellspacing="0" bgcolor="{bg}" '
+                f'style="background:{bg};border-radius:3px;">'
+                f'<tr><td colspan="3" height="15" style="height:15px;font-size:0;line-height:0;">&nbsp;</td></tr>'
+                f'<tr><td width="32" style="width:32px;font-size:0;line-height:0;">&nbsp;</td>'
+                f'<td align="center"><a href="{_e(_fill(block["link"], f))}" style="'
+                f"font-family:{FONT};font-size:14px;letter-spacing:1px;text-transform:uppercase;"
+                f'font-weight:bold;color:#FFFFFF;text-decoration:none;">{_e(_fill(block["tekst"], f))}</a></td>'
+                f'<td width="32" style="width:32px;font-size:0;line-height:0;">&nbsp;</td></tr>'
+                f'<tr><td colspan="3" height="15" style="height:15px;font-size:0;line-height:0;">&nbsp;</td></tr>'
+                f"</table></td></tr><tr>{_spacer(26)}</tr></table>"
             )
     parts.append(f'<p style="{p_style}margin-top:24px;">{_e(_fill(t["afsluiting"], f))}</p>')
     parts.append(f'<p style="{p_style}font-weight:bold;">{_e(_fill(common["team"], f))}</p>')
