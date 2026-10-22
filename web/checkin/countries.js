@@ -22,29 +22,22 @@ function fillCountrySelect(select, lang, selected) {
   for (const [iso, dial] of sorted) {
     const opt = document.createElement("option");
     opt.value = iso;
-    opt.dataset.full = iso + " · " + countryName(iso, lang) + " (+" + dial + ")";
-    opt.dataset.short = iso + " +" + dial;
-    opt.textContent = opt.dataset.full;
+    opt.textContent = iso + " · " + countryName(iso, lang) + " (+" + dial + ")";
     select.appendChild(opt);
   }
   select.value = DIAL[selected] ? selected : "BE";
-  compactCountrySelect(select);
+  updateCountryLabel(select);
 }
 
-// In het gesloten veld alleen de code tonen (bv. "BE +32"); in de open lijst de volledige namen.
-function compactCountrySelect(select) {
-  for (const opt of select.options) opt.textContent = opt.selected ? opt.dataset.short : opt.dataset.full;
-}
-
-function expandCountrySelect(select) {
-  for (const opt of select.options) opt.textContent = opt.dataset.full;
+// Het veld zelf toont een kort label (bv. "BE +32") dat over de keuzelijst ligt;
+// de lijst zelf toont altijd de volledige namen. Zo blijft het veld leesbaar, ook met focus.
+function updateCountryLabel(select) {
+  const label = select.parentElement.querySelector(".cc-label");
+  if (label) label.textContent = select.value + " +" + (DIAL[select.value] || "");
 }
 
 function wireCountrySelect(select) {
-  select.addEventListener("mousedown", () => expandCountrySelect(select));
-  select.addEventListener("focus", () => expandCountrySelect(select));
-  select.addEventListener("change", () => { compactCountrySelect(select); });
-  select.addEventListener("blur", () => compactCountrySelect(select));
+  select.addEventListener("change", () => updateCountryLabel(select));
 }
 
 // Splits een +-nummer in land en nationaal nummer. Bij gedeelde kengetallen (+1) wint het voorkeursland.

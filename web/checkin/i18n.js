@@ -2,7 +2,7 @@
 const I18N = {
   nl: {
     intro_confirm: "Beste {voornaam}, kloppen onderstaande gegevens? Pas aan waar nodig en bevestig. Zo sturen we u de dag voor uw aankomst alle praktische informatie en uw persoonlijke pincode voor de voordeur en uw kamerdeur.",
-    backup: "Extra contact (optioneel)", backup_hint: "Een tweede e-mailadres of nummer waarop we u kunnen bereiken.",
+    backup_toggle: "Extra e-mailadres of gsm-nummer toevoegen (optioneel)", backup_hint: "Een tweede e-mailadres of nummer waarop we u kunnen bereiken.",
     backup_email: "Extra e-mailadres", backup_phone: "Extra gsm-nummer", preferences: "Voorkeuren",
     loading: "Even geduld...",
     title: "Online check-in",
@@ -25,7 +25,7 @@ const I18N = {
   },
   fr: {
     intro_confirm: "Bonjour {voornaam}, les données ci-dessous sont-elles correctes ? Modifiez-les si nécessaire et confirmez. La veille de votre arrivée, nous vous enverrons toutes les informations pratiques ainsi que votre code PIN personnel pour la porte d'entrée et la porte de votre chambre.",
-    backup: "Contact supplémentaire (facultatif)", backup_hint: "Une deuxième adresse e-mail ou un deuxième numéro où nous pouvons vous joindre.",
+    backup_toggle: "Ajouter une adresse e-mail ou un numéro supplémentaire (facultatif)", backup_hint: "Une deuxième adresse e-mail ou un deuxième numéro où nous pouvons vous joindre.",
     backup_email: "Adresse e-mail supplémentaire", backup_phone: "Numéro de portable supplémentaire", preferences: "Préférences",
     loading: "Un instant...",
     title: "Enregistrement en ligne",
@@ -48,7 +48,7 @@ const I18N = {
   },
   en: {
     intro_confirm: "Dear {voornaam}, are the details below correct? Change them where needed and confirm. The day before you arrive, we will send you all practical information and your personal PIN code for the front door and your room door.",
-    backup: "Additional contact (optional)", backup_hint: "A second email address or number where we can reach you.",
+    backup_toggle: "Add an extra email address or mobile number (optional)", backup_hint: "A second email address or number where we can reach you.",
     backup_email: "Additional email address", backup_phone: "Additional mobile number", preferences: "Preferences",
     loading: "One moment...",
     title: "Online check-in",
@@ -71,7 +71,7 @@ const I18N = {
   },
   de: {
     intro_confirm: "Guten Tag {voornaam}, sind die unten stehenden Angaben korrekt? Ändern Sie sie bei Bedarf und bestätigen Sie. Am Tag vor Ihrer Anreise senden wir Ihnen alle praktischen Informationen und Ihren persönlichen PIN-Code für die Haustür und Ihre Zimmertür.",
-    backup: "Zusätzlicher Kontakt (optional)", backup_hint: "Eine zweite E-Mail-Adresse oder Nummer, unter der wir Sie erreichen können.",
+    backup_toggle: "Zusätzliche E-Mail-Adresse oder Handynummer hinzufügen (optional)", backup_hint: "Eine zweite E-Mail-Adresse oder Nummer, unter der wir Sie erreichen können.",
     backup_email: "Zusätzliche E-Mail-Adresse", backup_phone: "Zusätzliche Handynummer", preferences: "Einstellungen",
     loading: "Einen Moment...",
     title: "Online-Check-in",

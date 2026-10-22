@@ -89,6 +89,7 @@
     $("backup_email").value = data.backup_email;
     setPhone("phone", data.phone);
     setPhone("backup_phone", data.backup_phone);
+    $("backup-box").open = !!(data.backup_email || data.backup_phone);
     $("language").value = lang;
     $("no_marketing").checked = data.no_marketing;
     $("already").hidden = !data.completed;
@@ -132,6 +133,7 @@
       }
       const errors = body.errors || {};
       ["email", "phone", "backup_email", "backup_phone"].forEach((k) => { if (errors[k]) $("err-" + k).hidden = false; });
+      if (errors.backup_email || errors.backup_phone) $("backup-box").open = true;
       if (errors.state) return showMessage(errors.state);
       if (errors.token) return showMessage("notfound");
       if (!["email", "phone", "backup_email", "backup_phone"].some((k) => errors[k])) {

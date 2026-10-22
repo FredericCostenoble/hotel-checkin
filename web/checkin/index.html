@@ -44,13 +44,14 @@
 
       <label for="phone" data-t="phone"></label>
       <div class="phone-row">
-        <select id="phone_cc" class="cc" aria-label="Country"></select>
+        <span class="cc-wrap"><select id="phone_cc" class="cc" aria-label="Country"></select><span class="cc-label" aria-hidden="true"></span></span>
         <input id="phone" name="phone" type="tel" autocomplete="tel-national" inputmode="tel">
       </div>
       <p class="hint" data-t="phone_hint"></p>
       <p class="error" id="err-phone" data-t="err_phone" hidden></p>
 
-      <h2 data-t="backup"></h2>
+      <details id="backup-box" class="backup">
+      <summary data-t="backup_toggle"></summary>
       <p class="hint" data-t="backup_hint"></p>
       <label for="backup_email" data-t="backup_email"></label>
       <input id="backup_email" name="backup_email" type="email" autocomplete="off">
@@ -58,10 +59,11 @@
 
       <label for="backup_phone" data-t="backup_phone"></label>
       <div class="phone-row">
-        <select id="backup_phone_cc" class="cc" aria-label="Country"></select>
+        <span class="cc-wrap"><select id="backup_phone_cc" class="cc" aria-label="Country"></select><span class="cc-label" aria-hidden="true"></span></span>
         <input id="backup_phone" name="backup_phone" type="tel" autocomplete="off" inputmode="tel">
       </div>
       <p class="error" id="err-backup_phone" data-t="err_phone" hidden></p>
+      </details>
 
       <h2 data-t="preferences"></h2>
       <label for="language" data-t="language"></label>

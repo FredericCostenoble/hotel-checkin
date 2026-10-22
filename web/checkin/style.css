@@ -36,13 +36,31 @@ h2 {
 
 label { display: block; font-size: 14px; color: var(--accent-dark); margin: 16px 0 4px; }
 .phone-row { display: flex; gap: 8px; }
-.phone-row .cc { flex: 0 0 7.5em; min-width: 0; }
+.cc-wrap { position: relative; flex: 0 0 7.5em; min-width: 0; }
+.cc-wrap .cc {
+  width: 100%; color: transparent; -webkit-appearance: none; appearance: none; padding-right: 28px;
+  background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%232B2F38' stroke-width='1.6'/%3E%3C/svg%3E") no-repeat right 10px center;
+}
+.cc-wrap .cc option { color: var(--text); }
+.cc-label {
+  position: absolute; left: 13px; right: 28px; top: 50%; transform: translateY(-50%);
+  pointer-events: none; font-size: 16px; color: var(--text); white-space: nowrap; overflow: hidden;
+}
 .phone-row input { flex: 1; min-width: 0; }
 input[type="email"], input[type="tel"], select {
   width: 100%; padding: 12px; font-size: 16px; border: 1px solid #C9CED9; border-radius: 3px;
   background: #fff; color: var(--text);
 }
 input:focus, select:focus { outline: 2px solid var(--accent-dark); outline-offset: 1px; }
+.backup { margin-top: 20px; }
+.backup summary {
+  cursor: pointer; list-style: none; color: var(--accent-dark); font-size: 15px;
+  text-decoration: underline; text-underline-offset: 3px;
+}
+.backup summary::-webkit-details-marker { display: none; }
+.backup summary::before { content: "+"; display: inline-block; width: 1.2em; font-weight: bold; text-decoration: none; }
+.backup[open] summary::before { content: "\2212"; }
+.backup[open] { background: var(--bg); padding: 12px 14px 16px; border-left: 3px solid var(--accent); }
 .hint { font-size: 13px; color: #8A90A0; margin: 4px 0 0; }
 .check { display: flex; gap: 10px; align-items: flex-start; color: var(--text); font-size: 15px; margin-top: 24px; }
 .check input { margin-top: 5px; width: 18px; height: 18px; flex: none; }
