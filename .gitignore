@@ -11,9 +11,6 @@ storage_state*.json
 # Azure Functions (lokale pakketten)
 .python_packages
 
-# Kopie van het pakket voor de Azure-deployment van de API
-api/hotel_checkin/
-api/config/
 
 # Uitrolpakketten
 build/

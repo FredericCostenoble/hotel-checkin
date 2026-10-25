@@ -1,4 +1,6 @@
 // Online check-in: haalt de reservatie op via /api/checkin/<token> en bewaart de contactgegevens.
+// API: zelfde site (lokaal) of de Function App in Azure, ingesteld in config.js bij de uitrol.
+const API = window.CHECKIN_API || "";
 (function () {
   const params = new URLSearchParams(location.search);
   const token = params.get("r") || "";
@@ -95,7 +97,7 @@
     if (!token) return showMessage("notfound");
     let res;
     try {
-      res = await fetch("/api/checkin/" + encodeURIComponent(token));
+      res = await fetch(API + "/api/checkin/" + encodeURIComponent(token));
     } catch (e) {
       return showMessage("notfound");
     }
@@ -133,7 +135,7 @@
     btn.disabled = true;
     btn.textContent = t("saving");
     try {
-      const res = await fetch("/api/checkin/" + encodeURIComponent(token), {
+      const res = await fetch(API + "/api/checkin/" + encodeURIComponent(token), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

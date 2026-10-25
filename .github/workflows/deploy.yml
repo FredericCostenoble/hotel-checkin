@@ -2,6 +2,7 @@
 # - Elke push op main: tests, daarna uitrol naar TST.
 # - PRD: alleen manueel (Actions > Deploy > Run workflow > prd).
 # Aanmelden bij Azure zonder secrets (OIDC, federated credential per omgeving), zie infra/README.md.
+# Regio's instelbaar met de GitHub-variabelen AZURE_LOCATION en SWA_LOCATION (zie infra/README.md).
 
 name: Deploy
 
@@ -60,6 +61,9 @@ jobs:
             --name "checkin-${{ github.run_number }}" \
             --template-file infra/main.bicep \
             --parameters env="$ENV_NAME" \
+                         location="${{ vars.AZURE_LOCATION || 'belgiumcentral' }}" \
+                         swaLocation="${{ vars.SWA_LOCATION || 'eastus2' }}" \
+                         formOrigins="${{ vars.FORM_ORIGINS }}" \
                          alertEmail="${{ vars.ALERT_EMAIL }}" \
                          testEmail="${{ vars.TEST_EMAIL }}" \
                          testPhone="${{ vars.TEST_PHONE }}" \
@@ -67,13 +71,14 @@ jobs:
             --query properties.outputs -o json)
           echo "func=$(jq -r .functionAppName.value <<<"$out")" >> "$GITHUB_OUTPUT"
           echo "swa=$(jq -r .staticWebAppName.value <<<"$out")" >> "$GITHUB_OUTPUT"
+          echo "funchost=$(jq -r .functionAppHost.value <<<"$out")" >> "$GITHUB_OUTPUT"
           echo "Formulier: https://$(jq -r .staticWebAppHost.value <<<"$out")" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Pakket Function App klaarzetten
         run: |
           mkdir -p build/func
           cp function_app.py host.json build/func/
-          cp api/requirements.txt build/func/requirements.txt
+          cp requirements.txt build/func/requirements.txt
           cp -r src/hotel_checkin config build/func/
 
       - uses: Azure/functions-action@v1
@@ -83,8 +88,8 @@ jobs:
           sku: flexconsumption
           remote-build: true
 
-      - name: Pakket formulier-API klaarzetten
-        run: cp -r src/hotel_checkin config api/
+      - name: Adres van de API in het formulier zetten
+        run: echo 'window.CHECKIN_API = "https://${{ steps.infra.outputs.funchost }}";' > web/checkin/config.js
 
       - name: Deploymenttoken Static Web App
         id: swa
@@ -99,5 +104,4 @@ jobs:
           azure_static_web_apps_api_token: ${{ steps.swa.outputs.token }}
           action: upload
           app_location: web/checkin
-          api_location: api
           skip_app_build: true

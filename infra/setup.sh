@@ -15,7 +15,8 @@
 set -euo pipefail
 
 REPO="FredericCostenoble/hotel-checkin"
-LOCATION="westeurope"
+# Regio van de resource groups (alleen metadata). Instelbaar: AZURE_LOCATION=... bash infra/setup.sh
+LOCATION="${AZURE_LOCATION:-belgiumcentral}"
 APP_NAME="github-hotel-checkin"
 ALERT_EMAIL="${ALERT_EMAIL:-management@hotellucca.be}"
 

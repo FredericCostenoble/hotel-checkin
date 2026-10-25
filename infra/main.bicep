@@ -3,8 +3,8 @@
 // en in Key Vault (<hotel_id>-<naam>).
 //
 // Zo goedkoop mogelijk:
-// - Static Web Apps Free (formulier + API)
-// - Functions Flex Consumption (geen vaste kost, gratis maandelijks tegoed)
+// - Static Web Apps Free (alleen de pagina's van het formulier, geen gegevens)
+// - Functions Flex Consumption: processen en de API van het formulier (geen vaste kost)
 // - Table Storage (centen per maand)
 // - Log Analytics met dagelijkse limiet, 30 dagen bewaring
 // - Budgetmelding per resource group
@@ -16,10 +16,14 @@ targetScope = 'resourceGroup'
 @allowed(['tst', 'prd'])
 param env string
 
-param location string = resourceGroup().location
+@description('Regio voor alle gegevens en verwerking (opslag, Function App, Key Vault, logging).')
+param location string
 
-@description('Static Web Apps bestaat niet in elke regio; westeurope wel.')
-param swaLocation string = 'westeurope'
+@description('Regio van de Static Web App (alleen pagina\'s, geen gegevens; beperkt aantal regio\'s).')
+param swaLocation string
+
+@description('Extra adressen die de API mogen aanroepen, met komma\'s, bv. https://checkin.hotellucca.be')
+param formOrigins string = ''
 
 @description('Waar budgetmeldingen naartoe gaan.')
 param alertEmail string
@@ -73,8 +77,8 @@ resource st 'Microsoft.Storage/storageAccounts@2023-05-01' = {
     minimumTlsVersion: 'TLS1_2'
     supportsHttpsTrafficOnly: true
     allowBlobPublicAccess: false
-    // Nodig voor de API van Static Web Apps (Free kan geen managed identity gebruiken)
-    allowSharedKeyAccess: true
+    // Alleen toegang met managed identity, geen opslagsleutels
+    allowSharedKeyAccess: false
     accessTier: 'Hot'
   }
 }
@@ -138,7 +142,7 @@ resource kv 'Microsoft.KeyVault/vaults@2023-07-01' = {
   }
 }
 
-// Formulier checkin.<hotel> met API
+// Pagina's van het formulier checkin.<hotel> (de API zit in de Function App)
 resource swa 'Microsoft.Web/staticSites@2023-12-01' = {
   name: 'swa-checkin-${env}'
   location: swaLocation
@@ -147,16 +151,12 @@ resource swa 'Microsoft.Web/staticSites@2023-12-01' = {
   properties: {}
 }
 
-resource swaSettings 'Microsoft.Web/staticSites/config@2023-12-01' = {
-  parent: swa
-  name: 'appsettings'
-  properties: {
-    APP_ENV: env
-    STORAGE_CONNECTION_STRING: 'DefaultEndpointsProtocol=https;AccountName=${st.name};AccountKey=${st.listKeys().keys[0].value};EndpointSuffix=${environment().suffixes.storage}'
-  }
-}
+var allowedOrigins = concat(
+  ['https://${swa.properties.defaultHostname}'],
+  filter(map(split(formOrigins, ','), o => trim(o)), o => !empty(o))
+)
 
-// Function App voor de processen (timer, later Salto en berichten)
+// Function App: processen (timer, later Salto en berichten) en de API van het formulier
 resource plan 'Microsoft.Web/serverfarms@2024-04-01' = {
   name: 'asp-checkin-${env}'
   location: location
@@ -194,6 +194,7 @@ resource func 'Microsoft.Web/sites@2024-04-01' = {
     httpsOnly: true
     siteConfig: {
       minTlsVersion: '1.2'
+      cors: { allowedOrigins: allowedOrigins }
       appSettings: map(funcSettings, s => { name: s.key, value: s.value })
     }
     functionAppConfig: {
@@ -275,5 +276,6 @@ resource budget 'Microsoft.Consumption/budgets@2023-11-01' = if (deployBudget) {
 output functionAppName string = func.name
 output staticWebAppName string = swa.name
 output staticWebAppHost string = swa.properties.defaultHostname
+output functionAppHost string = func.properties.defaultHostName
 output keyVaultName string = kv.name
 output storageAccountName string = st.name
