@@ -26,7 +26,8 @@ dezelfde variabele op repo-niveau.
 | `AZURE_LOCATION` | `belgiumcentral` | Alle gegevens en verwerking (opslag, Function App, Key Vault, logging) |
 | `SWA_LOCATION` | `eastus2` | Static Web App. Alleen de pagina's, geen gegevens. Static Web Apps bestaat maar in enkele regio's (westeurope, eastus2, westus2, centralus, eastasia) |
 | `BUDGET_AMOUNT` | leeg (geen melding) | Maandbudget; melding bij 80 procent verbruikt of 100 procent verwacht. Per omgeving in te stellen |
-| `FORM_ORIGINS` | leeg | Extra adressen die de API mogen aanroepen, bv. `https://checkin.hotellucca.be` (zet dit in de omgeving prd) |
+| `CUSTOM_DOMAIN` | leeg | Eigen adres van het formulier, per omgeving: `checkin-tst.hotellucca.be` (tst), `checkin.hotellucca.be` (prd). Wordt automatisch gekoppeld en toegelaten in de API |
+| `FORM_ORIGINS` | leeg | Extra adressen die de API mogen aanroepen (normaal niet nodig) |
 
 West Europe neemt sinds oktober 2026 geen nieuwe klanten meer aan; daarom Belgium Central.
 Bestaande resources verhuizen niet vanzelf als de regio verandert: verwijder dan eerst de
@@ -51,12 +52,19 @@ bash infra/setup.sh
 
 Daarna rolt elke push op `main` uit naar TST. PRD: Actions > Deploy > Run workflow > `prd`.
 
-## Eigen domein voor PRD
+## Eigen domein
 
-Na de eerste uitrol naar PRD: in DNS een CNAME `checkin` naar de standaardnaam van
-`swa-checkin-prd` (staat in de samenvatting van de workflow), daarna in de portal bij de
-Static Web App: Custom domains > Add. Zet daarna `FORM_ORIGINS=https://checkin.hotellucca.be`
-in de GitHub-omgeving prd, zodat de API dat adres toelaat.
+DNS van hotellucca.be staat bij Combell. Per omgeving een CNAME naar de standaardnaam van de
+Static Web App (staat in de samenvatting van de workflow):
+
+| Naam | Wijst naar |
+|---|---|
+| `checkin` | Static Web App van PRD |
+| `checkin-tst` | Static Web App van TST |
+
+Daarna de GitHub-variabele `CUSTOM_DOMAIN` in de omgeving zetten en opnieuw uitrollen. Azure
+koppelt het adres en maakt zelf een certificaat (kan enkele minuten duren).
+Dev is de codespace en heeft geen eigen adres.
 
 ## Opmerkingen
 

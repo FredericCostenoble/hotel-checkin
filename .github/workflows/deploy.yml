@@ -64,6 +64,7 @@ jobs:
                          location="${{ vars.AZURE_LOCATION || 'belgiumcentral' }}" \
                          swaLocation="${{ vars.SWA_LOCATION || 'eastus2' }}" \
                          formOrigins="${{ vars.FORM_ORIGINS }}" \
+                         customDomain="${{ vars.CUSTOM_DOMAIN }}" \
                          budgetAmount="${{ vars.BUDGET_AMOUNT || '0' }}" \
                          alertEmail="${{ vars.ALERT_EMAIL }}" \
                          testEmail="${{ vars.TEST_EMAIL }}" \
@@ -73,7 +74,7 @@ jobs:
           echo "func=$(jq -r .functionAppName.value <<<"$out")" >> "$GITHUB_OUTPUT"
           echo "swa=$(jq -r .staticWebAppName.value <<<"$out")" >> "$GITHUB_OUTPUT"
           echo "funchost=$(jq -r .functionAppHost.value <<<"$out")" >> "$GITHUB_OUTPUT"
-          echo "Formulier: https://$(jq -r .staticWebAppHost.value <<<"$out")" >> "$GITHUB_STEP_SUMMARY"
+          echo "Formulier: $(jq -r .formUrl.value <<<"$out") (standaard: https://$(jq -r .staticWebAppHost.value <<<"$out"))" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Pakket Function App klaarzetten
         run: |

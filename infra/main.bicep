@@ -25,6 +25,9 @@ param swaLocation string
 @description('Extra adressen die de API mogen aanroepen, met komma\'s, bv. https://checkin.hotellucca.be')
 param formOrigins string = ''
 
+@description('Eigen adres van het formulier, bv. checkin.hotellucca.be (leeg = standaardadres van Azure). De CNAME moet eerst bestaan.')
+param customDomain string = ''
+
 @description('Waar budgetmeldingen naartoe gaan.')
 param alertEmail string
 
@@ -149,8 +152,17 @@ resource swa 'Microsoft.Web/staticSites@2023-12-01' = {
   properties: {}
 }
 
+resource swaDomain 'Microsoft.Web/staticSites/customDomains@2023-12-01' = if (!empty(customDomain)) {
+  parent: swa
+  name: empty(customDomain) ? 'none' : customDomain
+  properties: {}
+}
+
+var formHost = empty(customDomain) ? swa.properties.defaultHostname : customDomain
+
 var allowedOrigins = concat(
   ['https://${swa.properties.defaultHostname}'],
+  empty(customDomain) ? [] : ['https://${customDomain}'],
   filter(map(split(formOrigins, ','), o => trim(o)), o => !empty(o))
 )
 
@@ -176,7 +188,7 @@ var funcSettings = filter(
     TEST_EMAIL: env == 'prd' ? '' : testEmail
     TEST_PHONE: env == 'prd' ? '' : testPhone
     // In TST wijzen de links in de mails naar het testformulier
-    CHECKIN_FORM_URL: env == 'prd' ? '' : 'https://${swa.properties.defaultHostname}/?r={token}'
+    CHECKIN_FORM_URL: env == 'prd' ? '' : 'https://${formHost}/?r={token}'
   }),
   s => !empty(s.value)
 )
@@ -274,6 +286,7 @@ resource budget 'Microsoft.Consumption/budgets@2023-11-01' = if (budgetAmount > 
 output functionAppName string = func.name
 output staticWebAppName string = swa.name
 output staticWebAppHost string = swa.properties.defaultHostname
+output formUrl string = 'https://${formHost}'
 output functionAppHost string = func.properties.defaultHostName
 output keyVaultName string = kv.name
 output storageAccountName string = st.name
