@@ -28,14 +28,12 @@ param formOrigins string = ''
 @description('Waar budgetmeldingen naartoe gaan.')
 param alertEmail string
 
-@description('Maandbudget in de munt van het abonnement.')
-param budgetAmount int = env == 'prd' ? 20 : 10
+@description('Maandbudget in de munt van het abonnement. 0 = geen budgetmelding.')
+param budgetAmount int = 0
 
 @description('Eerste dag van een maand, niet in het verleden bij de eerste deployment.')
 param budgetStartDate string = '2026-10-01'
 
-@description('Zet op false als het abonnement geen budgetten toelaat.')
-param deployBudget bool = true
 
 @description('Maximaal aantal GB logging per dag (als tekst, bv. 0.1).')
 param logDailyCapGb string = '0.1'
@@ -247,7 +245,7 @@ resource raKvAdmin 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (!e
 }
 
 // Budgetmelding: 80 procent effectief verbruikt of 100 procent verwacht
-resource budget 'Microsoft.Consumption/budgets@2023-11-01' = if (deployBudget) {
+resource budget 'Microsoft.Consumption/budgets@2023-11-01' = if (budgetAmount > 0) {
   name: 'budget-checkin-${env}'
   properties: {
     category: 'Cost'

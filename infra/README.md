@@ -9,7 +9,7 @@ Twee resource groups in de tenant van Hotel Lucca, met dezelfde opbouw (`main.bi
 | Storage (tabellen, deploymentpakketten) | `stcheckin<env><suffix>` | centen per maand |
 | Key Vault (secrets per hotel) | `kv-checkin-<env>-<suffix>` | centen per maand |
 | Log Analytics + Application Insights | `log-` / `appi-checkin-<env>` | limiet 0,1 GB per dag |
-| Budgetmelding | `budget-checkin-<env>` | 10 (TST) / 20 (PRD) per maand |
+| Budgetmelding (optioneel) | `budget-checkin-<env>` | bedrag via `BUDGET_AMOUNT` |
 
 Alles is gedeeld door de hotels. Per hotel: `config/hotels/<hotel_id>.toml` en secrets
 `<hotel_id>-<naam>` in Key Vault. Verhuizen naar een andere tenant: `setup.sh` en de workflow
@@ -25,6 +25,7 @@ dezelfde variabele op repo-niveau.
 |---|---|---|
 | `AZURE_LOCATION` | `belgiumcentral` | Alle gegevens en verwerking (opslag, Function App, Key Vault, logging) |
 | `SWA_LOCATION` | `eastus2` | Static Web App. Alleen de pagina's, geen gegevens. Static Web Apps bestaat maar in enkele regio's (westeurope, eastus2, westus2, centralus, eastasia) |
+| `BUDGET_AMOUNT` | leeg (geen melding) | Maandbudget; melding bij 80 procent verbruikt of 100 procent verwacht. Per omgeving in te stellen |
 | `FORM_ORIGINS` | leeg | Extra adressen die de API mogen aanroepen, bv. `https://checkin.hotellucca.be` (zet dit in de omgeving prd) |
 
 West Europe neemt sinds oktober 2026 geen nieuwe klanten meer aan; daarom Belgium Central.
@@ -62,5 +63,6 @@ in de GitHub-omgeving prd, zodat de API dat adres toelaat.
 - De API van het formulier draait in de Function App, in dezelfde regio als de gegevens, met
   managed identity. De opslag laat geen sleutels toe.
 - De Lighthouse-robot (Container Apps Job) wordt toegevoegd zodra het bouwblok klaar is.
-- Lukt het budget niet (sommige abonnementen via een partner laten dat niet toe), zet dan
-  `deployBudget=false`.
+- De budgetmelding vraagt dat de kosten zichtbaar zijn voor de klant. Bij een abonnement via
+  een partner (Cloudworx) zet de partner dat aan; anders faalt de uitrol met een 401.
+  Laat `BUDGET_AMOUNT` leeg tot dat geregeld is.

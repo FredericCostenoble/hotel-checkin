@@ -64,6 +64,7 @@ jobs:
                          location="${{ vars.AZURE_LOCATION || 'belgiumcentral' }}" \
                          swaLocation="${{ vars.SWA_LOCATION || 'eastus2' }}" \
                          formOrigins="${{ vars.FORM_ORIGINS }}" \
+                         budgetAmount="${{ vars.BUDGET_AMOUNT || '0' }}" \
                          alertEmail="${{ vars.ALERT_EMAIL }}" \
                          testEmail="${{ vars.TEST_EMAIL }}" \
                          testPhone="${{ vars.TEST_PHONE }}" \
