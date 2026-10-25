@@ -37,8 +37,11 @@ Gedeelde types staan in `core/models.py`, configuratie in `core/config.py`.
 
 ## Hosting (Azure)
 
+- Twee omgevingen: `rg-checkin-tst` en `rg-checkin-prd`, opgebouwd met `infra/main.bicep`
+  (details en eenmalige opzet in `infra/README.md`).
+- Uitrol met GitHub Actions (`.github/workflows/deploy.yml`): push op main naar TST, PRD manueel.
 - Bouwblokken en processen: Azure Functions (`function_app.py`).
-- Lighthouse-robot (headless browser): Azure Container Apps Job op schema, los van een pc.
+- Lighthouse-robot (headless browser): Azure Container Apps Job op schema, los van een pc (volgt).
 - Secrets: Azure Key Vault, toegang via Managed Identity.
 - Logging: Application Insights.
 
@@ -64,4 +67,4 @@ Open de link die verschijnt (`?r=demo`). Opslag in het geheugen met voorbeeldres
 Met `--azure` gebruikt de server de echte opslag (`STORAGE_TABLE_ENDPOINT`).
 
 Deployment naar Azure Static Web Apps: `web/checkin` is de app, `api` de API. Voor de deployment
-worden `src/hotel_checkin` en `config` naar `api/` gekopieerd (workflow volgt).
+kopieert de workflow `src/hotel_checkin` en `config` naar `api/`.

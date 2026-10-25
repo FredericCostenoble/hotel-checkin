@@ -7,6 +7,7 @@ niet in deze Function App.
 from __future__ import annotations
 
 import logging
+import os
 from datetime import datetime, timedelta, timezone
 
 import azure.functions as func
@@ -18,6 +19,9 @@ app = func.FunctionApp(http_auth_level=func.AuthLevel.FUNCTION)
 
 @app.timer_trigger(schedule="0 */10 * * * *", arg_name="timer", run_on_startup=False)
 def poll_new_reservations(timer: func.TimerRequest) -> None:
+    # Staat uit tot het Lighthouse-bouwblok klaar is (instelling POLL_ENABLED=true in Azure).
+    if os.environ.get("POLL_ENABLED", "").lower() != "true":
+        return
     since = datetime.now(timezone.utc) - timedelta(minutes=15)
     count = new_reservation.run(since)
     logging.info("Nieuwe reservaties verwerkt: %s", count)

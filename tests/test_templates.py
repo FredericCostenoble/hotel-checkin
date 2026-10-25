@@ -54,3 +54,9 @@ def test_html_escapes_guest_data():
 def test_checkin_link_from_config():
     r = render("lucca", "bevestiging", "nl", sample_data("nl") | {"token": "abc"})
     assert "?r=abc" in r.html
+
+
+def test_checkin_link_override_for_tst(monkeypatch):
+    monkeypatch.setenv("CHECKIN_FORM_URL", "https://test.example/?r={token}")
+    r = render("lucca", "bevestiging", "nl", sample_data("nl") | {"token": "abc"})
+    assert "https://test.example/?r=abc" in r.html

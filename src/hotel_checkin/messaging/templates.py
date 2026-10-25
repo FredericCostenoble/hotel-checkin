@@ -20,6 +20,7 @@ Buiten productie gaan de mails naar TEST_EMAIL (zie core/safety.py).
 from __future__ import annotations
 
 import html
+import os
 import sys
 import tomllib
 from dataclasses import dataclass
@@ -87,7 +88,10 @@ def render(hotel_id: str, message: str, language: str, data: dict[str, str]) -> 
     texts = load_texts(hotel_id, language)
     fields = _Fields({**_config_fields(config), **data})
     if "token" in data and "checkin_link" not in data:
-        fields["checkin_link"] = _fill(config["checkin"]["formulier_url"], fields)
+        # In TST wijst de link naar het testformulier (instelling CHECKIN_FORM_URL), anders naar
+        # het formulier van het hotel uit config/hotels/<hotel_id>.toml.
+        url = os.environ.get("CHECKIN_FORM_URL") or config["checkin"]["formulier_url"]
+        fields["checkin_link"] = _fill(url, fields)
 
     t = texts[message]
     sms = _fill(t["sms"], fields)
