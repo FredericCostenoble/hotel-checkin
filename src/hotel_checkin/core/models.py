@@ -43,6 +43,7 @@ class Guest:
 
 @dataclass
 class Reservation:
+    hotel_id: str  # welk hotel (bestand config/hotels/<hotel_id>.toml), bv. "lucca"
     reservation_id: str  # Lighthouse-id (uuid uit /Customer/Reservations/Detail/{uuid})
     guest: Guest
     arrival: date

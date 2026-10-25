@@ -12,6 +12,7 @@ import httpx
 
 from hotel_checkin.core.config import get_setting
 from hotel_checkin.core.models import Channel, SendResult
+from hotel_checkin.core.safety import route
 
 TWILIO_API = "https://api.twilio.com/2010-04-01"
 
@@ -28,6 +29,14 @@ def send_message(
     """Verstuur via Twilio. Ofwel `body` (vrije tekst), ofwel `content_sid` (sjabloon)."""
     if (body is None) == (content_sid is None):
         raise ValueError("Geef ofwel body, ofwel content_sid op")
+
+    whatsapp = to.startswith("whatsapp:")
+    real_to, prefix = route("phone", to.removeprefix("whatsapp:"))
+    if real_to is None:
+        return SendResult(channel=channel, to=to, ok=False, error=prefix)
+    to = f"whatsapp:{real_to}" if whatsapp else real_to
+    if prefix and body is not None:
+        body = prefix + body
 
     account_sid = get_setting("TWILIO_ACCOUNT_SID")
     auth_token = get_setting("TWILIO_AUTH_TOKEN")

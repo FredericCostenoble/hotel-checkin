@@ -1,5 +1,5 @@
 # Teksten van de berichten aan gasten, Nederlands.
-# Velden tussen { } worden automatisch ingevuld (gastgegevens of instellingen uit config/hotel.toml).
+# Velden tussen { } worden automatisch ingevuld (gastgegevens of instellingen uit config/hotels/<hotel_id>.toml).
 # Bloktypes: text (alinea's), details (tabel), highlight (opvallend vak), list (opsomming), button.
 
 [algemeen]

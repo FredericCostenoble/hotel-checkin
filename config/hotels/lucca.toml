@@ -1,3 +1,5 @@
+# Instellingen van Hotel Lucca (hotel_id = bestandsnaam: "lucca").
+# Een nieuw hotel = een nieuw bestand in config/hotels/ met dezelfde secties.
 # Instellingen van het hotel die in de berichten aan gasten gebruikt worden.
 # Pas hier aan, niet in de teksten. In de teksten verwijs je ernaar met {veldnaam},
 # bv. {hotel_naam} of {receptie_van}. Elke sleutel hieronder wordt een veld met de
@@ -10,6 +12,10 @@ telefoon = "+32 471 18 15 74"
 email = "info@hotellucca.be"   # contactadres voor gasten (mails versturen gebeurt technisch via MAIL_SENDER)
 website = "https://www.hotellucca.be"
 logo_url = "https://hotellucca.be/wp-content/uploads/2025/06/Logo-website-hotel-lucca.png"
+
+[verzending]
+# Technische afzender van mails (gedeelde mailbox met RBAC for Applications). Gasten zien hem niet als contact.
+mail_afzender = "checkin@hotellucca.be"
 
 [receptie]
 van = "14:00"

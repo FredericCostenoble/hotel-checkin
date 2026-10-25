@@ -1,11 +1,13 @@
 """Bouwblok 5: reservaties, verstuurde berichten en marketing-bezwaren opslaan (Azure Table Storage).
 
+Multi-hotel: alle gegevens zitten per hotel in een eigen partitie (PartitionKey begint met de hotel_id).
+
 Drie tabellen:
-- Reservations: een rij per reservatie (gast, data, kamer, token voor het check-in-formulier).
-- Messages: een rij per verstuurd bericht (type, kanaal, ontvanger, tijdstip, resultaat).
-  Daarmee vermijden we dubbele berichten.
-- MarketingOptOut: blokkeerlijst per e-mailadres, los van de reservaties. Wie hier staat,
-  krijgt geen commerciele mails meer. Verblijfsmails blijven wel vertrekken.
+- Reservations: PartitionKey = hotel_id, RowKey = reservatie-id (gast, data, kamer, token).
+- Messages: PartitionKey = <hotel_id>|<reservatie-id>, een rij per verstuurd bericht
+  (type, kanaal, ontvanger, tijdstip, resultaat). Daarmee vermijden we dubbele berichten.
+- MarketingOptOut: PartitionKey = hotel_id, RowKey = e-mailadres. Blokkeerlijst per hotel
+  (elk hotel is zelf verwerkingsverantwoordelijke). Verblijfsmails blijven wel vertrekken.
 
 Verbinding:
 - Productie: instelling STORAGE_TABLE_ENDPOINT (bv. https://<account>.table.core.windows.net),
@@ -37,8 +39,6 @@ from hotel_checkin.core.models import (
 T_RESERVATIONS = "Reservations"
 T_MESSAGES = "Messages"
 T_OPTOUT = "MarketingOptOut"
-_PK_RESERVATION = "reservation"
-_PK_OPTOUT = "optout"
 
 _client_factory = None  # alleen voor tests: functie die een tabelnaam krijgt en een tabel teruggeeft
 
@@ -84,13 +84,18 @@ def _q(value: str) -> str:
     return value.replace("'", "''")
 
 
+def _msg_pk(hotel_id: str, reservation_id: str) -> str:
+    return f"{_key(hotel_id)}|{_key(reservation_id)}"
+
+
 # ---------------------------------------------------------------- reservaties
 
 
 def _to_entity(r: Reservation) -> dict:
     return {
-        "PartitionKey": _PK_RESERVATION,
+        "PartitionKey": _key(r.hotel_id),
         "RowKey": _key(r.reservation_id),
+        "hotel_id": r.hotel_id,
         "reservation_id": r.reservation_id,
         "first_name": r.guest.first_name,
         "last_name": r.guest.last_name,
@@ -115,6 +120,7 @@ def _to_entity(r: Reservation) -> dict:
 
 def _from_entity(e: dict) -> Reservation:
     return Reservation(
+        hotel_id=e["hotel_id"],
         reservation_id=e["reservation_id"],
         guest=Guest(
             first_name=e["first_name"],
@@ -143,12 +149,12 @@ def _from_entity(e: dict) -> Reservation:
 def save_reservation(reservation: Reservation) -> Reservation:
     """Bewaar of werk bij. Een nieuwe reservatie krijgt een token; een bestaand token blijft behouden."""
     if not reservation.token:
-        existing = get_reservation(reservation.reservation_id)
+        existing = get_reservation(reservation.hotel_id, reservation.reservation_id)
         reservation.token = existing.token if existing and existing.token else secrets.token_urlsafe(24)
     entity = _to_entity(reservation)
     table = _table(T_RESERVATIONS)
     try:
-        created = table.get_entity(_PK_RESERVATION, entity["RowKey"])["created_at"]
+        created = table.get_entity(entity["PartitionKey"], entity["RowKey"])["created_at"]
     except Exception:  # noqa: BLE001 - bestaat nog niet
         created = _now().isoformat()
     entity["created_at"] = created
@@ -156,25 +162,27 @@ def save_reservation(reservation: Reservation) -> Reservation:
     return reservation
 
 
-def get_reservation(reservation_id: str) -> Reservation | None:
+def get_reservation(hotel_id: str, reservation_id: str) -> Reservation | None:
     try:
-        return _from_entity(_table(T_RESERVATIONS).get_entity(_PK_RESERVATION, _key(reservation_id)))
+        return _from_entity(_table(T_RESERVATIONS).get_entity(_key(hotel_id), _key(reservation_id)))
     except Exception:  # noqa: BLE001 - niet gevonden
         return None
 
 
 def get_by_token(token: str) -> Reservation | None:
-    """Gebruikt door het check-in-formulier: de link bevat alleen het token."""
+    """Gebruikt door het check-in-formulier: de link bevat alleen het token (uniek over alle hotels)."""
     rows = list(_table(T_RESERVATIONS).query_entities(f"token eq '{_q(token)}'"))
     return _from_entity(rows[0]) if rows else None
 
 
-def find_by_phone(phone: str) -> list[Reservation]:
-    """Reservaties met dit gsm-nummer (gebruikt door de telefooncentrale)."""
-    return [_from_entity(e) for e in _table(T_RESERVATIONS).query_entities(f"phone eq '{_q(phone)}'")]
+def find_by_phone(hotel_id: str, phone: str) -> list[Reservation]:
+    """Reservaties van dit hotel met dit gsm-nummer (gebruikt door de telefooncentrale)."""
+    flt = f"PartitionKey eq '{_q(_key(hotel_id))}' and phone eq '{_q(phone)}'"
+    return [_from_entity(e) for e in _table(T_RESERVATIONS).query_entities(flt)]
 
 
 def mark_checkin_completed(
+    hotel_id: str,
     reservation_id: str,
     email: str | None,
     phone: str | None,
@@ -183,7 +191,7 @@ def mark_checkin_completed(
     backup_phone: str | None = None,
 ) -> Reservation | None:
     """Gegevens van het check-in-formulier bewaren. Lege reservecontacten wissen een vorige waarde."""
-    r = get_reservation(reservation_id)
+    r = get_reservation(hotel_id, reservation_id)
     if r is None:
         return None
     if email:
@@ -201,13 +209,14 @@ def mark_checkin_completed(
 # ---------------------------------------------------------------- berichten
 
 
-def log_message(reservation_id: str, message_type: str, result: SendResult) -> None:
+def log_message(hotel_id: str, reservation_id: str, message_type: str, result: SendResult) -> None:
     """Noteer een verstuurd (of mislukt) bericht."""
     sent_at = _now()
     _table(T_MESSAGES).upsert_entity(
         {
-            "PartitionKey": _key(reservation_id),
+            "PartitionKey": _msg_pk(hotel_id, reservation_id),
             "RowKey": f"{sent_at.strftime('%Y%m%dT%H%M%S%f')}-{uuid.uuid4().hex[:8]}",
+            "hotel_id": hotel_id,
             "reservation_id": reservation_id,
             "message_type": message_type,
             "channel": result.channel.value,
@@ -220,34 +229,34 @@ def log_message(reservation_id: str, message_type: str, result: SendResult) -> N
     )
 
 
-def messages_for(reservation_id: str) -> list[dict]:
-    rows = _table(T_MESSAGES).query_entities(f"PartitionKey eq '{_q(_key(reservation_id))}'")
+def messages_for(hotel_id: str, reservation_id: str) -> list[dict]:
+    rows = _table(T_MESSAGES).query_entities(f"PartitionKey eq '{_q(_msg_pk(hotel_id, reservation_id))}'")
     return sorted(rows, key=lambda e: e["RowKey"])
 
 
-def was_sent(reservation_id: str, message_type: str, channel: str | None = None) -> bool:
+def was_sent(hotel_id: str, reservation_id: str, message_type: str, channel: str | None = None) -> bool:
     """Is dit bericht al met succes verstuurd (eventueel via een bepaald kanaal)?"""
     return any(
         m["message_type"] == message_type and m["ok"] and (channel is None or m["channel"] == channel)
-        for m in messages_for(reservation_id)
+        for m in messages_for(hotel_id, reservation_id)
     )
 
 
 # ---------------------------------------------------------------- marketing
 
 
-def add_opt_out(email: str, source: str) -> None:
+def add_opt_out(hotel_id: str, email: str, source: str) -> None:
     """Zet een e-mailadres op de blokkeerlijst. source: bv. 'checkin_form', 'unsubscribe_link', 'mail'."""
     addr = email.strip().lower()
     _table(T_OPTOUT).upsert_entity(
-        {"PartitionKey": _PK_OPTOUT, "RowKey": _key(addr), "email": addr, "source": source,
+        {"PartitionKey": _key(hotel_id), "RowKey": _key(addr), "hotel_id": hotel_id, "email": addr, "source": source,
          "created_at": _now().isoformat()}
     )
 
 
-def is_opted_out(email: str) -> bool:
+def is_opted_out(hotel_id: str, email: str) -> bool:
     try:
-        _table(T_OPTOUT).get_entity(_PK_OPTOUT, _key(email.strip().lower()))
+        _table(T_OPTOUT).get_entity(_key(hotel_id), _key(email.strip().lower()))
         return True
     except Exception:  # noqa: BLE001 - niet gevonden
         return False
@@ -270,11 +279,14 @@ class MemoryTable:
         return dict(self.rows[(pk, rk)])
 
     def query_entities(self, flt):
+        """Ondersteunt filters van de vorm: veld eq 'waarde' [and veld eq 'waarde' ...]."""
         import re
 
-        field, value = re.fullmatch(r"(\w+) eq '(.*)'", flt).groups()
-        value = value.replace("''", "'")
-        return [dict(e) for e in self.rows.values() if str(e.get(field)) == value]
+        conds = [
+            (f, v.replace("''", "'"))
+            for f, v in re.findall(r"(\w+) eq '((?:[^']|'')*)'", flt)
+        ]
+        return [dict(e) for e in self.rows.values() if all(str(e.get(f)) == v for f, v in conds)]
 
 
 def use_memory_store() -> None:

@@ -1,8 +1,10 @@
 """Bouwblok sjablonen en vertaling: maakt van een berichttype, een taal en gastgegevens
 een kant-en-klaar bericht (onderwerp, HTML-mail, tekstversie en SMS/WhatsApp-tekst).
 
-- Teksten: src/hotel_checkin/messaging/texts/<taal>.toml (nl, fr, en, de).
-- Hotelgegevens, uren en kleuren: config/hotel.toml (velden zoals {hotel_naam}, {receptie_van}).
+- Multi-hotel: elk bericht hoort bij een hotel (hotel_id, bv. "lucca").
+- Teksten: src/hotel_checkin/messaging/texts/<taal>.toml (nl, fr, en, de). Een hotel kan eigen
+  teksten hebben in config/hotels/<hotel_id>/texts/<taal>.toml; die hebben dan voorrang.
+- Hotelgegevens, uren en kleuren: config/hotels/<hotel_id>.toml (velden zoals {hotel_naam}).
 - Ontbreekt een taal, dan valt het terug op Engels.
 - Een veld zonder waarde blijft zichtbaar als {veldnaam}, zodat een fout opvalt.
 
@@ -11,12 +13,13 @@ Berichttypes: bevestiging, herinnering, info_pincode, aan_de_deur (alleen SMS/Wh
 Testmails sturen in de codespace (alle mails, alle talen, met voorbeeldgegevens):
     python -m hotel_checkin.messaging.templates jouw@adres.be
     python -m hotel_checkin.messaging.templates jouw@adres.be nl,fr
+    python -m hotel_checkin.messaging.templates jouw@adres.be nl --hotel lucca
+Buiten productie gaan de mails naar TEST_EMAIL (zie core/safety.py).
 """
 
 from __future__ import annotations
 
 import html
-import os
 import sys
 import tomllib
 from dataclasses import dataclass
@@ -24,12 +27,6 @@ from functools import lru_cache
 from pathlib import Path
 
 TEXTS_DIR = Path(__file__).parent / "texts"
-# config/hotel.toml naast src/ (repo, codespace) of naast het pakket (Azure-deployment in api/)
-_CONFIG_CANDIDATES = [
-    Path(__file__).resolve().parents[3] / "config" / "hotel.toml",
-    Path(__file__).resolve().parents[2] / "config" / "hotel.toml",
-]
-DEFAULT_CONFIG = next((p for p in _CONFIG_CANDIDATES if p.exists()), _CONFIG_CANDIDATES[0])
 LANGUAGES = ("nl", "fr", "en", "de")
 FALLBACK_LANGUAGE = "en"
 EMAIL_MESSAGES = ("bevestiging", "herinnering", "info_pincode")
@@ -50,17 +47,21 @@ class _Fields(dict):
         return "{" + key + "}"
 
 
-@lru_cache
-def load_hotel_config(path: str | None = None) -> dict:
-    with open(path or os.environ.get("HOTEL_CONFIG", DEFAULT_CONFIG), "rb") as f:
-        return tomllib.load(f)
+def load_hotel_config(hotel_id: str) -> dict:
+    from hotel_checkin.core.hotels import load_hotel
+
+    return load_hotel(hotel_id)
 
 
 @lru_cache
-def load_texts(language: str) -> dict:
-    file = TEXTS_DIR / f"{language}.toml"
-    if not file.exists():
-        file = TEXTS_DIR / f"{FALLBACK_LANGUAGE}.toml"
+def load_texts(hotel_id: str, language: str) -> dict:
+    from hotel_checkin.core.hotels import hotels_dir
+
+    own = hotels_dir() / hotel_id / "texts"
+    file = next(
+        (d / f"{lang}.toml" for lang in (language, FALLBACK_LANGUAGE) for d in (own, TEXTS_DIR)
+         if (d / f"{lang}.toml").exists()),
+    )
     with open(file, "rb") as f:
         return tomllib.load(f)
 
@@ -77,13 +78,13 @@ def _fill(text: str, fields: dict) -> str:
     return text.format_map(fields)
 
 
-def render(message: str, language: str, data: dict[str, str]) -> RenderedMessage:
+def render(hotel_id: str, message: str, language: str, data: dict[str, str]) -> RenderedMessage:
     """Stel een bericht samen. `data` bevat de gastgegevens, bv. voornaam, aankomst, pincode."""
     from hotel_checkin.core.models import normalize_language
 
     language = normalize_language(language)
-    config = load_hotel_config()
-    texts = load_texts(language)
+    config = load_hotel_config(hotel_id)
+    texts = load_texts(hotel_id, language)
     fields = _Fields({**_config_fields(config), **data})
     if "token" in data and "checkin_link" not in data:
         fields["checkin_link"] = _fill(config["checkin"]["formulier_url"], fields)
@@ -283,12 +284,22 @@ def sample_data(language: str) -> dict[str, str]:
 if __name__ == "__main__":
     from hotel_checkin.messaging.email import send_email
 
-    if len(sys.argv) not in (2, 3):
-        sys.exit("Gebruik: python -m hotel_checkin.messaging.templates <ontvanger> [nl,fr,en,de]")
-    languages = sys.argv[2].split(",") if len(sys.argv) == 3 else list(LANGUAGES)
+    args = sys.argv[1:]
+    hotel = "lucca"
+    if "--hotel" in args:
+        i = args.index("--hotel")
+        hotel = args[i + 1]
+        del args[i : i + 2]
+    if len(args) not in (1, 2):
+        sys.exit("Gebruik: python -m hotel_checkin.messaging.templates <ontvanger> [nl,fr,en,de] [--hotel id]")
+    languages = args[1].split(",") if len(args) == 2 else list(LANGUAGES)
+    cfg = load_hotel_config(hotel)
     for lang in languages:
         for msg in EMAIL_MESSAGES:
-            r = render(msg, lang, sample_data(lang))
-            result = send_email(sys.argv[1], f"[TEST {lang.upper()}] {r.subject}", r.html)
+            r = render(hotel, msg, lang, sample_data(lang))
+            result = send_email(
+                args[0], f"[TEST {lang.upper()}] {r.subject}", r.html,
+                sender=cfg["verzending"]["mail_afzender"], reply_to=cfg["hotel"]["email"],
+            )
             print(lang, msg, "ok" if result.ok else result.error)
-        print(lang, "sms aan_de_deur:", render("aan_de_deur", lang, sample_data(lang)).sms)
+        print(lang, "sms aan_de_deur:", render(hotel, "aan_de_deur", lang, sample_data(lang)).sms)

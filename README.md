@@ -17,10 +17,23 @@ de bouwblokken na elkaar op. Elk bouwblok doet één ding.
 | `voice/ivr.py` | Nachtelijke oproepen automatisch afhandelen | Twilio Voice |
 | `guests/repository.py` | Reservaties, berichtenlog, marketing-blokkeerlijst | Azure Table Storage |
 | `checkin/service.py` + `web/checkin/` + `api/` | Online check-in-formulier (checkin.hotellucca.be) | Azure Static Web Apps (gratis niveau) |
-| `messaging/templates.py` | Berichten in NL/FR/EN/DE, mailopmaak | Teksten in `messaging/texts/`, instellingen in `config/hotel.toml` |
+| `messaging/templates.py` | Berichten in NL/FR/EN/DE, mailopmaak | Teksten in `messaging/texts/`, instellingen per hotel in `config/hotels/<hotel_id>.toml` |
 | `processes/` | Processen die de bouwblokken combineren | |
 
 Gedeelde types staan in `core/models.py`, configuratie in `core/config.py`.
+
+## Meerdere hotels
+
+- Elk hotel heeft een `hotel_id` (bv. `lucca`) en een instellingenbestand `config/hotels/<hotel_id>.toml`.
+- Eigen teksten per hotel (optioneel): `config/hotels/<hotel_id>/texts/<taal>.toml`.
+- Alle gegevens in de opslag zitten per hotel in een eigen partitie; ook de marketing-blokkeerlijst.
+- Geheimen per hotel in Key Vault: `<hotel_id>-<naam>`, bv. `lucca-lighthouse-password`.
+
+## Omgevingen en bescherming van gasten
+
+- `APP_ENV=prd` (productie), `tst` (test in Azure) of `dev` (codespace, standaard).
+- Buiten `prd` gaat elk bericht naar `TEST_EMAIL` of `TEST_PHONE`; de echte ontvanger staat in het
+  onderwerp of vooraan in de tekst. Zonder testadres wordt niets verstuurd (`core/safety.py`).
 
 ## Hosting (Azure)
 

@@ -23,6 +23,7 @@ def test_send_ok():
         subject="Test",
         html_body="<p>Hallo</p>",
         attachments=[("info.txt", b"abc")],
+        reply_to="info@hotellucca.be",
         sender="checkin@hotellucca.be",
         client=_client(202, captured),
     )

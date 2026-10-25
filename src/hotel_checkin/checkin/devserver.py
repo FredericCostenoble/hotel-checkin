@@ -28,17 +28,17 @@ PORT = 8080
 def seed() -> None:
     today = date.today()
     repo.save_reservation(Reservation(
-        reservation_id="DEMO-1", token="demo",
+        hotel_id="lucca", reservation_id="DEMO-1", token="demo",
         guest=Guest("Anna", "Peeters", "anna@example.com", None, "nl", country="BE"),
         arrival=today + timedelta(days=14), departure=today + timedelta(days=16),
         room_type="Superior Double", source="Booking.com"))
     repo.save_reservation(Reservation(
-        reservation_id="DEMO-3", token="nieuw",
+        hotel_id="lucca", reservation_id="DEMO-3", token="nieuw",
         guest=Guest("Klaus", "Becker", None, None, "de", country="DE"),
         arrival=today + timedelta(days=30), departure=today + timedelta(days=33),
         room_type="Historical Suite", source="Expedia"))
     repo.save_reservation(Reservation(
-        reservation_id="DEMO-2", token="annule", status=ReservationStatus.CANCELLED,
+        hotel_id="lucca", reservation_id="DEMO-2", token="annule", status=ReservationStatus.CANCELLED,
         guest=Guest("Pierre", "Dubois", "pierre@example.com", None, "fr", country="FR"),
         arrival=today + timedelta(days=3), departure=today + timedelta(days=5)))
 

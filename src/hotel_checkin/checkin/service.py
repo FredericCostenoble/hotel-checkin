@@ -32,9 +32,9 @@ def normalize_phone(raw: str) -> str | None:
     return s if re.fullmatch(r"\+\d{8,15}", s) else None
 
 
-def hotel_info(language: str) -> dict:
-    """Hotelgegevens voor de pagina (logo, adres, kleuren, privacylink), uit config/hotel.toml."""
-    c = load_hotel_config()
+def hotel_info(hotel_id: str, language: str) -> dict:
+    """Hotelgegevens voor de pagina (logo, adres, kleuren, privacylink), uit config/hotels/<hotel_id>.toml."""
+    c = load_hotel_config(hotel_id)
     lang = language if language in LANGUAGES else "en"
     return {
         "name": c["hotel"]["naam"],
@@ -76,8 +76,8 @@ def form_data(token: str, today: date | None = None) -> dict | None:
         "backup_phone": r.guest.backup_phone or "",
         "language": r.guest.language,
         "completed": r.checkin_completed_at is not None,
-        "no_marketing": repo.is_opted_out(email) if email else False,
-        "hotel": hotel_info(r.guest.language),
+        "no_marketing": repo.is_opted_out(r.hotel_id, email) if email else False,
+        "hotel": hotel_info(r.hotel_id, r.guest.language),
     }
 
 
@@ -120,9 +120,9 @@ def submit(token: str, form: dict) -> tuple[bool, dict]:
 
     r = repo.get_by_token(token)
     if form.get("no_marketing"):
-        repo.add_opt_out(email, "checkin_form")
+        repo.add_opt_out(r.hotel_id, email, "checkin_form")
     repo.mark_checkin_completed(
-        r.reservation_id, email, phones["phone"], language,
+        r.hotel_id, r.reservation_id, email, phones["phone"], language,
         backup_email=backup_email or None, backup_phone=phones["backup_phone"],
     )
     return True, {}

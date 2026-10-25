@@ -22,6 +22,7 @@ import httpx
 
 from hotel_checkin.core.config import get_setting
 from hotel_checkin.core.models import Channel, SendResult
+from hotel_checkin.core.safety import route
 
 GRAPH_URL = "https://graph.microsoft.com/v1.0"
 GRAPH_SCOPE = "https://graph.microsoft.com/.default"
@@ -46,20 +47,20 @@ def send_email(
 
     attachments: lijst van (bestandsnaam, inhoud).
     sender: standaard de instelling MAIL_SENDER (checkin@hotellucca.be, puur technisch).
-    reply_to: waar antwoorden van de gast naartoe gaan; standaard het contactadres van het hotel
-              uit config/hotel.toml (info@hotellucca.be).
+    reply_to: waar antwoorden van de gast naartoe gaan, normaal het contactadres van het hotel
+              (config/hotels/<hotel_id>.toml, [hotel] email).
+    Buiten productie gaat de mail naar TEST_EMAIL (core/safety.py).
     client: alleen voor tests, om de HTTP-aanroep te vervangen.
     """
     sender = sender or get_setting("MAIL_SENDER")
+    real_to, prefix = route("email", to)
+    if real_to is None:
+        return SendResult(channel=Channel.EMAIL, to=to, ok=False, error=prefix)
     message: dict = {
-        "subject": subject,
+        "subject": prefix + subject,
         "body": {"contentType": "HTML", "content": html_body},
-        "toRecipients": [{"emailAddress": {"address": to}}],
+        "toRecipients": [{"emailAddress": {"address": real_to}}],
     }
-    if reply_to is None:
-        from hotel_checkin.messaging.templates import load_hotel_config
-
-        reply_to = load_hotel_config()["hotel"]["email"]
     if reply_to and reply_to.lower() != sender.lower():
         message["replyTo"] = [{"emailAddress": {"address": reply_to}}]
     if attachments:
