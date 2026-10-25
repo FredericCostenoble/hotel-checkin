@@ -19,6 +19,11 @@ LOCATION="westeurope"
 APP_NAME="github-hotel-checkin"
 ALERT_EMAIL="${ALERT_EMAIL:-management@hotellucca.be}"
 
+OWNER="${REPO%%/*}"
+REPO_NAME="${REPO#*/}"
+OWNER_ID=$(gh api "repos/$REPO" --jq .owner.id)
+REPO_ID=$(gh api "repos/$REPO" --jq .id)
+
 SUB=$(az account show --query id -o tsv)
 TENANT=$(az account show --query tenantId -o tsv)
 echo "Abonnement: $(az account show --query name -o tsv) ($SUB)"
@@ -52,14 +57,21 @@ for ENV in tst prd; do
     fi
   done
 
-  if [ -z "$(az ad app federated-credential list --id "$APP_ID" --query "[?name=='github-$ENV'].name" -o tsv)" ]; then
-    az ad app federated-credential create --id "$APP_ID" --parameters "{
-      \"name\": \"github-$ENV\",
-      \"issuer\": \"https://token.actions.githubusercontent.com\",
-      \"subject\": \"repo:$REPO:environment:$ENV\",
-      \"audiences\": [\"api://AzureADTokenExchange\"]
-    }" >/dev/null
-  fi
+  # GitHub gebruikt in het OIDC-token ofwel de namen, ofwel namen met vaste id's
+  # (repo:eigenaar@id/repo@id:...). Beide vormen worden toegelaten.
+  for CRED in "github-$ENV|repo:$REPO:environment:$ENV" \
+              "github-$ENV-ids|repo:$OWNER@$OWNER_ID/$REPO_NAME@$REPO_ID:environment:$ENV"; do
+    NAME="${CRED%%|*}"
+    SUBJECT="${CRED#*|}"
+    if [ -z "$(az ad app federated-credential list --id "$APP_ID" --query "[?name=='$NAME'].name" -o tsv)" ]; then
+      az ad app federated-credential create --id "$APP_ID" --parameters "{
+        \"name\": \"$NAME\",
+        \"issuer\": \"https://token.actions.githubusercontent.com\",
+        \"subject\": \"$SUBJECT\",
+        \"audiences\": [\"api://AzureADTokenExchange\"]
+      }" >/dev/null
+    fi
+  done
 done
 
 ME=$(az ad signed-in-user show --query id -o tsv)

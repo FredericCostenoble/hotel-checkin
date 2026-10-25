@@ -2,12 +2,12 @@
   "name": "hotel-checkin",
   "image": "mcr.microsoft.com/devcontainers/python:1-3.12-bookworm",
   "features": {
-    "ghcr.io/devcontainers/features/azure-cli:1": {},
     "ghcr.io/devcontainers/features/node:1": {
       "version": "lts"
-    }
+    },
+    "ghcr.io/devcontainers/features/github-cli:1": {}
   },
-  "postCreateCommand": "npm install -g azure-functions-core-tools@4 --unsafe-perm true && pip install -e '.[all,dev]' && python -m playwright install --with-deps chromium",
+  "postCreateCommand": "sudo rm -f /etc/apt/sources.list.d/yarn.list && curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash && npm install -g azure-functions-core-tools@4 --unsafe-perm true && pip install -e '.[all,dev]' && python -m playwright install --with-deps chromium",
   "customizations": {
     "vscode": {
       "extensions": [
