@@ -16,13 +16,18 @@ FUNC=$(az resource list -g "$RG" --resource-type Microsoft.Web/sites \
 echo "1. Adres koppelen aan $FUNC"
 az functionapp config hostname add -g "$RG" --name "$FUNC" --hostname "$DOMAIN" -o none
 
-echo "2. Gratis certificaat van Azure (kan enkele minuten duren)"
-THUMB=$(az functionapp config ssl create -g "$RG" -n "$FUNC" --hostname "$DOMAIN" --query thumbprint -o tsv)
+echo "2. Gratis certificaat van Azure en binding (kan enkele minuten duren)"
+# De Azure CLI kan dit nog niet altijd voor Flex Consumption; dan in de portal afwerken.
+if THUMB=$(az functionapp config ssl create -g "$RG" -n "$FUNC" --hostname "$DOMAIN" --query thumbprint -o tsv 2>/dev/null) \
+   && [ -n "$THUMB" ] \
+   && az functionapp config ssl bind -g "$RG" -n "$FUNC" --certificate-thumbprint "$THUMB" --ssl-type SNI -o none 2>/dev/null; then
+  echo "   certificaat gebonden"
+else
+  echo "   Afwerken in de portal: $FUNC > Settings > Custom domains > Add binding bij $DOMAIN,"
+  echo "   kies het bestaande certificaat $DOMAIN (anders: Add new certificate), SNI SSL, Add."
+fi
 
-echo "3. Certificaat aan het adres binden"
-az functionapp config ssl bind -g "$RG" -n "$FUNC" --certificate-thumbprint "$THUMB" --ssl-type SNI -o none
-
-echo "4. Adres toevoegen aan de login"
+echo "3. Adres toevoegen aan de login"
 gh variable set MONITOR_DOMAIN --env "$ENV" --repo "$REPO" --body "$DOMAIN"
 bash "$(dirname "$0")/setup-admin.sh"
 
