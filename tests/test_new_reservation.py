@@ -91,3 +91,16 @@ def test_robot_rereads_after_skipped_rows():
     assert robot._since("lucca", None) == window  # zelfde periode opnieuw
     repo.log_robot_run("lucca", new_reservation.TASK, now + timedelta(seconds=5), True, 16, 6, since=window, skipped=0)
     assert robot._since("lucca", None) == r.booked_at - timedelta(hours=1)  # alles gelukt: verder
+
+
+def test_backfill_missing_contact(monkeypatch):
+    from datetime import date
+
+    stored = _res()
+    stored.reservation_id = "u2"
+    stored.arrival, stored.departure = date(2099, 1, 1), date(2099, 1, 2)
+    repo.save_reservation(stored)  # opgeslagen zonder e-mail
+    monkeypatch.setattr(new_reservation.lighthouse, "get_new_reservations", lambda *a, **k: [])
+    new_reservation.run("lucca", datetime(2000, 1, 1))
+    assert repo.get_reservation("lucca", "u2").guest.email == "jan@example.com"
+    assert "aangevuld" in repo.robot_runs("lucca")[0]["error"]

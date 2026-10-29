@@ -6,8 +6,9 @@ technische details van Lighthouse, Salto of Twilio; die zitten in de bouwblokken
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 
+from hotel_checkin.core.models import ReservationStatus
 from hotel_checkin.guests import repository as guests
 from hotel_checkin.pms import lighthouse
 
@@ -22,8 +23,9 @@ def run(hotel_id: str, since: datetime) -> int:
     komen in aparte processen.
     """
     started = datetime.now(timezone.utc)
-    found = new = 0
+    found = new = completed = 0
     skipped: list[str] = []
+    seen: set[str] = set()
     try:
         with lighthouse.connect(hotel_id) as lh:
             for reservation in lighthouse.get_new_reservations(hotel_id, since, lh, skipped):
@@ -42,13 +44,41 @@ def run(hotel_id: str, since: datetime) -> int:
                 elif existing is not None:
                     _keep_known(reservation, existing)
                 guests.save_reservation(reservation)
+                seen.add(reservation.reservation_id)
+            # Opgeslagen komende reservaties zonder e-mailadres alsnog aanvullen (max. per run)
+            for reservation in _missing_details(hotel_id, seen):
+                try:
+                    detail = lighthouse.get_reservation(hotel_id, reservation.reservation_id, lh)
+                except Exception as exc:  # noqa: BLE001 - volgende run probeert opnieuw
+                    skipped.append(f"{reservation.booking_number or 'reservatie'}: detail niet gelezen ({type(exc).__name__})")
+                    continue
+                _apply_detail(reservation, detail, reservation)
+                guests.save_reservation(reservation)
+                completed += 1
     except Exception as exc:
         guests.log_robot_run(hotel_id, TASK, started, False, found, new, f"{type(exc).__name__}: {exc}",
                              since=since, skipped=len(skipped))
         raise
-    note = f"{len(skipped)} overgeslagen: " + "; ".join(skipped[:5]) if skipped else None
+    parts = []
+    if completed:
+        parts.append(f"{completed} aangevuld met contactgegevens")
+    if skipped:
+        parts.append(f"{len(skipped)} overgeslagen: " + "; ".join(skipped[:5]))
+    note = ". ".join(parts) or None
     guests.log_robot_run(hotel_id, TASK, started, True, found, new, note, since=since, skipped=len(skipped))
     return new
+
+
+DETAIL_BACKFILL_PER_RUN = 20
+
+
+def _missing_details(hotel_id: str, seen: set[str]) -> list:
+    """Komende, niet geannuleerde reservaties zonder e-mailadres, die de gast nog niet zelf aanvulde."""
+    today = date.today()
+    todo = [r for r in guests.list_reservations(hotel_id)
+            if r.reservation_id not in seen and not r.guest.email and not r.checkin_completed_at
+            and r.status != ReservationStatus.CANCELLED and r.departure >= today]
+    return todo[:DETAIL_BACKFILL_PER_RUN]
 
 
 def _apply_detail(reservation, detail, existing) -> None:
