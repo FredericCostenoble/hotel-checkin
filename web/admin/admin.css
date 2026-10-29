@@ -10,6 +10,7 @@ main { background: #fff; margin: 0 16px 16px; padding: 12px; border: 1px solid v
 .tools { display: flex; gap: 16px; align-items: center; margin-bottom: 12px; flex-wrap: wrap; }
 input[type=search] { padding: 6px 8px; width: 260px; max-width: 100%; }
 input[type=number] { width: 70px; padding: 4px; }
+input[type=date] { padding: 4px; }
 select, button { padding: 6px 10px; }
 #run { background: var(--accent); color: #fff; border: none; border-radius: 3px; cursor: pointer; }
 #run:disabled { opacity: .5; cursor: default; }

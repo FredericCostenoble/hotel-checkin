@@ -26,7 +26,10 @@ async function init() {
     $("#tab-robot").hidden = b.dataset.tab !== "robot";
   });
   $("#search").oninput = render;
-  $("#future").onchange = render;
+  $("#from").value = new Date().toISOString().slice(0, 10);
+  $("#from").onchange = render;
+  $("#to").onchange = render;
+  $("#today").onclick = () => { $("#from").value = new Date().toISOString().slice(0, 10); $("#to").value = ""; render(); };
   $("#run").onclick = runRobot;
   load();
 }
@@ -40,8 +43,9 @@ async function load() {
 
 function render() {
   const q = $("#search").value.toLowerCase();
-  const today = new Date().toISOString().slice(0, 10);
-  const list = rows.filter(r => (!$("#future").checked || r.departure >= today) &&
+  // Verblijf dat (deels) in de gekozen periode valt; lege datum = geen grens
+  const from = $("#from").value, to = $("#to").value;
+  const list = rows.filter(r => (!from || r.departure >= from) && (!to || r.arrival <= to) &&
     (!q || [r.guest, r.booking_number, r.email, r.phone].join(" ").toLowerCase().includes(q)));
   $("#count").textContent = `${list.length} reservaties`;
   $("#res").innerHTML = list.map(r => `
