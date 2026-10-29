@@ -136,6 +136,20 @@ class LighthouseSession:
         page.wait_for_url("**/Customer/**")
         self._wait_loaded()
 
+    def close_popups(self) -> None:
+        """Sluit pop-ups die Lighthouse vanzelf opent (bv. de interne memo). Wijzigt niets."""
+        page = self.page
+        for _ in range(3):
+            modal = page.locator(".modal.in, .modal.show").first
+            if not modal.count() or not modal.is_visible():
+                return
+            close = modal.locator("button.close, [data-dismiss='modal'], button:has-text('Sluiten'), button:has-text('Close')").first
+            if close.count():
+                close.click()
+            else:
+                page.keyboard.press("Escape")
+            page.wait_for_timeout(500)
+
     def goto(self, path: str):
         """Open een pagina en wacht tot ze volledig geladen is."""
         self.page.goto(self.base + path)

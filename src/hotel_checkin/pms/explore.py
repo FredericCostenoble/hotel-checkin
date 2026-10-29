@@ -102,6 +102,7 @@ def explore_detail(lh: LighthouseSession, path: str) -> str:
     guest = title.split(" - ", 1)[1] if " - " in title else ""
     names = [w.strip(",") for w in guest.split() if not w.startswith("(")]  # landcode (DE) behouden
     report = ["## Detail (voor tonen)", _mask(page.locator("body").inner_text(), names), ""]
+    lh.close_popups()
     eye = page.locator("i.fa-eye, .fa-eye, [class*='eye']").first
     if eye.count():
         eye.click()
