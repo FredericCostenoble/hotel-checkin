@@ -44,7 +44,7 @@ def test_admin_with_login(monkeypatch):
     r = _fn(fa.admin_api)(_req("/api/monitor/lucca/reservations", h, {"hotel": "lucca", "what": "reservations"}))
     assert r.status_code == 200
     page = _fn(fa.admin_page)(_req("/monitor/", h, {"path": ""}))
-    assert page.status_code == 200 and b"Opvolging" in page.get_body()
+    assert page.status_code == 200 and b"Check-in monitor" in page.get_body()
     bad = _fn(fa.admin_page)(_req("/monitor/../x", h, {"path": "../../function_app.py"}))
     assert bad.status_code == 404
 
