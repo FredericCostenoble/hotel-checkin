@@ -14,7 +14,7 @@ FUNC=$(az resource list -g "$RG" --resource-type Microsoft.Web/sites \
   --query "[?starts_with(name, 'func-checkin-')].name | [0]" -o tsv)
 
 echo "1. Adres koppelen aan $FUNC"
-az functionapp config hostname add -g "$RG" --webapp-name "$FUNC" --hostname "$DOMAIN" -o none
+az functionapp config hostname add -g "$RG" --name "$FUNC" --hostname "$DOMAIN" -o none
 
 echo "2. Gratis certificaat van Azure (kan enkele minuten duren)"
 THUMB=$(az functionapp config ssl create -g "$RG" -n "$FUNC" --hostname "$DOMAIN" --query thumbprint -o tsv)
