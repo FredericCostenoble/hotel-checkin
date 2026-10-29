@@ -6,6 +6,7 @@ technische details van Lighthouse, Salto of Twilio; die zitten in de bouwblokken
 
 from __future__ import annotations
 
+import time
 from datetime import date, datetime, timezone
 
 from hotel_checkin.core.models import ReservationStatus
@@ -46,7 +47,10 @@ def run(hotel_id: str, since: datetime) -> int:
                 guests.save_reservation(reservation)
                 seen.add(reservation.reservation_id)
             # Opgeslagen komende reservaties zonder e-mailadres alsnog aanvullen (max. per run)
+            deadline = time.monotonic() + DETAIL_BACKFILL_SECONDS
             for reservation in _missing_details(hotel_id, seen):
+                if time.monotonic() > deadline:
+                    break  # de volgende run gaat verder
                 try:
                     detail = lighthouse.get_reservation(hotel_id, reservation.reservation_id, lh)
                 except Exception as exc:  # noqa: BLE001 - volgende run probeert opnieuw
@@ -69,7 +73,9 @@ def run(hotel_id: str, since: datetime) -> int:
     return new
 
 
-DETAIL_BACKFILL_PER_RUN = 50  # ongeveer 5 tot 8 seconden per reservatie
+# Aanvullen zolang er tijd is: een run mag in Azure max. 15 minuten duren (en in PRD start elk
+# kwartier een nieuwe). Wat niet past, doet de volgende run. Ongeveer 5 tot 8 seconden per reservatie.
+DETAIL_BACKFILL_SECONDS = 10 * 60
 
 
 def _missing_details(hotel_id: str, seen: set[str]) -> list:
@@ -78,7 +84,7 @@ def _missing_details(hotel_id: str, seen: set[str]) -> list:
     todo = [r for r in guests.list_reservations(hotel_id)
             if r.reservation_id not in seen and not r.guest.email and not r.checkin_completed_at
             and r.status != ReservationStatus.CANCELLED and r.departure >= today]
-    return todo[:DETAIL_BACKFILL_PER_RUN]
+    return todo
 
 
 def _apply_detail(reservation, detail, existing) -> None:
