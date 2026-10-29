@@ -24,7 +24,7 @@ import json
 import os
 import secrets
 import uuid
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from functools import lru_cache
 from urllib.parse import quote
 
@@ -281,6 +281,17 @@ def log_robot_run(
     })
 
 
+def prune_robot_runs(hotel_id: str, keep_days: int = 30) -> int:
+    """Verwijder robotruns ouder dan keep_days. Geeft het aantal verwijderde runs terug."""
+    cutoff = (_now() - timedelta(days=keep_days)).isoformat()
+    table = _table(T_ROBOT)
+    old = [e for e in table.query_entities(f"PartitionKey eq '{_q(_key(hotel_id))}'")
+           if e.get("started_at", "") < cutoff]
+    for e in old:
+        table.delete_entity(e["PartitionKey"], e["RowKey"])
+    return len(old)
+
+
 def robot_runs(hotel_id: str, limit: int = 50) -> list[dict]:
     rows = _table(T_ROBOT).query_entities(f"PartitionKey eq '{_q(_key(hotel_id))}'")
     return sorted(rows, key=lambda e: e["RowKey"])[:limit]
@@ -316,6 +327,9 @@ class MemoryTable:
 
     def upsert_entity(self, entity):
         self.rows[(entity["PartitionKey"], entity["RowKey"])] = dict(entity)
+
+    def delete_entity(self, pk, rk):
+        self.rows.pop((pk, rk), None)
 
     def get_entity(self, pk, rk):
         if (pk, rk) not in self.rows:

@@ -46,6 +46,8 @@ def main() -> int:
         try:
             new = new_reservation.run(hotel_id, since)
             logging.info("%s: %s nieuwe reservaties", hotel_id, new)
+            # Log van de robot opruimen (standaard 30 dagen, instelling ROBOT_LOG_DAYS)
+            guests.prune_robot_runs(hotel_id, int(os.environ.get("ROBOT_LOG_DAYS") or 30))
         except Exception:  # noqa: BLE001 - staat ook in het robotlog (opvolgpagina)
             logging.exception("%s: robot mislukt", hotel_id)
             failed = True

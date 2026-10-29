@@ -107,3 +107,13 @@ def test_hotels_are_separated():
     repo.log_message("lucca", "R-1", "bevestiging", SendResult(Channel.EMAIL, "a@b.c", ok=True))
     assert repo.was_sent("lucca", "R-1", "bevestiging")
     assert not repo.was_sent("ander-hotel", "R-1", "bevestiging")
+
+
+def test_prune_robot_runs():
+    from datetime import datetime, timedelta, timezone
+
+    now = datetime.now(timezone.utc)
+    repo.log_robot_run("lucca", "t", now - timedelta(days=40), True)
+    repo.log_robot_run("lucca", "t", now - timedelta(days=1), True)
+    assert repo.prune_robot_runs("lucca", 30) == 1
+    assert len(repo.robot_runs("lucca")) == 1
