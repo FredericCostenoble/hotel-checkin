@@ -263,8 +263,13 @@ def list_reservations(hotel_id: str) -> list[Reservation]:
 def log_robot_run(
     hotel_id: str, task: str, started: datetime, ok: bool,
     found: int = 0, new: int = 0, error: str | None = None,
+    since: datetime | None = None, skipped: int = 0,
 ) -> None:
-    """Noteer een run van de robot (bv. task="nieuwe_reservaties")."""
+    """Noteer een run van de robot (bv. task="nieuwe_reservaties").
+
+    since: vanaf welke boekdatum gelezen werd; skipped: aantal overgeslagen rijen. Een run met
+    overgeslagen rijen of een fout wordt bij de volgende run opnieuw gelezen vanaf dezelfde `since`.
+    """
     finished = _now()
     _table(T_ROBOT).upsert_entity({
         "PartitionKey": _key(hotel_id),
@@ -278,6 +283,8 @@ def log_robot_run(
         "found": found,
         "new": new,
         "error": (error or "")[:2000],
+        "since": since.isoformat() if since else "",
+        "skipped": skipped,
     })
 
 

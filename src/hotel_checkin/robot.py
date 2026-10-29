@@ -7,7 +7,8 @@ opvolgpagina. Leest Lighthouse alleen; schrijft niets in Lighthouse.
     python -m hotel_checkin.robot --hotel lucca --hours 48
 
 Zonder --hours leest de robot alles sinds de nieuwste boeking die al opgeslagen is (min 1 uur
-marge), of de laatste 30 dagen als er nog niets opgeslagen is.
+marge), of de laatste 30 dagen als er nog niets opgeslagen is. Had de vorige run een fout of
+overgeslagen rijen, dan leest hij dezelfde periode opnieuw.
 """
 
 from __future__ import annotations
@@ -24,11 +25,19 @@ from hotel_checkin.processes import new_reservation
 
 
 def _since(hotel_id: str, hours: int | None) -> datetime:
-    """Vanaf welke boekdatum lezen: de nieuwste opgeslagen boeking (min 1 uur marge), of 30 dagen
-    als er nog niets opgeslagen is. Met --hours een vast aantal uren."""
+    """Vanaf welke boekdatum lezen.
+
+    - Met --hours: een vast aantal uren terug.
+    - Had de vorige run een fout of overgeslagen rijen: opnieuw vanaf dezelfde datum, zodat die
+      rijen nog eens geprobeerd worden (bestaande reservaties worden gewoon bijgewerkt).
+    - Anders: de nieuwste opgeslagen boeking (min 1 uur marge), of 30 dagen als er nog niets is.
+    """
     now = datetime.now(timezone.utc)
     if hours:
         return now - timedelta(hours=hours)
+    runs = [r for r in guests.robot_runs(hotel_id) if r.get("task") == new_reservation.TASK]
+    if runs and runs[0].get("since") and (not runs[0].get("ok") or int(runs[0].get("skipped") or 0)):
+        return datetime.fromisoformat(runs[0]["since"])
     booked = [r.booked_at for r in guests.list_reservations(hotel_id) if r.booked_at]
     if booked:
         return max(booked) - timedelta(hours=1)

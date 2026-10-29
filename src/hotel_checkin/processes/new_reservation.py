@@ -32,10 +32,11 @@ def run(hotel_id: str, since: datetime) -> int:
                 _keep_known(reservation, existing)
             guests.save_reservation(reservation)
     except Exception as exc:
-        guests.log_robot_run(hotel_id, TASK, started, False, found, new, f"{type(exc).__name__}: {exc}")
+        guests.log_robot_run(hotel_id, TASK, started, False, found, new, f"{type(exc).__name__}: {exc}",
+                             since=since, skipped=len(skipped))
         raise
     note = f"{len(skipped)} rij(en) overgeslagen: " + "; ".join(skipped[:5]) if skipped else None
-    guests.log_robot_run(hotel_id, TASK, started, True, found, new, note)
+    guests.log_robot_run(hotel_id, TASK, started, True, found, new, note, since=since, skipped=len(skipped))
     return new
 
 

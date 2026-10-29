@@ -53,3 +53,19 @@ def test_robot_main_runs(monkeypatch):
     monkeypatch.setattr(sys, "argv", ["robot"])
     monkeypatch.delenv("ROBOT_HOTEL", raising=False)
     assert robot.main() == 0 and called == ["lucca"]
+
+
+def test_robot_rereads_after_skipped_rows():
+    from datetime import timedelta, timezone
+
+    from hotel_checkin import robot
+
+    now = datetime.now(timezone.utc)
+    r = _res()
+    r.booked_at = now - timedelta(hours=2)
+    repo.save_reservation(r)
+    window = now - timedelta(days=3)
+    repo.log_robot_run("lucca", new_reservation.TASK, now, True, 16, 10, "6 overgeslagen", since=window, skipped=6)
+    assert robot._since("lucca", None) == window  # zelfde periode opnieuw
+    repo.log_robot_run("lucca", new_reservation.TASK, now + timedelta(seconds=5), True, 16, 6, since=window, skipped=0)
+    assert robot._since("lucca", None) == r.booked_at - timedelta(hours=1)  # alles gelukt: verder
