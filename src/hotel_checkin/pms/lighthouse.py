@@ -12,6 +12,7 @@ Aandachtspunten:
 
 Testen in de codespace (toont geen gastnamen):
     python -m hotel_checkin.pms.lighthouse lucca --hours 24
+    python -m hotel_checkin.pms.lighthouse lucca --detail <uuid>
 """
 
 from __future__ import annotations
@@ -22,7 +23,7 @@ from datetime import datetime, timedelta
 
 from hotel_checkin.core.models import AccessCode, Reservation, ReservationStatus
 from hotel_checkin.pms.lighthouse_browser import LighthouseSession
-from hotel_checkin.pms.lighthouse_parse import TZ, parse_list_row
+from hotel_checkin.pms.lighthouse_parse import TZ, parse_detail, parse_list_row
 
 LIST_PATH = "/Customer/Reservations/List"  # standaard gesorteerd op boekdatum, nieuwste eerst
 MAX_PAGES = 30  # 15 per pagina; genoeg voor de eerste keer (30 dagen)
@@ -79,9 +80,64 @@ def get_new_reservations(
     return found
 
 
-def get_reservation(hotel_id: str, reservation_id: str) -> Reservation:
-    """Detail van één reservatie: contactgegevens, taal, betaalstatus."""
-    raise NotImplementedError("Bouwblok Lighthouse (detail): volgende stap")
+DETAIL_PATH = "/Customer/Reservations/Detail/{id}"
+
+# Leest de detailpagina uit. Klikt alleen op het oog bij Contactgegevens (toont e-mail en
+# telefoon, haalt ze op via /Customer/Reservations/ContactDetails/{id}); wijzigt niets.
+_DETAIL_JS = r"""() => {
+  const txt = e => (e ? e.innerText : '') || '';
+  const widget = title => {
+    const h = [...document.querySelectorAll('h1,h2,h3,h4,header *')].find(e => e.textContent.trim() === title);
+    return h ? (h.closest('.jarviswidget') || h.parentElement.parentElement) : null;
+  };
+  const rooms = [...document.querySelectorAll('select')]
+    .filter(s => [...s.options].some(o => o.text === 'INGECHECKT'))
+    .map(s => ({ status: s.selectedOptions[0]?.text || '', text: txt(s.closest('tr') || s.parentElement.parentElement) }));
+  const contactName = document.querySelector('#contact-name');
+  const trans = [...document.querySelectorAll('*')].find(e => e.childElementCount === 0 && e.textContent.trim() === 'Transacties');
+  return {
+    title: txt(document.querySelector('h1')),
+    contact_name: txt(contactName),
+    contact_line: txt(contactName && contactName.closest('li')),
+    phone: txt(document.querySelector('[data-field="telephone"]')),
+    email: txt(document.querySelector('[data-field="email"]')),
+    general: txt(widget('Algemene informatie')),
+    rooms,
+    paid_text: txt(trans && (trans.closest('.jarviswidget, .col-md-6, .col-lg-6') || trans.parentElement.parentElement)),
+  };
+}"""
+
+
+def _read_detail(session: LighthouseSession, hotel_id: str, reservation_id: str) -> Reservation:
+    page = session.goto(DETAIL_PATH.format(id=reservation_id))
+    page.wait_for_timeout(2000)  # folio en transacties laden asynchroon
+    session.close_popups()
+    toggle = page.locator(".js-masked-contact-toggle").first
+    if toggle.count() and "*" in (page.locator('[data-field="email"]').first.inner_text() or "*"):
+        toggle.click()
+        page.wait_for_function(
+            "() => !(document.querySelector('[data-field=\"email\"]')?.innerText || '').includes('*')",
+            timeout=15_000,
+        )
+    return parse_detail(hotel_id, reservation_id, page.evaluate(_DETAIL_JS))
+
+
+def get_reservation(hotel_id: str, reservation_id: str, session: LighthouseSession | None = None) -> Reservation:
+    """Detail van één reservatie: contactgegevens, land (en taal), status per kamer, betaling, annulering."""
+    if session is None:
+        with LighthouseSession(hotel_id) as lh:
+            return _read_detail(lh, hotel_id, reservation_id)
+    return _read_detail(session, hotel_id, reservation_id)
+
+
+def connect(hotel_id: str) -> LighthouseSession:
+    """Eén aangemelde sessie voor meerdere oproepen na elkaar:
+
+        with lighthouse.connect("lucca") as lh:
+            for r in lighthouse.get_new_reservations("lucca", since, lh): ...
+            detail = lighthouse.get_reservation("lucca", r.reservation_id, lh)
+    """
+    return LighthouseSession(hotel_id)
 
 
 def store_access_code(hotel_id: str, code: AccessCode) -> None:
@@ -98,7 +154,15 @@ def main() -> None:
     p = argparse.ArgumentParser(description="Nieuwe reservaties uit Lighthouse tonen (alleen lezen)")
     p.add_argument("hotel_id")
     p.add_argument("--hours", type=int, default=24)
+    p.add_argument("--detail", help="toon de detailgegevens van deze reservatie (uuid), zonder namen")
     args = p.parse_args()
+    if args.detail:
+        r = get_reservation(args.hotel_id, args.detail)
+        print(f"{r.booking_number}  {r.arrival} > {r.departure}  kamers {','.join(r.rooms) or '-'}  "
+              f"status {r.status.value} ({r.pms_status})  betaald {r.paid}  land {r.guest.country}  "
+              f"taal {r.guest.language}  e-mail {'ja' if r.guest.email else 'nee'}  "
+              f"telefoon {'ja' if r.guest.phone else 'nee'}")
+        return
     since = datetime.now(TZ) - timedelta(hours=args.hours)
     rows = get_new_reservations(args.hotel_id, since)
     for r in rows:

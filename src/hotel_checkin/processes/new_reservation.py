@@ -15,29 +15,54 @@ from hotel_checkin.pms import lighthouse
 def run(hotel_id: str, since: datetime) -> int:
     """Haal nieuwe reservaties van een hotel op en bewaar ze. Geeft het aantal nieuwe reservaties terug.
 
-    Wat de gast zelf invulde in het check-in-formulier (contactgegevens, taal) en het token
-    blijven behouden; Lighthouse overschrijft dat niet. Elke run wordt gelogd (opvolgpagina).
-    Volgende stappen (bevestigingsmail, herinnering, code) komen in aparte processen.
+    Van nieuwe reservaties (en van reservaties zonder e-mailadres) worden meteen de details gelezen:
+    contactgegevens, land en taal, status, betaling. Dat is nodig voor de bevestigingsmail.
+    Wat de gast zelf invulde in het check-in-formulier en het token blijven behouden.
+    Elke run wordt gelogd (monitor). Volgende stappen (bevestigingsmail, herinnering, code)
+    komen in aparte processen.
     """
     started = datetime.now(timezone.utc)
     found = new = 0
     skipped: list[str] = []
     try:
-        for reservation in lighthouse.get_new_reservations(hotel_id, since, skipped=skipped):
-            found += 1
-            existing = guests.get_reservation(hotel_id, reservation.reservation_id)
-            if existing is None:
-                new += 1
-            else:
-                _keep_known(reservation, existing)
-            guests.save_reservation(reservation)
+        with lighthouse.connect(hotel_id) as lh:
+            for reservation in lighthouse.get_new_reservations(hotel_id, since, lh, skipped):
+                found += 1
+                existing = guests.get_reservation(hotel_id, reservation.reservation_id)
+                if existing is None:
+                    new += 1
+                detail = None
+                if existing is None or (not existing.guest.email and not existing.checkin_completed_at):
+                    try:
+                        detail = lighthouse.get_reservation(hotel_id, reservation.reservation_id, lh)
+                    except Exception as exc:  # noqa: BLE001 - volgende run probeert opnieuw
+                        skipped.append(f"{reservation.booking_number or 'reservatie'}: detail niet gelezen ({type(exc).__name__})")
+                if detail is not None:
+                    _apply_detail(reservation, detail, existing)
+                elif existing is not None:
+                    _keep_known(reservation, existing)
+                guests.save_reservation(reservation)
     except Exception as exc:
         guests.log_robot_run(hotel_id, TASK, started, False, found, new, f"{type(exc).__name__}: {exc}",
                              since=since, skipped=len(skipped))
         raise
-    note = f"{len(skipped)} rij(en) overgeslagen: " + "; ".join(skipped[:5]) if skipped else None
+    note = f"{len(skipped)} overgeslagen: " + "; ".join(skipped[:5]) if skipped else None
     guests.log_robot_run(hotel_id, TASK, started, True, found, new, note, since=since, skipped=len(skipped))
     return new
+
+
+def _apply_detail(reservation, detail, existing) -> None:
+    """Gegevens van de detailpagina zijn vollediger dan die uit de lijst."""
+    reservation.guest = detail.guest
+    reservation.arrival, reservation.departure = detail.arrival, detail.departure
+    reservation.rooms = detail.rooms or reservation.rooms
+    reservation.status = detail.status
+    reservation.paid = detail.paid
+    reservation.pms_status = detail.pms_status or reservation.pms_status
+    reservation.source = detail.source or reservation.source
+    if existing is not None:
+        reservation.token = existing.token
+        reservation.checkin_completed_at = existing.checkin_completed_at
 
 
 TASK = "nieuwe_reservaties"

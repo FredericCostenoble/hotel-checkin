@@ -18,8 +18,30 @@ def _res(**guest):
     return Reservation("lucca", "u1", Guest("Jan", "Voorbeeld", **guest), date(2099, 1, 1), date(2099, 1, 2))
 
 
+class _Session:
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *a):
+        return False
+
+
+@pytest.fixture(autouse=True)
+def fake_lighthouse(monkeypatch):
+    monkeypatch.setattr(new_reservation.lighthouse, "connect", lambda h: _Session())
+    detail = _res(email="jan@example.com", phone="+4915100000", language="de", country="DE")
+    monkeypatch.setattr(new_reservation.lighthouse, "get_reservation", lambda h, rid, lh=None: detail)
+
+
+def test_new_reservation_gets_details(monkeypatch):
+    monkeypatch.setattr(new_reservation.lighthouse, "get_new_reservations", lambda *a, **k: [_res()])
+    assert new_reservation.run("lucca", datetime(2000, 1, 1)) == 1
+    r = repo.get_reservation("lucca", "u1")
+    assert r.guest.email == "jan@example.com" and r.guest.language == "de" and r.guest.country == "DE"
+
+
 def test_new_and_merge(monkeypatch):
-    monkeypatch.setattr(new_reservation.lighthouse, "get_new_reservations", lambda h, s, skipped=None: [_res()])
+    monkeypatch.setattr(new_reservation.lighthouse, "get_new_reservations", lambda *a, **k: [_res()])
     assert new_reservation.run("lucca", datetime(2000, 1, 1)) == 1
     token = repo.get_reservation("lucca", "u1").token
     repo.mark_checkin_completed("lucca", "u1", "jan@example.com", "+32470000000", "fr")

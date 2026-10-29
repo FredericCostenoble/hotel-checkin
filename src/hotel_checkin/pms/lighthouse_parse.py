@@ -103,3 +103,76 @@ def parse_list_row(hotel_id: str, general: str, contact: str, accommodations: st
         guest_count=int(guests.group(0)) if guests else None,
         booked_at=parse_datetime(f["Gemaakt op"]) if f.get("Gemaakt op") else None,
     )
+
+
+# ---------------------------------------------------------------- detailpagina
+
+# Taal afleiden uit het land (Lighthouse toont de taal niet op de detailpagina). De gast kan
+# ze zelf aanpassen in het check-in-formulier.
+COUNTRY_LANGUAGE = {
+    "NL": "nl", "BE": "nl", "SR": "nl",
+    "FR": "fr", "LU": "fr", "MC": "fr",
+    "DE": "de", "AT": "de", "LI": "de", "CH": "de",
+}
+
+
+def _after(label: str, text: str) -> str:
+    m = re.search(rf"(?m)^\s*{re.escape(label)}\s*:?\s*(.+)$", text)
+    return m.group(1).strip() if m else ""
+
+
+def accommodation_status(statuses: list[str]) -> ReservationStatus:
+    """Status per kamer (KLAAR OM IN TE CHECKEN / INGECHECKT / UITGECHECKT) naar één status."""
+    s = [x.upper() for x in statuses if x and x != "-"]
+    if s and all(x == "UITGECHECKT" for x in s):
+        return ReservationStatus.CHECKED_OUT
+    if s and all(x in ("INGECHECKT", "UITGECHECKT") for x in s):
+        return ReservationStatus.CHECKED_IN
+    return ReservationStatus.READY_FOR_CHECKIN
+
+
+def parse_detail(hotel_id: str, reservation_id: str, d: dict) -> Reservation:
+    """Gegevens van de detailpagina (zie lighthouse.py, _read_detail) naar een Reservation.
+
+    d: title, contact_name, contact_line, phone, email, general (tekst blok Algemene informatie),
+       rooms (lijst van {status, text}), paid_text (tekst blok Transacties).
+    """
+    from hotel_checkin.checkin.service import normalize_phone
+
+    general = d.get("general", "")
+    pms_status = _after("Status", general)
+    country = re.search(r"\(([A-Z]{2})\)", d.get("contact_line", ""))
+    country_code = country.group(1) if country else None
+    first, last = split_name(d.get("contact_name", ""))
+    email = (d.get("email") or "").strip().lower()
+    arrival_line = _after("Aankomst op", general)
+    departure_line = _after("Vertrek op", general)
+    booked_line = _after("Gemaakt op", general)
+    number = re.search(r"[A-Z]{2,5}-\d+-\d+", d.get("title", ""))
+    rooms: list[str] = []
+    for r in d.get("rooms", []):
+        rooms += [x for x in rooms_from(r.get("text", "")) if x not in rooms]
+    status = (ReservationStatus.CANCELLED if "annul" in pms_status.lower()
+              else accommodation_status([r.get("status", "") for r in d.get("rooms", [])]))
+    paid_text = d.get("paid_text", "").lower()
+    return Reservation(
+        hotel_id=hotel_id,
+        reservation_id=reservation_id.lower(),
+        guest=Guest(
+            first_name=first,
+            last_name=last,
+            email=email if "@" in email else None,
+            phone=normalize_phone(d.get("phone") or ""),
+            language=COUNTRY_LANGUAGE.get(country_code or "", "en"),
+            country=country_code,
+        ),
+        arrival=parse_date(arrival_line),
+        departure=parse_date(departure_line),
+        rooms=rooms,
+        status=status,
+        source=_after("Via", general) or None,
+        paid=True if "volledig betaald" in paid_text else (False if paid_text else None),
+        booking_number=number.group(0) if number else None,
+        pms_status=pms_status or None,
+        booked_at=parse_datetime(booked_line) if booked_line else None,
+    )
