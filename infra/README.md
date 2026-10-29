@@ -66,6 +66,22 @@ Daarna de GitHub-variabele `CUSTOM_DOMAIN` in de omgeving zetten en opnieuw uitr
 koppelt het adres en maakt zelf een certificaat (kan enkele minuten duren).
 Dev is de codespace en heeft geen eigen adres.
 
+## Opvolgpagina
+
+Per omgeving op `https://<function app>/admin/` (staat in de samenvatting van de workflow).
+Toont per hotel de reservaties, verstuurde berichten en de runs van de robot. Bevat
+gastgegevens en is daarom alleen bereikbaar na aanmelden met een Microsoft-account van de
+tenant, en alleen voor wie toegewezen is.
+
+Eenmalig in de codespace (na `az login` en `gh auth login`):
+
+```bash
+unset GITHUB_TOKEN; bash infra/setup-admin.sh
+```
+
+Iemand anders toegang geven: `bash infra/setup-admin.sh iemand@hotellucca.be`.
+Zolang `ADMIN_CLIENT_ID` niet gezet is, blijft de opvolgpagina dicht.
+
 ## Opmerkingen
 
 - De API van het formulier draait in de Function App, in dezelfde regio als de gegevens, met

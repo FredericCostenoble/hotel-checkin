@@ -28,6 +28,9 @@ param formOrigins string = ''
 @description('Eigen adres van het formulier, bv. checkin.hotellucca.be (leeg = standaardadres van Azure). De CNAME moet eerst bestaan.')
 param customDomain string = ''
 
+@description('Client-id van de app registration voor de login op de opvolgpagina (leeg = opvolgpagina dicht).')
+param adminClientId string = ''
+
 @description('Waar budgetmeldingen naartoe gaan.')
 param alertEmail string
 
@@ -57,7 +60,7 @@ param mailSender string = 'checkin@hotellucca.be'
 
 var suffix = take(uniqueString(resourceGroup().id), 6)
 var tags = { app: 'hotel-checkin', env: env }
-var tables = ['Reservations', 'Messages', 'MarketingOptOut']
+var tables = ['Reservations', 'Messages', 'MarketingOptOut', 'RobotRuns']
 
 var roles = {
   blobOwner: 'b7e6dc6d-f1e8-4753-8033-0f276bb0955b'
@@ -185,6 +188,7 @@ var funcSettings = filter(
     STORAGE_TABLE_ENDPOINT: st.properties.primaryEndpoints.table
     MAIL_SENDER: mailSender
     POLL_ENABLED: pollEnabled ? 'true' : 'false'
+    ADMIN_AUTH: empty(adminClientId) ? '' : 'easyauth'
     TEST_EMAIL: env == 'prd' ? '' : testEmail
     TEST_PHONE: env == 'prd' ? '' : testPhone
     // In TST wijzen de links in de mails naar het testformulier
@@ -223,6 +227,32 @@ resource func 'Microsoft.Web/sites@2024-04-01' = {
 
 // Rechten van de Function App (managed identity, geen sleutels)
 var storageRoles = [roles.blobOwner, roles.tableContributor, roles.queueContributor]
+
+// Ingebouwde Microsoft-login voor de opvolgpagina. Anoniem blijft toegelaten (check-in-API voor
+// gasten); de code van de opvolgpagina eist zelf een aangemelde gebruiker.
+// Wie mag aanmelden, wordt beperkt in de app registration (toewijzing verplicht, zie setup-admin.sh).
+resource funcAuth 'Microsoft.Web/sites/config@2024-04-01' = if (!empty(adminClientId)) {
+  parent: func
+  name: 'authsettingsV2'
+  properties: {
+    platform: { enabled: true }
+    globalValidation: {
+      requireAuthentication: false
+      unauthenticatedClientAction: 'AllowAnonymous'
+    }
+    identityProviders: {
+      azureActiveDirectory: {
+        enabled: true
+        registration: {
+          clientId: adminClientId
+          openIdIssuer: '${environment().authentication.loginEndpoint}${tenant().tenantId}/v2.0'
+        }
+        validation: { allowedAudiences: [adminClientId, 'api://${adminClientId}'] }
+      }
+    }
+    login: { tokenStore: { enabled: false } }
+  }
+}
 
 resource raStorage 'Microsoft.Authorization/roleAssignments@2022-04-01' = [
   for r in storageRoles: {
@@ -288,5 +318,6 @@ output staticWebAppName string = swa.name
 output staticWebAppHost string = swa.properties.defaultHostname
 output formUrl string = 'https://${formHost}'
 output functionAppHost string = func.properties.defaultHostName
+output adminUrl string = 'https://${func.properties.defaultHostName}/admin/'
 output keyVaultName string = kv.name
 output storageAccountName string = st.name

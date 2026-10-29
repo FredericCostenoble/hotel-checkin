@@ -61,6 +61,11 @@ func start        # Azure Functions lokaal in de codespace
 
 Configuratie gebeurt via omgevingsvariabelen (zie `.env.example`). Nooit secrets committen.
 
+## Opvolgpagina
+
+Lokaal: start de devserver (hieronder) en open `/admin/`. Met "Robot nu draaien" leest de robot
+Lighthouse (alleen lezen) en verschijnen de reservaties. In Azure: zie `infra/README.md`.
+
 ## Check-in-formulier lokaal testen
 
 ```bash

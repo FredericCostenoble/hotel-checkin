@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Opvolging check-in</title>
+<link rel="stylesheet" href="admin.css">
+</head>
+<body>
+<header>
+  <strong>Opvolging check-in</strong>
+  <label>Hotel <select id="hotel"></select></label>
+  <span id="env" class="muted"></span>
+</header>
+
+<nav>
+  <button data-tab="res" class="active">Reservaties</button>
+  <button data-tab="robot">Robot</button>
+</nav>
+
+<main>
+  <section id="tab-res">
+    <div class="tools">
+      <input id="search" type="search" placeholder="Zoek op naam, nummer, e-mail">
+      <label><input id="future" type="checkbox" checked> Alleen vanaf vandaag</label>
+      <span id="count" class="muted"></span>
+    </div>
+    <table>
+      <thead><tr>
+        <th>Aankomst</th><th>Vertrek</th><th>Nummer</th><th>Gast</th><th>Pers.</th><th>Kamer</th>
+        <th>Via</th><th>Lighthouse</th><th>Geboekt</th><th>Formulier</th><th>Contact</th><th>Berichten</th>
+      </tr></thead>
+      <tbody id="res"></tbody>
+    </table>
+  </section>
+
+  <section id="tab-robot" hidden>
+    <div class="tools">
+      <label>Nieuwe reservaties van de laatste <input id="hours" type="number" value="48" min="1" max="720"> uur</label>
+      <button id="run">Robot nu draaien</button>
+      <span id="robot-state" class="muted"></span>
+    </div>
+    <table>
+      <thead><tr><th>Start</th><th>Duur</th><th>Taak</th><th>Resultaat</th><th>Gevonden</th><th>Nieuw</th><th>Fout</th></tr></thead>
+      <tbody id="runs"></tbody>
+    </table>
+  </section>
+</main>
+<script src="admin.js"></script>
+</body>
+</html>

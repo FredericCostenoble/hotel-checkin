@@ -39,6 +39,7 @@ from hotel_checkin.core.models import (
 T_RESERVATIONS = "Reservations"
 T_MESSAGES = "Messages"
 T_OPTOUT = "MarketingOptOut"
+T_ROBOT = "RobotRuns"
 
 _client_factory = None  # alleen voor tests: functie die een tabelnaam krijgt en een tabel teruggeeft
 
@@ -248,6 +249,41 @@ def was_sent(hotel_id: str, reservation_id: str, message_type: str, channel: str
         m["message_type"] == message_type and m["ok"] and (channel is None or m["channel"] == channel)
         for m in messages_for(hotel_id, reservation_id)
     )
+
+
+def list_reservations(hotel_id: str) -> list[Reservation]:
+    """Alle reservaties van een hotel, gesorteerd op aankomst (voor de opvolgpagina)."""
+    rows = _table(T_RESERVATIONS).query_entities(f"PartitionKey eq '{_q(_key(hotel_id))}'")
+    return sorted((_from_entity(e) for e in rows), key=lambda r: (r.arrival, r.reservation_id))
+
+
+# ---------------------------------------------------------------- robot
+
+
+def log_robot_run(
+    hotel_id: str, task: str, started: datetime, ok: bool,
+    found: int = 0, new: int = 0, error: str | None = None,
+) -> None:
+    """Noteer een run van de robot (bv. task="nieuwe_reservaties")."""
+    finished = _now()
+    _table(T_ROBOT).upsert_entity({
+        "PartitionKey": _key(hotel_id),
+        # Omgekeerde tijd als sleutel: nieuwste run eerst
+        "RowKey": f"{9999999999 - int(started.timestamp()):010d}-{uuid.uuid4().hex[:6]}",
+        "hotel_id": hotel_id,
+        "task": task,
+        "started_at": started.isoformat(),
+        "finished_at": finished.isoformat(),
+        "ok": ok,
+        "found": found,
+        "new": new,
+        "error": (error or "")[:2000],
+    })
+
+
+def robot_runs(hotel_id: str, limit: int = 50) -> list[dict]:
+    rows = _table(T_ROBOT).query_entities(f"PartitionKey eq '{_q(_key(hotel_id))}'")
+    return sorted(rows, key=lambda e: e["RowKey"])[:limit]
 
 
 # ---------------------------------------------------------------- marketing
