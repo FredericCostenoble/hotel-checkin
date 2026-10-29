@@ -43,7 +43,7 @@ resources in de resource group (de tabellen eerst overzetten).
 - PRD: `APP_ENV=prd`, berichten naar de echte gasten, formulier op `checkin.hotellucca.be`.
 - De Lighthouse-robot (Container Apps Job, `job-checkin-robot-<env>`) leest Lighthouse alleen.
   Schema: PRD elk kwartier, TST elk uur (UTC, parameter `robotSchedule`). Daarnaast de knop
-  "Robot nu draaien" op de opvolgpagina. Hij leest alles sinds de vorige geslaagde run.
+  "Robot nu draaien" op de monitor. Hij leest alles sinds de nieuwste opgeslagen boeking.
 
 ## Eenmalige opzet
 

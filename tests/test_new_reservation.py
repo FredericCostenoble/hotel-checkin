@@ -29,16 +29,17 @@ def test_new_and_merge(monkeypatch):
     assert r.token == token and r.guest.email == "jan@example.com" and r.guest.language == "fr"
 
 
-def test_robot_since_last_successful_run():
+def test_robot_since_newest_stored_booking():
     from datetime import timedelta, timezone
 
     from hotel_checkin import robot
 
     now = datetime.now(timezone.utc)
-    assert now - robot._since("lucca", None) > timedelta(hours=47)  # nog nooit gedraaid: 48 uur
-    started = now - timedelta(minutes=30)
-    repo.log_robot_run("lucca", "nieuwe_reservaties", started, True, 3, 1)
-    assert abs((robot._since("lucca", None) - (started - timedelta(hours=1))).total_seconds()) < 1
+    assert now - robot._since("lucca", None) > timedelta(days=29)  # niets opgeslagen: 30 dagen
+    r = _res()
+    r.booked_at = now - timedelta(hours=5)
+    repo.save_reservation(r)
+    assert abs((robot._since("lucca", None) - (r.booked_at - timedelta(hours=1))).total_seconds()) < 1
     assert now - robot._since("lucca", 5) < timedelta(hours=5, seconds=5)
 
 

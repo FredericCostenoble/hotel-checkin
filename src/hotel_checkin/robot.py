@@ -3,11 +3,11 @@
 Draait op schema (bv. elk kwartier) en op vraag via de knop "Robot nu draaien" op de
 opvolgpagina. Leest Lighthouse alleen; schrijft niets in Lighthouse.
 
-    python -m hotel_checkin.robot                  # alle hotels, sinds de vorige geslaagde run
+    python -m hotel_checkin.robot                  # alle hotels, sinds de nieuwste opgeslagen boeking
     python -m hotel_checkin.robot --hotel lucca --hours 48
 
-Zonder --hours leest de robot alles sinds de start van de vorige geslaagde run (min 1 uur
-marge), of de laatste 48 uur als hij nog nooit gedraaid heeft.
+Zonder --hours leest de robot alles sinds de nieuwste boeking die al opgeslagen is (min 1 uur
+marge), of de laatste 30 dagen als er nog niets opgeslagen is.
 """
 
 from __future__ import annotations
@@ -24,13 +24,15 @@ from hotel_checkin.processes import new_reservation
 
 
 def _since(hotel_id: str, hours: int | None) -> datetime:
+    """Vanaf welke boekdatum lezen: de nieuwste opgeslagen boeking (min 1 uur marge), of 30 dagen
+    als er nog niets opgeslagen is. Met --hours een vast aantal uren."""
     now = datetime.now(timezone.utc)
     if hours:
         return now - timedelta(hours=hours)
-    last_ok = next((r for r in guests.robot_runs(hotel_id) if r.get("ok")), None)
-    if last_ok:
-        return datetime.fromisoformat(last_ok["started_at"]) - timedelta(hours=1)
-    return now - timedelta(hours=48)
+    booked = [r.booked_at for r in guests.list_reservations(hotel_id) if r.booked_at]
+    if booked:
+        return max(booked) - timedelta(hours=1)
+    return now - timedelta(days=30)
 
 
 def main() -> int:

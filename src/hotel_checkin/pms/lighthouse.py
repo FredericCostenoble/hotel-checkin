@@ -25,7 +25,7 @@ from hotel_checkin.pms.lighthouse_browser import LighthouseSession
 from hotel_checkin.pms.lighthouse_parse import TZ, parse_list_row
 
 LIST_PATH = "/Customer/Reservations/List"  # standaard gesorteerd op boekdatum, nieuwste eerst
-MAX_PAGES = 10
+MAX_PAGES = 30  # 15 per pagina; genoeg voor de eerste keer (30 dagen)
 
 
 def _rows_on_page(hotel_id: str, page, skipped: list[str]) -> list[Reservation]:
