@@ -111,8 +111,27 @@ def explore_detail(lh: LighthouseSession, path: str) -> str:
         "//*[contains(@class,'fa-eye')]"
     ).first
     if eye.count():
+        requests: list[str] = []
+        page.on("request", lambda r: requests.append(f"{r.method} {re.sub(r'[0-9a-f]{8}-[0-9a-f-]{27,}', '{uuid}', r.url)}"))
         eye.click()
-        page.wait_for_timeout(2000)
+        page.wait_for_timeout(3000)
+        report += ["## Verzoeken na klik op het oog", *[f"- {x}" for x in requests if "mylighthouse" in x], ""]
+        # Opbouw van het blok Contactgegevens, met alle teksten en waarden gemaskeerd
+        html = page.evaluate(r"""() => {
+          const h = [...document.querySelectorAll('*')].find(e => e.childElementCount === 0 && e.textContent.trim() === 'Contactgegevens');
+          const box = h && h.closest('.panel, .card, .box, section');
+          if (!box) return 'blok niet gevonden';
+          const c = box.cloneNode(true);
+          const mask = v => /@|\d{5,}/.test(v) ? '<waarde>' : v;
+          const walk = n => {
+            if (n.nodeType === 3) { const t = n.textContent.trim(); if (t && !/^[A-Z]:$|^\*+$|^Contactgegevens$/.test(t)) n.textContent = '<tekst>'; }
+            if (n.nodeType === 1) { for (const a of [...n.attributes]) n.setAttribute(a.name, mask(a.value)); }
+            n.childNodes.forEach(walk);
+          };
+          walk(c);
+          return c.outerHTML.replace(/\s+/g, ' ').slice(0, 6000);
+        }""")
+        report += ["## HTML blok Contactgegevens (gemaskeerd)", html, ""]
         page.screenshot(path=str(OUT / "detail-na-oog.png"), full_page=True)
         report += ["## Detail (na tonen contactgegevens)", _mask(page.locator("body").inner_text(), names), ""]
     else:
