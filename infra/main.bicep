@@ -248,6 +248,8 @@ resource funcAuth 'Microsoft.Web/sites/config@2024-04-01' = if (!empty(adminClie
           openIdIssuer: '${environment().authentication.loginEndpoint}${tenant().tenantId}/v2.0'
         }
         validation: { allowedAudiences: [adminClientId, 'api://${adminClientId}'] }
+        // Altijd vragen welk account (in de browser zijn vaak meerdere accounts aangemeld)
+        login: { loginParameters: ['prompt=select_account'] }
       }
     }
     login: { tokenStore: { enabled: false } }
