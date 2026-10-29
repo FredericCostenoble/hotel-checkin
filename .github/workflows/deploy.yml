@@ -35,6 +35,8 @@ jobs:
           python-version: "3.12"
       - run: pip install -e '.[storage,functions,dev]'
       - run: pytest -q
+      # Fouten zoals een ontbrekende import vroeg opvangen
+      - run: ruff check --select F src function_app.py
 
   deploy:
     needs: test
