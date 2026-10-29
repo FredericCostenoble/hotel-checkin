@@ -98,9 +98,17 @@ def test_backfill_missing_contact(monkeypatch):
 
     stored = _res()
     stored.reservation_id = "u2"
-    stored.arrival, stored.departure = date(2099, 1, 1), date(2099, 1, 2)
-    repo.save_reservation(stored)  # opgeslagen zonder e-mail
+    from datetime import timedelta
+
+    soon = date.today() + timedelta(days=3)
+    stored.arrival, stored.departure = soon, soon + timedelta(days=1)
+    repo.save_reservation(stored)  # opgeslagen zonder e-mail, aankomst binnen 8 dagen
+    later = _res()
+    later.reservation_id = "u3"
+    later.arrival, later.departure = date(2099, 1, 1), date(2099, 1, 2)
+    repo.save_reservation(later)  # verre aankomst: nog niet nodig
     monkeypatch.setattr(new_reservation.lighthouse, "get_new_reservations", lambda *a, **k: [])
     new_reservation.run("lucca", datetime(2000, 1, 1))
     assert repo.get_reservation("lucca", "u2").guest.email == "jan@example.com"
+    assert repo.get_reservation("lucca", "u3").guest.email is None
     assert "aangevuld" in repo.robot_runs("lucca")[0]["error"]

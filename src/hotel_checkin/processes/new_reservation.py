@@ -7,7 +7,7 @@ technische details van Lighthouse, Salto of Twilio; die zitten in de bouwblokken
 from __future__ import annotations
 
 import time
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 
 from hotel_checkin.core.models import ReservationStatus
 from hotel_checkin.guests import repository as guests
@@ -46,7 +46,7 @@ def run(hotel_id: str, since: datetime) -> int:
                     _keep_known(reservation, existing)
                 guests.save_reservation(reservation)
                 seen.add(reservation.reservation_id)
-            # Opgeslagen komende reservaties zonder e-mailadres alsnog aanvullen (max. per run)
+            # Reservaties die binnenkort aankomen en nog geen e-mailadres hebben, alsnog aanvullen
             deadline = time.monotonic() + DETAIL_BACKFILL_SECONDS
             for reservation in _missing_details(hotel_id, seen):
                 if time.monotonic() > deadline:
@@ -78,13 +78,20 @@ def run(hotel_id: str, since: datetime) -> int:
 DETAIL_BACKFILL_SECONDS = 10 * 60
 
 
+# Details alleen lezen als de volgende stap ze nodig heeft: nieuwe boekingen meteen
+# (bevestigingsmail), bestaande pas vanaf DETAIL_DAYS_BEFORE_ARRIVAL dagen voor aankomst (herinnering).
+DETAIL_DAYS_BEFORE_ARRIVAL = 8
+
+
 def _missing_details(hotel_id: str, seen: set[str]) -> list:
-    """Komende, niet geannuleerde reservaties zonder e-mailadres, die de gast nog niet zelf aanvulde."""
+    """Niet geannuleerde reservaties met aankomst binnenkort, zonder e-mailadres en nog niet door de
+    gast aangevuld. Eerst wie het eerst aankomt."""
     today = date.today()
+    horizon = today + timedelta(days=DETAIL_DAYS_BEFORE_ARRIVAL)
     todo = [r for r in guests.list_reservations(hotel_id)
             if r.reservation_id not in seen and not r.guest.email and not r.checkin_completed_at
-            and r.status != ReservationStatus.CANCELLED and r.departure >= today]
-    return todo
+            and r.status != ReservationStatus.CANCELLED and r.departure >= today and r.arrival <= horizon]
+    return sorted(todo, key=lambda r: r.arrival)
 
 
 def _apply_detail(reservation, detail, existing) -> None:
