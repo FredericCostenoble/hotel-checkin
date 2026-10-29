@@ -64,3 +64,27 @@ accent = "#B4BCCC"        # grijsblauw van het logo
 accent_donker = "#5C6478" # knoppen en titels
 tekst = "#2B2F38"
 achtergrond = "#F4F5F8"
+
+# Workflow: welke stappen wanneer (zie src/hotel_checkin/core/workflow.py).
+# step = berichttype (teksten in messaging/texts) of actie; when = after_booking,
+# days_before_arrival (met days) of at_start; only_if = voorwaarden; channels = email, sms, whatsapp.
+
+[[workflow]]
+step = "confirmation"            # mail met link naar het check-in-formulier
+when = "after_booking"
+only_if = ["not_cancelled"]
+channels = ["email"]
+
+[[workflow]]
+step = "reminder"                # herinnering als het formulier nog niet ingevuld is
+when = "days_before_arrival"
+days = 7
+only_if = ["form_not_completed", "not_cancelled"]
+channels = ["email"]
+
+[[workflow]]
+step = "access_code"             # pincode en praktische info
+when = "days_before_arrival"
+days = 1
+only_if = ["paid", "not_cancelled"]
+channels = ["email", "sms"]

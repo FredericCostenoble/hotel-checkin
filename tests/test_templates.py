@@ -13,7 +13,7 @@ from hotel_checkin.messaging.templates import (
     sample_data,
 )
 
-ALL_MESSAGES = (*EMAIL_MESSAGES, "aan_de_deur")
+ALL_MESSAGES = (*EMAIL_MESSAGES, "at_the_door")
 
 
 def _structure(lang: str):
@@ -37,26 +37,26 @@ def test_no_missing_fields_with_full_data(lang, message):
 
 
 def test_missing_field_stays_visible():
-    r = render("lucca", "info_pincode", "nl", {"voornaam": "Anna"})
+    r = render("lucca", "access_code", "nl", {"voornaam": "Anna"})
     assert "{pincode}" in r.html
 
 
 def test_unknown_language_falls_back_to_english():
-    r = render("lucca", "bevestiging", "es", sample_data("en"))
+    r = render("lucca", "confirmation", "es", sample_data("en"))
     assert r.subject.startswith("Your stay")
 
 
 def test_html_escapes_guest_data():
     data = sample_data("nl") | {"voornaam": "<script>"}
-    assert "<script>" not in render("lucca", "bevestiging", "nl", data).html
+    assert "<script>" not in render("lucca", "confirmation", "nl", data).html
 
 
 def test_checkin_link_from_config():
-    r = render("lucca", "bevestiging", "nl", sample_data("nl") | {"token": "abc"})
+    r = render("lucca", "confirmation", "nl", sample_data("nl") | {"token": "abc"})
     assert "?r=abc" in r.html
 
 
 def test_checkin_link_override_for_tst(monkeypatch):
     monkeypatch.setenv("CHECKIN_FORM_URL", "https://test.example/?r={token}")
-    r = render("lucca", "bevestiging", "nl", sample_data("nl") | {"token": "abc"})
+    r = render("lucca", "confirmation", "nl", sample_data("nl") | {"token": "abc"})
     assert "https://test.example/?r=abc" in r.html

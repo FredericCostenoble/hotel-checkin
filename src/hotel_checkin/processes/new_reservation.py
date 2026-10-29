@@ -9,6 +9,7 @@ from __future__ import annotations
 import time
 from datetime import date, datetime, timedelta, timezone
 
+from hotel_checkin.core import workflow
 from hotel_checkin.core.models import ReservationStatus
 from hotel_checkin.guests import repository as guests
 from hotel_checkin.pms import lighthouse
@@ -18,9 +19,9 @@ def run(hotel_id: str, since: datetime) -> int:
     """Haal nieuwe reservaties van een hotel op en bewaar ze. Geeft het aantal nieuwe reservaties terug.
 
     Van nieuwe reservaties (en van reservaties zonder e-mailadres) worden meteen de details gelezen:
-    contactgegevens, land en taal, status, betaling. Dat is nodig voor de bevestigingsmail.
+    contactgegevens, land en taal, status, betaling, als de workflow van het hotel ze nodig heeft.
     Wat de gast zelf invulde in het check-in-formulier en het token blijven behouden.
-    Elke run wordt gelogd (monitor). Volgende stappen (bevestigingsmail, herinnering, code)
+    Elke run wordt gelogd (monitor). De stappen zelf (confirmation, reminder, access_code)
     komen in aparte processen.
     """
     started = datetime.now(timezone.utc)
@@ -35,7 +36,10 @@ def run(hotel_id: str, since: datetime) -> int:
                 if existing is None:
                     new += 1
                 detail = None
-                if existing is None or (not existing.guest.email and not existing.checkin_completed_at):
+                needs_detail = existing is None or (not existing.guest.email and not existing.checkin_completed_at)
+                if needs_detail and existing is None and not workflow.needs_details_after_booking(hotel_id):
+                    needs_detail = False  # geen stap na de boeking: details pas als de aankomst nadert
+                if needs_detail:
                     try:
                         detail = lighthouse.get_reservation(hotel_id, reservation.reservation_id, lh)
                     except Exception as exc:  # noqa: BLE001 - volgende run probeert opnieuw
@@ -78,16 +82,15 @@ def run(hotel_id: str, since: datetime) -> int:
 DETAIL_BACKFILL_SECONDS = 10 * 60
 
 
-# Details alleen lezen als de volgende stap ze nodig heeft: nieuwe boekingen meteen
-# (bevestigingsmail), bestaande pas vanaf DETAIL_DAYS_BEFORE_ARRIVAL dagen voor aankomst (herinnering).
-DETAIL_DAYS_BEFORE_ARRIVAL = 8
+# Details alleen lezen als de workflow ze nodig heeft (core/workflow.py): nieuwe boekingen meteen
+# als er een stap na de boeking is, de rest pas vanaf de vroegste stap voor aankomst.
 
 
 def _missing_details(hotel_id: str, seen: set[str]) -> list:
     """Niet geannuleerde reservaties met aankomst binnenkort, zonder e-mailadres en nog niet door de
     gast aangevuld. Eerst wie het eerst aankomt."""
     today = date.today()
-    horizon = today + timedelta(days=DETAIL_DAYS_BEFORE_ARRIVAL)
+    horizon = today + timedelta(days=workflow.detail_window_days(hotel_id))
     todo = [r for r in guests.list_reservations(hotel_id)
             if r.reservation_id not in seen and not r.guest.email and not r.checkin_completed_at
             and r.status != ReservationStatus.CANCELLED and r.departure >= today and r.arrival <= horizon]

@@ -55,12 +55,12 @@ def test_mark_checkin_completed():
 
 
 def test_message_log_and_duplicates():
-    repo.log_message("lucca", "abc-123", "bevestiging", SendResult(Channel.EMAIL, "a@b.c", ok=False, error="x"))
-    assert not repo.was_sent("lucca", "abc-123", "bevestiging")
-    repo.log_message("lucca", "abc-123", "bevestiging", SendResult(Channel.EMAIL, "a@b.c", ok=True))
-    assert repo.was_sent("lucca", "abc-123", "bevestiging")
-    assert repo.was_sent("lucca", "abc-123", "bevestiging", "email")
-    assert not repo.was_sent("lucca", "abc-123", "bevestiging", "sms")
+    repo.log_message("lucca", "abc-123", "confirmation", SendResult(Channel.EMAIL, "a@b.c", ok=False, error="x"))
+    assert not repo.was_sent("lucca", "abc-123", "confirmation")
+    repo.log_message("lucca", "abc-123", "confirmation", SendResult(Channel.EMAIL, "a@b.c", ok=True))
+    assert repo.was_sent("lucca", "abc-123", "confirmation")
+    assert repo.was_sent("lucca", "abc-123", "confirmation", "email")
+    assert not repo.was_sent("lucca", "abc-123", "confirmation", "sms")
     assert len(repo.messages_for("lucca", "abc-123")) == 2
 
 
@@ -104,9 +104,9 @@ def test_hotels_are_separated():
     repo.add_opt_out("lucca", "anna@example.com", "checkin_form")
     assert repo.is_opted_out("lucca", "anna@example.com")
     assert not repo.is_opted_out("ander-hotel", "anna@example.com")
-    repo.log_message("lucca", "R-1", "bevestiging", SendResult(Channel.EMAIL, "a@b.c", ok=True))
-    assert repo.was_sent("lucca", "R-1", "bevestiging")
-    assert not repo.was_sent("ander-hotel", "R-1", "bevestiging")
+    repo.log_message("lucca", "R-1", "confirmation", SendResult(Channel.EMAIL, "a@b.c", ok=True))
+    assert repo.was_sent("lucca", "R-1", "confirmation")
+    assert not repo.was_sent("ander-hotel", "R-1", "confirmation")
 
 
 def test_prune_robot_runs():

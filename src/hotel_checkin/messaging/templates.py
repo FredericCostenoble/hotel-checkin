@@ -8,7 +8,7 @@ een kant-en-klaar bericht (onderwerp, HTML-mail, tekstversie en SMS/WhatsApp-tek
 - Ontbreekt een taal, dan valt het terug op Engels.
 - Een veld zonder waarde blijft zichtbaar als {veldnaam}, zodat een fout opvalt.
 
-Berichttypes: bevestiging, herinnering, info_pincode, aan_de_deur (alleen SMS/WhatsApp).
+Berichttypes: confirmation, reminder, access_code, at_the_door (alleen SMS/WhatsApp).
 
 Testmails sturen in de codespace (alle mails, alle talen, met voorbeeldgegevens):
     python -m hotel_checkin.messaging.templates jouw@adres.be
@@ -30,7 +30,7 @@ from pathlib import Path
 TEXTS_DIR = Path(__file__).parent / "texts"
 LANGUAGES = ("nl", "fr", "en", "de")
 FALLBACK_LANGUAGE = "en"
-EMAIL_MESSAGES = ("bevestiging", "herinnering", "info_pincode")
+EMAIL_MESSAGES = ("confirmation", "reminder", "access_code")
 
 
 @dataclass
@@ -70,6 +70,8 @@ def load_texts(hotel_id: str, language: str) -> dict:
 def _config_fields(config: dict) -> dict[str, str]:
     fields: dict[str, str] = {}
     for section, values in config.items():
+        if not isinstance(values, dict):
+            continue  # bv. [[workflow]]: geen velden voor teksten
         for key, value in values.items():
             fields[f"{section}_{key}"] = str(value)
     return fields
@@ -306,4 +308,4 @@ if __name__ == "__main__":
                 sender=cfg["verzending"]["mail_afzender"], reply_to=cfg["hotel"]["email"],
             )
             print(lang, msg, "ok" if result.ok else result.error)
-        print(lang, "sms aan_de_deur:", render(hotel, "aan_de_deur", lang, sample_data(lang)).sms)
+        print(lang, "sms at_the_door:", render(hotel, "at_the_door", lang, sample_data(lang)).sms)

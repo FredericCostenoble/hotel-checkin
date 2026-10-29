@@ -4,86 +4,86 @@
 team = "Ihr Team vom {hotel_naam}"
 voettekst = "Sie erhalten diese E-Mail, weil Sie eine Reservierung im {hotel_naam} haben."
 
-[bevestiging]
+[confirmation]
 onderwerp = "Ihr Aufenthalt im {hotel_naam}, {aankomst} bis {vertrek}"
 voorvertoning = "Vielen Dank für Ihre Reservierung. Bitte ergänzen Sie Ihre Check-in-Daten."
 aanhef = "Guten Tag {voornaam} {achternaam},"
 afsluiting = "Bis bald,"
 sms = "{hotel_naam}: Vielen Dank für Ihre Reservierung, {voornaam}. Ergänzen Sie Ihre Check-in-Daten und erhalten Sie vor der Anreise Ihren persönlichen PIN-Code: {checkin_link}"
 
-[[bevestiging.blokken]]
+[[confirmation.blokken]]
 type = "text"
 alineas = ["Vielen Dank für Ihre Reservierung im {hotel_naam}. Wir freuen uns, Sie im Herzen von Brügge begrüßen zu dürfen."]
 
-[[bevestiging.blokken]]
+[[confirmation.blokken]]
 type = "details"
 titel = "Ihre Reservierung"
 rijen = [["Anreise", "{aankomst}"], ["Abreise", "{vertrek}"], ["Zimmer", "{kamertype}"], ["Reservierungsnummer", "{reservatienummer}"]]
 
-[[bevestiging.blokken]]
+[[confirmation.blokken]]
 type = "text"
 titel = "Einfacher Check-in"
 alineas = ["Damit Ihre Anreise so reibungslos wie möglich verläuft, bitten wir Sie, einige Angaben zu ergänzen. Einen Teil haben wir bereits für Sie ausgefüllt. Es dauert nur wenige Minuten."]
 
-[[bevestiging.blokken]]
+[[confirmation.blokken]]
 type = "button"
 tekst = "Check-in-Daten ergänzen"
 link = "{checkin_link}"
 
-[[bevestiging.blokken]]
+[[confirmation.blokken]]
 type = "text"
 alineas = [
   "Mit diesen Angaben senden wir Ihnen vor Ihrer Anreise alle praktischen Informationen, darunter einen persönlichen PIN-Code für die Haustür und Ihre Zimmertür während Ihres Aufenthalts. So kommen Sie jederzeit herein, auch außerhalb der Öffnungszeiten der Rezeption.",
   "Unsere Rezeption ist täglich von {receptie_van} bis {receptie_tot} Uhr geöffnet. Sie sind dort jederzeit willkommen, mit Fragen oder für Tipps zu Brügge.",
 ]
 
-[herinnering]
+[reminder]
 onderwerp = "Noch eine Woche bis zu Ihrem Aufenthalt im {hotel_naam}"
 voorvertoning = "Ergänzen Sie Ihre Check-in-Daten und erhalten Sie Ihren persönlichen PIN-Code."
 aanhef = "Guten Tag {voornaam} {achternaam},"
 afsluiting = "Bis nächste Woche,"
 sms = "{hotel_naam}: {voornaam}, in einer Woche sind Sie unser Gast. Ergänzen Sie Ihre Check-in-Daten und erhalten Sie Ihren persönlichen PIN-Code: {checkin_link}"
 
-[[herinnering.blokken]]
+[[reminder.blokken]]
 type = "text"
 alineas = ["In einer Woche dürfen wir Sie im {hotel_naam} begrüßen. Uns ist aufgefallen, dass Ihre Check-in-Daten noch nicht vollständig sind."]
 
-[[herinnering.blokken]]
+[[reminder.blokken]]
 type = "details"
 titel = "Ihre Reservierung"
 rijen = [["Anreise", "{aankomst}"], ["Abreise", "{vertrek}"], ["Reservierungsnummer", "{reservatienummer}"]]
 
-[[herinnering.blokken]]
+[[reminder.blokken]]
 type = "text"
 alineas = ["Ergänzen Sie diese jetzt, dann erhalten Sie am Tag vor Ihrer Anreise alle praktischen Informationen und Ihren persönlichen PIN-Code für die Haustür und Ihre Zimmertür. Es dauert nur wenige Minuten."]
 
-[[herinnering.blokken]]
+[[reminder.blokken]]
 type = "button"
 tekst = "Check-in-Daten ergänzen"
 link = "{checkin_link}"
 
-[[herinnering.blokken]]
+[[reminder.blokken]]
 type = "text"
 alineas = ["Unsere Rezeption ist täglich von {receptie_van} bis {receptie_tot} Uhr geöffnet."]
 
-[info_pincode]
+[access_code]
 onderwerp = "Ihr PIN-Code und praktische Informationen für das {hotel_naam}"
 voorvertoning = "Ihr persönlicher PIN-Code und alles, was Sie für Ihren Aufenthalt brauchen."
 aanhef = "Guten Tag {voornaam} {achternaam},"
 afsluiting = "Bis morgen,"
 sms = "{hotel_naam}: Willkommen morgen, {voornaam}! Ihr PIN-Code für die Haustür und Zimmer {kamernummer}: {pincode}. Gültig von {code_geldig_van} bis {code_geldig_tot}. Alle Informationen finden Sie in Ihrer E-Mail."
 
-[[info_pincode.blokken]]
+[[access_code.blokken]]
 type = "text"
 alineas = ["Morgen ist es so weit. Unten finden Sie alles, was Sie für Ihren Aufenthalt brauchen."]
 
-[[info_pincode.blokken]]
+[[access_code.blokken]]
 type = "highlight"
 titel = "Ihr persönlicher PIN-Code"
 waarde = "{pincode}"
 alineas = ["Mit diesem Code öffnen Sie die Haustür und Ihre Zimmertür, von {code_geldig_van} bis {code_geldig_tot}.", "Ihr Zimmer: {kamernummer}"]
 
-[[info_pincode.blokken]]
+[[access_code.blokken]]
 type = "list"
 titel = "Anreise"
 items = [
@@ -93,7 +93,7 @@ items = [
   "Unser Hotel hat keinen Aufzug. Wenn Sie Hilfe mit Ihrem Gepäck brauchen, wenden Sie sich bitte an die Rezeption.",
 ]
 
-[[info_pincode.blokken]]
+[[access_code.blokken]]
 type = "list"
 titel = "Während Ihres Aufenthalts"
 items = [
@@ -102,14 +102,14 @@ items = [
   "Parken: Das Hotel hat keinen eigenen Parkplatz. Das Parkhaus {parking_naam} liegt {parking_minuten} Gehminuten entfernt.",
 ]
 
-[[info_pincode.blokken]]
+[[access_code.blokken]]
 type = "text"
 titel = "Abreise"
 alineas = ["Der Check-out ist bis {checkout_tot} Uhr möglich. Ihr Gepäck können Sie kostenlos bei uns lassen."]
 
-[[info_pincode.blokken]]
+[[access_code.blokken]]
 type = "text"
 alineas = ["Haben Sie Fragen? Rufen Sie uns unter {hotel_telefoon} an oder antworten Sie einfach auf diese E-Mail."]
 
-[aan_de_deur]
+[at_the_door]
 sms = "{hotel_naam}: Willkommen, {voornaam}! Geben Sie {pincode} am Tastenfeld der Haustür und danach an dem von Zimmer {kamernummer} ein. Probleme? Rufen Sie {nood_nummer} an."
