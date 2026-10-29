@@ -18,7 +18,13 @@ from pathlib import Path
 
 from hotel_checkin.pms.lighthouse_browser import LighthouseSession
 
-PAGES = ["/Customer/Dashboard", "/Customer/Reservations", "/Customer/Planboard"]
+# Let op: /Customer/Reservations opent het formulier "nieuwe reservering"; niet gebruiken.
+PAGES = [
+    "/Customer/Dashboard",
+    "/Customer/Reservations/List",
+    "/Customer/Settings/KeySystems",
+    "/Customer/Settings/OnlineCheckIn",
+]
 OUT = Path("lighthouse-explore")
 
 # Draait in de pagina: verzamelt structuur, geen inhoud van cellen.
@@ -78,9 +84,16 @@ def main() -> None:
     OUT.mkdir(exist_ok=True)
     report = []
     with LighthouseSession(args.hotel_id, headless=not args.show, debug_dir=OUT) as lh:
-        for path in PAGES + (args.page or []):
+        paths = PAGES + (args.page or [])
+        # Eerste reservering van het dashboard erbij, om de detailpagina te leren kennen
+        lh.goto("/Customer/Dashboard")
+        detail = lh.page.locator("a[href*='/Customer/Reservations/Detail/']").first
+        if detail.count():
+            paths.append(detail.get_attribute("href").split("mylighthouse.com")[-1])
+        for path in paths:
             page = lh.goto(path)
-            name = re.sub(r"[^a-z0-9]+", "-", path.lower()).strip("-")[:60]
+            name = re.sub(r"[0-9a-f]{8}-[0-9a-f-]{27,}", "id", path.lower())
+            name = re.sub(r"[^a-z0-9]+", "-", name).strip("-")[:60]
             page.screenshot(path=str(OUT / f"{name}.png"), full_page=True)
             report.append(_md(page.evaluate(_JS)))
             print(f"ok  {path}")
