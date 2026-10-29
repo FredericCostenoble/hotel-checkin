@@ -13,6 +13,7 @@ const T = {
     ok: "ok", fail: "fout", busy: "De robot is bezig...", scheduled: "Draait ook automatisch op schema.",
     not_installed: "De robot is in deze omgeving nog niet geïnstalleerd.", no_runs: "De robot heeft nog niet gedraaid",
     load_error: "Fout bij laden",
+    exec_title: "Runs volgens Azure", exec_end: "Einde", exec_status: "Status", exec_name: "Naam",
   },
   en: {
     title: "Check-in monitor", hotel: "Hotel", tab_res: "Reservations", tab_robot: "Robot",
@@ -25,6 +26,7 @@ const T = {
     ok: "ok", fail: "failed", busy: "The robot is running...", scheduled: "Also runs automatically on a schedule.",
     not_installed: "The robot is not installed in this environment yet.", no_runs: "The robot has not run yet",
     load_error: "Loading failed",
+    exec_title: "Runs according to Azure", exec_end: "End", exec_status: "Status", exec_name: "Name",
   },
 };
 let lang = "nl";
@@ -134,6 +136,12 @@ function renderRuns(d) {
       <td class="${x.ok ? "ok" : "err"}">${x.ok ? t("ok") : t("fail")}</td><td>${x.found}</td><td>${x.new}</td>
       <td class="wrap err">${esc(x.error)}</td></tr>`;
   }).join("") || `<tr><td colspan="7" class="muted">${t("no_runs")}</td></tr>`;
+  // In de cloud: ook de runs volgens Azure (toont runs die mislukten voor ze iets konden noteren)
+  $("#exec-wrap").hidden = !d.executions;
+  $("#execs").innerHTML = (d.executions || []).map(e =>
+    `<tr><td>${stamp(e.start)}</td><td>${stamp(e.end)}</td>
+      <td class="${e.status === "Succeeded" ? "ok" : (e.status === "Failed" ? "err" : "")}">${esc(e.status)}</td>
+      <td class="muted">${esc(e.name)}</td></tr>`).join("");
 }
 
 async function runRobot() {

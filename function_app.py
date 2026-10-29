@@ -119,7 +119,8 @@ def admin_api(req: func.HttpRequest) -> func.HttpResponse:
     if req.method == "GET" and what == "runs":
         data = admin.runs(hotel)
         if cloud_robot.available():
-            data["running"] = cloud_robot.running()
+            data["executions"] = cloud_robot.executions()
+            data["running"] = cloud_robot.running(data["executions"])
         return _json(200, data | {"can_run": cloud_robot.available(), "cloud": True})
     if req.method == "POST" and what == "run":
         # De robot (browser) draait als Container Apps Job, niet in de Function App

@@ -32,10 +32,20 @@ def start() -> bool:
     return r.status_code in (200, 202)
 
 
-def running() -> bool:
+def executions(limit: int = 10) -> list[dict]:
+    """Laatste runs van de job volgens Azure (ook runs die mislukten voor ze iets konden loggen)."""
     job = os.environ["ROBOT_JOB_ID"]
     r = httpx.get(f"{ARM}{job}/executions?api-version={API_VERSION}", headers=_headers(), timeout=30)
     if r.status_code != 200:
-        return False
-    return any(e.get("properties", {}).get("status") in ("Running", "Processing")
-               for e in r.json().get("value", []))
+        return []
+    out = [{
+        "name": e.get("name", ""),
+        "status": e.get("properties", {}).get("status", ""),
+        "start": e.get("properties", {}).get("startTime", ""),
+        "end": e.get("properties", {}).get("endTime", ""),
+    } for e in r.json().get("value", [])]
+    return sorted(out, key=lambda e: e["start"], reverse=True)[:limit]
+
+
+def running(execs: list[dict] | None = None) -> bool:
+    return any(e["status"] in ("Running", "Processing") for e in (execs if execs is not None else executions()))
