@@ -1,4 +1,4 @@
-// Opvolgpagina: haalt gegevens op via /api/admin/... (lokaal de devserver, later de Function App).
+// Opvolgpagina: haalt gegevens op via /api/opvolging/... (lokaal de devserver, later de Function App).
 const API = window.ADMIN_API || "";
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
@@ -15,7 +15,7 @@ async function get(path, opts) {
 }
 
 async function init() {
-  const hotels = await get("/api/admin/hotels");
+  const hotels = await get("/api/opvolging/hotels");
   $("#hotel").innerHTML = hotels.map(h => `<option value="${esc(h.id)}">${esc(h.name)}</option>`).join("");
   const saved = store("hotel");
   if (saved && hotels.some(h => h.id === saved)) $("#hotel").value = saved;
@@ -33,7 +33,7 @@ async function init() {
 
 async function load() {
   const h = $("#hotel").value;
-  rows = await get(`/api/admin/${h}/reservations`);
+  rows = await get(`/api/opvolging/${h}/reservations`);
   render();
   loadRuns();
 }
@@ -58,7 +58,7 @@ function render() {
 
 async function loadRuns() {
   const h = $("#hotel").value;
-  const d = await get(`/api/admin/${h}/runs`);
+  const d = await get(`/api/opvolging/${h}/runs`);
   $("#run").disabled = d.running || !d.can_run;
   $("#robot-state").textContent = d.running ? "De robot is bezig..." :
     (d.can_run ? "" : "De robot draait hier nog niet: de cloudversie (geplande taak) volgt.");
@@ -77,7 +77,7 @@ async function runRobot() {
   const h = $("#hotel").value;
   $("#run").disabled = true;
   $("#run").dataset.waiting = "1";
-  await get(`/api/admin/${h}/run?hours=${encodeURIComponent($("#hours").value)}`, { method: "POST" });
+  await get(`/api/opvolging/${h}/run?hours=${encodeURIComponent($("#hours").value)}`, { method: "POST" });
   loadRuns();
 }
 

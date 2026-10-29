@@ -12,7 +12,7 @@ Opvolgpagina (bevat gastgegevens): /opvolging/ en /api/opvolging/..., alleen na 
 Microsoft-account (ingebouwde login van Azure, zie infra/README.md). Zonder die login
 (instelling ADMIN_AUTH leeg) blijft de opvolgpagina dicht.
 
-Routes staan volledig uitgeschreven (routePrefix is leeg in host.json). /admin is in Azure
+Routes staan volledig uitgeschreven (routePrefix is leeg in host.json). /admin (ook in /api/admin) is in Azure
 Functions gereserveerd, daarom /opvolging/.
 """
 

@@ -59,8 +59,8 @@ class Handler(BaseHTTPRequestHandler):
         self._send(status, json.dumps(obj).encode(), "application/json")
 
     def _admin_api(self, method: str, path: str) -> bool:
-        parts = path.strip("/").split("/")  # api admin <hotel> <wat>
-        if parts[:2] != ["api", "admin"]:
+        parts = path.strip("/").split("/")  # api opvolging <hotel> <wat>
+        if parts[:2] != ["api", "opvolging"]:
             return False
         if method == "GET" and parts[2:] == ["hotels"]:
             self._json(200, admin.hotels())
