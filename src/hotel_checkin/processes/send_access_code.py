@@ -17,8 +17,8 @@ from hotel_checkin.messaging import email
 from hotel_checkin.pms import lighthouse
 
 
-def run(reservation_id: str, check_in_time: datetime, check_out_time: datetime) -> None:
-    reservation = lighthouse.get_reservation(reservation_id)
+def run(hotel_id: str, reservation_id: str, check_in_time: datetime, check_out_time: datetime) -> None:
+    reservation = lighthouse.get_reservation(hotel_id, reservation_id)
     if not reservation.paid or reservation.status != ReservationStatus.CHECKED_IN:
         # Nog niet klaar: geen code. Het proces probeert het later opnieuw.
         return
@@ -31,7 +31,7 @@ def run(reservation_id: str, check_in_time: datetime, check_out_time: datetime) 
             valid_until=check_out_time,
             guest_name=f"{reservation.guest.first_name} {reservation.guest.last_name}",
         )
-        lighthouse.store_access_code(code)
+        lighthouse.store_access_code(hotel_id, code)
 
     if reservation.guest.email:
         email.send_email(

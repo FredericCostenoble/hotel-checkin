@@ -19,6 +19,7 @@ from datetime import datetime, timedelta, timezone
 import azure.functions as func
 
 from hotel_checkin.checkin import service as checkin
+from hotel_checkin.core.hotels import list_hotels
 from hotel_checkin.processes import new_reservation
 
 app = func.FunctionApp(http_auth_level=func.AuthLevel.FUNCTION)
@@ -30,8 +31,9 @@ def poll_new_reservations(timer: func.TimerRequest) -> None:
     if os.environ.get("POLL_ENABLED", "").lower() != "true":
         return
     since = datetime.now(timezone.utc) - timedelta(minutes=15)
-    count = new_reservation.run(since)
-    logging.info("Nieuwe reservaties verwerkt: %s", count)
+    for hotel_id in list_hotels():
+        count = new_reservation.run(hotel_id, since)
+        logging.info("%s: %s nieuwe reservaties", hotel_id, count)
 
 
 @app.route(route="health", methods=["GET"], auth_level=func.AuthLevel.ANONYMOUS)

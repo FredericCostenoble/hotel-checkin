@@ -55,6 +55,10 @@ class Reservation:
     room_type: str | None = None
     token: str | None = None  # geheime sleutel in de link naar het check-in-formulier
     checkin_completed_at: datetime | None = None  # wanneer de gast het formulier invulde
+    booking_number: str | None = None  # reservatienummer in Lighthouse, bv. CPB-4276-002731
+    pms_status: str | None = None  # status zoals Lighthouse ze toont: Nieuw, Bevestigd, Geannuleerd
+    guest_count: int | None = None
+    booked_at: datetime | None = None  # "Gemaakt op" in Lighthouse
 
 
 @dataclass
