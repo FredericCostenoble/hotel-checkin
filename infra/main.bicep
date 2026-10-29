@@ -63,6 +63,9 @@ param acrResourceGroup string = ''
 @description('Schema van de robot (cron, UTC).')
 param robotSchedule string = env == 'prd' ? '*/15 * * * *' : '0 * * * *'
 
+@description('Id van de rol waarmee de Function App de robot mag starten (Container Apps Jobs Operator). Leeg = geen knop.')
+param robotStarterRoleId string = ''
+
 @description('Regio van de robot (Container Apps). Standaard dezelfde als de gegevens.')
 param robotLocation string = location
 
@@ -422,11 +425,11 @@ resource robotJob 'Microsoft.App/jobs@2024-03-01' = if (withRobot) {
 }
 
 // De Function App mag de robot starten (knop op de opvolgpagina)
-resource raFuncRobot 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (withRobot) {
+resource raFuncRobot 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (withRobot && !empty(robotStarterRoleId)) {
   scope: robotJob
-  name: guid(robotJob.id, func.id, 'contributor')
+  name: guid(robotJob.id, func.id, robotStarterRoleId)
   properties: {
-    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', 'b24988ac-6180-42a0-ad88-20f7382dd24c')
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', robotStarterRoleId)
     principalId: func.identity.principalId
     principalType: 'ServicePrincipal'
   }

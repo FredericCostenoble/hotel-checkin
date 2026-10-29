@@ -79,6 +79,7 @@ jobs:
       - name: Infrastructuur (Bicep)
         id: infra
         run: |
+          STARTER=$(az role definition list --name "Container Apps Jobs Operator" --query "[0].name" -o tsv || true)
           out=$(az deployment group create \
             --resource-group "rg-checkin-$ENV_NAME" \
             --name "checkin-${{ github.run_number }}" \
@@ -92,6 +93,7 @@ jobs:
                          robotImage="${{ steps.image.outputs.image }}" \
                          acrName="${{ steps.acr.outputs.name }}" \
                          acrResourceGroup=rg-checkin-prd \
+                         robotStarterRoleId="$STARTER" \
                          budgetAmount="${{ vars.BUDGET_AMOUNT || '0' }}" \
                          alertEmail="${{ vars.ALERT_EMAIL }}" \
                          testEmail="${{ vars.TEST_EMAIL }}" \
