@@ -100,7 +100,7 @@ def explore_detail(lh: LighthouseSession, path: str) -> str:
     page.wait_for_timeout(3000)  # folio en transacties laden asynchroon
     title = page.locator("h1, h2, .page-title").first.inner_text() if page.locator("h1, h2, .page-title").count() else ""
     guest = title.split(" - ", 1)[1] if " - " in title else ""
-    names = [w.strip("(),") for w in guest.split()]
+    names = [w.strip(",") for w in guest.split() if not w.startswith("(")]  # landcode (DE) behouden
     report = ["## Detail (voor tonen)", _mask(page.locator("body").inner_text(), names), ""]
     eye = page.locator("i.fa-eye, .fa-eye, [class*='eye']").first
     if eye.count():
