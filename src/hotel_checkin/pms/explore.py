@@ -107,8 +107,7 @@ def explore_detail(lh: LighthouseSession, path: str) -> str:
     # Alleen het oog-icoon in het blok Contactgegevens (er staat er ook een bij de betalingen)
     eye = page.locator(
         "xpath=//*[normalize-space(text())='Contactgegevens']"
-        "/ancestor::*[contains(@class,'panel') or contains(@class,'card') or contains(@class,'box')][1]"
-        "//*[contains(@class,'fa-eye')]"
+        "/ancestor::*[.//*[contains(@class,'fa-eye')]][1]//*[contains(@class,'fa-eye')]"
     ).first
     if eye.count():
         requests: list[str] = []
@@ -119,7 +118,8 @@ def explore_detail(lh: LighthouseSession, path: str) -> str:
         # Opbouw van het blok Contactgegevens, met alle teksten en waarden gemaskeerd
         html = page.evaluate(r"""() => {
           const h = [...document.querySelectorAll('*')].find(e => e.childElementCount === 0 && e.textContent.trim() === 'Contactgegevens');
-          const box = h && h.closest('.panel, .card, .box, section');
+          let box = h;
+          while (box && !box.querySelector('[class*="fa-eye"]')) box = box.parentElement;
           if (!box) return 'blok niet gevonden';
           const c = box.cloneNode(true);
           const mask = v => /@|\d{5,}/.test(v) ? '<waarde>' : v;
