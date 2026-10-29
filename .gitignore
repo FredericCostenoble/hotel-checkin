@@ -14,3 +14,6 @@ storage_state*.json
 
 # Uitrolpakketten
 build/
+
+# Verkenning van Lighthouse (schermafbeeldingen met gastgegevens)
+lighthouse-explore/

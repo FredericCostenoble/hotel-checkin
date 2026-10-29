@@ -39,6 +39,10 @@ minuten = "2"
 [nood]
 nummer = "+32 471 18 15 74"   # TODO: nummer voor 's avonds en 's nachts
 
+[lighthouse]
+# Reservation Manager. Aanmelden met robotgebruiker uit Key Vault: lucca-lighthouse-username / -password
+base_url = "https://reservationmanager.mylighthouse.com"
+
 [checkin]
 # Link naar het online check-in-formulier (nog te bouwen). {token} wordt per gast ingevuld.
 formulier_url = "https://checkin.hotellucca.be/?r={token}"

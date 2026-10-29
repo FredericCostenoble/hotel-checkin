@@ -1,7 +1,7 @@
 """Bouwblok 4 (en wegschrijven naar Lighthouse).
 
 Voorlopig via browserautomatisatie (Playwright, headless Chromium) met een aparte
-robotgebruiker in Lighthouse. Login met TOTP (pyotp), sessiecookies bewaard tussen runs.
+robotgebruiker per hotel (zonder MFA), zie lighthouse_browser.py. Sessiecookies bewaard tussen runs.
 Als Lighthouse een API aanbiedt, komt er een tweede implementatie achter dezelfde functies.
 
 Aandachtspunten uit de projectnotities:
