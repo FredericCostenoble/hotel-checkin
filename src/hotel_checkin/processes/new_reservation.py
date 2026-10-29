@@ -69,7 +69,7 @@ def run(hotel_id: str, since: datetime) -> int:
     return new
 
 
-DETAIL_BACKFILL_PER_RUN = 20
+DETAIL_BACKFILL_PER_RUN = 50  # ongeveer 5 tot 8 seconden per reservatie
 
 
 def _missing_details(hotel_id: str, seen: set[str]) -> list:
