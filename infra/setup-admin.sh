@@ -19,10 +19,13 @@ ME=$(az ad signed-in-user show --query id -o tsv)
 
 for ENV in tst prd; do
   RG="rg-checkin-$ENV"
-  FUNC=$(az functionapp list -g "$RG" --query "[0].name" -o tsv)
-  HOST=$(az functionapp show -g "$RG" -n "$FUNC" --query defaultHostName -o tsv)
+  HOST=$(az resource list -g "$RG" --resource-type Microsoft.Web/sites \
+    --query "[?starts_with(name, 'func-checkin-')].name | [0]" -o tsv)
+  HOST=$(az resource show -g "$RG" -n "$HOST" --resource-type Microsoft.Web/sites \
+    --query properties.defaultHostName -o tsv)
+  if [ -z "$HOST" ]; then echo "Geen Function App gevonden in $RG"; exit 1; fi
   NAME="hotel-checkin-admin-$ENV"
-  echo "== $ENV: https://$HOST/admin/"
+  echo "== $ENV: https://$HOST/opvolging/"
 
   APP_ID=$(az ad app list --display-name "$NAME" --query "[0].appId" -o tsv)
   if [ -z "$APP_ID" ]; then
