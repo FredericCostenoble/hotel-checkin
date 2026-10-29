@@ -85,6 +85,8 @@ jobs:
           cp requirements.txt build/func/requirements.txt
           cp -r src/hotel_checkin config build/func/
           mkdir -p build/func/web && cp -r web/admin build/func/web/
+          # Versienummer in de links naar css/js, zodat de browser nooit een oude versie mengt
+          sed -i "s/__VERSION__/${{ github.run_number }}/g" build/func/web/admin/index.html
 
       - uses: Azure/functions-action@v1
         with:

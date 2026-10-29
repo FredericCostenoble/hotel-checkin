@@ -14,6 +14,10 @@ async function get(path, opts) {
   return r.json();
 }
 
+// Filter "Verblijf van" staat standaard op vandaag, "tot" leeg
+const todayIso = () => new Date().toISOString().slice(0, 10);
+$("#from").value = todayIso();
+
 async function init() {
   const hotels = await get("/api/opvolging/hotels");
   $("#hotel").innerHTML = hotels.map(h => `<option value="${esc(h.id)}">${esc(h.name)}</option>`).join("");
@@ -26,10 +30,9 @@ async function init() {
     $("#tab-robot").hidden = b.dataset.tab !== "robot";
   });
   $("#search").oninput = render;
-  $("#from").value = new Date().toISOString().slice(0, 10);
   $("#from").onchange = render;
   $("#to").onchange = render;
-  $("#today").onclick = () => { $("#from").value = new Date().toISOString().slice(0, 10); $("#to").value = ""; render(); };
+  $("#today").onclick = () => { $("#from").value = todayIso(); $("#to").value = ""; render(); };
   $("#run").onclick = runRobot;
   load();
 }
