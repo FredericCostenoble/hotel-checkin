@@ -40,3 +40,15 @@ def test_robot_since_last_successful_run():
     repo.log_robot_run("lucca", "nieuwe_reservaties", started, True, 3, 1)
     assert abs((robot._since("lucca", None) - (started - timedelta(hours=1))).total_seconds()) < 1
     assert now - robot._since("lucca", 5) < timedelta(hours=5, seconds=5)
+
+
+def test_robot_main_runs(monkeypatch):
+    import sys
+
+    from hotel_checkin import robot
+
+    called = []
+    monkeypatch.setattr(robot.new_reservation, "run", lambda h, since: called.append(h) or 0)
+    monkeypatch.setattr(sys, "argv", ["robot"])
+    monkeypatch.delenv("ROBOT_HOTEL", raising=False)
+    assert robot.main() == 0 and called == ["lucca"]
