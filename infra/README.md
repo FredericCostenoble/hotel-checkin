@@ -83,6 +83,9 @@ Eenmalig in de codespace (na `az login` en `gh auth login`):
 unset GITHUB_TOKEN; bash infra/setup-admin.sh
 ```
 
+Eigen adres (monitor.hotellucca.be, monitor-tst.hotellucca.be): DNS-records zetten (CNAME en TXT
+`asuid.<naam>`), daarna `bash infra/add-monitor-domain.sh <env> <adres>`.
+
 Iemand anders toegang geven: `bash infra/setup-admin.sh iemand@hotellucca.be`.
 Zolang `ADMIN_CLIENT_ID` niet gezet is, blijft de opvolgpagina dicht.
 
