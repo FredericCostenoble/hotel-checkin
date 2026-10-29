@@ -27,25 +27,25 @@ def memory():
 def test_admin_closed_without_auth_setting(monkeypatch):
     monkeypatch.delenv("ADMIN_AUTH", raising=False)
     # Ook met een (vervalste) header blijft het dicht als de login niet aan staat
-    r = _fn(fa.admin_hotels)(_req("/api/admin/hotels", {"x-ms-client-principal-name": "x@y"}))
+    r = _fn(fa.admin_hotels)(_req("/api/opvolging/hotels", {"x-ms-client-principal-name": "x@y"}))
     assert r.status_code == 401
 
 
 def test_admin_needs_login(monkeypatch):
     monkeypatch.setenv("ADMIN_AUTH", "easyauth")
-    assert _fn(fa.admin_hotels)(_req("/api/admin/hotels")).status_code == 401
-    assert _fn(fa.admin_page)(_req("/admin/", params={"path": ""})).status_code == 302
+    assert _fn(fa.admin_hotels)(_req("/api/opvolging/hotels")).status_code == 401
+    assert _fn(fa.admin_page)(_req("/opvolging/", params={"path": ""})).status_code == 302
 
 
 def test_admin_with_login(monkeypatch):
     monkeypatch.setenv("ADMIN_AUTH", "easyauth")
     h = {"x-ms-client-principal-name": "frederic@hotellucca.be"}
-    assert _fn(fa.admin_hotels)(_req("/api/admin/hotels", h)).status_code == 200
-    r = _fn(fa.admin_api)(_req("/api/admin/lucca/reservations", h, {"hotel": "lucca", "what": "reservations"}))
+    assert _fn(fa.admin_hotels)(_req("/api/opvolging/hotels", h)).status_code == 200
+    r = _fn(fa.admin_api)(_req("/api/opvolging/lucca/reservations", h, {"hotel": "lucca", "what": "reservations"}))
     assert r.status_code == 200
-    page = _fn(fa.admin_page)(_req("/admin/", h, {"path": ""}))
+    page = _fn(fa.admin_page)(_req("/opvolging/", h, {"path": ""}))
     assert page.status_code == 200 and b"Opvolging" in page.get_body()
-    bad = _fn(fa.admin_page)(_req("/admin/../x", h, {"path": "../../function_app.py"}))
+    bad = _fn(fa.admin_page)(_req("/opvolging/../x", h, {"path": "../../function_app.py"}))
     assert bad.status_code == 404
 
 

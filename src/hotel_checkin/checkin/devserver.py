@@ -4,7 +4,7 @@ Start in de codespace:
     python -m hotel_checkin.checkin.devserver
 
 Open daarna de link die verschijnt (Codespaces stuurt poort 8080 door).
-Opvolgpagina: /admin/ (lokaal zonder login; de knop "Robot nu draaien" leest Lighthouse, alleen lezen).
+Opvolgpagina: /opvolging/ (lokaal zonder login; de knop "Robot nu draaien" leest Lighthouse, alleen lezen).
 De opslag zit in het geheugen met twee voorbeeldreservaties; alles verdwijnt bij het stoppen.
 Wil je tegen de echte opslag testen: start met --azure (gebruikt STORAGE_TABLE_ENDPOINT).
 """
@@ -85,13 +85,13 @@ class Handler(BaseHTTPRequestHandler):
         path = self.path.split("?")[0]
         if self._admin_api("GET", path):
             return None
-        if path == "/admin":
+        if path == "/opvolging":
             self.send_response(302)
-            self.send_header("Location", "/admin/")
+            self.send_header("Location", "/opvolging/")
             self.end_headers()
             return None
-        if path.startswith("/admin/"):
-            return self._file(ADMIN_WEB, path[len("/admin/"):])
+        if path.startswith("/opvolging/"):
+            return self._file(ADMIN_WEB, path[len("/opvolging/"):])
         if path.startswith("/api/checkin/"):
             data = service.form_data(path.rsplit("/", 1)[1])
             return self._json(200, data) if data else self._json(404, {"error": "not_found"})
@@ -121,5 +121,5 @@ if __name__ == "__main__":
     print(f"Gast zonder gekende contactgegevens: http://localhost:{PORT}/?r=nieuw")
     print(f"Geannuleerde reservatie: http://localhost:{PORT}/?r=annule")
     print(f"Ongeldige link: http://localhost:{PORT}/?r=fout")
-    print(f"Opvolgpagina: http://localhost:{PORT}/admin/")
+    print(f"Opvolgpagina: http://localhost:{PORT}/opvolging/")
     ThreadingHTTPServer(("0.0.0.0", PORT), Handler).serve_forever()

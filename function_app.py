@@ -8,11 +8,12 @@ Ook de API van het check-in-formulier draait hier (de pagina's zelf staan in Sta
     POST /api/checkin/{token}   body: {"email", "phone", "backup_email", "backup_phone", "language", "no_marketing"}
 Toegelaten herkomst (CORS) wordt in Azure ingesteld, zie infra/main.bicep.
 
-Opvolgpagina (bevat gastgegevens): /admin/ en /api/admin/..., alleen na aanmelden met een
+Opvolgpagina (bevat gastgegevens): /opvolging/ en /api/opvolging/..., alleen na aanmelden met een
 Microsoft-account (ingebouwde login van Azure, zie infra/README.md). Zonder die login
 (instelling ADMIN_AUTH leeg) blijft de opvolgpagina dicht.
 
-Routes staan volledig uitgeschreven (routePrefix is leeg in host.json).
+Routes staan volledig uitgeschreven (routePrefix is leeg in host.json). /admin is in Azure
+Functions gereserveerd, daarom /opvolging/.
 """
 
 from __future__ import annotations
@@ -92,10 +93,10 @@ def _admin_user(req: func.HttpRequest) -> str | None:
 
 def _login_redirect() -> func.HttpResponse:
     return func.HttpResponse(status_code=302, headers={
-        "Location": "/.auth/login/aad?post_login_redirect_uri=/admin/"})
+        "Location": "/.auth/login/aad?post_login_redirect_uri=/opvolging/"})
 
 
-@app.route(route="admin/{*path}", methods=["GET"], auth_level=func.AuthLevel.ANONYMOUS)
+@app.route(route="opvolging/{*path}", methods=["GET"], auth_level=func.AuthLevel.ANONYMOUS)
 def admin_page(req: func.HttpRequest) -> func.HttpResponse:
     if not _admin_user(req):
         return _login_redirect()
@@ -107,19 +108,19 @@ def admin_page(req: func.HttpRequest) -> func.HttpResponse:
                              headers={"Cache-Control": "no-store"})
 
 
-@app.route(route="admin", methods=["GET"], auth_level=func.AuthLevel.ANONYMOUS)
+@app.route(route="opvolging", methods=["GET"], auth_level=func.AuthLevel.ANONYMOUS)
 def admin_root(req: func.HttpRequest) -> func.HttpResponse:
-    return func.HttpResponse(status_code=302, headers={"Location": "/admin/"})
+    return func.HttpResponse(status_code=302, headers={"Location": "/opvolging/"})
 
 
-@app.route(route="api/admin/hotels", methods=["GET"], auth_level=func.AuthLevel.ANONYMOUS)
+@app.route(route="api/opvolging/hotels", methods=["GET"], auth_level=func.AuthLevel.ANONYMOUS)
 def admin_hotels(req: func.HttpRequest) -> func.HttpResponse:
     if not _admin_user(req):
         return _json(401, {"error": "login"})
     return _json(200, admin.hotels())
 
 
-@app.route(route="api/admin/{hotel}/{what}", methods=["GET", "POST"], auth_level=func.AuthLevel.ANONYMOUS)
+@app.route(route="api/opvolging/{hotel}/{what}", methods=["GET", "POST"], auth_level=func.AuthLevel.ANONYMOUS)
 def admin_api(req: func.HttpRequest) -> func.HttpResponse:
     if not _admin_user(req):
         return _json(401, {"error": "login"})

@@ -68,7 +68,7 @@ Dev is de codespace en heeft geen eigen adres.
 
 ## Opvolgpagina
 
-Per omgeving op `https://<function app>/admin/` (staat in de samenvatting van de workflow).
+Per omgeving op `https://<function app>/opvolging/` (staat in de samenvatting van de workflow).
 Toont per hotel de reservaties, verstuurde berichten en de runs van de robot. Bevat
 gastgegevens en is daarom alleen bereikbaar na aanmelden met een Microsoft-account van de
 tenant, en alleen voor wie toegewezen is.

@@ -9,7 +9,7 @@ let rows = [], timer = null;
 function store(k, v) { try { v === undefined ? null : localStorage.setItem(k, v); return localStorage.getItem(k); } catch { return null; } }
 async function get(path, opts) {
   const r = await fetch(API + path, opts);
-  if (r.status === 401) { location.href = "/.auth/login/aad?post_login_redirect_uri=/admin/"; throw new Error("login"); }
+  if (r.status === 401) { location.href = "/.auth/login/aad?post_login_redirect_uri=/opvolging/"; throw new Error("login"); }
   if (!r.ok) throw new Error(r.status);
   return r.json();
 }
