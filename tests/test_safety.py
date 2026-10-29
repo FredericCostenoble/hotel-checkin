@@ -45,7 +45,7 @@ def test_sms_redirected_in_dev(monkeypatch):
     monkeypatch.setenv("TWILIO_AUTH_TOKEN", "t")
     monkeypatch.setenv("TWILIO_SMS_FROM", "+4915800000000")
     captured = {}
-    send_sms("+32470111111", "Hallo", client=_client(captured))
+    send_sms("lucca", "+32470111111", "Hallo", client=_client(captured))
     form = {k: v[0] for k, v in parse_qs(captured["body"].decode()).items()}
     assert form["To"] == "+32476000000"
     assert form["Body"] == "[DEV voor +32470111111] Hallo"

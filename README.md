@@ -27,7 +27,11 @@ Gedeelde types staan in `core/models.py`, configuratie in `core/config.py`.
 - Elk hotel heeft een `hotel_id` (bv. `lucca`) en een instellingenbestand `config/hotels/<hotel_id>.toml`.
 - Eigen teksten per hotel (optioneel): `config/hotels/<hotel_id>/texts/<taal>.toml`.
 - Alle gegevens in de opslag zitten per hotel in een eigen partitie; ook de marketing-blokkeerlijst.
-- Geheimen per hotel in Key Vault: `<hotel_id>-<naam>`, bv. `lucca-lighthouse-password`.
+- Instellingen per hotel (`core/config.py`, `hotel_setting`), in deze volgorde:
+  1. eigen geheim van het hotel: Key Vault `<hotel_id>-<naam>` (codespace: `LUCCA_<NAAM>`), bv. `lucca-lighthouse-password`;
+  2. het hotelbestand, voor wat niet geheim is (afzendnummers, Lighthouse-adres);
+  3. gedeelde waarde voor alle hotels, bv. het Twilio-account (`TWILIO-AUTH-TOKEN`).
+  Een hotel kan zo een eigen waarde krijgen zonder codewijziging. Het Lighthouse-wachtwoord is altijd van het hotel zelf.
 
 ## Omgevingen en bescherming van gasten
 

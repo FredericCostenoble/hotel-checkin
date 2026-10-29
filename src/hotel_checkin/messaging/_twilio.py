@@ -1,7 +1,8 @@
 """Gedeelde Twilio-aanroep voor de bouwblokken SMS en WhatsApp (intern, niet rechtstreeks gebruiken).
 
 Gebruikt de Twilio Messages REST API met httpx, zonder de Twilio-SDK.
-Instellingen: TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN.
+Instellingen per hotel (core/config.py, hotel_setting): TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN.
+Normaal gedeeld door alle hotels; een hotel kan een eigen account krijgen via <hotel>-twilio-...
 """
 
 from __future__ import annotations
@@ -10,7 +11,7 @@ import json
 
 import httpx
 
-from hotel_checkin.core.config import get_setting
+from hotel_checkin.core.config import hotel_setting
 from hotel_checkin.core.models import Channel, SendResult
 from hotel_checkin.core.safety import route
 
@@ -18,6 +19,7 @@ TWILIO_API = "https://api.twilio.com/2010-04-01"
 
 
 def send_message(
+    hotel_id: str,
     channel: Channel,
     to: str,
     from_: str,
@@ -38,8 +40,8 @@ def send_message(
     if prefix and body is not None:
         body = prefix + body
 
-    account_sid = get_setting("TWILIO_ACCOUNT_SID")
-    auth_token = get_setting("TWILIO_AUTH_TOKEN")
+    account_sid = hotel_setting(hotel_id, "TWILIO_ACCOUNT_SID")
+    auth_token = hotel_setting(hotel_id, "TWILIO_AUTH_TOKEN")
 
     data: dict[str, str] = {"To": to, "From": from_}
     if body is not None:

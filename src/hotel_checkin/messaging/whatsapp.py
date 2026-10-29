@@ -4,15 +4,15 @@ Berichten die het hotel als eerste stuurt, moeten een door Meta goedgekeurde tem
 gebruiken (in Twilio een Content Template met een ContentSid, beginnend met HX).
 Binnen 24 uur na een bericht van de gast mag vrije tekst.
 
-Instellingen: TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_WHATSAPP_FROM (nummer, zonder
-het voorvoegsel "whatsapp:").
+WhatsApp-nummer per hotel: config/hotels/<hotel_id>.toml, [twilio] whatsapp_from (zonder
+het voorvoegsel "whatsapp:"). Twilio-account: gedeeld, zie core/config.py.
 """
 
 from __future__ import annotations
 
 import httpx
 
-from hotel_checkin.core.config import get_setting
+from hotel_checkin.core.config import hotel_setting
 from hotel_checkin.core.models import Channel, SendResult
 from hotel_checkin.messaging._twilio import send_message
 
@@ -22,6 +22,7 @@ def _wa(number: str) -> str:
 
 
 def send_whatsapp_template(
+    hotel_id: str,
     to: str,
     template_sid: str,
     variables: dict[str, str] | None = None,
@@ -29,9 +30,10 @@ def send_whatsapp_template(
 ) -> SendResult:
     """Stuur een goedgekeurde template (bv. de code op D-1). Variabelen: {"1": "Jan", ...}."""
     result = send_message(
+        hotel_id,
         Channel.WHATSAPP,
         to=_wa(to),
-        from_=_wa(get_setting("TWILIO_WHATSAPP_FROM")),
+        from_=_wa(hotel_setting(hotel_id, "TWILIO_WHATSAPP_FROM")),
         content_sid=template_sid,
         content_variables=variables,
         client=client,
@@ -40,12 +42,15 @@ def send_whatsapp_template(
     return result
 
 
-def send_whatsapp_text(to: str, text: str, client: httpx.Client | None = None) -> SendResult:
+def send_whatsapp_text(
+    hotel_id: str, to: str, text: str, client: httpx.Client | None = None
+) -> SendResult:
     """Stuur vrije tekst. Werkt alleen binnen 24 uur na het laatste bericht van de gast."""
     result = send_message(
+        hotel_id,
         Channel.WHATSAPP,
         to=_wa(to),
-        from_=_wa(get_setting("TWILIO_WHATSAPP_FROM")),
+        from_=_wa(hotel_setting(hotel_id, "TWILIO_WHATSAPP_FROM")),
         body=text,
         client=client,
     )

@@ -16,8 +16,7 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-from hotel_checkin.core.config import get_setting
-from hotel_checkin.core.hotels import load_hotel
+from hotel_checkin.core.config import hotel_setting
 
 DEFAULT_BASE_URL = "https://reservationmanager.mylighthouse.com"
 TIMEOUT_MS = 60_000
@@ -30,15 +29,15 @@ def _state_dir() -> Path:
 
 
 def credentials(hotel_id: str) -> tuple[str, str]:
-    prefix = hotel_id.upper().replace("-", "_")
+    """Altijd de eigen robotgebruiker van het hotel, nooit een gedeelde waarde."""
     return (
-        get_setting(f"{prefix}_LIGHTHOUSE_USERNAME"),
-        get_setting(f"{prefix}_LIGHTHOUSE_PASSWORD"),
+        hotel_setting(hotel_id, "LIGHTHOUSE_USERNAME", shared=False),
+        hotel_setting(hotel_id, "LIGHTHOUSE_PASSWORD", shared=False),
     )
 
 
 def base_url(hotel_id: str) -> str:
-    return load_hotel(hotel_id).get("lighthouse", {}).get("base_url", DEFAULT_BASE_URL).rstrip("/")
+    return hotel_setting(hotel_id, "LIGHTHOUSE_BASE_URL", default=DEFAULT_BASE_URL).rstrip("/")
 
 
 class LighthouseSession:

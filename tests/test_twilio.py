@@ -14,8 +14,9 @@ from hotel_checkin.messaging.whatsapp import send_whatsapp_template, send_whatsa
 def _settings(monkeypatch):
     monkeypatch.setenv("TWILIO_ACCOUNT_SID", "ACtest")
     monkeypatch.setenv("TWILIO_AUTH_TOKEN", "token")
-    monkeypatch.setenv("TWILIO_SMS_FROM", "+4915800000000")
-    monkeypatch.setenv("TWILIO_WHATSAPP_FROM", "+14155238886")
+    # Nummers per hotel staan in config/hotels/lucca.toml; hier overschreven per hotel
+    monkeypatch.setenv("LUCCA_TWILIO_SMS_FROM", "+4915800000000")
+    monkeypatch.setenv("LUCCA_TWILIO_WHATSAPP_FROM", "+14155238886")
 
 
 def _client(status: int, captured: dict, payload: dict | None = None) -> httpx.Client:
@@ -29,7 +30,7 @@ def _client(status: int, captured: dict, payload: dict | None = None) -> httpx.C
 
 def test_sms_ok():
     captured: dict = {}
-    result = send_sms("+32470000000", "Hallo", client=_client(201, captured))
+    result = send_sms("lucca", "+32470000000", "Hallo", client=_client(201, captured))
     assert result.ok and result.provider_id == "SM123"
     assert captured["url"].endswith("/Accounts/ACtest/Messages.json")
     assert captured["form"] == {"To": "+32470000000", "From": "+4915800000000", "Body": "Hallo"}
@@ -37,6 +38,7 @@ def test_sms_ok():
 
 def test_sms_error_is_returned_not_raised():
     result = send_sms(
+        "lucca",
         "+32470000000",
         "Hallo",
         client=_client(400, {}, {"code": 21608, "message": "unverified number"}),
@@ -47,6 +49,7 @@ def test_sms_error_is_returned_not_raised():
 def test_whatsapp_template():
     captured: dict = {}
     result = send_whatsapp_template(
+        "lucca",
         "+32470000000", "HXabc", {"1": "Jan"}, client=_client(201, captured)
     )
     assert result.ok and result.to == "+32470000000"
@@ -59,5 +62,5 @@ def test_whatsapp_template():
 
 def test_whatsapp_text():
     captured: dict = {}
-    send_whatsapp_text("+32470000000", "Hoi", client=_client(201, captured))
+    send_whatsapp_text("lucca", "+32470000000", "Hoi", client=_client(201, captured))
     assert captured["form"]["Body"] == "Hoi"
