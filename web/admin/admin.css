@@ -22,3 +22,6 @@ tr.cancelled td { color: #9AA0AE; text-decoration: line-through; }
 .ok { color: var(--ok); } .err { color: var(--err); } .muted { color: #8A90A0; }
 .tag { display: inline-block; padding: 1px 6px; border-radius: 3px; background: var(--bg); margin: 1px 2px 1px 0; font-size: 12px; }
 .tag.fail { background: #F6E3E3; color: var(--err); }
+.langs { margin-left: auto; display: flex; gap: 4px; }
+.langs button { border: 1px solid var(--line); background: #fff; padding: 3px 8px; cursor: pointer; font-size: 12px; }
+.langs button.active { background: var(--accent); color: #fff; border-color: var(--accent); }

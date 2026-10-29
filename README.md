@@ -63,7 +63,7 @@ Configuratie gebeurt via omgevingsvariabelen (zie `.env.example`). Nooit secrets
 
 ## Opvolgpagina
 
-Lokaal: start de devserver (hieronder) en open `/opvolging/`. Met "Robot nu draaien" leest de robot
+Lokaal: start de devserver (hieronder) en open `/monitor/`. Met "Robot nu draaien" leest de robot
 Lighthouse (alleen lezen) en verschijnen de reservaties. In Azure: zie `infra/README.md`.
 
 ## Check-in-formulier lokaal testen

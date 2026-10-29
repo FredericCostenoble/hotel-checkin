@@ -25,13 +25,20 @@ for ENV in tst prd; do
     --query properties.defaultHostName -o tsv)
   if [ -z "$HOST" ]; then echo "Geen Function App gevonden in $RG"; exit 1; fi
   NAME="hotel-checkin-admin-$ENV"
-  echo "== $ENV: https://$HOST/opvolging/"
+  echo "== $ENV: https://$HOST/monitor/"
+
+  # Eigen adres van de monitor (GitHub-variabele MONITOR_DOMAIN in de omgeving), bv. monitor.hotellucca.be
+  DOMAIN=$(gh variable get MONITOR_DOMAIN --env "$ENV" --repo "$REPO" 2>/dev/null || true)
+  REDIRECTS=("https://$HOST/.auth/login/aad/callback")
+  [ -n "$DOMAIN" ] && REDIRECTS+=("https://$DOMAIN/.auth/login/aad/callback") && echo "   eigen adres: https://$DOMAIN/monitor/"
 
   APP_ID=$(az ad app list --display-name "$NAME" --query "[0].appId" -o tsv)
   if [ -z "$APP_ID" ]; then
     APP_ID=$(az ad app create --display-name "$NAME" --sign-in-audience AzureADMyOrg \
-      --web-redirect-uris "https://$HOST/.auth/login/aad/callback" \
+      --web-redirect-uris "${REDIRECTS[@]}" \
       --enable-id-token-issuance true --query appId -o tsv)
+  else
+    az ad app update --id "$APP_ID" --web-redirect-uris "${REDIRECTS[@]}"
   fi
   SP_ID=$(az ad sp show --id "$APP_ID" --query id -o tsv 2>/dev/null || true)
   if [ -z "$SP_ID" ]; then

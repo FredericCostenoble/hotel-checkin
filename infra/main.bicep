@@ -440,6 +440,6 @@ output staticWebAppName string = swa.name
 output staticWebAppHost string = swa.properties.defaultHostname
 output formUrl string = 'https://${formHost}'
 output functionAppHost string = func.properties.defaultHostName
-output adminUrl string = 'https://${func.properties.defaultHostName}/opvolging/'
+output adminUrl string = 'https://${func.properties.defaultHostName}/monitor/'
 output keyVaultName string = kv.name
 output storageAccountName string = st.name

@@ -4,7 +4,7 @@ Start in de codespace:
     python -m hotel_checkin.checkin.devserver
 
 Open daarna de link die verschijnt (Codespaces stuurt poort 8080 door).
-Opvolgpagina: /opvolging/ (lokaal zonder login; de knop "Robot nu draaien" leest Lighthouse, alleen lezen).
+Opvolgpagina: /monitor/ (lokaal zonder login; de knop "Robot nu draaien" leest Lighthouse, alleen lezen).
 De opslag zit in het geheugen met twee voorbeeldreservaties; alles verdwijnt bij het stoppen.
 Wil je tegen de echte opslag testen: start met --azure (gebruikt STORAGE_TABLE_ENDPOINT).
 """
@@ -59,8 +59,8 @@ class Handler(BaseHTTPRequestHandler):
         self._send(status, json.dumps(obj).encode(), "application/json")
 
     def _admin_api(self, method: str, path: str) -> bool:
-        parts = path.strip("/").split("/")  # api opvolging <hotel> <wat>
-        if parts[:2] != ["api", "opvolging"]:
+        parts = path.strip("/").split("/")  # api monitor <hotel> <wat>
+        if parts[:2] != ["api", "monitor"]:
             return False
         if method == "GET" and parts[2:] == ["hotels"]:
             self._json(200, admin.hotels())
@@ -85,13 +85,13 @@ class Handler(BaseHTTPRequestHandler):
         path = self.path.split("?")[0]
         if self._admin_api("GET", path):
             return None
-        if path == "/opvolging":
+        if path == "/monitor":
             self.send_response(302)
-            self.send_header("Location", "/opvolging/")
+            self.send_header("Location", "/monitor/")
             self.end_headers()
             return None
-        if path.startswith("/opvolging/"):
-            return self._file(ADMIN_WEB, path[len("/opvolging/"):])
+        if path.startswith("/monitor/"):
+            return self._file(ADMIN_WEB, path[len("/monitor/"):])
         if path.startswith("/api/checkin/"):
             data = service.form_data(path.rsplit("/", 1)[1])
             return self._json(200, data) if data else self._json(404, {"error": "not_found"})
@@ -121,5 +121,5 @@ if __name__ == "__main__":
     print(f"Gast zonder gekende contactgegevens: http://localhost:{PORT}/?r=nieuw")
     print(f"Geannuleerde reservatie: http://localhost:{PORT}/?r=annule")
     print(f"Ongeldige link: http://localhost:{PORT}/?r=fout")
-    print(f"Opvolgpagina: http://localhost:{PORT}/opvolging/")
+    print(f"Opvolgpagina: http://localhost:{PORT}/monitor/")
     ThreadingHTTPServer(("0.0.0.0", PORT), Handler).serve_forever()
