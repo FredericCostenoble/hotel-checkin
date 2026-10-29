@@ -31,7 +31,8 @@ echo "Abonnement: $(az account show --query name -o tsv) ($SUB)"
 
 echo "1. Resource providers"
 for p in Microsoft.Web Microsoft.Storage Microsoft.KeyVault Microsoft.OperationalInsights \
-         Microsoft.Insights Microsoft.Consumption; do
+         Microsoft.Insights Microsoft.Consumption Microsoft.ContainerRegistry Microsoft.App \
+         Microsoft.ManagedIdentity; do
   az provider register --namespace "$p" >/dev/null
 done
 
