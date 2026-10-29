@@ -57,3 +57,13 @@ def test_missing_stay_gives_clear_error():
 
     with pytest.raises(ValueError, match="geen verblijfsdata"):
         parse_list_row("lucca", "ID CPB-1-2\nStatus Nieuw", "Jan", "x", HREF)
+
+
+def test_label_glued_to_value():
+    glued = "\n".join(line.replace(" ", "", 1) if not line.startswith(("Type", "Gemaakt", "Aantal", "Verwacht")) else line
+                      for line in GENERAL.splitlines())
+    glued = glued.replace("Gemaakt op ", "Gemaakt op").replace("Aantal gasten ", "Aantal gasten")
+    r = parse_list_row("lucca", glued, "Jan Voorbeeld", "Superior double", HREF)
+    assert r.booking_number == "CPB-4276-009999" and r.pms_status == "Nieuw"
+    assert r.arrival == date(2027, 4, 22) and r.guest_count == 2
+    assert r.booked_at.hour == 15

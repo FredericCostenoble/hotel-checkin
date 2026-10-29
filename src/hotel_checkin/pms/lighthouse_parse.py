@@ -45,11 +45,13 @@ def _fields(text: str) -> dict[str, str]:
     lines = [line.strip() for line in text.splitlines() if line.strip()]
     for i, line in enumerate(lines):
         for label in labels:
-            if line.startswith(label + " ") or line.startswith(label + "\t"):
-                out[label] = line[len(label):].strip()
-            elif line == label and i + 1 < len(lines):
+            if line == label and i + 1 < len(lines):
                 # Label en waarde op aparte regels
                 out[label] = lines[i + 1]
+            elif line.startswith(label):
+                # Met of zonder spatie: in de headless browser plakken label en waarde soms aan
+                # elkaar ("IDCPB-4276-002731", "Verblijfdonderdag, ...")
+                out[label] = line[len(label):].lstrip(" :\t")
     return out
 
 
