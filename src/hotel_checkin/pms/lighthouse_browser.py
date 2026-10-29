@@ -99,10 +99,29 @@ class LighthouseSession:
         if not self._on_login_page():
             return
         self._snap("01-login")
+        try:
+            self._fill_login()
+        except Exception:
+            self._snap("99-fout")
+            raise
+        self._snap("04-aangemeld")
+        self._context.storage_state(path=str(self.state_file))
+
+    def _fill_login(self) -> None:
+        page = self.page
         user, password = credentials(self.hotel_id)
 
+        # Stardekk-pagina: eerst doorklikken naar de login van Lighthouse
+        sso = page.locator("a.lighthouse-login-flow, a:has-text('Lighthouse account')").first
+        if sso.count():
+            sso.click()
+            self._wait_loaded()
+            self._snap("02-lighthouse-login")
+
         user_field = page.locator(
-            "input[type=email], input[name*=user i], input[name*=email i], input[id*=user i], input[id*=email i]"
+            "input[type=email]:visible, input[autocomplete=username]:visible, "
+            "input[name*=user i]:visible, input[name*=email i]:visible, "
+            "input[id*=user i]:visible, input[id*=email i]:visible, input[type=text]:visible"
         ).first
         user_field.fill(user)
         password_field = page.locator("input[type=password]").first
@@ -110,14 +129,12 @@ class LighthouseSession:
             # Login in twee stappen: eerst gebruikersnaam, dan wachtwoord
             page.keyboard.press("Enter")
             password_field.wait_for(state="visible")
-            self._snap("02-wachtwoord")
+            self._snap("03-wachtwoord")
         password_field.fill(password)
         page.keyboard.press("Enter")
 
         page.wait_for_url("**/Customer/**")
         self._wait_loaded()
-        self._snap("03-aangemeld")
-        self._context.storage_state(path=str(self.state_file))
 
     def goto(self, path: str):
         """Open een pagina en wacht tot ze volledig geladen is."""

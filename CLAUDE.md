@@ -13,7 +13,6 @@
   in Lighthouse weggeschreven.
 - Hosting op Azure, zo goedkoop mogelijk (klein hotel). Secrets alleen in Key Vault.
 - Code wordt nooit naar het bellende nummer gestuurd, alleen naar het nummer uit de reservatie.
-- Altijd eerst vragen of er gecommit en gepusht mag worden. Na akkoord doet Claude de
-  commit en push zelf.
+- Claude commit en pusht zelf, zonder eerst te vragen (alleen in dit project).
 - Documentatie en commentaar in het Nederlands, code-identifiers in het Engels.
   Geen lange liggende streepjes in teksten.
