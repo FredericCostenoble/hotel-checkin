@@ -12,8 +12,9 @@
   Bouwblokken nemen geen beslissingen; alleen processen lezen de workflow.
 - Technische namen (paden, bronnen, variabelen, berichttypes) in het Engels; teksten voor gasten
   en gebruikers in hun eigen taal.
-- Lighthouse: voorlopig browserautomatisatie (Playwright) met een aparte robotgebruiker
-  en TOTP. Pagina's altijd volledig laten laden (folio/transacties laden asynchroon).
+- Lighthouse: browserautomatisatie (Playwright) met een eigen robotgebruiker per hotel (zonder MFA).
+  Alleen lezen, behalve het wegschrijven van de code in PRD. Pagina's altijd volledig laten laden
+  (folio/transacties laden asynchroon). Nooit klikken op Bevestigen, Annuleren of Nieuwe reservering.
 - Salto: rechtstreeks via KS Connect API. De code wordt daarna door het Lighthouse-blok
   in Lighthouse weggeschreven.
 - Hosting op Azure, zo goedkoop mogelijk (klein hotel). Secrets alleen in Key Vault.
