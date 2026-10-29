@@ -29,8 +29,8 @@ class _Session:
 @pytest.fixture(autouse=True)
 def fake_lighthouse(monkeypatch):
     monkeypatch.setattr(new_reservation.lighthouse, "connect", lambda h: _Session())
-    detail = _res(email="jan@example.com", phone="+4915100000", language="de", country="DE")
-    monkeypatch.setattr(new_reservation.lighthouse, "get_reservation", lambda h, rid, lh=None: detail)
+    contact = Guest("", "", email="jan@example.com", phone="+4915100000", language="de", country="DE")
+    monkeypatch.setattr(new_reservation.lighthouse, "get_contact", lambda h, rid, lh=None: contact)
 
 
 def test_new_reservation_gets_details(monkeypatch):

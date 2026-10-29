@@ -21,9 +21,9 @@ import argparse
 import re
 from datetime import datetime, timedelta
 
-from hotel_checkin.core.models import AccessCode, Reservation, ReservationStatus
+from hotel_checkin.core.models import AccessCode, Guest, Reservation, ReservationStatus
 from hotel_checkin.pms.lighthouse_browser import LighthouseSession
-from hotel_checkin.pms.lighthouse_parse import TZ, parse_detail, parse_list_row
+from hotel_checkin.pms.lighthouse_parse import TZ, parse_contact, parse_detail, parse_list_row
 
 LIST_PATH = "/Customer/Reservations/List"  # standaard gesorteerd op boekdatum, nieuwste eerst
 MAX_PAGES = 30  # 15 per pagina; genoeg voor de eerste keer (30 dagen)
@@ -108,9 +108,21 @@ _DETAIL_JS = r"""() => {
 }"""
 
 
+# Transacties laden asynchroon: klaar als het blok meer toont dan zijn titel en niets meer laadt.
+_TRANSACTIONS_LOADED = r"""() => {
+  const t = [...document.querySelectorAll('*')].find(e => e.childElementCount === 0 && e.textContent.trim() === 'Transacties');
+  if (!t) return false;
+  const box = t.closest('.jarviswidget, .col-md-6, .col-lg-6') || t.parentElement.parentElement;
+  return !box.querySelector('.fa-spin, .spinner, .loading') && box.innerText.trim().length > 20;
+}"""
+
+
 def _read_detail(session: LighthouseSession, hotel_id: str, reservation_id: str) -> Reservation:
     page = session.goto(DETAIL_PATH.format(id=reservation_id))
-    page.wait_for_timeout(2000)  # folio en transacties laden asynchroon
+    try:
+        page.wait_for_function(_TRANSACTIONS_LOADED, timeout=10_000)
+    except Exception:  # noqa: BLE001 - geen transactieblok: verder met wat er is
+        pass
     session.close_popups()
     toggle = page.locator(".js-masked-contact-toggle").first
     if toggle.count() and "*" in (page.locator('[data-field="email"]').first.inner_text() or "*"):
@@ -128,6 +140,33 @@ def get_reservation(hotel_id: str, reservation_id: str, session: LighthouseSessi
         with LighthouseSession(hotel_id) as lh:
             return _read_detail(lh, hotel_id, reservation_id)
     return _read_detail(session, hotel_id, reservation_id)
+
+
+CONTACT_PATH = "/Customer/Reservations/ContactDetails/{id}"
+
+
+def get_contact(hotel_id: str, reservation_id: str, session: LighthouseSession | None = None) -> Guest:
+    """Alleen e-mail, telefoon en land van de gast.
+
+    Snel: vraagt rechtstreeks op wat het oog-icoon ophaalt (geen pagina openen, niets klikken).
+    Lukt dat niet (ander antwoord, sessie verlopen), dan via de volledige detailpagina.
+    Guest.first_name/last_name zijn leeg bij de snelle weg; country alleen als de detailpagina gelezen werd.
+    """
+    if session is None:
+        with LighthouseSession(hotel_id) as lh:
+            return get_contact(hotel_id, reservation_id, lh)
+    try:
+        resp = session.page.request.get(
+            session.base + CONTACT_PATH.format(id=reservation_id),
+            headers={"X-Requested-With": "XMLHttpRequest"},
+        )
+        found = parse_contact(resp.text()) if resp.ok and "/Customer/" in resp.url else None
+    except Exception:  # noqa: BLE001 - dan de volledige pagina
+        found = None
+    if found:
+        return Guest(first_name="", last_name="", email=found["email"], phone=found["phone"], language="",
+                     country=None)
+    return _read_detail(session, hotel_id, reservation_id).guest
 
 
 def connect(hotel_id: str) -> LighthouseSession:

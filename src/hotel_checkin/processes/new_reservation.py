@@ -18,8 +18,8 @@ from hotel_checkin.pms import lighthouse
 def run(hotel_id: str, since: datetime) -> int:
     """Haal nieuwe reservaties van een hotel op en bewaar ze. Geeft het aantal nieuwe reservaties terug.
 
-    Van nieuwe reservaties (en van reservaties zonder e-mailadres) worden meteen de details gelezen:
-    contactgegevens, land en taal, status, betaling, als de workflow van het hotel ze nodig heeft.
+    Van nieuwe reservaties (en van reservaties zonder e-mailadres) worden de contactgegevens gelezen
+    als de workflow van het hotel ze nodig heeft. Land en taal komen uit de lijst.
     Wat de gast zelf invulde in het check-in-formulier en het token blijven behouden.
     Elke run wordt gelogd (monitor). De stappen zelf (confirmation, reminder, access_code)
     komen in aparte processen.
@@ -35,19 +35,19 @@ def run(hotel_id: str, since: datetime) -> int:
                 existing = guests.get_reservation(hotel_id, reservation.reservation_id)
                 if existing is None:
                     new += 1
-                detail = None
+                contact = None
                 needs_detail = existing is None or (not existing.guest.email and not existing.checkin_completed_at)
                 if needs_detail and existing is None and not workflow.needs_details_after_booking(hotel_id):
                     needs_detail = False  # geen stap na de boeking: details pas als de aankomst nadert
                 if needs_detail:
                     try:
-                        detail = lighthouse.get_reservation(hotel_id, reservation.reservation_id, lh)
+                        contact = lighthouse.get_contact(hotel_id, reservation.reservation_id, lh)
                     except Exception as exc:  # noqa: BLE001 - volgende run probeert opnieuw
-                        skipped.append(f"{reservation.booking_number or 'reservatie'}: detail niet gelezen ({type(exc).__name__})")
-                if detail is not None:
-                    _apply_detail(reservation, detail, existing)
-                elif existing is not None:
+                        skipped.append(f"{reservation.booking_number or 'reservatie'}: contact niet gelezen ({type(exc).__name__})")
+                if existing is not None:
                     _keep_known(reservation, existing)
+                if contact is not None:
+                    _apply_contact(reservation, contact)
                 guests.save_reservation(reservation)
                 seen.add(reservation.reservation_id)
             # Reservaties die binnenkort aankomen en nog geen e-mailadres hebben, alsnog aanvullen
@@ -56,11 +56,11 @@ def run(hotel_id: str, since: datetime) -> int:
                 if time.monotonic() > deadline:
                     break  # de volgende run gaat verder
                 try:
-                    detail = lighthouse.get_reservation(hotel_id, reservation.reservation_id, lh)
+                    contact = lighthouse.get_contact(hotel_id, reservation.reservation_id, lh)
                 except Exception as exc:  # noqa: BLE001 - volgende run probeert opnieuw
-                    skipped.append(f"{reservation.booking_number or 'reservatie'}: detail niet gelezen ({type(exc).__name__})")
+                    skipped.append(f"{reservation.booking_number or 'reservatie'}: contact niet gelezen ({type(exc).__name__})")
                     continue
-                _apply_detail(reservation, detail, reservation)
+                _apply_contact(reservation, contact)
                 guests.save_reservation(reservation)
                 completed += 1
     except Exception as exc:
@@ -78,7 +78,8 @@ def run(hotel_id: str, since: datetime) -> int:
 
 
 # Aanvullen zolang er tijd is: een run mag in Azure max. 15 minuten duren (en in PRD start elk
-# kwartier een nieuwe). Wat niet past, doet de volgende run. Ongeveer 5 tot 8 seconden per reservatie.
+# kwartier een nieuwe). Wat niet past, doet de volgende run. Rechtstreeks minder dan een seconde
+# per reservatie, via de detailpagina een paar seconden.
 DETAIL_BACKFILL_SECONDS = 10 * 60
 
 
@@ -97,18 +98,15 @@ def _missing_details(hotel_id: str, seen: set[str]) -> list:
     return sorted(todo, key=lambda r: r.arrival)
 
 
-def _apply_detail(reservation, detail, existing) -> None:
-    """Gegevens van de detailpagina zijn vollediger dan die uit de lijst."""
-    reservation.guest = detail.guest
-    reservation.arrival, reservation.departure = detail.arrival, detail.departure
-    reservation.rooms = detail.rooms or reservation.rooms
-    reservation.status = detail.status
-    reservation.paid = detail.paid
-    reservation.pms_status = detail.pms_status or reservation.pms_status
-    reservation.source = detail.source or reservation.source
-    if existing is not None:
-        reservation.token = existing.token
-        reservation.checkin_completed_at = existing.checkin_completed_at
+def _apply_contact(reservation, contact) -> None:
+    """Contactgegevens uit Lighthouse; naam en verblijf komen uit de lijst. Status, betaling en
+    kamers leest de stap die ze nodig heeft (bv. access_code) zelf, vlak ervoor."""
+    if reservation.checkin_completed_at:
+        return  # wat de gast zelf invulde, gaat voor
+    reservation.guest.email = contact.email or reservation.guest.email
+    reservation.guest.phone = contact.phone or reservation.guest.phone
+    if contact.country:
+        reservation.guest.country, reservation.guest.language = contact.country, contact.language
 
 
 TASK = "nieuwe_reservaties"

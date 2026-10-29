@@ -103,3 +103,20 @@ def test_parse_detail_cancelled_and_open():
     r = parse_detail("lucca", "x", d)
     assert r.status == ReservationStatus.CANCELLED and r.paid is False
     assert r.guest.email is None and r.guest.language == "en"
+
+
+def test_list_row_country():
+    r = parse_list_row("lucca", GENERAL, "Jan Voorbeeld (DE)\nBooking.com", "Superior double", HREF)
+    assert (r.guest.first_name, r.guest.last_name) == ("Jan", "Voorbeeld")
+    assert r.guest.country == "DE" and r.guest.language == "de"
+
+
+def test_parse_contact():
+    from hotel_checkin.pms.lighthouse_parse import parse_contact
+
+    assert parse_contact('{"Email": "Jan@Example.com", "Telephone": "+49 151 2345 6789"}') == {
+        "email": "jan@example.com", "phone": "+4915123456789"}
+    html = '<span data-field="telephone">0470 12 34 56</span> <span data-field="email">jan@example.com</span>'
+    assert parse_contact(html) == {"email": "jan@example.com", "phone": "+32470123456"}
+    assert parse_contact('<span data-field="email">j***@***.com</span>') is None
+    assert parse_contact("<html>login</html>") is None

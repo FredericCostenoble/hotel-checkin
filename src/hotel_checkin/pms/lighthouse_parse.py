@@ -20,6 +20,14 @@ MONTHS = {
     "aug": 8, "sep": 9, "okt": 10, "nov": 11, "dec": 12,
 }
 _DATE = r"(\d{1,2})\s+([a-z]{3})[a-z]*\.?\s+(\d{4})"
+# Taal afleiden uit het land (Lighthouse toont de taal niet op de detailpagina). De gast kan
+# ze zelf aanpassen in het check-in-formulier.
+COUNTRY_LANGUAGE = {
+    "NL": "nl", "BE": "nl", "SR": "nl",
+    "FR": "fr", "LU": "fr", "MC": "fr",
+    "DE": "de", "AT": "de", "LI": "de", "CH": "de",
+}
+
 _UUID = re.compile(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}", re.I)
 
 
@@ -83,7 +91,10 @@ def parse_list_row(hotel_id: str, general: str, contact: str, accommodations: st
     if " - " not in f.get("Verblijf", ""):
         raise ValueError(f"geen verblijfsdata (velden: {', '.join(f) or 'geen'})")
     arrival_text, _, departure_text = f.get("Verblijf", "").partition(" - ")
-    first, last = split_name(contact.strip().splitlines()[0] if contact.strip() else "")
+    contact_line = contact.strip().splitlines()[0] if contact.strip() else ""
+    country = re.search(r"\(([A-Z]{2})\)", contact)
+    country_code = country.group(1) if country else None
+    first, last = split_name(re.sub(r"\s*\([A-Z]{2}\)\s*", " ", contact_line))
     via = f.get("Via", "")
     first_line = accommodations.strip().splitlines()[0] if accommodations.strip() else ""
     room_type = re.split(r"\s{2,}|\t|!", first_line)[0].strip() or None
@@ -91,7 +102,8 @@ def parse_list_row(hotel_id: str, general: str, contact: str, accommodations: st
     return Reservation(
         hotel_id=hotel_id,
         reservation_id=uuid.group(0).lower(),
-        guest=Guest(first_name=first, last_name=last),
+        guest=Guest(first_name=first, last_name=last, country=country_code,
+                    language=COUNTRY_LANGUAGE.get(country_code or "", "en")),
         arrival=parse_date(arrival_text),
         departure=parse_date(departure_text),
         rooms=rooms_from(accommodations),
@@ -107,13 +119,6 @@ def parse_list_row(hotel_id: str, general: str, contact: str, accommodations: st
 
 # ---------------------------------------------------------------- detailpagina
 
-# Taal afleiden uit het land (Lighthouse toont de taal niet op de detailpagina). De gast kan
-# ze zelf aanpassen in het check-in-formulier.
-COUNTRY_LANGUAGE = {
-    "NL": "nl", "BE": "nl", "SR": "nl",
-    "FR": "fr", "LU": "fr", "MC": "fr",
-    "DE": "de", "AT": "de", "LI": "de", "CH": "de",
-}
 
 
 def _after(label: str, text: str) -> str:
@@ -176,3 +181,44 @@ def parse_detail(hotel_id: str, reservation_id: str, d: dict) -> Reservation:
         pms_status=pms_status or None,
         booked_at=parse_datetime(booked_line) if booked_line else None,
     )
+
+
+def parse_contact(text: str) -> dict | None:
+    """Antwoord van /Customer/Reservations/ContactDetails/{id} (wat het oog-icoon ophaalt) naar
+    {"email", "phone"}. JSON of HTML; None als er geen bruikbare gegevens in staan."""
+    import json
+
+    email = phone = ""
+    try:
+        data = json.loads(text)
+    except ValueError:
+        data = None
+    if data is not None:
+        def walk(x, key=""):
+            nonlocal email, phone
+            if isinstance(x, dict):
+                for k, v in x.items():
+                    walk(v, k.lower())
+            elif isinstance(x, list):
+                for v in x:
+                    walk(v, key)
+            elif isinstance(x, str):
+                if not email and _EMAIL.fullmatch(x.strip()):
+                    email = x.strip()
+                elif not phone and any(w in key for w in ("phone", "tel", "gsm", "mobile")):
+                    phone = x.strip()
+        walk(data)
+    else:
+        m = re.search(r'data-field="telephone"[^>]*>([^<]*)<', text)
+        phone = m.group(1).strip() if m else ""
+        m = re.search(r'data-field="email"[^>]*>([^<]*)<', text) or _EMAIL.search(text)
+        email = (m.group(1) if m.groups() else m.group(0)).strip() if m else ""
+    if "*" in email + phone:
+        return None  # nog gemaskeerd
+    from hotel_checkin.checkin.service import normalize_phone
+
+    out = {"email": email.lower() if _EMAIL.fullmatch(email) else None, "phone": normalize_phone(phone)}
+    return out if out["email"] or out["phone"] else None
+
+
+_EMAIL = re.compile(r"[\w.+-]+@[\w-]+(?:\.[\w-]+)+")
