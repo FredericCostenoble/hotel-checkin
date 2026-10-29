@@ -44,3 +44,16 @@ def test_helpers():
     assert parse_date("1 sept. 2026") == date(2026, 9, 1)
     assert rooms_from("Superior double\n11 - SUPERIOR DOUBLE ROOM\nNRF BREAKFAST INCL, € 10") == ["11"]
     assert split_name("Madonna") == ("", "Madonna")
+
+
+def test_label_on_separate_line():
+    general = GENERAL.replace("Verblijf donderdag", "Verblijf\ndonderdag")
+    r = parse_list_row("lucca", general, "Jan Voorbeeld", "Superior double", HREF)
+    assert r.arrival == date(2027, 4, 22)
+
+
+def test_missing_stay_gives_clear_error():
+    import pytest
+
+    with pytest.raises(ValueError, match="geen verblijfsdata"):
+        parse_list_row("lucca", "ID CPB-1-2\nStatus Nieuw", "Jan", "x", HREF)

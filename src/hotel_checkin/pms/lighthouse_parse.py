@@ -42,11 +42,14 @@ def _fields(text: str) -> dict[str, str]:
     labels = ("ID", "Status", "Via", "Type reis", "Gemaakt op", "Aantal gasten",
               "Aantal accommodaties", "Verblijf", "Verwacht om")
     out: dict[str, str] = {}
-    for line in text.splitlines():
-        line = line.strip()
+    lines = [line.strip() for line in text.splitlines() if line.strip()]
+    for i, line in enumerate(lines):
         for label in labels:
             if line.startswith(label + " ") or line.startswith(label + "\t"):
                 out[label] = line[len(label):].strip()
+            elif line == label and i + 1 < len(lines):
+                # Label en waarde op aparte regels
+                out[label] = lines[i + 1]
     return out
 
 
@@ -74,7 +77,9 @@ def parse_list_row(hotel_id: str, general: str, contact: str, accommodations: st
     f = _fields(general)
     uuid = _UUID.search(detail_href or "")
     if not uuid:
-        raise ValueError("Geen link naar de reservatie gevonden")
+        raise ValueError(f"geen link naar de reservatie (velden: {', '.join(f) or 'geen'})")
+    if " - " not in f.get("Verblijf", ""):
+        raise ValueError(f"geen verblijfsdata (velden: {', '.join(f) or 'geen'})")
     arrival_text, _, departure_text = f.get("Verblijf", "").partition(" - ")
     first, last = split_name(contact.strip().splitlines()[0] if contact.strip() else "")
     via = f.get("Via", "")

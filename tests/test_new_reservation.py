@@ -19,7 +19,7 @@ def _res(**guest):
 
 
 def test_new_and_merge(monkeypatch):
-    monkeypatch.setattr(new_reservation.lighthouse, "get_new_reservations", lambda h, s: [_res()])
+    monkeypatch.setattr(new_reservation.lighthouse, "get_new_reservations", lambda h, s, skipped=None: [_res()])
     assert new_reservation.run("lucca", datetime(2000, 1, 1)) == 1
     token = repo.get_reservation("lucca", "u1").token
     repo.mark_checkin_completed("lucca", "u1", "jan@example.com", "+32470000000", "fr")

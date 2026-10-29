@@ -21,8 +21,9 @@ def run(hotel_id: str, since: datetime) -> int:
     """
     started = datetime.now(timezone.utc)
     found = new = 0
+    skipped: list[str] = []
     try:
-        for reservation in lighthouse.get_new_reservations(hotel_id, since):
+        for reservation in lighthouse.get_new_reservations(hotel_id, since, skipped=skipped):
             found += 1
             existing = guests.get_reservation(hotel_id, reservation.reservation_id)
             if existing is None:
@@ -33,7 +34,8 @@ def run(hotel_id: str, since: datetime) -> int:
     except Exception as exc:
         guests.log_robot_run(hotel_id, TASK, started, False, found, new, f"{type(exc).__name__}: {exc}")
         raise
-    guests.log_robot_run(hotel_id, TASK, started, True, found, new)
+    note = f"{len(skipped)} rij(en) overgeslagen: " + "; ".join(skipped[:5]) if skipped else None
+    guests.log_robot_run(hotel_id, TASK, started, True, found, new, note)
     return new
 
 

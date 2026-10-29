@@ -17,6 +17,7 @@ Testen in de codespace (toont geen gastnamen):
 from __future__ import annotations
 
 import argparse
+import re
 from datetime import datetime, timedelta
 
 from hotel_checkin.core.models import AccessCode, Reservation, ReservationStatus
@@ -27,7 +28,7 @@ LIST_PATH = "/Customer/Reservations/List"  # standaard gesorteerd op boekdatum, 
 MAX_PAGES = 10
 
 
-def _rows_on_page(hotel_id: str, page) -> list[Reservation]:
+def _rows_on_page(hotel_id: str, page, skipped: list[str]) -> list[Reservation]:
     out = []
     for row in page.locator("table.table-bordered > tbody > tr").all():
         cells = row.locator(":scope > td").all()
@@ -35,27 +36,37 @@ def _rows_on_page(hotel_id: str, page) -> list[Reservation]:
             continue
         link = row.locator("a[href*='/Reservations/Detail/']").first
         href = link.get_attribute("href") if link.count() else ""
-        out.append(parse_list_row(
-            hotel_id, cells[1].inner_text(), cells[2].inner_text(), cells[3].inner_text(), href or ""
-        ))
+        try:
+            out.append(parse_list_row(
+                hotel_id, cells[1].inner_text(), cells[2].inner_text(), cells[3].inner_text(), href or ""
+            ))
+        except ValueError as exc:
+            # Eén onleesbare rij mag de rest niet tegenhouden; zonder gastgegevens melden
+            number = re.search(r"[A-Z]{2,5}-\d+-\d+", cells[1].inner_text())
+            skipped.append(f"{number.group(0) if number else 'rij'}: {exc}")
     return out
 
 
-def get_new_reservations(hotel_id: str, since: datetime, session: LighthouseSession | None = None) -> list[Reservation]:
+def get_new_reservations(
+    hotel_id: str, since: datetime, session: LighthouseSession | None = None,
+    skipped: list[str] | None = None,
+) -> list[Reservation]:
     """Reservaties die sinds `since` geboekt zijn (veld "Gemaakt op"), nieuwste eerst.
 
     Contactgegevens (e-mail, telefoon, taal) staan niet in de lijst; die komen uit get_reservation.
+    Rijen die niet gelezen konden worden, komen in `skipped` (reservatienummer en reden).
     """
+    skipped = skipped if skipped is not None else []
     if since.tzinfo is None:
         since = since.replace(tzinfo=TZ)
     if session is None:
         with LighthouseSession(hotel_id) as lh:
-            return get_new_reservations(hotel_id, since, lh)
+            return get_new_reservations(hotel_id, since, lh, skipped)
 
     page = session.goto(LIST_PATH)
     found: list[Reservation] = []
     for _ in range(MAX_PAGES):
-        rows = _rows_on_page(hotel_id, page)
+        rows = _rows_on_page(hotel_id, page, skipped)
         for r in rows:
             if r.booked_at and r.booked_at < since:
                 return found
