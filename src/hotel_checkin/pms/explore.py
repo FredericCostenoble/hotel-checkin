@@ -78,10 +78,11 @@ def _md(info: dict) -> str:
 def _mask(text: str, names: list[str]) -> str:
     """Gastgegevens weglaten: namen, e-mail, telefoon, lange vrije tekst (opmerkingen, memo)."""
     out = []
-    for line in text.splitlines():
-        line = line.strip()
-        if not line:
-            continue
+    lines = [line.strip() for line in text.splitlines() if line.strip()]
+    for i, line in enumerate(lines):
+        # Meldingen: "Nieuwe reservering" / "Reservering geannuleerd" gevolgd door "Naam / datums"
+        if i and lines[i - 1] in ("Nieuwe reservering", "Reservering geannuleerd", "Reservering gewijzigd") and " / " in line:
+            line = "<naam> / " + line.split(" / ", 1)[1]
         line = re.sub(r"[\w.+-]+@[\w-]+\.[\w.]+", "<email>", line)
         line = re.sub(r"\+?\d[\d ./()-]{6,}\d", "<tel>", line)
         for n in names:
@@ -103,7 +104,12 @@ def explore_detail(lh: LighthouseSession, path: str) -> str:
     names = [w.strip(",") for w in guest.split() if not w.startswith("(")]  # landcode (DE) behouden
     report = ["## Detail (voor tonen)", _mask(page.locator("body").inner_text(), names), ""]
     lh.close_popups()
-    eye = page.locator("i.fa-eye, .fa-eye, [class*='eye']").first
+    # Alleen het oog-icoon in het blok Contactgegevens (er staat er ook een bij de betalingen)
+    eye = page.locator(
+        "xpath=//*[normalize-space(text())='Contactgegevens']"
+        "/ancestor::*[contains(@class,'panel') or contains(@class,'card') or contains(@class,'box')][1]"
+        "//*[contains(@class,'fa-eye')]"
+    ).first
     if eye.count():
         eye.click()
         page.wait_for_timeout(2000)
