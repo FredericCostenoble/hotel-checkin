@@ -9,6 +9,8 @@ Twee resource groups in de tenant van Hotel Lucca, met dezelfde opbouw (`main.bi
 | Storage (tabellen, deploymentpakketten) | `stcheckin<env><suffix>` | centen per maand |
 | Key Vault (secrets per hotel) | `kv-checkin-<env>-<suffix>` | centen per maand |
 | Log Analytics + Application Insights | `log-` / `appi-checkin-<env>` | limiet 0,1 GB per dag |
+| Robot: Container Apps Job met Chromium | `job-checkin-robot-<env>`, `cae-checkin-<env>` | binnen het gratis tegoed, hooguit enkele euro's |
+| Containerregister (gedeeld TST/PRD, in rg-checkin-prd) | `acrcheckin<suffix>` | ongeveer 5 euro per maand |
 | Budgetmelding (optioneel) | `budget-checkin-<env>` | bedrag via `BUDGET_AMOUNT` |
 
 Alles is gedeeld door de hotels. Per hotel: `config/hotels/<hotel_id>.toml` en secrets
@@ -39,7 +41,9 @@ resources in de resource group (de tabellen eerst overzetten).
   De links in de mails wijzen naar het testformulier (`CHECKIN_FORM_URL`).
   TST mag de productie van Lighthouse lezen, maar schrijft er nooit in.
 - PRD: `APP_ENV=prd`, berichten naar de echte gasten, formulier op `checkin.hotellucca.be`.
-- Het ophalen van reservaties staat in beide uit (`POLL_ENABLED=false`) tot de Lighthouse-robot klaar is.
+- De Lighthouse-robot (Container Apps Job, `job-checkin-robot-<env>`) leest Lighthouse alleen.
+  Schema: PRD elk kwartier, TST elk uur (UTC, parameter `robotSchedule`). Daarnaast de knop
+  "Robot nu draaien" op de opvolgpagina. Hij leest alles sinds de vorige geslaagde run.
 
 ## Eenmalige opzet
 
@@ -86,7 +90,6 @@ Zolang `ADMIN_CLIENT_ID` niet gezet is, blijft de opvolgpagina dicht.
 
 - De API van het formulier draait in de Function App, in dezelfde regio als de gegevens, met
   managed identity. De opslag laat geen sleutels toe.
-- De Lighthouse-robot (Container Apps Job) wordt toegevoegd zodra het bouwblok klaar is.
 - De budgetmelding vraagt dat de kosten zichtbaar zijn voor de klant. Bij een abonnement via
   een partner (Cloudworx) zet de partner dat aan; anders faalt de uitrol met een 401.
   Laat `BUDGET_AMOUNT` leeg tot dat geregeld is.

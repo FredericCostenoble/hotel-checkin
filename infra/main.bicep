@@ -53,8 +53,18 @@ param testPhone string = ''
 @description('Object-id van de beheerder die secrets in Key Vault mag zetten (leeg = geen).')
 param kvAdminObjectId string = ''
 
-@description('Het ophalen van reservaties uit Lighthouse aanzetten (pas als de robot klaar is).')
-param pollEnabled bool = false
+@description('Image van de robot (bv. acr.azurecr.io/hotel-checkin-robot:<sha>). Leeg = geen robot.')
+param robotImage string = ''
+
+@description('Naam en resource group van het gedeelde containerregister (infra/registry.bicep).')
+param acrName string = ''
+param acrResourceGroup string = ''
+
+@description('Schema van de robot (cron, UTC).')
+param robotSchedule string = env == 'prd' ? '*/15 * * * *' : '0 * * * *'
+
+@description('Regio van de robot (Container Apps). Standaard dezelfde als de gegevens.')
+param robotLocation string = location
 
 param mailSender string = 'checkin@hotellucca.be'
 
@@ -187,8 +197,9 @@ var funcSettings = filter(
     KEY_VAULT_URL: kv.properties.vaultUri
     STORAGE_TABLE_ENDPOINT: st.properties.primaryEndpoints.table
     MAIL_SENDER: mailSender
-    POLL_ENABLED: pollEnabled ? 'true' : 'false'
     ADMIN_AUTH: empty(adminClientId) ? '' : 'easyauth'
+    ROBOT_JOB_ID: empty(robotImage) ? '' : robotJob.id
+    ROBOT_IMAGE: robotImage
     TEST_EMAIL: env == 'prd' ? '' : testEmail
     TEST_PHONE: env == 'prd' ? '' : testPhone
     // In TST wijzen de links in de mails naar het testformulier
@@ -312,6 +323,112 @@ resource budget 'Microsoft.Consumption/budgets@2023-11-01' = if (budgetAmount > 
         contactEmails: [alertEmail]
       }
     }
+  }
+}
+
+// ---------------------------------------------------------------- robot (Lighthouse)
+// Container Apps Job met Chromium, op schema en op vraag (knop op de opvolgpagina).
+// Leest Lighthouse alleen. Rechten via een eigen managed identity, geen sleutels.
+
+var withRobot = !empty(robotImage)
+
+resource robotId 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31' = if (withRobot) {
+  name: 'id-checkin-robot-${env}'
+  location: location
+  tags: tags
+}
+
+module robotAcrPull 'acr-pull.bicep' = if (withRobot) {
+  name: 'robot-acrpull-${env}'
+  scope: resourceGroup(acrResourceGroup)
+  params: {
+    acrName: acrName
+    principalId: robotId!.properties.principalId
+  }
+}
+
+resource raRobotTables 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (withRobot) {
+  scope: st
+  name: guid(st.id, 'robot', roles.tableContributor)
+  properties: {
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', roles.tableContributor)
+    principalId: robotId!.properties.principalId
+    principalType: 'ServicePrincipal'
+  }
+}
+
+resource raRobotKv 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (withRobot) {
+  scope: kv
+  name: guid(kv.id, 'robot', roles.kvSecretsUser)
+  properties: {
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', roles.kvSecretsUser)
+    principalId: robotId!.properties.principalId
+    principalType: 'ServicePrincipal'
+  }
+}
+
+resource cae 'Microsoft.App/managedEnvironments@2024-03-01' = if (withRobot) {
+  name: 'cae-checkin-${env}'
+  location: robotLocation
+  tags: tags
+  properties: {
+    appLogsConfiguration: {
+      destination: 'log-analytics'
+      logAnalyticsConfiguration: {
+        customerId: law.properties.customerId
+        sharedKey: law.listKeys().primarySharedKey
+      }
+    }
+    workloadProfiles: [{ name: 'Consumption', workloadProfileType: 'Consumption' }]
+  }
+}
+
+resource robotJob 'Microsoft.App/jobs@2024-03-01' = if (withRobot) {
+  name: 'job-checkin-robot-${env}'
+  location: robotLocation
+  tags: tags
+  identity: {
+    type: 'UserAssigned'
+    userAssignedIdentities: { '${robotId.id}': {} }
+  }
+  dependsOn: [robotAcrPull, raRobotTables, raRobotKv]
+  properties: {
+    environmentId: cae.id
+    workloadProfileName: 'Consumption'
+    configuration: {
+      triggerType: 'Schedule'
+      replicaTimeout: 900
+      replicaRetryLimit: 0
+      scheduleTriggerConfig: { cronExpression: robotSchedule, parallelism: 1, replicaCompletionCount: 1 }
+      registries: [{ server: '${acrName}.azurecr.io', identity: robotId.id }]
+    }
+    template: {
+      containers: [
+        {
+          name: 'robot'
+          image: robotImage
+          resources: { cpu: json('1.0'), memory: '2Gi' }
+          env: [
+            { name: 'APP_ENV', value: env }
+            { name: 'KEY_VAULT_URL', value: kv.properties.vaultUri }
+            { name: 'STORAGE_TABLE_ENDPOINT', value: st.properties.primaryEndpoints.table }
+            { name: 'AZURE_CLIENT_ID', value: robotId!.properties.clientId }
+            { name: 'ROBOT_HOURS', value: '2' }
+          ]
+        }
+      ]
+    }
+  }
+}
+
+// De Function App mag de robot starten (knop op de opvolgpagina)
+resource raFuncRobot 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (withRobot) {
+  scope: robotJob
+  name: guid(robotJob.id, func.id, 'contributor')
+  properties: {
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', 'b24988ac-6180-42a0-ad88-20f7382dd24c')
+    principalId: func.identity.principalId
+    principalType: 'ServicePrincipal'
   }
 }
 

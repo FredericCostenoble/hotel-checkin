@@ -67,8 +67,10 @@ async function loadRuns() {
   const h = $("#hotel").value;
   const d = await get(`/api/opvolging/${h}/runs`);
   $("#run").disabled = d.running || !d.can_run;
+  // In de cloud bepaalt de robot zelf vanaf wanneer (sinds de vorige geslaagde run)
+  $("#hours-wrap").hidden = !!d.cloud;
   $("#robot-state").textContent = d.running ? "De robot is bezig..." :
-    (d.can_run ? "" : "De robot draait hier nog niet: de cloudversie (geplande taak) volgt.");
+    (d.can_run ? (d.cloud ? "Draait ook automatisch op schema." : "") : "De robot is in deze omgeving nog niet geïnstalleerd.");
   $("#runs").innerHTML = d.runs.map(x => {
     const secs = (new Date(x.finished_at) - new Date(x.started_at)) / 1000;
     return `<tr><td>${stamp(x.started_at)}</td><td>${Math.round(secs)} s</td><td>${esc(x.task)}</td>

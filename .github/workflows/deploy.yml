@@ -53,6 +53,29 @@ jobs:
           tenant-id: ${{ vars.AZURE_TENANT_ID }}
           subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
 
+      - name: Containerregister (gedeeld, in rg-checkin-prd)
+        id: acr
+        run: |
+          out=$(az deployment group create \
+            --resource-group rg-checkin-prd \
+            --name "registry-$ENV_NAME-${{ github.run_number }}" \
+            --template-file infra/registry.bicep \
+            --parameters location="${{ vars.AZURE_LOCATION || 'belgiumcentral' }}" \
+            --query properties.outputs -o json)
+          echo "server=$(jq -r .loginServer.value <<<"$out")" >> "$GITHUB_OUTPUT"
+          echo "name=$(jq -r .name.value <<<"$out")" >> "$GITHUB_OUTPUT"
+
+      - name: Robot-image bouwen en opladen
+        id: image
+        run: |
+          IMG="${{ steps.acr.outputs.server }}/hotel-checkin-robot:${{ github.sha }}"
+          az acr login --name "${{ steps.acr.outputs.name }}"
+          if ! docker manifest inspect "$IMG" >/dev/null 2>&1; then
+            docker build -f Dockerfile.robot -t "$IMG" .
+            docker push "$IMG"
+          fi
+          echo "image=$IMG" >> "$GITHUB_OUTPUT"
+
       - name: Infrastructuur (Bicep)
         id: infra
         run: |
@@ -66,6 +89,9 @@ jobs:
                          formOrigins="${{ vars.FORM_ORIGINS }}" \
                          customDomain="${{ vars.CUSTOM_DOMAIN }}" \
                          adminClientId="${{ vars.ADMIN_CLIENT_ID }}" \
+                         robotImage="${{ steps.image.outputs.image }}" \
+                         acrName="${{ steps.acr.outputs.name }}" \
+                         acrResourceGroup=rg-checkin-prd \
                          budgetAmount="${{ vars.BUDGET_AMOUNT || '0' }}" \
                          alertEmail="${{ vars.ALERT_EMAIL }}" \
                          testEmail="${{ vars.TEST_EMAIL }}" \

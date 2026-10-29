@@ -1,0 +1,11 @@
+.git
+.github
+.devcontainer
+.pytest_cache
+**/__pycache__
+build
+lighthouse-explore
+web
+tests
+infra
+api
