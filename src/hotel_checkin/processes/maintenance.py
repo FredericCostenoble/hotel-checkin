@@ -45,6 +45,10 @@ def run(hotel_id: str, today: date | None = None) -> dict:
     done = {"linked": 0, "counted": 0, "reservations_deleted": 0, "guests_deleted": 0}
     try:
         pool = profiles.list_profiles(hotel_id)
+        # Eenmalig: profielen geteld voor verblijven als periodes geteld werden, opnieuw tellen
+        if any(g.stays and not g.stay_periods for g in pool):
+            guest_profiles.reset_counts(hotel_id)
+            pool = profiles.list_profiles(hotel_id)
         reservations = guests.list_reservations(hotel_id)
         for r in reservations:
             if not r.guest_id and guest_profiles.link(r, pool):

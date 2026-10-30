@@ -24,7 +24,12 @@ def hotels() -> list[dict]:
 def reservations(hotel_id: str) -> list[dict]:
     from hotel_checkin.guests import profiles
 
-    stays = {g.guest_id: g.stays for g in profiles.list_profiles(hotel_id)}
+    periods = {g.guest_id: g.stay_periods for g in profiles.list_profiles(hotel_id)}
+
+    def earlier_stays(r) -> int:
+        """Verblijven van de gast buiten de periode van deze reservatie (terugkerende gast)."""
+        a, d = r.arrival.isoformat(), r.departure.isoformat()
+        return sum(1 for pa, pd in periods.get(r.guest_id, []) if not (a < pd and d > pa))
     out = []
     for r in repo.list_reservations(hotel_id):
         msgs = repo.messages_for(hotel_id, r.reservation_id)
@@ -46,8 +51,7 @@ def reservations(hotel_id: str) -> list[dict]:
             "booked_at": r.booked_at.isoformat() if r.booked_at else "",
             "checkin_completed_at": r.checkin_completed_at.isoformat() if r.checkin_completed_at else "",
             "guest_id": r.guest_id or "",
-            # eerdere verblijven van deze gast (dit verblijf niet meegerekend als het al meetelde)
-            "guest_stays": max(stays.get(r.guest_id, 0) - (1 if r.stay_counted_at else 0), 0) if r.guest_id else 0,
+            "guest_stays": earlier_stays(r) if r.guest_id else 0,
             "added_at": r.created_at.isoformat() if r.created_at else "",
             "updated_at": r.updated_at.isoformat() if r.updated_at else "",
             "messages": [

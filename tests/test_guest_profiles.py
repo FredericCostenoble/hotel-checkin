@@ -99,3 +99,30 @@ def test_monitor_guests_view():
     assert service.guests("lucca")["matches"] == []
     res = {r["id"]: r for r in service.reservations("lucca")}
     assert res["r1"]["guest_id"] == a.guest_id
+
+
+def test_two_rooms_same_nights_is_one_stay():
+    r1 = _res("r1", phone="+32470000001", days_ago=10, rooms=["12"])
+    r2 = _res("r2", phone="+32470000001", days_ago=10, rooms=["14"])
+    gp.link(r1)
+    gp.link(r2)
+    r3 = _res("r3", phone="+32470000001", days_ago=5, rooms=["12"], source="Direct")  # aansluitend: apart verblijf
+    gp.link(r3)
+    for rid in ("r1", "r2", "r3"):
+        gp.count_stay(repo.get_reservation("lucca", rid))
+    g = profiles.list_profiles("lucca")[0]
+    assert (g.stays, g.nights) == (2, 4)
+    assert g.rooms == {"12": 2, "14": 1} and g.channels == {"Booking.com": 1, "Direct": 1}
+    assert g.persons_stays == 2 and g.persons == 6  # 2 kamers x 2 pers. + 2 pers.
+
+
+def test_maintenance_recounts_old_style_profiles():
+    gp.link(_res("r1", phone="+32470000001", days_ago=10))
+    gp.link(_res("r2", phone="+32470000001", days_ago=10))
+    for rid in ("r1", "r2"):
+        gp.count_stay(repo.get_reservation("lucca", rid))
+    g = profiles.list_profiles("lucca")[0]
+    g.stays, g.stay_periods = 2, []  # zoals geteld voor deze wijziging
+    profiles.save_profile(g)
+    maintenance.run("lucca")
+    assert profiles.list_profiles("lucca")[0].stays == 1

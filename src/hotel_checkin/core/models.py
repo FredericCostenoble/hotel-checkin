@@ -81,8 +81,9 @@ class GuestProfile:
     country: str | None = None
     first_stay: date | None = None  # aankomst van het eerste meegetelde verblijf
     last_stay: date | None = None  # vertrek van het laatste meegetelde verblijf
-    stays: int = 0
-    nights: int = 0
+    stays: int = 0  # aantal verblijven = aantal aparte periodes (overlappende reservaties = één verblijf)
+    nights: int = 0  # nachten over die periodes (twee kamers dezelfde nacht = één nacht)
+    stay_periods: list[list[str]] = field(default_factory=list)  # [[aankomst, vertrek], ...] ISO-datums
     persons: int = 0  # som over de verblijven met gekend aantal personen
     persons_stays: int = 0  # aantal verblijven met gekend aantal personen
     rooms: dict[str, int] = field(default_factory=dict)  # kamer -> aantal verblijven

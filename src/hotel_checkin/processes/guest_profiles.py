@@ -9,6 +9,8 @@ Regels om te beslissen of twee boekingen van dezelfde gast zijn (voorspelbaar, g
 
 Gegevens van het check-in-formulier (door de gast zelf ingevuld) gaan voor op die uit Lighthouse.
 Een verblijf telt mee in het profiel zodra het vertrek voorbij is en het niet geannuleerd werd.
+Een verblijf is een periode: reservaties van dezelfde gast die in de tijd overlappen (bv. twee
+kamers voor dezelfde nachten) vormen samen één verblijf; de nachten tellen één keer.
 """
 
 from __future__ import annotations
@@ -107,30 +109,77 @@ def link(r: Reservation, all_profiles: list[GuestProfile] | None = None) -> Gues
 # ---------------------------------------------------------------- verblijven meetellen
 
 
+def _merge_periods(periods: list[list[str]]) -> list[list[str]]:
+    """Overlappende periodes samenvoegen (vertrek = aankomst van de volgende telt niet als overlap)."""
+    out: list[list[str]] = []
+    for a, d in sorted(periods):
+        if out and a < out[-1][1]:
+            out[-1][1] = max(out[-1][1], d)
+        else:
+            out.append([a, d])
+    return out
+
+
+def _apply_periods(g: GuestProfile) -> None:
+    g.stay_periods = _merge_periods(g.stay_periods)
+    g.stays = len(g.stay_periods)
+    g.nights = sum((date.fromisoformat(d) - date.fromisoformat(a)).days for a, d in g.stay_periods)
+    g.first_stay = date.fromisoformat(g.stay_periods[0][0]) if g.stay_periods else None
+    g.last_stay = date.fromisoformat(g.stay_periods[-1][1]) if g.stay_periods else None
+
+
+def _overlaps(g: GuestProfile, r: Reservation) -> bool:
+    a, d = r.arrival.isoformat(), r.departure.isoformat()
+    return any(a < pd and d > pa for pa, pd in g.stay_periods)
+
+
 def count_stay(r: Reservation, today: date | None = None) -> bool:
-    """Tel een voorbij, niet geannuleerd verblijf één keer mee in het profiel."""
+    """Tel een voorbij, niet geannuleerd verblijf één keer mee in het profiel.
+
+    Overlapt het met een verblijf dat al meetelt (bv. tweede kamer voor dezelfde nachten), dan
+    komt er geen verblijf bij: alleen de kamer en de personen worden toegevoegd.
+    """
     today = today or date.today()
     if r.stay_counted_at or not r.guest_id or r.status == ReservationStatus.CANCELLED or r.departure >= today:
         return False
     g = profiles.get_profile(r.hotel_id, r.guest_id)
     if g is None:
         return False
-    g.stays += 1
-    g.nights += max((r.departure - r.arrival).days, 0)
+    same_stay = _overlaps(g, r)
+    g.stay_periods.append([r.arrival.isoformat(), r.departure.isoformat()])
+    _apply_periods(g)
     if r.guest_count:
         g.persons += r.guest_count
-        g.persons_stays += 1
-    g.first_stay = min(filter(None, (g.first_stay, r.arrival)))
-    g.last_stay = max(filter(None, (g.last_stay, r.departure)))
+        if not same_stay:
+            g.persons_stays += 1
     for room in r.rooms:
         g.rooms[room] = g.rooms.get(room, 0) + 1
     if r.room_type:
         g.room_types[r.room_type] = g.room_types.get(r.room_type, 0) + 1
-    g.channels[channel_of(r)] = g.channels.get(channel_of(r), 0) + 1
+    if not same_stay:
+        g.channels[channel_of(r)] = g.channels.get(channel_of(r), 0) + 1
     profiles.save_profile(g)
     r.stay_counted_at = datetime.now(timezone.utc)
     guests.save_reservation(r)
     return True
+
+
+def reset_counts(hotel_id: str) -> int:
+    """Alle tellingen opnieuw (na een wijziging in de manier van tellen). Geeft het aantal
+    reservaties terug dat opnieuw meegeteld kan worden. Reservaties die al opgeruimd zijn, tellen
+    dan niet meer mee."""
+    for g in profiles.list_profiles(hotel_id):
+        g.stays = g.nights = g.persons = g.persons_stays = 0
+        g.stay_periods, g.rooms, g.room_types, g.channels = [], {}, {}, {}
+        g.first_stay = g.last_stay = None
+        profiles.save_profile(g)
+    n = 0
+    for r in guests.list_reservations(hotel_id):
+        if r.stay_counted_at:
+            r.stay_counted_at = None
+            guests.save_reservation(r)
+            n += 1
+    return n
 
 
 # ---------------------------------------------------------------- samenvoegen en voorstellen
@@ -143,12 +192,12 @@ def merge(hotel_id: str, keep_id: str, other_id: str, keep: GuestProfile | None 
     other = other or profiles.get_profile(hotel_id, other_id)
     if keep is None or other is None or keep.guest_id == other.guest_id:
         return keep or other
-    for k in ("stays", "nights", "persons", "persons_stays"):
+    for k in ("persons", "persons_stays"):
         setattr(keep, k, getattr(keep, k) + getattr(other, k))
+    keep.stay_periods = keep.stay_periods + other.stay_periods
     for k in ("rooms", "room_types", "channels"):
         setattr(keep, k, dict(Counter(getattr(keep, k)) + Counter(getattr(other, k))))
-    keep.first_stay = min(filter(None, (keep.first_stay, other.first_stay)), default=None)
-    keep.last_stay = max(filter(None, (keep.last_stay, other.last_stay)), default=None)
+    _apply_periods(keep)  # stays, nights, eerste en laatste verblijf uit de periodes
     # Contact: wat de gast zelf bevestigde of een eigen adres gaat voor
     if other.from_checkin_form and not keep.from_checkin_form:
         keep.first_name, keep.last_name = other.first_name or keep.first_name, other.last_name or keep.last_name
