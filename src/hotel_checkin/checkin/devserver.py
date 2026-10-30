@@ -66,6 +66,16 @@ class Handler(BaseHTTPRequestHandler):
             self._json(200, admin.hotels())
         elif method == "GET" and len(parts) == 4 and parts[3] == "reservations":
             self._json(200, admin.reservations(parts[2]))
+        elif method == "GET" and len(parts) == 4 and parts[3] == "guests":
+            self._json(200, admin.guests(parts[2]))
+        elif method == "POST" and len(parts) == 4 and parts[3] == "guests":
+            from urllib.parse import parse_qs, urlparse
+
+            q = {k: v[0] for k, v in parse_qs(urlparse(self.path).query).items()}
+            if q.get("action") == "merge":
+                self._json(200, {"ok": admin.merge_guests(parts[2], q.get("a", ""), q.get("b", ""))})
+            else:
+                self._json(200, {"ok": admin.mark_guests_different(parts[2], q.get("a", ""), q.get("b", ""))})
         elif method == "GET" and len(parts) == 4 and parts[3] == "runs":
             self._json(200, admin.runs(parts[2]) | {"can_run": True})
         elif method == "POST" and len(parts) == 4 and parts[3] == "run":

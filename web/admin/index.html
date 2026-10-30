@@ -16,6 +16,7 @@
 
 <nav>
   <button data-tab="res" class="active" data-t="tab_res"></button>
+  <button data-tab="guests" data-t="tab_guests"></button>
   <button data-tab="robot" data-t="tab_robot"></button>
 </nav>
 
@@ -26,6 +27,7 @@
       <label><span data-t="stay_from"></span> <input id="from" type="date"></label>
       <label><span data-t="stay_to"></span> <input id="to" type="date"></label>
       <button id="today" type="button" data-t="from_today"></button>
+      <span id="res-filter" class="chip" hidden></span>
       <span id="count" class="muted"></span>
     </div>
     <table>
@@ -39,6 +41,30 @@
         <th data-sort="email" data-t="c_contact"></th><th data-sort="messages" data-t="c_messages"></th>
       </tr></thead>
       <tbody id="res"></tbody>
+    </table>
+  </section>
+
+  <section id="tab-guests" hidden>
+    <div class="tools">
+      <input id="g-search" type="search" data-tp="g_search">
+      <span id="g-filter" class="chip" hidden></span>
+      <span id="g-count" class="muted"></span>
+    </div>
+    <details id="matches-wrap" hidden>
+      <summary id="matches-title"></summary>
+      <p class="muted" data-t="m_help"></p>
+      <table><tbody id="matches"></tbody></table>
+    </details>
+    <table>
+      <thead id="g-head"><tr>
+        <th data-gsort="name" data-t="c_guest"></th><th data-gsort="email" data-t="c_contact"></th>
+        <th data-gsort="country" data-t="g_country"></th><th data-gsort="stays" data-t="g_stays"></th>
+        <th data-gsort="avg_nights" data-t="g_avg_nights"></th><th data-gsort="avg_persons" data-t="g_avg_persons"></th>
+        <th data-gsort="first_stay" data-t="g_first"></th><th data-gsort="last_stay" data-t="g_last"></th>
+        <th data-gsort="preferred_channel" data-t="g_channel"></th><th data-gsort="rooms" data-t="g_rooms"></th>
+        <th data-gsort="reservations" data-t="tab_res"></th>
+      </tr></thead>
+      <tbody id="guests"></tbody>
     </table>
   </section>
 

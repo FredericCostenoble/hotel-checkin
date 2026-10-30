@@ -3,7 +3,14 @@ const API = window.ADMIN_API || "";
 
 const T = {
   nl: {
-    title: "Check-in monitor", hotel: "Hotel", tab_res: "Reservaties", tab_robot: "Robot",
+    title: "Check-in monitor", hotel: "Hotel", tab_res: "Reservaties", tab_robot: "Robot", tab_guests: "Gasten",
+    g_search: "Zoek op naam, e-mail, telefoon", g_count: n => `${n} gasten`, g_country: "Land", g_stays: "Verblijven",
+    g_avg_nights: "Gem. nachten", g_avg_persons: "Gem. pers.", g_first: "Eerste verblijf", g_last: "Laatste verblijf",
+    g_channel: "Kanaal", g_rooms: "Kamers", g_relay: "doorstuuradres, niet voor marketing", g_form: "formulier",
+    g_optout: "geen marketing", no_guests: "Nog geen gasten (worden elke nacht bijgewerkt)",
+    m_title: n => `Mogelijke dubbels (${n})`, m_help: "Zelfde of bijna dezelfde naam in hetzelfde land. Nooit automatisch samengevoegd.",
+    m_same_name: "zelfde naam", m_similar_name: "bijna zelfde naam", m_merge: "Samenvoegen", m_different: "Andere persoon",
+    m_confirm: "Deze twee gasten samenvoegen tot één?", filter_guest: name => `Gast: ${name}`, show_all: "alles tonen",
     search: "Zoek op naam, nummer, e-mail", stay_from: "Verblijf van", stay_to: "tot", from_today: "Vanaf vandaag",
     c_arrival: "Aankomst", c_departure: "Vertrek", c_number: "Nummer", c_guest: "Gast", c_pers: "Pers.",
     c_room: "Kamer", c_via: "Via", c_booked: "Geboekt", c_added: "Toegevoegd", c_updated: "Bijgewerkt", c_form: "Formulier", c_contact: "Contact", c_messages: "Berichten",
@@ -18,7 +25,14 @@ const T = {
     exec_title: "Runs volgens Azure", exec_end: "Einde", exec_status: "Status", exec_name: "Naam",
   },
   en: {
-    title: "Check-in monitor", hotel: "Hotel", tab_res: "Reservations", tab_robot: "Robot",
+    title: "Check-in monitor", hotel: "Hotel", tab_res: "Reservations", tab_robot: "Robot", tab_guests: "Guests",
+    g_search: "Search name, e-mail, phone", g_count: n => `${n} guests`, g_country: "Country", g_stays: "Stays",
+    g_avg_nights: "Avg nights", g_avg_persons: "Avg pers.", g_first: "First stay", g_last: "Last stay",
+    g_channel: "Channel", g_rooms: "Rooms", g_relay: "relay address, not for marketing", g_form: "form",
+    g_optout: "no marketing", no_guests: "No guests yet (updated every night)",
+    m_title: n => `Possible duplicates (${n})`, m_help: "Same or almost the same name in the same country. Never merged automatically.",
+    m_same_name: "same name", m_similar_name: "similar name", m_merge: "Merge", m_different: "Different person",
+    m_confirm: "Merge these two guests into one?", filter_guest: name => `Guest: ${name}`, show_all: "show all",
     search: "Search name, number, e-mail", stay_from: "Stay from", stay_to: "to", from_today: "From today",
     c_arrival: "Arrival", c_departure: "Departure", c_number: "Number", c_guest: "Guest", c_pers: "Pers.",
     c_room: "Room", c_via: "Via", c_booked: "Booked", c_added: "Added", c_updated: "Updated", c_form: "Form", c_contact: "Contact", c_messages: "Messages",
@@ -66,6 +80,7 @@ function setLang(l) {
   document.querySelectorAll("[data-tp]").forEach(e => { e.placeholder = t(e.dataset.tp); });
   document.querySelectorAll(".langs button").forEach(b => b.classList.toggle("active", b.dataset.lang === lang));
   render();
+  renderGuests();
   if (runsData) renderRuns(runsData);
 }
 
@@ -80,11 +95,9 @@ async function init() {
   document.querySelectorAll(".subtabs button").forEach(b => b.onclick = () => showSub(b.dataset.sub));
   $("#bin-all").innerHTML = BIN;
   $("#bin-all").onclick = deleteAllRuns;
-  document.querySelectorAll("nav button").forEach(b => b.onclick = () => {
-    document.querySelectorAll("nav button").forEach(x => x.classList.toggle("active", x === b));
-    $("#tab-res").hidden = b.dataset.tab !== "res";
-    $("#tab-robot").hidden = b.dataset.tab !== "robot";
-  });
+  document.querySelectorAll("nav button").forEach(b => b.onclick = () => showTab(b.dataset.tab));
+  $("#g-search").oninput = renderGuests;
+  document.querySelectorAll("#g-head th[data-gsort]").forEach(th => th.onclick = () => gSortBy(th.dataset.gsort));
   $("#search").oninput = render;
   document.querySelectorAll("#res-head th[data-sort]").forEach(th => th.onclick = () => sortBy(th.dataset.sort));
   $("#task").onchange = () => {
@@ -99,11 +112,96 @@ async function init() {
   load();
 }
 
+function showTab(name) {
+  document.querySelectorAll("nav button").forEach(x => x.classList.toggle("active", x.dataset.tab === name));
+  ["res", "guests", "robot"].forEach(n => { $(`#tab-${n}`).hidden = n !== name; });
+}
+
 async function load() {
   const h = $("#hotel").value;
+  resIds = null; guestId = null;
   rows = await get(`/api/monitor/${h}/reservations`);
   render();
+  loadGuests();
   loadRuns();
+}
+
+// ---------------------------------------------------------------- gasten
+let guestData = { guests: [], matches: [] }, guestId = null, resIds = null;
+let gSortKey = "last_stay", gSortDir = -1;
+const gValue = (g, k) => k === "rooms" ? g.rooms.join(", ") : k === "reservations" ? g.reservations.length
+  : k === "email" ? (g.email || g.phone) : (g[k] ?? "");
+function gSortBy(k) { gSortDir = k === gSortKey ? -gSortDir : 1; gSortKey = k; renderGuests(); }
+
+async function loadGuests() {
+  guestData = await get(`/api/monitor/${$("#hotel").value}/guests`);
+  renderGuests();
+  render();
+}
+
+function guestById(id) { return guestData.guests.find(g => g.id === id); }
+
+// Van een reservatie naar de gast
+function openGuest(id) { guestId = id; showTab("guests"); renderGuests(); }
+// Van een gast naar zijn reservaties
+function openReservations(id) { resIds = guestById(id)?.reservations || []; guestId = id; $("#from").value = ""; showTab("res"); render(); }
+
+function contactCell(g) {
+  const tags = [];
+  if (g.email && !g.email_own) tags.push(`<span class="tag" title="${esc(t("g_relay"))}">OTA</span>`);
+  if (g.form) tags.push(`<span class="tag">${esc(t("g_form"))}</span>`);
+  if (g.opt_out) tags.push(`<span class="tag fail">${esc(t("g_optout"))}</span>`);
+  return `${esc(g.email)}${g.email && g.phone ? "<br>" : ""}${esc(g.phone)} ${tags.join("")}`;
+}
+
+function renderGuests() {
+  const q = $("#g-search").value.toLowerCase();
+  const chip = $("#g-filter"), focus = guestId && guestById(guestId);
+  chip.hidden = !focus;
+  if (focus) {
+    chip.innerHTML = `${esc(t("filter_guest", focus.name))} <a href="#">${esc(t("show_all"))}</a>`;
+    chip.querySelector("a").onclick = e => { e.preventDefault(); guestId = null; renderGuests(); };
+  }
+  const list = guestData.guests.filter(g => (!focus || g.id === guestId) &&
+    (!q || [g.name, g.email, g.phone].join(" ").toLowerCase().includes(q)));
+  list.sort((a, b) => {
+    const x = gValue(a, gSortKey), y = gValue(b, gSortKey);
+    if (x === "" || x === null || y === "" || y === null) return x === y ? 0 : (x === "" || x === null ? 1 : -1);
+    return (typeof x === "number" ? x - y : String(x).localeCompare(String(y), locale(), { numeric: true })) * gSortDir;
+  });
+  document.querySelectorAll("#g-head th[data-gsort]").forEach(th => {
+    th.classList.toggle("sorted", th.dataset.gsort === gSortKey);
+    th.dataset.dir = th.dataset.gsort === gSortKey ? (gSortDir > 0 ? "asc" : "desc") : "";
+  });
+  $("#g-count").textContent = t("g_count", list.length);
+  $("#guests").innerHTML = list.map(g => `
+    <tr>
+      <td>${esc(g.name)}</td><td class="wrap">${contactCell(g)}</td>
+      <td>${esc(g.country)}${g.language ? ` <span class="muted">${esc(g.language)}</span>` : ""}</td>
+      <td>${g.stays}</td><td>${g.avg_nights ?? ""}</td><td>${g.avg_persons ?? ""}</td>
+      <td>${day(g.first_stay)}</td><td>${day(g.last_stay)}</td>
+      <td title="${esc(g.channels.map(c => `${c.name} ${c.count}×`).join(", "))}">${esc(g.preferred_channel)}</td>
+      <td>${esc(g.rooms.join(", "))}${g.room_type ? ` <span class="muted">${esc(g.room_type)}</span>` : ""}</td>
+      <td>${g.reservations.length ? `<a href="#" data-res="${esc(g.id)}">${g.reservations.length}</a>` : "0"}</td>
+    </tr>`).join("") || `<tr><td colspan="11" class="muted">${t("no_guests")}</td></tr>`;
+  document.querySelectorAll("#guests a[data-res]").forEach(a => a.onclick = e => { e.preventDefault(); openReservations(a.dataset.res); });
+  renderMatches();
+}
+
+function renderMatches() {
+  const m = guestData.matches.filter(x => guestById(x.a) && guestById(x.b));
+  $("#matches-wrap").hidden = !m.length;
+  $("#matches-title").textContent = t("m_title", m.length);
+  const who = g => `<strong>${esc(g.name)}</strong> <span class="muted">${esc([g.country, g.email || g.phone, g.stays + "×"].filter(Boolean).join(" · "))}</span>`;
+  $("#matches").innerHTML = m.map(x => `
+    <tr><td>${who(guestById(x.a))}</td><td>${who(guestById(x.b))}</td><td class="muted">${esc(t("m_" + x.reason))}</td>
+      <td><button type="button" data-act="merge" data-a="${esc(x.a)}" data-b="${esc(x.b)}">${esc(t("m_merge"))}</button>
+        <button type="button" data-act="different" data-a="${esc(x.a)}" data-b="${esc(x.b)}">${esc(t("m_different"))}</button></td></tr>`).join("");
+  document.querySelectorAll("#matches button").forEach(b => b.onclick = async () => {
+    if (b.dataset.act === "merge" && !confirm(t("m_confirm"))) return;
+    await get(`/api/monitor/${$("#hotel").value}/guests?action=${b.dataset.act}&a=${encodeURIComponent(b.dataset.a)}&b=${encodeURIComponent(b.dataset.b)}`, { method: "POST" });
+    loadGuests();
+  });
 }
 
 // Sorteren: klik op een kolomtitel, nog eens klikken keert de volgorde om
@@ -123,7 +221,13 @@ function render() {
   const q = $("#search").value.toLowerCase();
   // Verblijf dat (deels) in de gekozen periode valt; lege datum = geen grens
   const from = $("#from").value, to = $("#to").value;
-  const list = rows.filter(r => (!from || r.departure >= from) && (!to || r.arrival <= to) &&
+  const chip = $("#res-filter"), focus = resIds && guestId && guestById(guestId);
+  chip.hidden = !resIds;
+  if (resIds) {
+    chip.innerHTML = `${esc(t("filter_guest", focus ? focus.name : ""))} <a href="#">${esc(t("show_all"))}</a>`;
+    chip.querySelector("a").onclick = e => { e.preventDefault(); resIds = null; $("#from").value = todayIso(); render(); };
+  }
+  const list = rows.filter(r => (!resIds || resIds.includes(r.id)) && (!from || r.departure >= from) && (!to || r.arrival <= to) &&
     (!q || [r.guest, r.booking_number, r.email, r.phone].join(" ").toLowerCase().includes(q)));
   list.sort((a, b) => {
     const x = sortValue(a, sortKey), y = sortValue(b, sortKey);
@@ -139,13 +243,14 @@ function render() {
   $("#res").innerHTML = list.map(r => `
     <tr class="${r.status === "cancelled" ? "cancelled" : ""}">
       <td>${day(r.arrival)}</td><td>${day(r.departure)}</td>
-      <td>${esc(r.booking_number)}</td><td>${esc(r.guest)}</td><td>${esc(r.guests ?? "")}</td>
+      <td>${esc(r.booking_number)}</td><td>${r.guest_id && guestById(r.guest_id) ? `<a href="#" data-guest="${esc(r.guest_id)}">${esc(r.guest)}</a>` : esc(r.guest)}</td><td>${esc(r.guests ?? "")}</td>
       <td>${esc(r.rooms.join(", ") || r.room_type)}</td><td>${esc(r.source)}</td><td>${esc(r.pms_status)}</td>
       <td>${stamp(r.booked_at)}</td><td>${stamp(r.added_at)}</td><td>${stamp(r.updated_at)}</td>
       <td>${r.checkin_completed_at ? `<span class="ok">${t("yes")}</span> ${stamp(r.checkin_completed_at)}` : `<span class="muted">${t("no")}</span>`}</td>
       <td class="wrap">${esc(r.email)}${r.email && r.phone ? "<br>" : ""}${esc(r.phone)}</td>
       <td class="wrap">${r.messages.map(m => `<span class="tag ${m.ok ? "" : "fail"}" title="${esc(stamp(m.at))}">${esc(m.type)} (${esc(m.channel)})</span>`).join("") || `<span class="muted">${t("none")}</span>`}</td>
     </tr>`).join("") || `<tr><td colspan="14" class="muted">${t("no_res")}</td></tr>`;
+  document.querySelectorAll("#res a[data-guest]").forEach(a => a.onclick = e => { e.preventDefault(); openGuest(a.dataset.guest); });
 }
 
 async function loadRuns() {

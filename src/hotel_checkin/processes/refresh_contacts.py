@@ -14,6 +14,7 @@ from hotel_checkin.core import workflow
 from hotel_checkin.core.models import ReservationStatus
 from hotel_checkin.guests import repository as guests
 from hotel_checkin.pms import lighthouse
+from hotel_checkin.processes import guest_profiles
 from hotel_checkin.processes.new_reservation import _apply_contact, _ContactStats
 
 TASK = "contactgegevens_nalezen"
@@ -58,6 +59,8 @@ def run(hotel_id: str) -> int:
                         continue
                     _apply_contact(reservation, contact)
                     guests.save_reservation(reservation)
+                    if contact.email or contact.phone:
+                        guest_profiles.link(reservation)
     except Exception as exc:
         guests.log_robot_run(hotel_id, TASK, started, False, len(todo), 0, f"{type(exc).__name__}: {exc}", timings=timings)
         raise

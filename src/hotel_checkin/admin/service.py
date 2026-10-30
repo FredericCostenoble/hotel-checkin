@@ -42,6 +42,7 @@ def reservations(hotel_id: str) -> list[dict]:
             "status": r.status.value,
             "booked_at": r.booked_at.isoformat() if r.booked_at else "",
             "checkin_completed_at": r.checkin_completed_at.isoformat() if r.checkin_completed_at else "",
+            "guest_id": r.guest_id or "",
             "added_at": r.created_at.isoformat() if r.created_at else "",
             "updated_at": r.updated_at.isoformat() if r.updated_at else "",
             "messages": [
@@ -58,6 +59,50 @@ def runs(hotel_id: str) -> dict:
         | {"timings": json.loads(e.get("timings") or "{}"), "id": e.get("RowKey")}
         for e in repo.robot_runs(hotel_id, limit=200)
     ]}
+
+
+def guests(hotel_id: str) -> dict:
+    """Gastprofielen en mogelijke dubbels voor de monitor."""
+    from hotel_checkin.guests import profiles
+    from hotel_checkin.processes import guest_profiles
+
+    opted_out = {e for e in repo.opted_out_emails(hotel_id)}
+    out = []
+    for g in profiles.list_profiles(hotel_id):
+        channels = sorted(g.channels.items(), key=lambda kv: -kv[1])
+        rooms = sorted(g.rooms.items(), key=lambda kv: -kv[1])
+        out.append({
+            "id": g.guest_id, "name": f"{g.first_name} {g.last_name}".strip(),
+            "email": g.email or "", "email_own": g.email_own, "phone": g.phone or "",
+            "language": g.language, "country": g.country or "", "form": g.from_checkin_form,
+            "opt_out": bool(g.email and g.email.lower() in opted_out),
+            "first_stay": g.first_stay.isoformat() if g.first_stay else "",
+            "last_stay": g.last_stay.isoformat() if g.last_stay else "",
+            "stays": g.stays, "nights": g.nights,
+            "avg_nights": round(g.nights / g.stays, 1) if g.stays else None,
+            "avg_persons": round(g.persons / g.persons_stays, 1) if g.persons_stays else None,
+            "rooms": [k for k, _ in rooms], "room_type": max(g.room_types, key=g.room_types.get) if g.room_types else "",
+            "channels": [{"name": k, "count": v} for k, v in channels],
+            "preferred_channel": channels[0][0] if channels else "",
+            "reservations": g.reservation_ids,
+            "updated_at": g.updated_at.isoformat() if g.updated_at else "",
+        })
+    return {"guests": out, "matches": guest_profiles.possible_matches(hotel_id)}
+
+
+def merge_guests(hotel_id: str, keep: str, other: str) -> bool:
+    from hotel_checkin.processes import guest_profiles
+
+    return hotel_id in list_hotels() and guest_profiles.merge(hotel_id, keep, other) is not None
+
+
+def mark_guests_different(hotel_id: str, a: str, b: str) -> bool:
+    from hotel_checkin.guests import profiles
+
+    if hotel_id not in list_hotels() or not a or not b:
+        return False
+    profiles.mark_different(hotel_id, a, b)
+    return True
 
 
 def delete_run(hotel_id: str, run_id: str) -> bool:

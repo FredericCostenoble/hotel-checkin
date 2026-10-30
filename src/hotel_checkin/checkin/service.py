@@ -121,8 +121,18 @@ def submit(token: str, form: dict) -> tuple[bool, dict]:
     r = repo.get_by_token(token)
     if form.get("no_marketing"):
         repo.add_opt_out(r.hotel_id, email, "checkin_form")
-    repo.mark_checkin_completed(
+    saved = repo.mark_checkin_completed(
         r.hotel_id, r.reservation_id, email, phones["phone"], language,
         backup_email=backup_email or None, backup_phone=phones["backup_phone"],
     )
+    # De gast gaf zelf zijn gegevens: die gaan voor in het gastprofiel (en kunnen profielen samenbrengen)
+    try:
+        from hotel_checkin.processes import guest_profiles
+
+        if saved is not None:
+            guest_profiles.link(saved)
+    except Exception:  # noqa: BLE001 - het formulier is bewaard; het profiel volgt bij het dagelijkse onderhoud
+        import logging
+
+        logging.exception("gastprofiel niet bijgewerkt")
     return True, {}

@@ -12,6 +12,7 @@ from datetime import datetime, timezone
 from hotel_checkin.core import workflow
 from hotel_checkin.guests import repository as guests
 from hotel_checkin.pms import lighthouse
+from hotel_checkin.processes import guest_profiles
 
 
 def run(hotel_id: str, since: datetime) -> int:
@@ -36,6 +37,7 @@ def run(hotel_id: str, since: datetime) -> int:
             t0 = time.monotonic()
             listed = lighthouse.get_new_reservations(hotel_id, since, lh, skipped)
             timings["list"] = round(time.monotonic() - t0, 1)
+            pool = guest_profiles.profiles.list_profiles(hotel_id)  # één keer laden per run
             for reservation in listed:
                 found += 1
                 existing = guests.get_reservation(hotel_id, reservation.reservation_id)
@@ -57,6 +59,8 @@ def run(hotel_id: str, since: datetime) -> int:
                 if contact is not None:
                     _apply_contact(reservation, contact)
                 guests.save_reservation(reservation)
+                if contact is not None or existing is None:
+                    guest_profiles.link(reservation, pool)
     except Exception as exc:
         guests.log_robot_run(hotel_id, TASK, started, False, found, new, f"{type(exc).__name__}: {exc}",
                              since=since, skipped=len(skipped), timings=timings | stats.timings())

@@ -116,6 +116,16 @@ def admin_api(req: func.HttpRequest) -> func.HttpResponse:
         return _json(404, {"error": "hotel"})
     if req.method == "GET" and what == "reservations":
         return _json(200, admin.reservations(hotel))
+    if req.method == "GET" and what == "guests":
+        return _json(200, admin.guests(hotel))
+    if req.method == "POST" and what == "guests":
+        # Mogelijke dubbels: samenvoegen of onthouden dat het andere personen zijn
+        a, b = req.params.get("a", ""), req.params.get("b", "")
+        if req.params.get("action") == "merge":
+            return _json(200, {"ok": admin.merge_guests(hotel, a, b)})
+        if req.params.get("action") == "different":
+            return _json(200, {"ok": admin.mark_guests_different(hotel, a, b)})
+        return _json(400, {"error": "action"})
     if req.method == "GET" and what == "runs":
         data = admin.runs(hotel)
         if cloud_robot.available():
@@ -148,3 +158,17 @@ def mail_trigger(timer: func.TimerRequest) -> None:
                 process.run(hotel_id)
         except Exception:  # noqa: BLE001 - het volgende hotel mag niet tegengehouden worden
             logging.exception("%s: mail_trigger mislukt", hotel_id)
+
+
+@app.timer_trigger(schedule="0 30 2 * * *", arg_name="timer", run_on_startup=False, use_monitor=False)
+def maintenance(timer: func.TimerRequest) -> None:
+    """Elke nacht (02:30 UTC): gastprofielen bijwerken en oude reservaties opruimen (processes/maintenance.py)."""
+    import logging
+
+    from hotel_checkin.processes import maintenance as process
+
+    for hotel_id in list_hotels():
+        try:
+            process.run(hotel_id)
+        except Exception:  # noqa: BLE001
+            logging.exception("%s: onderhoud mislukt", hotel_id)

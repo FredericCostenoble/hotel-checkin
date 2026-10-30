@@ -60,8 +60,38 @@ class Reservation:
     guest_count: int | None = None
     booked_at: datetime | None = None  # "Gemaakt op" in Lighthouse
     contact_checked_at: datetime | None = None  # wanneer de contactgegevens in Lighthouse gelezen werden
+    guest_id: str | None = None  # gastprofiel (tabel Guests), zie processes/guest_profiles.py
+    stay_counted_at: datetime | None = None  # wanneer het verblijf meegeteld werd in het gastprofiel
     created_at: datetime | None = None  # wanneer de robot de reservatie voor het eerst bewaarde (alleen lezen)
     updated_at: datetime | None = None  # laatste keer dat er iets aan de gegevens veranderde (alleen lezen)
+
+
+@dataclass
+class GuestProfile:
+    """Een gast over al zijn reservaties heen (blijft bestaan als de reservaties opgeruimd zijn)."""
+
+    hotel_id: str
+    guest_id: str
+    first_name: str = ""
+    last_name: str = ""
+    email: str | None = None
+    email_own: bool = False  # eigen adres (niet een doorstuuradres van Booking.com, Expedia, ...), bruikbaar voor marketing
+    phone: str | None = None
+    language: str = "en"
+    country: str | None = None
+    first_stay: date | None = None  # aankomst van het eerste meegetelde verblijf
+    last_stay: date | None = None  # vertrek van het laatste meegetelde verblijf
+    stays: int = 0
+    nights: int = 0
+    persons: int = 0  # som over de verblijven met gekend aantal personen
+    persons_stays: int = 0  # aantal verblijven met gekend aantal personen
+    rooms: dict[str, int] = field(default_factory=dict)  # kamer -> aantal verblijven
+    room_types: dict[str, int] = field(default_factory=dict)
+    channels: dict[str, int] = field(default_factory=dict)  # Booking.com, Expedia, direct, ... -> aantal verblijven
+    reservation_ids: list[str] = field(default_factory=list)  # gekoppelde reservaties (ook toekomstige)
+    from_checkin_form: bool = False  # contactgegevens bevestigd door de gast zelf
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
 
 
 @dataclass

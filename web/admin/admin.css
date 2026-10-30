@@ -43,3 +43,11 @@ th[data-sort].sorted[data-dir="desc"]::after { content: " \2193"; }
 .subtabs button.active { background: #E6EAF2; font-weight: bold; }
 .bin { border: none; background: transparent; color: #A0A6B4; cursor: pointer; padding: 2px 4px; }
 .bin:hover { color: var(--err); }
+.chip { background: #E6EAF2; border-radius: 12px; padding: 2px 10px; font-size: 0.9em; }
+#matches-wrap { margin: 0 0 14px; border: 1px solid var(--line); border-radius: 6px; padding: 6px 12px; background: #FFFBEA; }
+#matches-wrap summary { cursor: pointer; font-weight: bold; }
+#matches td { padding: 6px 8px; }
+th[data-gsort] { cursor: pointer; user-select: none; white-space: nowrap; }
+th[data-gsort].sorted[data-dir="asc"]::after { content: " \2191"; }
+th[data-gsort].sorted[data-dir="desc"]::after { content: " \2193"; }
+td a { color: inherit; text-decoration: underline dotted; }

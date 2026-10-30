@@ -57,6 +57,13 @@ contact_refresh_hours = 2
 # met Key Vault-geheim lucca-robot-mail-trigger = false.
 mail_trigger = true
 
+[retention]
+# Opruimen (dagelijks onderhoud, processes/maintenance.py). Dagen na vertrek / na het laatste verblijf.
+# reservation_days: reservaties en hun berichtenlog (privacyverklaring: einde verblijf + max. 1 maand).
+# guest_days: gastprofielen (soft opt-in: max. 2 jaar na het laatste verblijf).
+reservation_days = 30
+guest_days = 730
+
 [lighthouse]
 # Reservation Manager. Aanmelden met robotgebruiker uit Key Vault: lucca-lighthouse-username / -password
 base_url = "https://reservationmanager.mylighthouse.com"

@@ -122,6 +122,8 @@ def _to_entity(r: Reservation) -> dict:
         "guest_count": "" if r.guest_count is None else str(r.guest_count),
         "booked_at": r.booked_at.isoformat() if r.booked_at else "",
         "contact_checked_at": r.contact_checked_at.isoformat() if r.contact_checked_at else "",
+        "guest_id": r.guest_id or "",
+        "stay_counted_at": r.stay_counted_at.isoformat() if r.stay_counted_at else "",
         "updated_at": _now().isoformat(),
     }
 
@@ -156,13 +158,15 @@ def _from_entity(e: dict) -> Reservation:
         guest_count=int(e["guest_count"]) if e.get("guest_count") else None,
         booked_at=datetime.fromisoformat(e["booked_at"]) if e.get("booked_at") else None,
         contact_checked_at=datetime.fromisoformat(e["contact_checked_at"]) if e.get("contact_checked_at") else None,
+        guest_id=e.get("guest_id") or None,
+        stay_counted_at=datetime.fromisoformat(e["stay_counted_at"]) if e.get("stay_counted_at") else None,
         created_at=datetime.fromisoformat(e["created_at"]) if e.get("created_at") else None,
         updated_at=datetime.fromisoformat(e["updated_at"]) if e.get("updated_at") else None,
     )
 
 
 # Velden die niet meetellen voor "bijgewerkt": tijdstempels en technische velden van de tabel
-_NOT_DATA = {"created_at", "updated_at", "contact_checked_at", "Timestamp", "etag", "odata.etag", "odata.metadata"}
+_NOT_DATA = {"created_at", "updated_at", "contact_checked_at", "stay_counted_at", "Timestamp", "etag", "odata.etag", "odata.metadata"}
 
 
 def save_reservation(reservation: Reservation) -> Reservation:
@@ -186,6 +190,13 @@ def save_reservation(reservation: Reservation) -> Reservation:
     reservation.created_at = datetime.fromisoformat(entity["created_at"])
     reservation.updated_at = datetime.fromisoformat(entity["updated_at"])
     return reservation
+
+
+def delete_reservation(hotel_id: str, reservation_id: str) -> None:
+    """Reservatie en haar berichtenlog verwijderen (opruimen na het verblijf)."""
+    for m in messages_for(hotel_id, reservation_id):
+        _table(T_MESSAGES).delete_entity(m["PartitionKey"], m["RowKey"])
+    _table(T_RESERVATIONS).delete_entity(_key(hotel_id), _key(reservation_id))
 
 
 def get_reservation(hotel_id: str, reservation_id: str) -> Reservation | None:
@@ -363,6 +374,11 @@ def add_opt_out(hotel_id: str, email: str, source: str) -> None:
         {"PartitionKey": _key(hotel_id), "RowKey": _key(addr), "hotel_id": hotel_id, "email": addr, "source": source,
          "created_at": _now().isoformat()}
     )
+
+
+def opted_out_emails(hotel_id: str) -> list[str]:
+    rows = _table(T_OPTOUT).query_entities(f"PartitionKey eq '{_q(_key(hotel_id))}'")
+    return [e.get("email", "") for e in rows]
 
 
 def is_opted_out(hotel_id: str, email: str) -> bool:
