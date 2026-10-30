@@ -137,3 +137,12 @@ button.resend:hover { color: #3E63DD; }
 .card-head label.title { margin: 0; cursor: pointer; display: inline-flex; gap: 8px; align-items: center; }
 .card-head label.title input { width: 16px; height: 16px; }
 .tl-step.off .card .fields, .tl-step.off .card .group-title { opacity: 0.5; }
+
+/* Naam van de app met omgeving (TST oranje, PRD groen) */
+.brand { display: inline-flex; align-items: center; gap: 10px; color: #2B3F8C; }
+.brand .name { font-size: 18px; letter-spacing: 0.01em; color: var(--text); font-weight: 300; }
+.brand .name b { font-weight: 700; color: #2B3F8C; }
+.brand .env { font-size: 11px; font-weight: bold; letter-spacing: 0.08em; text-transform: uppercase; padding: 2px 7px; border-radius: 10px; background: #EEF0F4; color: #5C6478; }
+.brand .env-tst { background: #FDF0E1; color: #A85C12; }
+.brand .env-prd { background: #E8F5EC; color: #1E6B3A; }
+.brand .env-__ENV__ { display: none; }  /* lokaal (devserver): geen badge */

@@ -118,6 +118,8 @@ jobs:
           mkdir -p build/func/web && cp -r web/admin build/func/web/
           # Versienummer in de links naar css/js, zodat de browser nooit een oude versie mengt
           sed -i "s/__VERSION__/${{ github.run_number }}/g" build/func/web/admin/index.html
+          # Omgeving als badge naast de naam van de app (TST of PRD)
+          sed -i "s/__ENV__/${ENV_NAME}/g" build/func/web/admin/index.html
 
       - uses: Azure/functions-action@v1
         with:
