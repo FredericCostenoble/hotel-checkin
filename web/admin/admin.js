@@ -174,6 +174,7 @@ async function init() {
   $("#bin-all").innerHTML = BIN;
   $("#bin-all").onclick = deleteAllRuns;
   document.querySelectorAll("nav button").forEach(b => b.onclick = () => showTab(b.dataset.tab));
+  if ($("#version").textContent.includes("__")) $("#version").textContent = "dev";  // lokaal, niet uitgerold
   $("#g-search").oninput = renderGuests;
   // Filter wissen: zoekvak leeg (reservaties: ook terug "vanaf vandaag")
   $("#search-reset").onclick = () => { $("#search").value = ""; $("#from").value = todayIso(); $("#to").value = ""; render(); };
