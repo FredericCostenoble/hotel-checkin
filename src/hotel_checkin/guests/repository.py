@@ -154,7 +154,13 @@ def _from_entity(e: dict) -> Reservation:
         guest_count=int(e["guest_count"]) if e.get("guest_count") else None,
         booked_at=datetime.fromisoformat(e["booked_at"]) if e.get("booked_at") else None,
         contact_checked_at=datetime.fromisoformat(e["contact_checked_at"]) if e.get("contact_checked_at") else None,
+        created_at=datetime.fromisoformat(e["created_at"]) if e.get("created_at") else None,
+        updated_at=datetime.fromisoformat(e["updated_at"]) if e.get("updated_at") else None,
     )
+
+
+# Velden die niet meetellen voor "bijgewerkt": tijdstempels en technische velden van de tabel
+_NOT_DATA = {"created_at", "updated_at", "contact_checked_at", "Timestamp", "etag", "odata.etag", "odata.metadata"}
 
 
 def save_reservation(reservation: Reservation) -> Reservation:
@@ -165,11 +171,18 @@ def save_reservation(reservation: Reservation) -> Reservation:
     entity = _to_entity(reservation)
     table = _table(T_RESERVATIONS)
     try:
-        created = table.get_entity(entity["PartitionKey"], entity["RowKey"])["created_at"]
+        old = dict(table.get_entity(entity["PartitionKey"], entity["RowKey"]))
     except Exception:  # noqa: BLE001 - bestaat nog niet
-        created = _now().isoformat()
-    entity["created_at"] = created
+        old = None
+    entity["created_at"] = old["created_at"] if old and old.get("created_at") else entity["updated_at"]
+    # updated_at alleen verzetten als er echt iets veranderde (de robot bewaart ook ongewijzigde rijen)
+    if old and old.get("updated_at") and all(
+        str(old.get(k, "")) == str(v) for k, v in entity.items() if k not in _NOT_DATA
+    ):
+        entity["updated_at"] = old["updated_at"]
     table.upsert_entity(entity)
+    reservation.created_at = datetime.fromisoformat(entity["created_at"])
+    reservation.updated_at = datetime.fromisoformat(entity["updated_at"])
     return reservation
 
 

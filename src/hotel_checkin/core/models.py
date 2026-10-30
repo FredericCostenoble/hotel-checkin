@@ -60,6 +60,8 @@ class Reservation:
     guest_count: int | None = None
     booked_at: datetime | None = None  # "Gemaakt op" in Lighthouse
     contact_checked_at: datetime | None = None  # wanneer de contactgegevens in Lighthouse gelezen werden
+    created_at: datetime | None = None  # wanneer de robot de reservatie voor het eerst bewaarde (alleen lezen)
+    updated_at: datetime | None = None  # laatste keer dat er iets aan de gegevens veranderde (alleen lezen)
 
 
 @dataclass

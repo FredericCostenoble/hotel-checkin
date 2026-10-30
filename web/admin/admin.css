@@ -32,3 +32,7 @@ h3 { font-size: 13px; text-transform: uppercase; letter-spacing: .5px; color: va
 .task-contactgegevens_nalezen { background: #F3ECFA; color: #5B2E91; }
 #task { margin-left: auto; }
 .timing { font-size: 0.8em; color: #8A90A0; white-space: nowrap; }
+th[data-sort] { cursor: pointer; user-select: none; white-space: nowrap; }
+th[data-sort]:hover { color: #1F2433; }
+th[data-sort].sorted[data-dir="asc"]::after { content: " \2191"; }
+th[data-sort].sorted[data-dir="desc"]::after { content: " \2193"; }

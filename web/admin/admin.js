@@ -6,7 +6,7 @@ const T = {
     title: "Check-in monitor", hotel: "Hotel", tab_res: "Reservaties", tab_robot: "Robot",
     search: "Zoek op naam, nummer, e-mail", stay_from: "Verblijf van", stay_to: "tot", from_today: "Vanaf vandaag",
     c_arrival: "Aankomst", c_departure: "Vertrek", c_number: "Nummer", c_guest: "Gast", c_pers: "Pers.",
-    c_room: "Kamer", c_via: "Via", c_booked: "Geboekt", c_form: "Formulier", c_contact: "Contact", c_messages: "Berichten",
+    c_room: "Kamer", c_via: "Via", c_booked: "Geboekt", c_added: "Toegevoegd", c_updated: "Bijgewerkt", c_form: "Formulier", c_contact: "Contact", c_messages: "Berichten",
     yes: "ja", no: "nee", none: "geen", count: n => `${n} reservaties`, no_res: "Geen reservaties",
     hours_a: "Nieuwe reservaties van de laatste", hours_b: "uur", run: "Robot nu draaien",
     r_start: "Start", r_duration: "Duur", r_task: "Taak", r_result: "Resultaat", r_found: "Gevonden", r_new: "Nieuw", r_error: "Opmerking",
@@ -20,7 +20,7 @@ const T = {
     title: "Check-in monitor", hotel: "Hotel", tab_res: "Reservations", tab_robot: "Robot",
     search: "Search name, number, e-mail", stay_from: "Stay from", stay_to: "to", from_today: "From today",
     c_arrival: "Arrival", c_departure: "Departure", c_number: "Number", c_guest: "Guest", c_pers: "Pers.",
-    c_room: "Room", c_via: "Via", c_booked: "Booked", c_form: "Form", c_contact: "Contact", c_messages: "Messages",
+    c_room: "Room", c_via: "Via", c_booked: "Booked", c_added: "Added", c_updated: "Updated", c_form: "Form", c_contact: "Contact", c_messages: "Messages",
     yes: "yes", no: "no", none: "none", count: n => `${n} reservations`, no_res: "No reservations",
     hours_a: "New reservations of the last", hours_b: "hours", run: "Run robot now",
     r_start: "Start", r_duration: "Duration", r_task: "Task", r_result: "Result", r_found: "Found", r_new: "New", r_error: "Note",
@@ -81,6 +81,7 @@ async function init() {
     $("#tab-robot").hidden = b.dataset.tab !== "robot";
   });
   $("#search").oninput = render;
+  document.querySelectorAll("#res-head th[data-sort]").forEach(th => th.onclick = () => sortBy(th.dataset.sort));
   $("#task").onchange = () => {
     taskFilter = $("#task").value;
     try { localStorage.setItem("monitor-task", taskFilter); } catch (e) { /* geen opslag */ }
@@ -100,23 +101,46 @@ async function load() {
   loadRuns();
 }
 
+// Sorteren: klik op een kolomtitel, nog eens klikken keert de volgorde om
+let sortKey = "arrival", sortDir = 1;
+try { [sortKey, sortDir] = JSON.parse(localStorage.getItem("monitor-sort")) || [sortKey, sortDir]; } catch (e) { /* geen opslag */ }
+const sortValue = (r, k) => k === "room" ? (r.rooms.join(", ") || r.room_type)
+  : k === "messages" ? r.messages.length : k === "guests" ? (r.guests ?? -1)
+  : k === "email" ? (r.email || r.phone) : (r[k] ?? "");
+function sortBy(k) {
+  sortDir = k === sortKey ? -sortDir : 1;
+  sortKey = k;
+  try { localStorage.setItem("monitor-sort", JSON.stringify([sortKey, sortDir])); } catch (e) { /* geen opslag */ }
+  render();
+}
+
 function render() {
   const q = $("#search").value.toLowerCase();
   // Verblijf dat (deels) in de gekozen periode valt; lege datum = geen grens
   const from = $("#from").value, to = $("#to").value;
   const list = rows.filter(r => (!from || r.departure >= from) && (!to || r.arrival <= to) &&
     (!q || [r.guest, r.booking_number, r.email, r.phone].join(" ").toLowerCase().includes(q)));
+  list.sort((a, b) => {
+    const x = sortValue(a, sortKey), y = sortValue(b, sortKey);
+    // lege waarden altijd onderaan
+    if (x === "" || y === "") return x === y ? 0 : (x === "" ? 1 : -1);
+    return (typeof x === "number" ? x - y : String(x).localeCompare(String(y), locale(), { numeric: true })) * sortDir;
+  });
+  document.querySelectorAll("#res-head th[data-sort]").forEach(th => {
+    th.classList.toggle("sorted", th.dataset.sort === sortKey);
+    th.dataset.dir = th.dataset.sort === sortKey ? (sortDir > 0 ? "asc" : "desc") : "";
+  });
   $("#count").textContent = t("count", list.length);
   $("#res").innerHTML = list.map(r => `
     <tr class="${r.status === "cancelled" ? "cancelled" : ""}">
       <td>${day(r.arrival)}</td><td>${day(r.departure)}</td>
       <td>${esc(r.booking_number)}</td><td>${esc(r.guest)}</td><td>${esc(r.guests ?? "")}</td>
       <td>${esc(r.rooms.join(", ") || r.room_type)}</td><td>${esc(r.source)}</td><td>${esc(r.pms_status)}</td>
-      <td>${stamp(r.booked_at)}</td>
+      <td>${stamp(r.booked_at)}</td><td>${stamp(r.added_at)}</td><td>${stamp(r.updated_at)}</td>
       <td>${r.checkin_completed_at ? `<span class="ok">${t("yes")}</span> ${stamp(r.checkin_completed_at)}` : `<span class="muted">${t("no")}</span>`}</td>
       <td class="wrap">${esc(r.email)}${r.email && r.phone ? "<br>" : ""}${esc(r.phone)}</td>
       <td class="wrap">${r.messages.map(m => `<span class="tag ${m.ok ? "" : "fail"}" title="${esc(stamp(m.at))}">${esc(m.type)} (${esc(m.channel)})</span>`).join("") || `<span class="muted">${t("none")}</span>`}</td>
-    </tr>`).join("") || `<tr><td colspan="12" class="muted">${t("no_res")}</td></tr>`;
+    </tr>`).join("") || `<tr><td colspan="14" class="muted">${t("no_res")}</td></tr>`;
 }
 
 async function loadRuns() {

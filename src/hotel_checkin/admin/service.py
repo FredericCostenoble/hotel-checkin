@@ -42,6 +42,8 @@ def reservations(hotel_id: str) -> list[dict]:
             "status": r.status.value,
             "booked_at": r.booked_at.isoformat() if r.booked_at else "",
             "checkin_completed_at": r.checkin_completed_at.isoformat() if r.checkin_completed_at else "",
+            "added_at": r.created_at.isoformat() if r.created_at else "",
+            "updated_at": r.updated_at.isoformat() if r.updated_at else "",
             "messages": [
                 {"type": m["message_type"], "channel": m["channel"], "ok": m["ok"], "at": m["sent_at"]}
                 for m in msgs

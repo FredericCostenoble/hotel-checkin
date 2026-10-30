@@ -117,3 +117,24 @@ def test_prune_robot_runs():
     repo.log_robot_run("lucca", "t", now - timedelta(days=1), True)
     assert repo.prune_robot_runs("lucca", 30) == 1
     assert len(repo.robot_runs("lucca")) == 1
+
+
+def test_updated_at_only_when_something_changed(monkeypatch):
+    from datetime import date, datetime, timezone
+
+    from hotel_checkin.core.models import Guest, Reservation
+    from hotel_checkin.guests import repository as repo
+
+    repo.use_memory_store()
+    times = iter([datetime(2026, 10, 30, 9, m, tzinfo=timezone.utc) for m in range(0, 60)])
+    monkeypatch.setattr(repo, "_now", lambda: next(times))
+    r = Reservation("lucca", "u9", Guest("Jan", "Voorbeeld"), date(2099, 1, 1), date(2099, 1, 2))
+    first = repo.save_reservation(r)
+    added, updated = first.created_at, first.updated_at
+    repo.save_reservation(repo.get_reservation("lucca", "u9"))  # niets veranderd
+    same = repo.get_reservation("lucca", "u9")
+    assert (same.created_at, same.updated_at) == (added, updated)
+    same.guest.email = "jan@example.com"
+    repo.save_reservation(same)
+    changed = repo.get_reservation("lucca", "u9")
+    assert changed.created_at == added and changed.updated_at > updated
