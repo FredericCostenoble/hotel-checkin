@@ -61,7 +61,7 @@ param acrName string = ''
 param acrResourceGroup string = ''
 
 @description('Schema van de robot (cron, UTC). GitHub-variabele ROBOT_SCHEDULE per omgeving. Per hotel kan het trager: [robot] check_minutes.')
-param robotSchedule string = '*/15 * * * *'
+param robotSchedule string = '*/20 * * * *'
 
 @description('Id van de rol waarmee de Function App de robot mag starten (Container Apps Jobs Operator). Leeg = geen knop.')
 param robotStarterRoleId string = ''

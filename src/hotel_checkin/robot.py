@@ -1,6 +1,6 @@
 """De Lighthouse-robot als los programma (container in Azure Container Apps).
 
-Draait op schema (bv. elk kwartier) en op vraag via de knop "Robot nu draaien" op de
+Draait op schema (bv. elke 20 minuten) en op vraag via de knop "Robot nu draaien" op de
 opvolgpagina. Leest Lighthouse alleen; schrijft niets in Lighthouse.
 
     python -m hotel_checkin.robot                  # alle hotels, sinds de nieuwste opgeslagen boeking
@@ -58,7 +58,7 @@ def _check_due(hotel_id: str) -> bool:
     """Is het tijd om opnieuw naar nieuwe reservaties te kijken voor dit hotel?"""
     if os.environ.get("ROBOT_MANUAL"):
         return True
-    minutes = float(hotel_setting(hotel_id, "ROBOT_CHECK_MINUTES", default="15", shared=False))
+    minutes = float(hotel_setting(hotel_id, "ROBOT_CHECK_MINUTES", default="20", shared=False))
     runs = [r for r in guests.robot_runs(hotel_id) if r.get("task") == new_reservation.TASK and r.get("ok")]
     if not runs:
         return True

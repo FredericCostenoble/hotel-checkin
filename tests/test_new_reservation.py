@@ -168,7 +168,7 @@ def test_robot_check_interval_per_hotel(monkeypatch):
     assert robot._check_due("lucca")
     now = datetime.now(timezone.utc)
     repo.log_robot_run("lucca", new_reservation.TASK, now - timedelta(minutes=5), True)
-    assert not robot._check_due("lucca")  # check_minutes = 15
+    assert not robot._check_due("lucca")  # check_minutes = 20
     monkeypatch.setenv("LUCCA_ROBOT_CHECK_MINUTES", "5")
     assert robot._check_due("lucca")  # per omgeving overschreven
     monkeypatch.delenv("LUCCA_ROBOT_CHECK_MINUTES")
