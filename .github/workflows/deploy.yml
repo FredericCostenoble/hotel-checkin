@@ -117,11 +117,11 @@ jobs:
           cp -r src/hotel_checkin config build/func/
           mkdir -p build/func/web && cp -r web/admin build/func/web/
           # Versienummer in de links naar css/js, zodat de browser nooit een oude versie mengt
-          sed -i "s/__VERSION__/${{ github.run_number }}/g" build/func/web/admin/index.html
+          sed -i "s/__VERSION__/${{ github.run_number }}/g" build/func/web/admin/*.html
           # Omgeving als badge naast de naam van de app (TST of PRD)
-          sed -i "s/__ENV__/${ENV_NAME}/g" build/func/web/admin/index.html
+          sed -i "s/__ENV__/${ENV_NAME}/g" build/func/web/admin/*.html
           # Versie rechtsboven: nummer van de uitrol en commit (zelfde commit = zelfde code in TST en PRD)
-          sed -i -e "s/__COMMIT__/${GITHUB_SHA::7}/g" -e "s/__BUILT__/$(TZ=Europe/Brussels date '+%d\/%m\/%Y %H:%M')/g" build/func/web/admin/index.html
+          sed -i -e "s/__COMMIT__/${GITHUB_SHA::7}/g" -e "s/__BUILT__/$(TZ=Europe/Brussels date '+%d\/%m\/%Y %H:%M')/g" build/func/web/admin/*.html
 
       - uses: Azure/functions-action@v1
         with:

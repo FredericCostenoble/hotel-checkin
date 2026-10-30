@@ -146,7 +146,7 @@ async function get(path, opts) {
 
 // Filter "Verblijf van" staat standaard op vandaag, "tot" leeg
 const todayIso = () => new Date().toISOString().slice(0, 10);
-$("#from").value = todayIso();
+if ($("#from")) $("#from").value = todayIso();
 
 function setLang(l) {
   lang = T[l] ? l : "nl";
@@ -156,10 +156,7 @@ function setLang(l) {
   document.querySelectorAll("[data-tp]").forEach(e => { e.placeholder = t(e.dataset.tp); });
   document.querySelectorAll("[data-tt]").forEach(e => { e.title = t(e.dataset.tt); });
   document.querySelectorAll(".langs button").forEach(b => b.classList.toggle("active", b.dataset.lang === lang));
-  render();
-  renderGuests();
-  renderWorkflow();
-  if (runsData) renderRuns(runsData);
+  if (PAGE === "main") { render(); renderGuests(); } else { renderWorkflow(); if (runsData) renderRuns(runsData); }
 }
 
 async function init() {
@@ -170,71 +167,70 @@ async function init() {
   const saved = store("hotel");
   if (saved && hotels.some(h => h.id === saved)) $("#hotel").value = saved;
   $("#hotel").onchange = () => { store("hotel", $("#hotel").value); load(); };
-  document.querySelectorAll("#tab-robot .subtabs button").forEach(b => b.onclick = () => showSub(b.dataset.sub));
-  $("#bin-all").innerHTML = BIN;
-  $("#bin-all").onclick = deleteAllRuns;
-  document.querySelectorAll("nav button[data-tab]").forEach(b => b.onclick = () => showTab(b.dataset.tab));
-  // Instellingen (workflow, robot) als aparte pagina: eigen adres (#workflow, #robot), terug met de knop of de browser
-  $("#settings").onclick = () => showTab(AREA[current] === "settings" ? lastTab.main : lastTab.settings);
-  $("#back").onclick = () => showTab(lastTab.main);
-  window.addEventListener("hashchange", () => { const n = location.hash.slice(1); if (AREA[n] && n !== current) showTab(n); });
-  showTab(AREA[location.hash.slice(1)] ? location.hash.slice(1) : "res", true);
   if ($("#version").textContent.includes("__")) $("#version").textContent = "dev";  // lokaal, niet uitgerold
-  $("#g-search").oninput = renderGuests;
-  // Filter wissen: zoekvak leeg (reservaties: ook terug "vanaf vandaag")
-  $("#search-reset").onclick = () => { $("#search").value = ""; $("#from").value = todayIso(); $("#to").value = ""; render(); };
-  $("#g-search-reset").onclick = () => { $("#g-search").value = ""; renderGuests(); };
-  $("#g-update").onclick = updateGuests;
-  $("#wf-save").onclick = saveWorkflow;
-  $("#wf-reset").onclick = resetWorkflow;
-  $("#pv-close").onclick = () => { $("#preview").hidden = true; };
-  $("#msgs-close").onclick = () => { $("#msgs").hidden = true; };
-  $("#msgs").onclick = e => { if (e.target.id === "msgs") $("#msgs").hidden = true; };
-  $("#preview").onclick = e => { if (e.target.id === "preview") $("#preview").hidden = true; };
-  document.querySelectorAll("#g-head th[data-gsort]").forEach(th => th.onclick = () => gSortBy(th.dataset.gsort));
-  $("#search").oninput = render;
-  document.querySelectorAll("#res-head th[data-sort]").forEach(th => th.onclick = () => sortBy(th.dataset.sort));
-  $("#task").onchange = () => {
-    taskFilter = $("#task").value;
-    try { localStorage.setItem("monitor-task", taskFilter); } catch (e) { /* geen opslag */ }
-    if (runsData) renderRuns(runsData);
-  };
-  $("#from").onchange = render;
-  $("#to").onchange = render;
-  $("#today").onclick = () => { $("#from").value = todayIso(); $("#to").value = ""; render(); };
-  $("#run").onclick = runRobot;
+  // Twee aparte pagina's: de monitor (index.html: reservaties, gasten) en de instellingen
+  // (settings.html: workflow, robot). Elk met eigen tabbladen en eigen adres per tabblad (#...).
+  document.querySelectorAll("nav button[data-tab]").forEach(b => b.onclick = () => showTab(b.dataset.tab));
+  window.addEventListener("hashchange", () => { const n = location.hash.slice(1); if (TABS.includes(n) && n !== current) showTab(n); });
+  showTab(TABS.includes(location.hash.slice(1)) ? location.hash.slice(1) : TABS[0], true);
+  if (PAGE === "main") {
+    $("#g-search").oninput = renderGuests;
+    // Filter wissen: zoekvak leeg (reservaties: ook terug "vanaf vandaag")
+    $("#search-reset").onclick = () => { $("#search").value = ""; $("#from").value = todayIso(); $("#to").value = ""; render(); };
+    $("#g-search-reset").onclick = () => { $("#g-search").value = ""; renderGuests(); };
+    $("#g-update").onclick = updateGuests;
+    $("#msgs-close").onclick = () => { $("#msgs").hidden = true; };
+    $("#msgs").onclick = e => { if (e.target.id === "msgs") $("#msgs").hidden = true; };
+    document.querySelectorAll("#g-head th[data-gsort]").forEach(th => th.onclick = () => gSortBy(th.dataset.gsort));
+    $("#search").oninput = render;
+    document.querySelectorAll("#res-head th[data-sort]").forEach(th => th.onclick = () => sortBy(th.dataset.sort));
+    $("#from").onchange = render;
+    $("#to").onchange = render;
+    $("#today").onclick = () => { $("#from").value = todayIso(); $("#to").value = ""; render(); };
+  } else {
+    document.querySelectorAll("#tab-robot .subtabs button").forEach(b => b.onclick = () => showSub(b.dataset.sub));
+    $("#bin-all").innerHTML = BIN;
+    $("#bin-all").onclick = deleteAllRuns;
+    $("#wf-save").onclick = saveWorkflow;
+    $("#wf-reset").onclick = resetWorkflow;
+    $("#pv-close").onclick = () => { $("#preview").hidden = true; };
+    $("#preview").onclick = e => { if (e.target.id === "preview") $("#preview").hidden = true; };
+    $("#task").onchange = () => {
+      taskFilter = $("#task").value;
+      try { localStorage.setItem("monitor-task", taskFilter); } catch (e) { /* geen opslag */ }
+      if (runsData) renderRuns(runsData);
+    };
+    $("#run").onclick = runRobot;
+    // Niet bewaarde wijzigingen in de workflow: waarschuwen bij het verlaten van de pagina
+    window.addEventListener("beforeunload", e => { if (wfDirty) { e.preventDefault(); e.returnValue = ""; } });
+  }
   load();
 }
 
-const AREA = { res: "main", guests: "main", workflow: "settings", robot: "settings" };
-let current = "res";
-const lastTab = { main: "res", settings: "workflow" };
+const PAGE = document.body.dataset.page || "main";
+const TABS = PAGE === "settings" ? ["workflow", "robot"] : ["res", "guests"];
+let current = TABS[0];
 function showTab(name, initial = false) {
-  if (wfDirty && name !== "workflow" && !$("#tab-workflow").hidden && !confirm(t("wf_leave"))) {
+  if (wfDirty && name !== "workflow" && current === "workflow" && !confirm(t("wf_leave"))) {
     if (location.hash.slice(1) !== current) history.replaceState(null, "", "#" + current);
     return;
   }
-  const area = AREA[name];
   current = name;
-  lastTab[area] = name;
-  document.querySelectorAll("nav button[data-tab]").forEach(x => {
-    x.hidden = x.dataset.area !== area;
-    x.classList.toggle("active", x.dataset.tab === name);
-  });
-  $("#back").hidden = area !== "settings";
-  $("#settings").classList.toggle("active", area === "settings");
-  document.body.classList.toggle("in-settings", area === "settings");
-  ["res", "guests", "workflow", "robot"].forEach(n => { $(`#tab-${n}`).hidden = n !== name; });
+  document.querySelectorAll("nav button[data-tab]").forEach(x => x.classList.toggle("active", x.dataset.tab === name));
+  TABS.forEach(n => { $(`#tab-${n}`).hidden = n !== name; });
   if (location.hash.slice(1) !== name) history[initial ? "replaceState" : "pushState"](null, "", "#" + name);
 }
 
 async function load() {
-  const h = $("#hotel").value;
-  rows = await get(`/api/monitor/${h}/reservations`);
+  if (PAGE === "settings") {
+    loadWorkflow();
+    loadRuns();
+    return;
+  }
+  rows = await get(`/api/monitor/${$("#hotel").value}/reservations`);
   render();
   loadGuests();
-  loadWorkflow();
-  loadRuns();
+  loadWorkflow();  // stappen die al verstuurd kunnen worden (tijdlijn per reservatie)
 }
 
 // ---------------------------------------------------------------- berichten per reservatie
@@ -337,7 +333,6 @@ async function updateGuests() {
     const d = await get(`/api/monitor/${$("#hotel").value}/maintenance`, { method: "POST" });
     $("#g-state").textContent = t("g_done", d);
     await loadGuests();
-    loadRuns();
   } catch (e) {
     $("#g-state").textContent = `${t("load_error")}: ${e.message}`;
   } finally {
@@ -472,6 +467,7 @@ function render() {
 }
 
 async function loadRuns() {
+  if (PAGE !== "settings") return;
   const h = $("#hotel").value;
   runsData = await get(`/api/monitor/${h}/runs`);
   const since = $("#run").dataset.waiting;
@@ -581,6 +577,7 @@ let READY = ["confirmation", "reminder", "thank_you"];  // stappen die al echt v
 
 async function loadWorkflow() {
   try { wf = await get(`/api/monitor/${$("#hotel").value}/workflow`); } catch (e) { return; }
+  if (wf.ready) READY = wf.ready;
   wfDirty = false;
   renderWorkflow();
 }
@@ -674,7 +671,9 @@ async function showPreview(step) {
   });
   const d = await r.json().catch(() => ({}));
   $("#pv-subject").textContent = d.error ? d.error : `${t("pv_subject")}: ${d.subject}`;
-  $("#pv-frame").srcdoc = d.html || "";
+  // Links in de voorbeeldmail (check-in-formulier, website, ...) openen in een nieuw tabblad
+  const html = d.html || "";
+  $("#pv-frame").srcdoc = /<head[\s>]/i.test(html) ? html.replace(/<head([^>]*)>/i, '<head$1><base target="_blank">') : '<base target="_blank">' + html;
 }
 
 function bindSteps(flow) {

@@ -7,7 +7,7 @@
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link rel="stylesheet" href="admin.css?v=__VERSION__">
 </head>
-<body>
+<body data-page="main">
 <header>
   <div class="brand">
     <svg viewBox="0 0 64 64" width="30" height="30" aria-hidden="true"><rect width="64" height="64" rx="14" fill="currentColor"/><circle cx="24" cy="32" r="11" fill="none" stroke="#fff" stroke-width="6"/><path d="M35 32h20M47 32v9M54 32v7" stroke="#fff" stroke-width="6" stroke-linecap="round"/></svg>
@@ -16,16 +16,13 @@
   </div>
   <label><span data-t="hotel"></span> <select id="hotel"></select></label>
   <span id="version" class="version" title="commit __COMMIT__, __BUILT__">v__VERSION__ · __COMMIT__</span>
-  <button type="button" id="settings" class="settings-btn"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg><span data-t="settings"></span></button>
+  <a id="settings" class="settings-btn" href="settings.html"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg><span data-t="settings"></span></a>
   <span class="langs"><button data-lang="nl">NL</button><button data-lang="en">EN</button></span>
 </header>
 
 <nav>
-  <button type="button" id="back" class="back" hidden><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg><span data-t="back"></span></button>
-  <button data-tab="res" data-area="main" class="active"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg><span data-t="tab_res"></span></button>
-  <button data-tab="guests" data-area="main"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8M18 14.3c2.1.7 3.5 2.7 3.5 5.7"/></svg><span data-t="tab_guests"></span></button>
-  <button data-tab="workflow" data-area="settings"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="5" r="2.5"/><circle cx="6" cy="19" r="2.5"/><circle cx="18" cy="12" r="2.5"/><path d="M6 7.5v9M8.3 6.2l7.4 4.6M8.3 17.8l7.4-4.6"/></svg><span data-t="tab_workflow"></span></button>
-  <button data-tab="robot" data-area="settings"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="8" width="16" height="12" rx="3"/><path d="M12 8V4M9 13v1M15 13v1M9 17h6M2 13v3M22 13v3"/><circle cx="12" cy="3.5" r="1"/></svg><span data-t="tab_robot"></span></button>
+  <button data-tab="res" class="active"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg><span data-t="tab_res"></span></button>
+  <button data-tab="guests"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8M18 14.3c2.1.7 3.5 2.7 3.5 5.7"/></svg><span data-t="tab_guests"></span></button>
 </nav>
 
 <main>
@@ -76,49 +73,6 @@
     </table>
   </section>
 
-  <section id="tab-workflow" hidden>
-    <div class="tools">
-      <div id="wf-flows" class="subtabs"></div>
-      <div class="right">
-        <span id="wf-meta" class="muted"></span>
-        <button id="wf-reset" type="button" data-t="wf_reset"></button>
-        <button id="wf-save" type="button" class="primary" data-t="wf_save" disabled></button>
-      </div>
-    </div>
-    <p id="wf-state" class="muted"></p>
-    <div class="wf-grid">
-      <div id="wf-timeline"></div>
-      <aside id="wf-side"></aside>
-    </div>
-  </section>
-
-  <section id="tab-robot" hidden>
-    <div class="tools">
-      <label id="hours-wrap"><span data-t="hours_a"></span> <input id="hours" type="number" value="48" min="1" max="720"> <span data-t="hours_b"></span></label>
-      <button id="run" data-t="run"></button>
-      <span id="robot-state" class="muted"></span>
-      <div class="right">
-        <div class="subtabs">
-          <button type="button" data-sub="log" class="active" data-t="sub_log"></button>
-          <select id="task" aria-label="Task"></select>
-          <button type="button" data-sub="azure" id="sub-azure" hidden data-t="exec_title"></button>
-        </div>
-      </div>
-    </div>
-    <div id="sub-log">
-    <table>
-      <thead><tr><th data-t="r_start"></th><th data-t="r_duration"></th><th data-t="r_task"></th><th data-t="r_result"></th>
-        <th data-t="r_found"></th><th data-t="r_new"></th><th data-t="r_error"></th><th><button type="button" id="bin-all" class="bin"></button></th></tr></thead>
-      <tbody id="runs"></tbody>
-    </table>
-    </div>
-    <div id="exec-wrap" hidden>
-      <table>
-        <thead><tr><th data-t="r_start"></th><th data-t="exec_end"></th><th data-t="r_duration"></th><th data-t="exec_status"></th><th data-t="exec_name"></th></tr></thead>
-        <tbody id="execs"></tbody>
-      </table>
-    </div>
-  </section>
 </main>
 
 <div id="msgs" class="modal" hidden>
@@ -136,17 +90,6 @@
   </div>
 </div>
 
-<div id="preview" class="modal" hidden>
-  <div class="modal-box">
-    <div class="modal-head">
-      <strong id="pv-title"></strong>
-      <span id="pv-langs" class="subtabs"></span>
-      <button id="pv-close" type="button" class="reset">&times;</button>
-    </div>
-    <p id="pv-subject" class="muted"></p>
-    <iframe id="pv-frame" title="preview"></iframe>
-  </div>
-</div>
 <script src="admin.js?v=__VERSION__"></script>
 </body>
 </html>
