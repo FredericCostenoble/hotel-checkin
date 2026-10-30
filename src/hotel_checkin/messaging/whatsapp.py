@@ -27,6 +27,7 @@ def send_whatsapp_template(
     template_sid: str,
     variables: dict[str, str] | None = None,
     client: httpx.Client | None = None,
+    status_callback: str | None = None,
 ) -> SendResult:
     """Stuur een goedgekeurde template (bv. de code op D-1). Variabelen: {"1": "Jan", ...}."""
     result = send_message(
@@ -37,6 +38,7 @@ def send_whatsapp_template(
         content_sid=template_sid,
         content_variables=variables,
         client=client,
+        status_callback=status_callback,
     )
     result.to = to
     return result

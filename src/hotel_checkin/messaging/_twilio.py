@@ -27,8 +27,10 @@ def send_message(
     content_sid: str | None = None,
     content_variables: dict[str, str] | None = None,
     client: httpx.Client | None = None,
+    status_callback: str | None = None,
 ) -> SendResult:
-    """Verstuur via Twilio. Ofwel `body` (vrije tekst), ofwel `content_sid` (sjabloon)."""
+    """Verstuur via Twilio. Ofwel `body` (vrije tekst), ofwel `content_sid` (sjabloon).
+    status_callback: adres dat Twilio oproept als het bericht afgeleverd of mislukt is."""
     if (body is None) == (content_sid is None):
         raise ValueError("Geef ofwel body, ofwel content_sid op")
 
@@ -44,6 +46,8 @@ def send_message(
     auth_token = hotel_setting(hotel_id, "TWILIO_AUTH_TOKEN")
 
     data: dict[str, str] = {"To": to, "From": from_}
+    if status_callback:
+        data["StatusCallback"] = status_callback
     if body is not None:
         data["Body"] = body
     else:
@@ -69,3 +73,15 @@ def send_message(
     except ValueError:
         error = f"Twilio {response.status_code}: {response.text[:500]}"
     return SendResult(channel=channel, to=to, ok=False, error=error)
+
+
+def valid_signature(hotel_id: str, url: str, params: dict[str, str], signature: str) -> bool:
+    """Komt een oproep echt van Twilio? (X-Twilio-Signature: HMAC-SHA1 van adres + parameters)."""
+    import base64
+    import hashlib
+    import hmac
+
+    token = hotel_setting(hotel_id, "TWILIO_AUTH_TOKEN")
+    data = url + "".join(k + params[k] for k in sorted(params))
+    expected = base64.b64encode(hmac.new(token.encode(), data.encode(), hashlib.sha1).digest()).decode()
+    return hmac.compare_digest(expected, signature or "")

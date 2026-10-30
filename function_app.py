@@ -63,6 +63,24 @@ def post_checkin(req: func.HttpRequest) -> func.HttpResponse:
     return _json(200 if ok else 400, {"ok": ok, "errors": errors})
 
 
+@app.route(route="api/twilio/status", methods=["POST"], auth_level=func.AuthLevel.ANONYMOUS)
+def twilio_status(req: func.HttpRequest) -> func.HttpResponse:
+    """Twilio meldt of een WhatsApp of sms afgeleverd is. Alleen met een geldige handtekening van Twilio."""
+    from urllib.parse import parse_qsl
+
+    from hotel_checkin.messaging._twilio import valid_signature
+    from hotel_checkin.processes import send_messages
+
+    hotel, rid, mid = req.params.get("h", ""), req.params.get("r", ""), req.params.get("m", "")
+    form = dict(parse_qsl(req.get_body().decode("utf-8", "replace")))
+    if hotel not in list_hotels() or not valid_signature(hotel, req.url, form, req.headers.get("X-Twilio-Signature", "")):
+        return func.HttpResponse(status_code=403)
+    status = form.get("MessageStatus", "")
+    if status in ("delivered", "read", "undelivered", "failed"):
+        send_messages.twilio_status(hotel, rid, mid, status, form.get("ErrorCode", ""))
+    return func.HttpResponse(status_code=204)
+
+
 # ---------------------------------------------------------------- opvolgpagina
 
 ADMIN_WEB = Path(__file__).parent / "web" / "admin"

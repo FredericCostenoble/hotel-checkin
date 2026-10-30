@@ -114,6 +114,16 @@
   </section>
 </main>
 
+<div id="msgs" class="modal" hidden>
+  <div class="modal-box small">
+    <div class="modal-head"><strong id="msgs-title"></strong><button id="msgs-close" type="button" class="reset">&times;</button></div>
+    <table>
+      <thead><tr><th data-t="mg_time"></th><th data-t="mg_message"></th><th data-t="mg_channel"></th><th data-t="mg_to"></th><th data-t="exec_status"></th><th data-t="r_error"></th></tr></thead>
+      <tbody id="msgs-rows"></tbody>
+    </table>
+  </div>
+</div>
+
 <div id="preview" class="modal" hidden>
   <div class="modal-box">
     <div class="modal-head">

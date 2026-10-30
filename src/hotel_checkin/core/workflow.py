@@ -17,7 +17,6 @@ Een stap:
     days = 7
     only_if = ["form_not_completed", "not_cancelled"]
     channels = ["email"]
-    replaced_by = ["access_code"]     # niet meer nodig als die stap al aan de beurt is
     skip_if_booked_late = true        # niet als de reservatie pas op of na deze dag binnenkwam
     pay = "none"                      # betaalknop: none | open_amount | city_tax
     enabled = true
@@ -73,9 +72,7 @@ class Step:
     days: int = 0
     only_if: list[str] = field(default_factory=list)
     channels: list[str] = field(default_factory=lambda: ["email"])
-    # Stap overslaan als een van deze stappen al aan de beurt is (bv. late boeking: meteen de
-    # code-mail, geen bevestiging meer)
-    replaced_by: list[str] = field(default_factory=list)
+    replaced_by: list[str] = field(default_factory=list)  # niet meer gebruikt (vaste regel in is_replaced)
     # days_before_arrival: overslaan als de reservatie pas op of na de dag van deze stap
     # binnenkwam (dan kreeg de gast net de bevestiging)
     skip_if_booked_late: bool = False
@@ -245,13 +242,24 @@ def is_due(step: Step, r: Reservation, today: date) -> bool:
     return False
 
 
+def _booked_late(step: Step, r: Reservation) -> bool:
+    return bool(step.skip_if_booked_late and step.when == "days_before_arrival" and r.created_at
+                and r.created_at.date() >= step.due_date(r))
+
+
 def is_replaced(step: Step, r: Reservation, today: date, all_steps: list[Step]) -> bool:
-    """Overslaan omdat een latere stap al aan de beurt is, of omdat de boeking te laat kwam."""
-    by_name = {s.step: s for s in all_steps}
-    if any(x in by_name and is_due(by_name[x], r, today) for x in step.replaced_by):
+    """Vaste regel: een bericht gaat niet weg als een later bericht (dichter bij de aankomst) nu al
+    aan de beurt is en ook echt verstuurd wordt, bv. bij een late boeking meteen alleen de code-mail.
+    Daarnaast skip_if_booked_late: niet als de boeking pas op of na de dag van dit bericht kwam."""
+    if _booked_late(step, r):
         return True
-    if step.skip_if_booked_late and step.when == "days_before_arrival" and r.created_at:
-        return r.created_at.date() >= step.due_date(r)
+    for later in all_steps:
+        if later is step or not later.enabled or later.when != "days_before_arrival":
+            continue
+        if step.when == "days_before_arrival" and later.days >= step.days:
+            continue  # niet later dan deze stap
+        if is_due(later, r, today) and later.conditions_met(r) and not _booked_late(later, r):
+            return True
     return False
 
 

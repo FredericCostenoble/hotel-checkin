@@ -93,3 +93,7 @@ button.primary:disabled { opacity: 0.4; cursor: default; }
 button.link { background: none; border: none; color: #1F5FBF; cursor: pointer; padding: 0 4px; }
 button.link:hover { text-decoration: underline; }
 input.days { width: 60px; }
+.modal-box.small { height: auto; max-height: 80vh; overflow: auto; width: min(900px, 94vw); }
+.tag.warn { background: #FFF1E0; color: #8A4B00; }
+a.msgs { text-decoration: none; color: inherit; cursor: pointer; }
+.info { margin: 0; color: #5C6478; font-size: 0.9em; background: #F4F5F8; padding: 6px 10px; border-radius: 4px; }

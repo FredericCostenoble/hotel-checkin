@@ -13,7 +13,8 @@ const T = {
     wf_right_after: "Meteen na de boeking", step_confirmation: "Bevestiging met link naar het check-in-formulier",
     step_reminder: "Herinnering (formulier niet ingevuld)", step_access_code: "Code en praktische info",
     f_enabled: "Actief", f_when: "Wanneer", f_days: "Dagen voor aankomst", f_channels: "Kanalen", f_only_if: "Alleen als",
-    f_replaced_by: "Overslaan als al aan de beurt", f_late: "Niet als de boeking pas op of na die dag binnenkwam", f_pay: "Betaalknop", f_content: "In de mail", wf_example: "Voorbeeldmail", pv_subject: "Onderwerp",
+    f_replaced_by: "Overslaan als al aan de beurt", f_late: "Alleen als de boeking vóór die dag binnenkwam (anders kreeg de gast net de bevestiging)",
+    wf_later_rule: "Deze mail gaat niet weg als op dat moment al een latere mail aan de beurt is (bv. bij een late boeking krijgt de gast meteen alleen de code-mail).", f_pay: "Betaalknop", f_content: "In de mail", wf_example: "Voorbeeldmail", pv_subject: "Onderwerp",
     m_reservation: "reservatiegegevens", m_checkin_form: "link check-in-formulier", m_code: "pincode", m_practical_info: "praktische info",
     wf_form_note: "De link naar het formulier valt vanzelf weg als de gast het al invulde.",
     when_after_booking: "na de boeking", when_days_before_arrival: "dagen voor aankomst",
@@ -25,7 +26,9 @@ const T = {
     wf_paid_yes: "en volledig betaald", wf_paid_no: "en nog niet (volledig) betaald",
     wf_params: "Parameters (alle flows)", p_city_tax: "Toeristenbelasting", p_unit: "Per", unit_person_night: "persoon per nacht",
     unit_person_stay: "persoon per verblijf", p_currency: "Munt", wf_not_ready: "nog niet gebouwd (Salto)", wf_off: "uit",
-    returning: n => `terugkerend (${n}×)`, show_guest: "Gastgegevens tonen", show_res: "Reservaties van deze gast tonen",
+    returning: n => `terugkerend (${n}×)`, mg_message: "Bericht", mg_time: "Tijdstip", short_confirmation: "Bevestiging", short_reminder: "Herinnering", short_access_code: "Code-mail", mg_channel: "Kanaal", mg_to: "Naar",
+    mg_title: (num, guest) => `Berichten voor ${guest} (${num})`, mg_click: "Klik voor alle details",
+    st_sent: "verstuurd", st_failed: "mislukt", st_delivered: "afgeleverd", st_read: "gelezen", st_undelivered: "niet afgeleverd", show_guest: "Gastgegevens tonen", show_res: "Reservaties van deze gast tonen",
     g_update: "Synchroniseren", g_busy: "Bezig...", g_done: d => `${d.linked} gekoppeld, ${d.counted} verblijven en ${d.cancellations} annuleringen meegeteld, ${d.reservations_deleted} oude reservaties en ${d.guests_deleted} gasten verwijderd`,
     g_search: "Zoek op naam, e-mail, telefoon", g_count: n => `${n} gasten`, g_country: "Land", g_stays: "Verblijven", g_cancelled: "Geannuleerd",
     g_avg_nights: "Gem. nachten", g_avg_persons: "Gem. pers.", g_first: "Eerste verblijf", g_last: "Laatste verblijf",
@@ -58,7 +61,8 @@ const T = {
     wf_right_after: "Right after booking", step_confirmation: "Confirmation with link to the check-in form",
     step_reminder: "Reminder (form not filled in)", step_access_code: "Code and practical info",
     f_enabled: "Active", f_when: "When", f_days: "Days before arrival", f_channels: "Channels", f_only_if: "Only if",
-    f_replaced_by: "Skip if already due", f_late: "Not if the booking only came in on or after that day", f_pay: "Pay button", f_content: "In the mail", wf_example: "Example mail", pv_subject: "Subject",
+    f_replaced_by: "Skip if already due", f_late: "Only if the booking came in before that day (otherwise the guest just got the confirmation)",
+    wf_later_rule: "This mail is not sent if a later mail is already due at that moment (e.g. with a late booking the guest only gets the code mail).", f_pay: "Pay button", f_content: "In the mail", wf_example: "Example mail", pv_subject: "Subject",
     m_reservation: "reservation details", m_checkin_form: "check-in form link", m_code: "PIN code", m_practical_info: "practical info",
     wf_form_note: "The form link is left out automatically when the guest already filled it in.",
     when_after_booking: "after booking", when_days_before_arrival: "days before arrival",
@@ -70,7 +74,9 @@ const T = {
     wf_paid_yes: "and fully paid", wf_paid_no: "and not (fully) paid",
     wf_params: "Parameters (all flows)", p_city_tax: "City tax", p_unit: "Per", unit_person_night: "person per night",
     unit_person_stay: "person per stay", p_currency: "Currency", wf_not_ready: "not built yet (Salto)", wf_off: "off",
-    returning: n => `returning (${n}×)`, show_guest: "Show guest data", show_res: "Show this guest's reservations",
+    returning: n => `returning (${n}×)`, mg_message: "Message", mg_time: "Time", short_confirmation: "Confirmation", short_reminder: "Reminder", short_access_code: "Code mail", mg_channel: "Channel", mg_to: "To",
+    mg_title: (num, guest) => `Messages for ${guest} (${num})`, mg_click: "Click for all details",
+    st_sent: "sent", st_failed: "failed", st_delivered: "delivered", st_read: "read", st_undelivered: "not delivered", show_guest: "Show guest data", show_res: "Show this guest's reservations",
     g_update: "Synchronize", g_busy: "Working...", g_done: d => `${d.linked} linked, ${d.counted} stays and ${d.cancellations} cancellations counted, ${d.reservations_deleted} old reservations and ${d.guests_deleted} guests deleted`,
     g_search: "Search name, e-mail, phone", g_count: n => `${n} guests`, g_country: "Country", g_stays: "Stays", g_cancelled: "Cancelled",
     g_avg_nights: "Avg nights", g_avg_persons: "Avg pers.", g_first: "First stay", g_last: "Last stay",
@@ -152,6 +158,8 @@ async function init() {
   $("#wf-save").onclick = saveWorkflow;
   $("#wf-reset").onclick = resetWorkflow;
   $("#pv-close").onclick = () => { $("#preview").hidden = true; };
+  $("#msgs-close").onclick = () => { $("#msgs").hidden = true; };
+  $("#msgs").onclick = e => { if (e.target.id === "msgs") $("#msgs").hidden = true; };
   $("#preview").onclick = e => { if (e.target.id === "preview") $("#preview").hidden = true; };
   document.querySelectorAll("#g-head th[data-gsort]").forEach(th => th.onclick = () => gSortBy(th.dataset.gsort));
   $("#search").oninput = render;
@@ -181,6 +189,35 @@ async function load() {
   loadGuests();
   loadWorkflow();
   loadRuns();
+}
+
+// ---------------------------------------------------------------- berichten per reservatie
+// In de lijst kort: per bericht één label (groen als het per alle kanalen lukte, rood als iets
+// mislukte). Klik: alle pogingen met kanaal, ontvanger, status en fout.
+const CH = { email: "ch_email", whatsapp: "ch_whatsapp", sms: "ch_sms" };
+function msgSummary(r) {
+  if (!r.messages.length) return `<span class="muted">${t("none")}</span>`;
+  const byType = {};
+  r.messages.forEach(m => { (byType[m.type] = byType[m.type] || []).push(m); });
+  const tags = Object.entries(byType).map(([type, ms]) => {
+    const channels = [...new Set(ms.filter(m => m.ok).map(m => t(CH[m.channel] || m.channel)))];
+    const bad = ms.some(m => !m.ok) && !channels.length;
+    const partly = ms.some(m => !m.ok) && channels.length;
+    return `<span class="tag ${bad ? "fail" : partly ? "warn" : ""}">${esc(stepShort(type))}${channels.length ? ": " + esc(channels.join(", ")) : ""}</span>`;
+  });
+  return `<a href="#" class="msgs" data-msgs="${esc(r.id)}" title="${esc(t("mg_click"))}">${tags.join("")}</a>`;
+}
+const stepShort = type => T[lang]["short_" + type] || type;
+
+function showMessages(id) {
+  const r = rows.find(x => x.id === id);
+  if (!r) return;
+  $("#msgs-title").textContent = t("mg_title", r.booking_number, r.guest);
+  $("#msgs-rows").innerHTML = [...r.messages].reverse().map(m => `<tr>
+    <td>${stamp(m.at)}</td><td>${esc(stepShort(m.type))}</td><td>${esc(t(CH[m.channel] || m.channel))}</td>
+    <td>${esc(m.to)}</td><td class="${m.ok ? "ok" : "err"}">${esc(t("st_" + m.status) || m.status)}${m.status_at ? ` <span class="muted">${esc(stamp(m.status_at))}</span>` : ""}</td>
+    <td class="wrap">${esc([m.error, m.note].filter(Boolean).join(". "))}</td></tr>`).join("");
+  $("#msgs").hidden = false;
 }
 
 // ---------------------------------------------------------------- gasten
@@ -313,9 +350,10 @@ function render() {
       <td>${stamp(r.booked_at)}</td><td>${stamp(r.added_at)}</td><td>${stamp(r.updated_at)}</td>
       <td>${r.checkin_completed_at ? `<span class="ok">${t("yes")}</span> ${stamp(r.checkin_completed_at)}` : `<span class="muted">${t("no")}</span>`}</td>
       <td class="wrap">${esc(r.email)}${r.email && r.phone ? "<br>" : ""}${esc(r.phone)}</td>
-      <td class="wrap">${r.messages.map(m => `<span class="tag ${m.ok ? "" : "fail"}" title="${esc(stamp(m.at))}">${esc(m.type)} (${esc(m.channel)})</span>`).join("") || `<span class="muted">${t("none")}</span>`}</td>
+      <td class="wrap">${msgSummary(r)}</td>
     </tr>`).join("") || `<tr><td colspan="14" class="muted">${t("no_res")}</td></tr>`;
   document.querySelectorAll("#res a[data-guest]").forEach(a => a.onclick = e => { e.preventDefault(); openGuest(a.dataset.guest); });
+  document.querySelectorAll("#res a[data-msgs]").forEach(a => a.onclick = e => { e.preventDefault(); showMessages(a.dataset.msgs); });
 }
 
 async function loadRuns() {
@@ -461,6 +499,9 @@ function checks(name, idx, options, chosen, label) {
   return options.map(o => `<label class="chk"><input type="checkbox" data-i="${idx}" data-f="${name}" value="${esc(o)}" ${chosen.includes(o) ? "checked" : ""}> ${esc(label(o))}</label>`).join("");
 }
 
+// Ligt stap b later (dichter bij de aankomst) dan stap a?
+const isLater = (b, a) => b && b.enabled && b.when === "days_before_arrival" && (a.when === "after_booking" || b.days < a.days);
+
 function stepCard(s, i, flow, c) {
   const others = flow.steps.map(x => x.step).filter(x => x !== s.step);
   const when = s.when === "after_booking" ? t("wf_right_after") : t("wf_days_before", s.days);
@@ -478,8 +519,8 @@ function stepCard(s, i, flow, c) {
           <select data-i="${i}" data-f="when">${c.when.map(w => `<option value="${w}" ${w === s.when ? "selected" : ""}>${esc(t("when_" + w))}</option>`).join("")}</select></label>
         <label>${esc(t("f_pay"))} <select data-i="${i}" data-f="pay">${c.pay.map(p => `<option value="${p}" ${p === s.pay ? "selected" : ""}>${esc(t("pay_" + p))}</option>`).join("")}</select></label>
         <div><span class="lbl">${esc(t("f_only_if"))}</span>${checks("only_if", i, c.conditions, s.only_if, x => t("c_" + x))}</div>
-        ${others.length ? `<div><span class="lbl">${esc(t("f_replaced_by"))}</span>${checks("replaced_by", i, others, s.replaced_by, x => t("step_" + x))}</div>` : ""}
         ${s.when === "days_before_arrival" ? `<label class="chk"><input type="checkbox" data-i="${i}" data-f="skip_if_booked_late" ${s.skip_if_booked_late ? "checked" : ""}> ${esc(t("f_late"))}</label>` : ""}
+        ${others.some(o => isLater(flow.steps.find(x => x.step === o), s)) ? `<p class="info">${esc(t("wf_later_rule"))}</p>` : ""}
       </div>
     </div></div>`;
 }

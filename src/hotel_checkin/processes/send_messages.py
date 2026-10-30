@@ -11,21 +11,24 @@ Late boeking (bv. 2 dagen voor aankomst): stappen met replaced_by = ["access_cod
 de gast krijgt meteen alleen de code-mail.
 
 Kanalen (geen keuze voor de gast): altijd per mail. Is er een gsm-nummer, dan ook per WhatsApp;
-heeft het nummer geen WhatsApp, dan per sms. Voorlopig alleen e-mail (Twilio nog niet betaald). Stappen die meer vragen dan een bericht (access_code: eerst een code
+heeft het nummer geen WhatsApp, dan per sms. WhatsApp en sms pas als [messaging] phone = true
+(Twilio betaald, WhatsApp-sjablonen goedgekeurd: [whatsapp] template_<stap>_<taal> = "HX..."). Stappen die meer vragen dan een bericht (access_code: eerst een code
 bij Salto) of een kanaal dat er nog niet is (sms, WhatsApp), worden overgeslagen.
 """
 
 from __future__ import annotations
 
 import logging
+import os
 from datetime import date, datetime, timezone
+from urllib.parse import urlencode
 
 from hotel_checkin.core import workflow
 from hotel_checkin.core.config import hotel_setting
-from hotel_checkin.core.models import Channel, Reservation, SendResult
+from hotel_checkin.core.models import Reservation, SendResult
 from hotel_checkin.core.safety import environment
 from hotel_checkin.guests import repository as guests
-from hotel_checkin.messaging import email, templates
+from hotel_checkin.messaging import email, sms, templates, whatsapp
 
 TASK = "berichten"
 READY_STEPS = ("confirmation", "reminder")  # stappen die alleen een bericht zijn
@@ -93,14 +96,85 @@ def message_data(hotel_id: str, r: Reservation) -> dict[str, str]:
     }
 
 
-def send(hotel_id: str, step: workflow.Step, r: Reservation, cfg: dict) -> SendResult:
+MAX_ATTEMPTS = 3  # per stap en kanaal; daarna niet meer opnieuw (staat rood in de monitor)
+# WhatsApp-sjabloon: welke gegevens in welke plaats ({{1}}, {{2}}, ...), per berichttype
+WHATSAPP_VARIABLES = {
+    "confirmation": ("voornaam", "checkin_link"),
+    "reminder": ("voornaam", "checkin_link"),
+    "access_code": ("voornaam", "pincode", "kamernummer"),
+}
+
+
+def phone_enabled(hotel_id: str) -> bool:
+    """WhatsApp en sms aan? (zodra Twilio betaald is en de sjablonen goedgekeurd zijn)"""
+    return str(hotel_setting(hotel_id, "MESSAGING_PHONE", default="false", shared=False)).lower() == "true"
+
+
+def whatsapp_template(hotel_id: str, step: str, language: str) -> str | None:
+    """Goedgekeurd WhatsApp-sjabloon (Twilio ContentSid, HX...) voor dit bericht en deze taal."""
+    return hotel_setting(hotel_id, f"WHATSAPP_TEMPLATE_{step.upper()}_{language.upper()}", required=False, shared=False) \
+        or hotel_setting(hotel_id, f"WHATSAPP_TEMPLATE_{step.upper()}_EN", required=False, shared=False)
+
+
+def status_url(hotel_id: str, reservation_id: str, message_id: str) -> str | None:
+    """Adres waar Twilio meldt of het bericht aankwam (alleen in Azure)."""
+    host = os.environ.get("WEBSITE_HOSTNAME")
+    if not host:
+        return None
+    return f"https://{host}/api/twilio/status?" + urlencode({"h": hotel_id, "r": reservation_id, "m": message_id})
+
+
+def _rendered(hotel_id: str, step: workflow.Step, r: Reservation, cfg: dict):
     pay = step.pay if payments_ready(hotel_id) else "none"
     data = {**message_data(hotel_id, r), **pay_data(hotel_id, r, cfg)}
-    msg = templates.render(hotel_id, step.step, r.guest.language, data, mail_content(step, r), pay)
+    return templates.render(hotel_id, step.step, r.guest.language, data, mail_content(step, r), pay), data
+
+
+def send_mail(hotel_id: str, step: workflow.Step, r: Reservation, cfg: dict) -> SendResult:
+    msg, _ = _rendered(hotel_id, step, r, cfg)
     reply_to = templates.load_hotel_config(hotel_id).get("hotel", {}).get("email")
     sender = hotel_setting(hotel_id, "VERZENDING_MAIL_AFZENDER", shared=False)
     return email.send_email(to=r.guest.email, subject=msg.subject, html_body=msg.html, sender=sender,
                             reply_to=reply_to)
+
+
+def deliver(hotel_id: str, step: workflow.Step, r: Reservation, cfg: dict) -> list[tuple[str, SendResult]]:
+    """Stuur één stap naar de gast via alle kanalen die nu aan de beurt zijn.
+
+    Altijd per mail. Met gsm-nummer ook per WhatsApp; heeft het nummer geen WhatsApp (mislukt
+    meteen, of Twilio meldt het later), dan per sms. Elke poging staat in het berichtenlog;
+    na MAX_ATTEMPTS mislukte pogingen per kanaal stopt het.
+    """
+    rows = [m for m in guests.messages_for(hotel_id, r.reservation_id) if m["message_type"] == step.step]
+    ok = {c: any(m["ok"] and m["channel"] == c for m in rows) for c in ("email", "whatsapp", "sms")}
+    tries = {c: sum(1 for m in rows if m["channel"] == c) for c in ("email", "whatsapp", "sms")}
+    out: list[tuple[str, SendResult]] = []
+    if r.guest.email and not ok["email"] and tries["email"] < MAX_ATTEMPTS:
+        result = send_mail(hotel_id, step, r, cfg)
+        guests.log_message(hotel_id, r.reservation_id, step.step, result)
+        out.append(("email", result))
+    if not (r.guest.phone and phone_enabled(hotel_id)) or ok["whatsapp"] or ok["sms"]:
+        return out
+    msg, data = _rendered(hotel_id, step, r, cfg)
+    template = whatsapp_template(hotel_id, step.step, r.guest.language)
+    if template and tries["whatsapp"] == 0:
+        mid = guests.new_message_id()
+        values = {**data, "checkin_link": templates.checkin_link(hotel_id, r.token or "")}
+        variables = {str(i): str(values.get(k, "")) for i, k in enumerate(WHATSAPP_VARIABLES.get(step.step, ()), 1)}
+        result = whatsapp.send_whatsapp_template(hotel_id, r.guest.phone, template, variables,
+                                                 status_callback=status_url(hotel_id, r.reservation_id, mid))
+        guests.log_message(hotel_id, r.reservation_id, step.step, result, message_id=mid)
+        out.append(("whatsapp", result))
+        if result.ok:
+            return out  # sms alleen als WhatsApp mislukt (meteen of later gemeld door Twilio)
+    if tries["sms"] < MAX_ATTEMPTS and msg.sms:
+        mid = guests.new_message_id()
+        result = sms.send_sms(hotel_id, r.guest.phone, msg.sms,
+                              status_callback=status_url(hotel_id, r.reservation_id, mid))
+        note = "terugval: geen WhatsApp" if template else ""
+        guests.log_message(hotel_id, r.reservation_id, step.step, result, message_id=mid, note=note)
+        out.append(("sms", result))
+    return out
 
 
 def run(hotel_id: str, today: date | None = None) -> int:
@@ -116,22 +190,25 @@ def run(hotel_id: str, today: date | None = None) -> int:
     cfg = workflow.config(hotel_id)
     sent, failed = [], []
     for r in guests.list_reservations(hotel_id):
-        if not r.created_at or r.created_at < begin or not r.guest.email:
+        if not r.created_at or r.created_at < begin or not (r.guest.email or r.guest.phone):
             continue
         flow = workflow.flow_for(hotel_id, r, cfg)  # kanaal en betaalstatus
         all_steps = [s for s in workflow._steps_from(cfg, flow) if s.enabled]
-        for step in [s for s in all_steps if s.step in READY_STEPS and "email" in s.channels]:
+        for step in [s for s in all_steps if s.step in READY_STEPS]:
             if not workflow.is_due(step, r, today) or not step.conditions_met(r):
                 continue
             if workflow.is_replaced(step, r, today, all_steps):
                 continue
-            if guests.was_sent(hotel_id, r.reservation_id, step.step, Channel.EMAIL.value):
-                continue
-            result = send(hotel_id, step, r, cfg)
-            guests.log_message(hotel_id, r.reservation_id, step.step, result)
-            (sent if result.ok else failed).append(f"{step.step} {r.booking_number or r.reservation_id[:8]}"
-                                                   + ("" if result.ok else f" ({result.error})"))
+            for channel, result in deliver(hotel_id, step, r, cfg):
+                label = f"{step.step} {channel} {r.booking_number or r.reservation_id[:8]}"
+                (sent if result.ok else failed).append(label + ("" if result.ok else f" ({result.error})"))
     if sent or failed:
         note = ", ".join(sent) + (f". Mislukt: {'; '.join(failed)}" if failed else "")
         guests.log_robot_run(hotel_id, TASK, started, not failed, len(sent) + len(failed), len(sent), note[:1900])
     return len(sent)
+
+
+def twilio_status(hotel_id: str, reservation_id: str, message_id: str, status: str, error_code: str = "") -> None:
+    """Statusmelding van Twilio verwerken. Mislukte WhatsApp: de volgende run stuurt een sms."""
+    error = f"Twilio {status}" + (f", code {error_code}" if error_code else "")
+    guests.update_message_status(hotel_id, reservation_id, message_id, status, error)

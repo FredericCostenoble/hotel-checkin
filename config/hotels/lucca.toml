@@ -64,6 +64,15 @@ enabled_tst = true
 enabled_prd = false
 # Alleen reservaties die vanaf dit moment toegevoegd worden, krijgen berichten (de bestaande niet).
 start = "2026-10-30T15:30:00+01:00"
+# WhatsApp (met sms als terugval) naast de mail. Aan zodra Twilio betaald is.
+phone = false
+
+[whatsapp]
+# Door Meta goedgekeurde sjablonen (Twilio Content SID, HX...) per bericht en taal; ontbreekt de
+# taal, dan Engels. Zonder sjabloon gaat het bericht meteen per sms.
+# Plaatsen in het sjabloon: confirmation en reminder {{1}} voornaam, {{2}} link naar het formulier;
+# access_code {{1}} voornaam, {{2}} pincode, {{3}} kamer.
+# template_confirmation_nl = "HX..."
 
 [retention]
 # Opruimen bij het synchroniseren van de gasten (processes/maintenance.py). Dagen na vertrek / na het laatste verblijf.
@@ -97,9 +106,9 @@ achtergrond = "#F4F5F8"
 # Dit is de standaard; in de monitor (tabblad Workflow) kan hij gewijzigd worden en die versie gaat voor.
 # Flows: booking (Booking.com), expedia (Expedia), website_paid en website_unpaid (andere kanalen,
 # volgens betaalstatus). Per stap: when = after_booking of days_before_arrival (met days),
-# only_if = voorwaarden, channels = email, sms, whatsapp, replaced_by = overslaan als die andere
-# stap al aan de beurt is (late boeking: meteen alleen de code-mail), skip_if_booked_late = geen
-# herinnering als de boeking pas op of na die dag kwam, pay = betaalknop (none, open_amount, city_tax).
+# only_if = voorwaarden, skip_if_booked_late = geen herinnering als de boeking pas op of na die dag
+# kwam, pay = betaalknop (none, open_amount, city_tax). Vaste regel: een bericht gaat niet weg als
+# een later bericht nu al aan de beurt is (late boeking: meteen alleen de code-mail).
 
 [workflow_parameters]
 city_tax_amount = 5.0            # toeristenbelasting in euro
@@ -114,7 +123,6 @@ step = "confirmation"   # mail met link naar het check-in-formulier
 when = "after_booking"
 only_if = ["not_cancelled"]
 channels = ["email"]
-replaced_by = ["access_code"]
 pay = "none"
 
 [[flows.booking.steps]]
@@ -123,7 +131,6 @@ when = "days_before_arrival"
 days = 7
 only_if = ["form_not_completed", "not_cancelled"]
 channels = ["email"]
-replaced_by = ["access_code"]
 skip_if_booked_late = true
 pay = "none"
 
@@ -143,7 +150,6 @@ step = "confirmation"   # mail met link naar het check-in-formulier
 when = "after_booking"
 only_if = ["not_cancelled"]
 channels = ["email"]
-replaced_by = ["access_code"]
 pay = "none"
 
 [[flows.expedia.steps]]
@@ -152,7 +158,6 @@ when = "days_before_arrival"
 days = 7
 only_if = ["form_not_completed", "not_cancelled"]
 channels = ["email"]
-replaced_by = ["access_code"]
 skip_if_booked_late = true
 pay = "none"
 
@@ -173,7 +178,6 @@ step = "confirmation"   # mail met link naar het check-in-formulier
 when = "after_booking"
 only_if = ["not_cancelled"]
 channels = ["email"]
-replaced_by = ["access_code"]
 pay = "none"
 
 [[flows.website_paid.steps]]
@@ -182,7 +186,6 @@ when = "days_before_arrival"
 days = 7
 only_if = ["form_not_completed", "not_cancelled"]
 channels = ["email"]
-replaced_by = ["access_code"]
 skip_if_booked_late = true
 pay = "none"
 
@@ -203,7 +206,6 @@ step = "confirmation"   # mail met link naar het check-in-formulier
 when = "after_booking"
 only_if = ["not_cancelled"]
 channels = ["email"]
-replaced_by = ["access_code"]
 pay = "none"
 
 [[flows.website_unpaid.steps]]
@@ -212,7 +214,6 @@ when = "days_before_arrival"
 days = 7
 only_if = ["form_not_completed", "not_cancelled"]
 channels = ["email"]
-replaced_by = ["access_code"]
 skip_if_booked_late = true
 pay = "none"
 

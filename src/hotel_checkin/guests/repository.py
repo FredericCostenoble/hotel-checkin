@@ -254,13 +254,21 @@ def mark_checkin_completed(
 # ---------------------------------------------------------------- berichten
 
 
-def log_message(hotel_id: str, reservation_id: str, message_type: str, result: SendResult) -> None:
-    """Noteer een verstuurd (of mislukt) bericht."""
+def new_message_id() -> str:
+    """Sleutel van een bericht in het logboek (ook vooraf nodig voor de statusmelding van Twilio)."""
+    return f"{_now().strftime('%Y%m%dT%H%M%S%f')}-{uuid.uuid4().hex[:8]}"
+
+
+def log_message(hotel_id: str, reservation_id: str, message_type: str, result: SendResult,
+                message_id: str | None = None, note: str = "") -> str:
+    """Noteer een verstuurd (of mislukt) bericht. Geeft de sleutel terug.
+    status: sent of failed; later bijgewerkt door Twilio (delivered, undelivered, ...)."""
     sent_at = _now()
+    row = message_id or new_message_id()
     _table(T_MESSAGES).upsert_entity(
         {
             "PartitionKey": _msg_pk(hotel_id, reservation_id),
-            "RowKey": f"{sent_at.strftime('%Y%m%dT%H%M%S%f')}-{uuid.uuid4().hex[:8]}",
+            "RowKey": row,
             "hotel_id": hotel_id,
             "reservation_id": reservation_id,
             "message_type": message_type,
@@ -270,8 +278,28 @@ def log_message(hotel_id: str, reservation_id: str, message_type: str, result: S
             "provider_id": result.provider_id or "",
             "error": (result.error or "")[:1000],
             "sent_at": sent_at.isoformat(),
+            "status": "sent" if result.ok else "failed",
+            "note": note,
         }
     )
+    return row
+
+
+def update_message_status(hotel_id: str, reservation_id: str, message_id: str, status: str,
+                          error: str = "") -> dict | None:
+    """Status van Twilio (delivered, read, undelivered, failed). Mislukt = ok wordt False."""
+    table = _table(T_MESSAGES)
+    try:
+        e = dict(table.get_entity(_msg_pk(hotel_id, reservation_id), message_id))
+    except Exception:  # noqa: BLE001 - onbekend bericht
+        return None
+    e["status"] = status
+    if status in ("undelivered", "failed"):
+        e["ok"] = False
+        e["error"] = (error or e.get("error") or status)[:1000]
+    e["status_at"] = _now().isoformat()
+    table.upsert_entity(e)
+    return e
 
 
 def messages_for(hotel_id: str, reservation_id: str) -> list[dict]:

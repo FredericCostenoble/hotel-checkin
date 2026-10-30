@@ -81,6 +81,13 @@ def _fill(text: str, fields: dict) -> str:
     return text.format_map(fields)
 
 
+def checkin_link(hotel_id: str, token: str) -> str:
+    """Link naar het check-in-formulier. In TST naar het testformulier (instelling CHECKIN_FORM_URL),
+    anders naar het formulier van het hotel uit config/hotels/<hotel_id>.toml."""
+    url = os.environ.get("CHECKIN_FORM_URL") or load_hotel_config(hotel_id)["checkin"]["formulier_url"]
+    return url.replace("{token}", token)
+
+
 MODULES = ("reservation", "checkin_form", "pay", "code", "practical_info")  # volgorde in de mail
 
 
@@ -124,10 +131,7 @@ def render(hotel_id: str, message: str, language: str, data: dict[str, str],
     texts = load_texts(hotel_id, language)
     fields = _Fields({**_config_fields(config), **data})
     if "token" in data and "checkin_link" not in data:
-        # In TST wijst de link naar het testformulier (instelling CHECKIN_FORM_URL), anders naar
-        # het formulier van het hotel uit config/hotels/<hotel_id>.toml.
-        url = os.environ.get("CHECKIN_FORM_URL") or config["checkin"]["formulier_url"]
-        fields["checkin_link"] = _fill(url, fields)
+        fields["checkin_link"] = checkin_link(hotel_id, data["token"])
 
     t = {**texts[message], "blokken": compose_blocks(texts, message, content, pay)}
     sms = _fill(t["sms"], fields)

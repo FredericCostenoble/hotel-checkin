@@ -19,11 +19,12 @@ from hotel_checkin.core.models import Channel, SendResult
 from hotel_checkin.messaging._twilio import send_message
 
 
-def send_sms(hotel_id: str, to: str, text: str, client: httpx.Client | None = None) -> SendResult:
+def send_sms(hotel_id: str, to: str, text: str, client: httpx.Client | None = None,
+             status_callback: str | None = None) -> SendResult:
     """Stuur een SMS namens een hotel naar een nummer in E.164-formaat (bv. +32470123456)."""
     return send_message(
         hotel_id, Channel.SMS, to=to, from_=hotel_setting(hotel_id, "TWILIO_SMS_FROM"),
-        body=text, client=client,
+        body=text, client=client, status_callback=status_callback,
     )
 
 

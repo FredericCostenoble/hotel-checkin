@@ -87,3 +87,59 @@ def test_booked_five_days_before_no_reminder(setup):
     _res("r5", arrival_in=5)  # bevestiging ja, herinnering niet (boeking kwam na de herinneringsdag)
     assert send_messages.run("lucca") == 1
     assert repo.was_sent("lucca", "r5", "confirmation") and not repo.was_sent("lucca", "r5", "reminder")
+
+
+def test_phone_whatsapp_then_sms_fallback(setup, monkeypatch):
+    monkeypatch.setattr(send_messages, "phone_enabled", lambda h: True)
+    monkeypatch.setattr(send_messages, "whatsapp_template", lambda h, s, lang: "HX123")
+    calls = []
+    monkeypatch.setattr(send_messages.whatsapp, "send_whatsapp_template",
+                        lambda h, to, sid, variables, status_callback=None: calls.append(("wa", variables))
+                        or SendResult(Channel.WHATSAPP, to, True, provider_id="SM1"))
+    monkeypatch.setattr(send_messages.sms, "send_sms",
+                        lambda h, to, text, status_callback=None: calls.append(("sms", text))
+                        or SendResult(Channel.SMS, to, True))
+    r = _res("p1")
+    r.guest.phone = "+32470000001"
+    repo.save_reservation(r)
+    send_messages.run("lucca")
+    assert [c[0] for c in calls] == ["wa"] and calls[0][1]["1"] == "Jan" and "http" in calls[0][1]["2"]
+    send_messages.run("lucca")
+    assert len(calls) == 1  # WhatsApp gelukt: niets meer
+    # Twilio meldt later: geen WhatsApp op dit nummer -> volgende run per sms
+    wa = [m for m in repo.messages_for("lucca", "p1") if m["channel"] == "whatsapp"][0]
+    send_messages.twilio_status("lucca", "p1", wa["RowKey"], "undelivered", "63003")
+    send_messages.run("lucca")
+    assert [c[0] for c in calls] == ["wa", "sms"]
+    rows = repo.messages_for("lucca", "p1")
+    assert {(m["channel"], m["ok"]) for m in rows} == {("email", True), ("whatsapp", False), ("sms", True)}
+    assert any(m.get("note") == "terugval: geen WhatsApp" for m in rows)
+
+
+def test_failed_mail_retried_max_three_times(setup, monkeypatch):
+    monkeypatch.setattr(send_messages.email, "send_email",
+                        lambda *a, **k: SendResult(Channel.EMAIL, "x", False, error="403"))
+    _res("f1")
+    for _ in range(5):
+        send_messages.run("lucca")
+    assert len(repo.messages_for("lucca", "f1")) == 3
+
+
+def test_twilio_signature():
+    import base64
+    import hashlib
+    import hmac
+
+    from hotel_checkin.messaging import _twilio
+
+    url, params = "https://x.azurewebsites.net/api/twilio/status?h=lucca&r=1&m=2", {"MessageStatus": "delivered", "To": "+32"}
+    token = "secret"
+    sig = base64.b64encode(hmac.new(token.encode(), (url + "MessageStatusdeliveredTo+32").encode(), hashlib.sha1).digest()).decode()
+    import pytest as _p
+    mp = _p.MonkeyPatch()
+    mp.setattr(_twilio, "hotel_setting", lambda h, n, **k: token)
+    try:
+        assert _twilio.valid_signature("lucca", url, params, sig)
+        assert not _twilio.valid_signature("lucca", url, {**params, "MessageStatus": "read"}, sig)
+    finally:
+        mp.undo()
