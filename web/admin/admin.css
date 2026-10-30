@@ -26,3 +26,8 @@ tr.cancelled td { color: #9AA0AE; text-decoration: line-through; }
 .langs button { border: 1px solid var(--line); background: #fff; padding: 3px 8px; cursor: pointer; font-size: 12px; }
 .langs button.active { background: var(--accent); color: #fff; border-color: var(--accent); }
 h3 { font-size: 13px; text-transform: uppercase; letter-spacing: .5px; color: var(--accent); margin: 20px 0 6px; }
+
+.task { display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: 0.9em; white-space: nowrap; }
+.task-nieuwe_reservaties { background: #E6F0FB; color: #1F4E8C; }
+.task-contactgegevens_nalezen { background: #F3ECFA; color: #5B2E91; }
+#task { margin-left: auto; }

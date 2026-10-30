@@ -9,7 +9,8 @@ const T = {
     c_room: "Kamer", c_via: "Via", c_booked: "Geboekt", c_form: "Formulier", c_contact: "Contact", c_messages: "Berichten",
     yes: "ja", no: "nee", none: "geen", count: n => `${n} reservaties`, no_res: "Geen reservaties",
     hours_a: "Nieuwe reservaties van de laatste", hours_b: "uur", run: "Robot nu draaien",
-    r_start: "Start", r_duration: "Duur", r_task: "Taak", r_result: "Resultaat", r_found: "Gevonden", r_new: "Nieuw", r_error: "Fout",
+    r_start: "Start", r_duration: "Duur", r_task: "Taak", r_result: "Resultaat", r_found: "Gevonden", r_new: "Nieuw", r_error: "Opmerking",
+    all_tasks: "Alle taken", task_nieuwe_reservaties: "Nieuwe reservaties", task_contactgegevens_nalezen: "Contactgegevens nalezen",
     ok: "ok", fail: "fout", busy: "De robot is bezig...", scheduled: "Draait ook automatisch op schema.",
     not_installed: "De robot is in deze omgeving nog niet geïnstalleerd.", no_runs: "Nog geen afgeronde run",
     load_error: "Fout bij laden",
@@ -22,7 +23,8 @@ const T = {
     c_room: "Room", c_via: "Via", c_booked: "Booked", c_form: "Form", c_contact: "Contact", c_messages: "Messages",
     yes: "yes", no: "no", none: "none", count: n => `${n} reservations`, no_res: "No reservations",
     hours_a: "New reservations of the last", hours_b: "hours", run: "Run robot now",
-    r_start: "Start", r_duration: "Duration", r_task: "Task", r_result: "Result", r_found: "Found", r_new: "New", r_error: "Error",
+    r_start: "Start", r_duration: "Duration", r_task: "Task", r_result: "Result", r_found: "Found", r_new: "New", r_error: "Note",
+    all_tasks: "All tasks", task_nieuwe_reservaties: "New reservations", task_contactgegevens_nalezen: "Recheck contact details",
     ok: "ok", fail: "failed", busy: "The robot is running...", scheduled: "Also runs automatically on a schedule.",
     not_installed: "The robot is not installed in this environment yet.", no_runs: "No finished run yet",
     load_error: "Loading failed",
@@ -37,6 +39,9 @@ const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "
 const day = iso => iso ? new Date(iso + (iso.length === 10 ? "T00:00" : "")).toLocaleDateString(locale(), { day: "2-digit", month: "2-digit", year: "2-digit" }) : "";
 const stamp = iso => iso ? new Date(iso).toLocaleString(locale(), { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) : "";
 let rows = [], runsData = null, timer = null, waitTries = 0;
+const taskName = k => T[lang]["task_" + k] || k;
+let taskFilter = "";
+try { taskFilter = localStorage.getItem("monitor-task") || ""; } catch (e) { /* geen opslag */ }
 
 function store(k, v) { try { v === undefined ? null : localStorage.setItem(k, v); return localStorage.getItem(k); } catch { return null; } }
 async function get(path, opts) {
@@ -75,6 +80,11 @@ async function init() {
     $("#tab-robot").hidden = b.dataset.tab !== "robot";
   });
   $("#search").oninput = render;
+  $("#task").onchange = () => {
+    taskFilter = $("#task").value;
+    try { localStorage.setItem("monitor-task", taskFilter); } catch (e) { /* geen opslag */ }
+    if (runsData) renderRuns(runsData);
+  };
   $("#from").onchange = render;
   $("#to").onchange = render;
   $("#today").onclick = () => { $("#from").value = todayIso(); $("#to").value = ""; render(); };
@@ -130,11 +140,21 @@ function renderRuns(d) {
   // In de cloud bepaalt de robot zelf vanaf wanneer (sinds de vorige geslaagde run)
   $("#hours-wrap").hidden = !!d.cloud;
   $("#robot-state").textContent = busy ? t("busy") : (d.can_run ? (d.cloud ? t("scheduled") : "") : t("not_installed"));
-  $("#runs").innerHTML = d.runs.map(x => {
+  // Filter op taak: keuzes uit de taken die in het logboek voorkomen
+  const sel = $("#task"), chosen = sel.value || taskFilter;
+  const tasks = [...new Set(d.runs.map(x => x.task))];
+  sel.innerHTML = `<option value="">${t("all_tasks")}</option>` +
+    tasks.map(k => `<option value="${esc(k)}">${esc(taskName(k))}</option>`).join("");
+  sel.value = tasks.includes(chosen) ? chosen : "";
+  const shown = d.runs.filter(x => !sel.value || x.task === sel.value);
+  $("#runs").innerHTML = shown.map(x => {
     const secs = (new Date(x.finished_at) - new Date(x.started_at)) / 1000;
-    return `<tr><td>${stamp(x.started_at)}</td><td>${Math.round(secs)} s</td><td>${esc(x.task)}</td>
+    // Rood alleen bij een fout of overgeslagen rijen; anders is de opmerking gewoon informatie
+    const problem = !x.ok || Number(x.skipped || 0) > 0;
+    return `<tr><td>${stamp(x.started_at)}</td><td>${Math.round(secs)} s</td>
+      <td><span class="task task-${esc(x.task)}">${esc(taskName(x.task))}</span></td>
       <td class="${x.ok ? "ok" : "err"}">${x.ok ? t("ok") : t("fail")}</td><td>${x.found}</td><td>${x.new}</td>
-      <td class="wrap err">${esc(x.error)}</td></tr>`;
+      <td class="wrap ${problem ? "err" : ""}">${esc(x.error)}</td></tr>`;
   }).join("") || `<tr><td colspan="7" class="muted">${t("no_runs")}</td></tr>`;
   // In de cloud: ook de runs volgens Azure (toont runs die mislukten voor ze iets konden noteren)
   $("#exec-wrap").hidden = !d.executions;
