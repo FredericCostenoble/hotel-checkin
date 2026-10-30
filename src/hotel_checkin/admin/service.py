@@ -31,6 +31,8 @@ def reservations(hotel_id: str) -> list[dict]:
     periods = {g.guest_id: g.stay_periods for g in all_profiles}
     muted = {g.guest_id: set(g.muted_channels) for g in all_profiles}
     phone = send_messages.phone_enabled(hotel_id)
+    from hotel_checkin.pms.lighthouse_browser import base_url
+    lighthouse = base_url(hotel_id) + "/Customer/Reservations/Detail/"
     cfg, ready = workflow.config(hotel_id), send_messages.ready_steps(hotel_id)
     begin, on, today = send_messages.start(hotel_id), send_messages.enabled(hotel_id), date.today()
 
@@ -44,6 +46,7 @@ def reservations(hotel_id: str) -> list[dict]:
         out.append({
             "id": r.reservation_id,
             "booking_number": r.booking_number or "",
+            "lighthouse_url": lighthouse + r.reservation_id,  # het id is de GUID van Lighthouse
             "arrival": r.arrival.isoformat(),
             "departure": r.departure.isoformat(),
             "guest": f"{r.guest.first_name} {r.guest.last_name}".strip(),

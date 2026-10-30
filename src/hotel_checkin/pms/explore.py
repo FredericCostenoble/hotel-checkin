@@ -4,6 +4,7 @@
     python -m hotel_checkin.pms.explore lucca --show     # met zichtbare browser (niet in de codespace)
     python -m hotel_checkin.pms.explore lucca --page /Customer/Reservations/Detail/<id>
     python -m hotel_checkin.pms.explore lucca --detail          # detailpagina, contactgegevens getoond
+    python -m hotel_checkin.pms.explore lucca --status [<id>]   # hoe de status (inchecken) werkt, klikt NIETS
 
 Klikt niets aan en wijzigt niets. Schrijft naar lighthouse-explore/ (niet in git):
 - <pagina>.png: schermafbeelding, alleen voor jezelf (bevat gastgegevens)
@@ -144,6 +145,102 @@ def explore_detail(lh: LighthouseSession, path: str) -> str:
     return "\n".join(report) + "\n"
 
 
+# --status: hoe verandert Lighthouse de status van een reservering (KLAAR OM IN TE CHECKEN,
+# INGECHECKT, UITGECHECKT)? Alleen lezen: geen enkele klik, geen waarde wijzigen. Na het aanmelden
+# wordt elk verzoek dat geen GET is geblokkeerd, zodat er zeker niets verandert.
+_STATUS_JS = r"""(words) => {
+  const uuid = v => String(v).replace(/[0-9a-f]{8}-[0-9a-f-]{27,}/gi, '{uuid}');
+  const mask = v => /@|\d{6,}/.test(v) ? '<waarde>' : uuid(v).slice(0, 200);
+  const attrs = el => Object.fromEntries([...el.attributes].filter(a => a.name !== 'style').map(a => [a.name, mask(a.value)]));
+  const handlers = el => {
+    try {
+      const ev = window.jQuery && jQuery._data && jQuery._data(el, 'events');
+      if (!ev) return {};
+      return Object.fromEntries(Object.entries(ev).map(([k, hs]) => [k, hs.map(h => uuid(h.handler.toString()).slice(0, 2500))]));
+    } catch (e) { return { error: String(e) }; }
+  };
+  const formOf = el => { const f = el.closest('form'); return f ? { action: uuid(f.action || ''), method: f.method,
+      inputs: [...f.querySelectorAll('input,select')].map(i => `${i.type || i.tagName.toLowerCase()} ${i.name}`).slice(0, 40) } : null; };
+  const statusSelects = [...document.querySelectorAll('select')]
+    .filter(s => [...s.options].some(o => /INGECHECKT|IN TE CHECKEN|UITGECHECKT/i.test(o.text)))
+    .map(s => ({ attrs: attrs(s), options: [...s.options].map(o => `${o.value} = ${o.text}`), selected: s.selectedOptions[0]?.text || '',
+                 handlers: handlers(s), form: formOf(s),
+                 parentHandlers: s.parentElement ? handlers(s.parentElement) : {} }));
+  const re = new RegExp(words.join('|'), 'i');
+  const buttons = [...document.querySelectorAll('a,button,li,[role=menuitem],[onclick]')]
+    .filter(e => e.childElementCount < 4 && re.test((e.innerText || e.title || '').trim()) && (e.innerText || '').trim().length < 40)
+    .slice(0, 40)
+    .map(e => ({ tag: e.tagName.toLowerCase(), text: (e.innerText || e.title || '').trim(), attrs: attrs(e), handlers: handlers(e), form: formOf(e),
+                 visible: !!(e.offsetWidth || e.offsetHeight) }));
+  const inline = [...document.querySelectorAll('script:not([src])')].map(s => s.textContent)
+    .flatMap(t => t.split('\n').filter(l => re.test(l) || /\/Customer\/[A-Za-z]+\/[A-Za-z]*(Status|Check|State)/.test(l)))
+    .map(l => uuid(l.trim()).slice(0, 300)).slice(0, 60);
+  const scripts = [...document.querySelectorAll('script[src]')].map(s => s.src);
+  return { url: uuid(location.pathname), statusSelects, buttons, inline, scripts };
+}"""
+
+_STATUS_WORDS = ["Inchecken", "Uitchecken", "Ingecheckt", "Uitgecheckt", "In te checken", "No.?show", "Check.?in", "Check.?out", "Status"]
+
+
+def _script_hits(page, scripts: list[str]) -> list[str]:
+    """Regels uit de JavaScript-bestanden van Lighthouse die over status of inchecken gaan (alleen lezen)."""
+    hits = []
+    for src in scripts:
+        if "mylighthouse" not in src and not src.startswith("/"):
+            continue
+        try:
+            body = page.evaluate("u => fetch(u).then(r => r.text())", src)
+        except Exception:  # noqa: BLE001
+            continue
+        for m in re.finditer(r"[^;{}\n]{0,160}(?:Check[Ii]n|CheckOut|ChangeStatus|SetStatus|UpdateStatus|/Status)[^;{}\n]{0,160}", body):
+            hits.append(f"{src.rsplit('/', 1)[-1][:60]}: {re.sub(r'[0-9a-f]{8}-[0-9a-f-]{27,}', '{uuid}', m.group(0).strip())}")
+            if len(hits) > 150:
+                return hits
+    return hits
+
+
+def explore_status(lh: LighthouseSession, detail_id: str | None) -> str:
+    page = lh.goto("/Customer/Dashboard")  # meldt aan indien nodig
+    blocked: list[str] = []
+
+    def guard(route):
+        if route.request.method != "GET":
+            blocked.append(f"{route.request.method} {re.sub(r'[0-9a-f]{8}-[0-9a-f-]{27,}', '{uuid}', route.request.url)}")
+            return route.abort()
+        return route.continue_()
+    page.route("**/*", guard)  # vanaf nu kan er niets meer gewijzigd worden
+
+    report = ["# Status van een reservering wijzigen (verkenning, niets uitgevoerd)", ""]
+    paths = ["/Customer/Dashboard"]
+    if not detail_id:
+        link = page.locator("a[href*='/Customer/Reservations/Detail/']").first
+        if link.count():
+            detail_id = link.get_attribute("href").rstrip("/").rsplit("/", 1)[-1]
+    if detail_id:
+        paths.append(f"/Customer/Reservations/Detail/{detail_id}")
+    paths.append("/Customer/Planboard")
+    all_scripts: list[str] = []
+    for path in paths:
+        page = lh.goto(path)
+        page.wait_for_timeout(4000)  # alles laten laden (folio, planbord)
+        info = page.evaluate(_STATUS_JS, _STATUS_WORDS)
+        all_scripts += info["scripts"]
+        report += [f"## {info['url']}", "", "### Keuzelijsten met de status"]
+        for s in info["statusSelects"]:
+            report += [f"- attributen: {s['attrs']}", f"  gekozen: {s['selected']!r}", f"  opties: {s['options']}",
+                       f"  formulier: {s['form']}", f"  handlers: {s['handlers']}", f"  handlers ouder: {s['parentHandlers']}"]
+        if not info["statusSelects"]:
+            report.append("- geen")
+        report += ["", "### Knoppen en menu-items (inchecken, uitchecken, status)"]
+        for b in info["buttons"]:
+            report += [f"- {b['tag']} {b['text']!r} zichtbaar={b['visible']} attributen={b['attrs']}",
+                       f"  formulier: {b['form']}", f"  handlers: {b['handlers']}"]
+        report += ["", "### Regels in scripts op de pagina", *[f"    {x}" for x in info["inline"]], ""]
+    report += ["## Regels in de JavaScript-bestanden", *[f"    {x}" for x in _script_hits(page, list(dict.fromkeys(all_scripts)))], ""]
+    report += ["## Geblokkeerde verzoeken (geen GET, dus niet uitgevoerd)", *([f"- {x}" for x in blocked] or ["- geen"]), ""]
+    return "\n".join(report) + "\n"
+
+
 def main() -> None:
     p = argparse.ArgumentParser()
     p.add_argument("hotel_id")
@@ -151,7 +248,15 @@ def main() -> None:
     p.add_argument("--page", action="append", help="extra pagina, bv. /Customer/Reservations/Detail/<id>")
     p.add_argument("--detail", nargs="?", const="first",
                    help="alleen de detailpagina van een reservering (uuid, of de eerste van het dashboard)")
+    p.add_argument("--status", nargs="?", const="", help="hoe de status gewijzigd wordt (uuid of de eerste van het dashboard); klikt niets")
     args = p.parse_args()
+
+    if args.status is not None:
+        OUT.mkdir(exist_ok=True)
+        with LighthouseSession(args.hotel_id, headless=not args.show, debug_dir=OUT) as lh:
+            (OUT / "status.md").write_text(explore_status(lh, args.status or None), encoding="utf-8")
+        print(f"Klaar: {OUT}/status.md (zonder gastgegevens). Er werd niets aangeklikt of gewijzigd.")
+        return
 
     if args.detail:
         OUT.mkdir(exist_ok=True)
