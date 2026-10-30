@@ -144,3 +144,35 @@ def start_robot(hotel_id: str, hours: int = 48) -> bool:
 
     threading.Thread(target=work, daemon=True).start()
     return True
+
+
+# ---------------------------------------------------------------- workflow (tabblad Workflow)
+
+
+def workflow_view(hotel_id: str) -> dict:
+    """De geldende workflow plus de keuzes voor het scherm."""
+    from hotel_checkin.core import workflow
+
+    return {**workflow.config(hotel_id), "choices": {
+        "flows": list(workflow.FLOWS), "when": list(workflow.WHEN), "channels": list(workflow.CHANNELS),
+        "pay": list(workflow.PAY), "conditions": list(workflow.CONDITIONS), "steps": list(workflow.STEP_TYPES),
+        "city_tax_units": list(workflow.CITY_TAX_UNITS),
+    }}
+
+
+def workflow_save(hotel_id: str, cfg: dict, user: str) -> tuple[bool, dict]:
+    """(True, nieuwe workflow) of (False, {"error": uitleg})."""
+    from hotel_checkin.core import workflow
+
+    try:
+        workflow.save_config(hotel_id, cfg, user)
+    except ValueError as exc:
+        return False, {"error": str(exc)}
+    return True, workflow_view(hotel_id)
+
+
+def workflow_reset(hotel_id: str) -> dict:
+    from hotel_checkin.core import workflow
+
+    workflow.reset_config(hotel_id)
+    return workflow_view(hotel_id)

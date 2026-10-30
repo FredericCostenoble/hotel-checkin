@@ -38,6 +38,7 @@ def run(hotel_id: str, since: datetime) -> int:
             listed = lighthouse.get_new_reservations(hotel_id, since, lh, skipped)
             timings["list"] = round(time.monotonic() - t0, 1)
             pool = guest_profiles.profiles.list_profiles(hotel_id)  # één keer laden per run
+            details_after_booking = workflow.needs_details_after_booking(hotel_id)
             for reservation in listed:
                 found += 1
                 existing = guests.get_reservation(hotel_id, reservation.reservation_id)
@@ -46,7 +47,7 @@ def run(hotel_id: str, since: datetime) -> int:
                 contact = None
                 # Alleen van nieuwe reservaties meteen de contactgegevens (als de workflow een stap na
                 # de boeking heeft). Bestaande zonder e-mail: proces refresh_contacts, minder vaak.
-                needs_detail = existing is None and workflow.needs_details_after_booking(hotel_id)
+                needs_detail = existing is None and details_after_booking
                 if needs_detail:
                     try:
                         t0 = time.monotonic()

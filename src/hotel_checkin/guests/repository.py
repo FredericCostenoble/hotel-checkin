@@ -41,6 +41,7 @@ T_RESERVATIONS = "Reservations"
 T_MESSAGES = "Messages"
 T_OPTOUT = "MarketingOptOut"
 T_ROBOT = "RobotRuns"
+T_CONFIG = "HotelConfig"  # instellingen die in de monitor gewijzigd werden (bv. de workflow)
 T_STATE = "RobotState"  # kleine toestand per hotel, bv. tot waar de mailbox gelezen is
 
 _client_factory = None  # alleen voor tests: functie die een tabelnaam krijgt en een tabel teruggeeft
@@ -318,6 +319,27 @@ def log_robot_run(
         # gemeten duur per onderdeel in seconden, bv. {"login": 25, "list": 6, "contact": 9}
         "timings": json.dumps(timings or {}),
     })
+
+
+def get_config_doc(hotel_id: str, name: str) -> dict | None:
+    """Een in de monitor gewijzigd configuratiedocument (JSON) met wie en wanneer, of None."""
+    try:
+        e = _table(T_CONFIG).get_entity(_key(hotel_id), _key(name))
+    except Exception:  # noqa: BLE001 - niet gewijzigd: standaard uit het hotelbestand
+        return None
+    return {"value": json.loads(e["value"]), "updated_by": e.get("updated_by", ""), "updated_at": e.get("updated_at", "")}
+
+
+def set_config_doc(hotel_id: str, name: str, value: dict, user: str) -> None:
+    _table(T_CONFIG).upsert_entity({"PartitionKey": _key(hotel_id), "RowKey": _key(name), "value": json.dumps(value),
+                                    "updated_by": user or "", "updated_at": _now().isoformat()})
+
+
+def delete_config_doc(hotel_id: str, name: str) -> None:
+    try:
+        _table(T_CONFIG).delete_entity(_key(hotel_id), _key(name))
+    except Exception:  # noqa: BLE001 - stond er niet
+        pass
 
 
 def get_state(hotel_id: str, key: str) -> str | None:

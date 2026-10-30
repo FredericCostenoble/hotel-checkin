@@ -17,6 +17,7 @@
 <nav>
   <button data-tab="res" class="active" data-t="tab_res"></button>
   <button data-tab="guests" data-t="tab_guests"></button>
+  <button data-tab="workflow" data-t="tab_workflow"></button>
   <button data-tab="robot" data-t="tab_robot"></button>
 </nav>
 
@@ -66,6 +67,22 @@
       </tr></thead>
       <tbody id="guests"></tbody>
     </table>
+  </section>
+
+  <section id="tab-workflow" hidden>
+    <div class="tools">
+      <div id="wf-flows" class="subtabs"></div>
+      <div class="right">
+        <span id="wf-meta" class="muted"></span>
+        <button id="wf-reset" type="button" data-t="wf_reset"></button>
+        <button id="wf-save" type="button" class="primary" data-t="wf_save" disabled></button>
+      </div>
+    </div>
+    <p id="wf-state" class="muted"></p>
+    <div class="wf-grid">
+      <div id="wf-timeline"></div>
+      <aside id="wf-side"></aside>
+    </div>
   </section>
 
   <section id="tab-robot" hidden>

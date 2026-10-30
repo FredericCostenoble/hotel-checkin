@@ -66,6 +66,15 @@ class Handler(BaseHTTPRequestHandler):
             self._json(200, admin.hotels())
         elif method == "GET" and len(parts) == 4 and parts[3] == "reservations":
             self._json(200, admin.reservations(parts[2]))
+        elif len(parts) == 4 and parts[3] == "workflow":
+            if method == "GET":
+                self._json(200, admin.workflow_view(parts[2]))
+            elif "action=reset" in self.path:
+                self._json(200, admin.workflow_reset(parts[2]))
+            else:
+                body = json.loads(self.rfile.read(int(self.headers.get("Content-Length", 0))) or b"{}")
+                ok, data = admin.workflow_save(parts[2], body, "dev")
+                self._json(200 if ok else 400, data)
         elif method == "POST" and len(parts) == 4 and parts[3] == "maintenance":
             from hotel_checkin.processes import maintenance
 

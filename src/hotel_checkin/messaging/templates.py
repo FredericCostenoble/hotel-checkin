@@ -70,8 +70,8 @@ def load_texts(hotel_id: str, language: str) -> dict:
 def _config_fields(config: dict) -> dict[str, str]:
     fields: dict[str, str] = {}
     for section, values in config.items():
-        if not isinstance(values, dict):
-            continue  # bv. [[workflow]]: geen velden voor teksten
+        if not isinstance(values, dict) or section in ("flows", "workflow_parameters"):
+            continue  # workflow: geen velden voor teksten
         for key, value in values.items():
             fields[f"{section}_{key}"] = str(value)
     return fields

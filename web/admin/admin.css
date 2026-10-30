@@ -59,3 +59,27 @@ a.jump svg { vertical-align: -1px; }
 .reset { margin-left: -12px; border: 1px solid var(--line); background: #fff; padding: 2px 8px; cursor: pointer; color: #8A90A0; }
 .reset:hover { color: var(--err); }
 .task-berichten { background: #EAF0FF; color: #2B3F8C; }
+
+/* Workflow: verticale tijdlijn per flow */
+.wf-grid { display: grid; grid-template-columns: minmax(0, 1fr) 280px; gap: 24px; align-items: start; }
+@media (max-width: 900px) { .wf-grid { grid-template-columns: 1fr; } }
+#wf-timeline { position: relative; padding-left: 22px; }
+#wf-timeline::before { content: ""; position: absolute; left: 7px; top: 10px; bottom: 10px; width: 2px; background: #C9CFDB; }
+.tl-node, .tl-when { position: relative; margin: 6px 0; }
+.tl-node .dot, .tl-when .dot { position: absolute; left: -20px; top: 4px; width: 12px; height: 12px; border-radius: 50%; background: #fff; border: 2px solid #5C6478; }
+.tl-node.start .dot, .tl-node.end .dot { background: #5C6478; }
+.tl-when { color: #5C6478; font-weight: bold; font-size: 0.9em; margin-top: 14px; }
+.tl-step .card { border: 1px solid var(--line); border-radius: 8px; background: #fff; padding: 10px 14px; margin: 6px 0 4px; }
+.tl-step.off .card { opacity: 0.5; }
+.card-head { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
+.card-head .right { margin-left: auto; }
+.fields { display: grid; gap: 8px; }
+.fields label { display: inline-flex; gap: 6px; align-items: center; margin-right: 12px; }
+.fields .lbl { display: inline-block; min-width: 170px; color: #5C6478; font-size: 0.9em; }
+.chk { margin-right: 10px; white-space: nowrap; }
+#wf-side { border: 1px solid var(--line); border-radius: 8px; padding: 10px 14px; background: #fff; }
+#wf-side h3 { font-size: 0.85em; text-transform: uppercase; color: #5C6478; margin: 6px 0; }
+#wf-side label { display: grid; gap: 4px; margin-bottom: 10px; }
+#wf-side input[type=text] { width: 100%; }
+button.primary { background: #5C6478; color: #fff; border: none; padding: 6px 14px; border-radius: 4px; cursor: pointer; }
+button.primary:disabled { opacity: 0.4; cursor: default; }

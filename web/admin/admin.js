@@ -3,7 +3,26 @@ const API = window.ADMIN_API || "";
 
 const T = {
   nl: {
-    title: "Check-in monitor", hotel: "Hotel", tab_res: "Reservaties", tab_robot: "Robot", tab_guests: "Gasten",
+    title: "Check-in monitor", hotel: "Hotel", tab_res: "Reservaties", tab_robot: "Robot", tab_guests: "Gasten", tab_workflow: "Workflow",
+    wf_save: "Bewaren", wf_reset: "Terug naar standaard", wf_saved: "Bewaard.", wf_dirty: "Niet bewaarde wijzigingen.",
+    wf_reset_confirm: "De workflow terugzetten naar de standaard uit het hotelbestand? Alle wijzigingen gaan verloren.",
+    wf_from_file: "Standaard uit het hotelbestand", wf_changed: (who, when) => `Gewijzigd door ${who} op ${when}`,
+    wf_leave: "Er zijn niet bewaarde wijzigingen. Toch verder?",
+    flow_booking: "Booking.com", flow_expedia: "Expedia", flow_website_paid: "Website, betaald", flow_website_unpaid: "Website, niet betaald",
+    wf_start: "Boeking komt binnen", wf_arrival: "Aankomst", wf_days_before: n => `${n} dag${n === 1 ? "" : "en"} voor aankomst`,
+    wf_right_after: "Meteen na de boeking", step_confirmation: "Bevestiging met link naar het check-in-formulier",
+    step_reminder: "Herinnering (formulier niet ingevuld)", step_access_code: "Code en praktische info",
+    f_enabled: "Actief", f_when: "Wanneer", f_days: "Dagen voor aankomst", f_channels: "Kanalen", f_only_if: "Alleen als",
+    f_replaced_by: "Overslaan als al aan de beurt", f_late: "Niet als de boeking pas op of na die dag binnenkwam", f_pay: "Betaalknop",
+    when_after_booking: "na de boeking", when_days_before_arrival: "dagen voor aankomst",
+    ch_email: "e-mail", ch_sms: "sms", ch_whatsapp: "WhatsApp",
+    pay_none: "geen", pay_open_amount: "openstaand bedrag", pay_city_tax: "toeristenbelasting",
+    c_not_cancelled: "niet geannuleerd", c_form_completed: "formulier ingevuld", c_form_not_completed: "formulier niet ingevuld",
+    c_paid: "betaald", c_checked_in: "ingecheckt", c_has_email: "e-mailadres gekend", c_has_phone: "telefoon gekend",
+    wf_rules: "Herkennen", wf_sources: "Kanaal bevat (komma's tussen)", wf_other: "Alle andere kanalen",
+    wf_paid_yes: "en volledig betaald", wf_paid_no: "en nog niet (volledig) betaald",
+    wf_params: "Parameters (alle flows)", p_city_tax: "Toeristenbelasting", p_unit: "Per", unit_person_night: "persoon per nacht",
+    unit_person_stay: "persoon per verblijf", p_currency: "Munt", wf_not_ready: "nog niet gebouwd (Salto)", wf_off: "uit",
     returning: n => `terugkerend (${n}×)`, show_guest: "Gastgegevens tonen", show_res: "Reservaties van deze gast tonen",
     g_update: "Synchroniseren", g_busy: "Bezig...", g_done: d => `${d.linked} gekoppeld, ${d.counted} verblijven en ${d.cancellations} annuleringen meegeteld, ${d.reservations_deleted} oude reservaties en ${d.guests_deleted} gasten verwijderd`,
     g_search: "Zoek op naam, e-mail, telefoon", g_count: n => `${n} gasten`, g_country: "Land", g_stays: "Verblijven", g_cancelled: "Geannuleerd",
@@ -27,7 +46,26 @@ const T = {
     exec_title: "Runs volgens Azure", exec_end: "Einde", exec_status: "Status", exec_name: "Naam",
   },
   en: {
-    title: "Check-in monitor", hotel: "Hotel", tab_res: "Reservations", tab_robot: "Robot", tab_guests: "Guests",
+    title: "Check-in monitor", hotel: "Hotel", tab_res: "Reservations", tab_robot: "Robot", tab_guests: "Guests", tab_workflow: "Workflow",
+    wf_save: "Save", wf_reset: "Back to default", wf_saved: "Saved.", wf_dirty: "Unsaved changes.",
+    wf_reset_confirm: "Reset the workflow to the default from the hotel file? All changes will be lost.",
+    wf_from_file: "Default from the hotel file", wf_changed: (who, when) => `Changed by ${who} on ${when}`,
+    wf_leave: "There are unsaved changes. Continue anyway?",
+    flow_booking: "Booking.com", flow_expedia: "Expedia", flow_website_paid: "Website, paid", flow_website_unpaid: "Website, not paid",
+    wf_start: "Booking comes in", wf_arrival: "Arrival", wf_days_before: n => `${n} day${n === 1 ? "" : "s"} before arrival`,
+    wf_right_after: "Right after booking", step_confirmation: "Confirmation with link to the check-in form",
+    step_reminder: "Reminder (form not filled in)", step_access_code: "Code and practical info",
+    f_enabled: "Active", f_when: "When", f_days: "Days before arrival", f_channels: "Channels", f_only_if: "Only if",
+    f_replaced_by: "Skip if already due", f_late: "Not if the booking only came in on or after that day", f_pay: "Pay button",
+    when_after_booking: "after booking", when_days_before_arrival: "days before arrival",
+    ch_email: "e-mail", ch_sms: "SMS", ch_whatsapp: "WhatsApp",
+    pay_none: "none", pay_open_amount: "open amount", pay_city_tax: "city tax",
+    c_not_cancelled: "not cancelled", c_form_completed: "form filled in", c_form_not_completed: "form not filled in",
+    c_paid: "paid", c_checked_in: "checked in", c_has_email: "e-mail known", c_has_phone: "phone known",
+    wf_rules: "Recognised by", wf_sources: "Channel contains (comma separated)", wf_other: "All other channels",
+    wf_paid_yes: "and fully paid", wf_paid_no: "and not (fully) paid",
+    wf_params: "Parameters (all flows)", p_city_tax: "City tax", p_unit: "Per", unit_person_night: "person per night",
+    unit_person_stay: "person per stay", p_currency: "Currency", wf_not_ready: "not built yet (Salto)", wf_off: "off",
     returning: n => `returning (${n}×)`, show_guest: "Show guest data", show_res: "Show this guest's reservations",
     g_update: "Synchronize", g_busy: "Working...", g_done: d => `${d.linked} linked, ${d.counted} stays and ${d.cancellations} cancellations counted, ${d.reservations_deleted} old reservations and ${d.guests_deleted} guests deleted`,
     g_search: "Search name, e-mail, phone", g_count: n => `${n} guests`, g_country: "Country", g_stays: "Stays", g_cancelled: "Cancelled",
@@ -86,6 +124,7 @@ function setLang(l) {
   document.querySelectorAll(".langs button").forEach(b => b.classList.toggle("active", b.dataset.lang === lang));
   render();
   renderGuests();
+  renderWorkflow();
   if (runsData) renderRuns(runsData);
 }
 
@@ -97,7 +136,7 @@ async function init() {
   const saved = store("hotel");
   if (saved && hotels.some(h => h.id === saved)) $("#hotel").value = saved;
   $("#hotel").onchange = () => { store("hotel", $("#hotel").value); load(); };
-  document.querySelectorAll(".subtabs button").forEach(b => b.onclick = () => showSub(b.dataset.sub));
+  document.querySelectorAll("#tab-robot .subtabs button").forEach(b => b.onclick = () => showSub(b.dataset.sub));
   $("#bin-all").innerHTML = BIN;
   $("#bin-all").onclick = deleteAllRuns;
   document.querySelectorAll("nav button").forEach(b => b.onclick = () => showTab(b.dataset.tab));
@@ -106,6 +145,8 @@ async function init() {
   $("#search-reset").onclick = () => { $("#search").value = ""; $("#from").value = todayIso(); $("#to").value = ""; render(); };
   $("#g-search-reset").onclick = () => { $("#g-search").value = ""; renderGuests(); };
   $("#g-update").onclick = updateGuests;
+  $("#wf-save").onclick = saveWorkflow;
+  $("#wf-reset").onclick = resetWorkflow;
   document.querySelectorAll("#g-head th[data-gsort]").forEach(th => th.onclick = () => gSortBy(th.dataset.gsort));
   $("#search").oninput = render;
   document.querySelectorAll("#res-head th[data-sort]").forEach(th => th.onclick = () => sortBy(th.dataset.sort));
@@ -122,8 +163,9 @@ async function init() {
 }
 
 function showTab(name) {
+  if (wfDirty && name !== "workflow" && !$("#tab-workflow").hidden && !confirm(t("wf_leave"))) return;
   document.querySelectorAll("nav button").forEach(x => x.classList.toggle("active", x.dataset.tab === name));
-  ["res", "guests", "robot"].forEach(n => { $(`#tab-${n}`).hidden = n !== name; });
+  ["res", "guests", "workflow", "robot"].forEach(n => { $(`#tab-${n}`).hidden = n !== name; });
 }
 
 async function load() {
@@ -131,6 +173,7 @@ async function load() {
   rows = await get(`/api/monitor/${h}/reservations`);
   render();
   loadGuests();
+  loadWorkflow();
   loadRuns();
 }
 
@@ -299,7 +342,7 @@ const BIN = `<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
 let subTab = "log";
 function showSub(name) {
   subTab = name;
-  document.querySelectorAll(".subtabs button").forEach(b => b.classList.toggle("active", b.dataset.sub === name));
+  document.querySelectorAll("#tab-robot .subtabs button").forEach(b => b.classList.toggle("active", b.dataset.sub === name));
   $("#sub-log").hidden = name !== "log";
   $("#task").disabled = name !== "log";  // filter op taak geldt alleen voor het logboek (blijft staan, niets verspringt)
   $("#exec-wrap").hidden = name !== "azure";
@@ -367,6 +410,127 @@ async function runRobot() {
   waitTries = 0;
   await get(`/api/monitor/${h}/run?hours=${encodeURIComponent($("#hours").value)}`, { method: "POST" });
   loadRuns();
+}
+
+
+
+// ---------------------------------------------------------------- workflow (tabblad Workflow)
+// Per flow een tijdlijn van boven (boeking) naar onder (aankomst). Alles wat hier verandert,
+// bewaart de server in de database; de processen lezen het meteen.
+let wf = null, wfFlow = "booking", wfDirty = false;
+const READY = ["confirmation", "reminder"];  // stappen die al echt verstuurd worden
+
+async function loadWorkflow() {
+  try { wf = await get(`/api/monitor/${$("#hotel").value}/workflow`); } catch (e) { return; }
+  wfDirty = false;
+  renderWorkflow();
+}
+
+function setDirty() { wfDirty = true; $("#wf-save").disabled = false; $("#wf-state").textContent = t("wf_dirty"); }
+
+function wfMeta() {
+  if (!wf) return "";
+  return wf.meta.source === "monitor" ? t("wf_changed", wf.meta.updated_by || "?", stamp(wf.meta.updated_at)) : t("wf_from_file");
+}
+
+function renderWorkflow() {
+  if (!wf || !$("#wf-flows")) return;
+  const c = wf.choices;
+  $("#wf-flows").innerHTML = c.flows.map(f => `<button type="button" data-flow="${f}" class="${f === wfFlow ? "active" : ""}">${esc(t("flow_" + f))}</button>`).join("");
+  document.querySelectorAll("#wf-flows button").forEach(b => b.onclick = () => { wfFlow = b.dataset.flow; renderWorkflow(); });
+  $("#wf-meta").textContent = wfMeta();
+  $("#wf-save").disabled = !wfDirty;
+  const flow = wf.flows[wfFlow];
+  // volgorde op de tijdlijn: na de boeking eerst, dan van ver naar dicht bij de aankomst
+  const order = flow.steps.map((s, i) => ({ s, i })).sort((a, b) =>
+    (a.s.when === "after_booking" ? -1e6 : -a.s.days) - (b.s.when === "after_booking" ? -1e6 : -b.s.days));
+  const node = (cls, label) => `<div class="tl-node ${cls}"><span class="dot"></span><strong>${esc(label)}</strong></div>`;
+  $("#wf-timeline").innerHTML = node("start", t("wf_start")) +
+    order.map(({ s, i }) => stepCard(s, i, flow, c)).join("") + node("end", t("wf_arrival"));
+  bindSteps(flow);
+  renderSide(flow, c);
+}
+
+function checks(name, idx, options, chosen, label) {
+  return options.map(o => `<label class="chk"><input type="checkbox" data-i="${idx}" data-f="${name}" value="${esc(o)}" ${chosen.includes(o) ? "checked" : ""}> ${esc(label(o))}</label>`).join("");
+}
+
+function stepCard(s, i, flow, c) {
+  const others = flow.steps.map(x => x.step).filter(x => x !== s.step);
+  const when = s.when === "after_booking" ? t("wf_right_after") : t("wf_days_before", s.days);
+  const notReady = READY.includes(s.step) ? "" : ` <span class="tag">${esc(t("wf_not_ready"))}</span>`;
+  return `<div class="tl-step ${s.enabled ? "" : "off"}">
+    <div class="tl-when"><span class="dot"></span>${esc(when)}</div>
+    <div class="card">
+      <div class="card-head"><strong>${esc(t("step_" + s.step))}</strong>${notReady}
+        <label class="chk right"><input type="checkbox" data-i="${i}" data-f="enabled" ${s.enabled ? "checked" : ""}> ${esc(t("f_enabled"))}</label></div>
+      <div class="fields">
+        <label>${esc(t("f_when"))} <select data-i="${i}" data-f="when">${c.when.map(w => `<option value="${w}" ${w === s.when ? "selected" : ""}>${esc(t("when_" + w))}</option>`).join("")}</select></label>
+        ${s.when === "days_before_arrival" ? `<label>${esc(t("f_days"))} <input type="number" min="0" max="365" data-i="${i}" data-f="days" value="${s.days}"></label>` : ""}
+        <label>${esc(t("f_pay"))} <select data-i="${i}" data-f="pay">${c.pay.map(p => `<option value="${p}" ${p === s.pay ? "selected" : ""}>${esc(t("pay_" + p))}</option>`).join("")}</select></label>
+        <div><span class="lbl">${esc(t("f_channels"))}</span>${checks("channels", i, c.channels, s.channels, x => t("ch_" + x))}</div>
+        <div><span class="lbl">${esc(t("f_only_if"))}</span>${checks("only_if", i, c.conditions, s.only_if, x => t("c_" + x))}</div>
+        ${others.length ? `<div><span class="lbl">${esc(t("f_replaced_by"))}</span>${checks("replaced_by", i, others, s.replaced_by, x => t("step_" + x))}</div>` : ""}
+        ${s.when === "days_before_arrival" ? `<label class="chk"><input type="checkbox" data-i="${i}" data-f="skip_if_booked_late" ${s.skip_if_booked_late ? "checked" : ""}> ${esc(t("f_late"))}</label>` : ""}
+      </div>
+    </div></div>`;
+}
+
+function bindSteps(flow) {
+  document.querySelectorAll("#wf-timeline [data-f]").forEach(el => el.onchange = () => {
+    const s = flow.steps[+el.dataset.i], f = el.dataset.f;
+    if (["channels", "only_if", "replaced_by"].includes(f)) {
+      s[f] = [...document.querySelectorAll(`#wf-timeline [data-i="${el.dataset.i}"][data-f="${f}"]:checked`)].map(x => x.value);
+    } else if (f === "enabled" || f === "skip_if_booked_late") {
+      s[f] = el.checked;
+    } else if (f === "days") {
+      s.days = Math.max(0, Math.min(365, parseInt(el.value || "0", 10)));
+    } else {
+      s[f] = el.value;
+      if (f === "when" && el.value === "after_booking") s.days = 0;
+    }
+    setDirty();
+    renderWorkflow();
+  });
+}
+
+function renderSide(flow, c) {
+  const p = wf.parameters;
+  const rule = flow.sources.length
+    ? `<label>${esc(t("wf_sources"))}<input id="wf-sources" type="text" value="${esc(flow.sources.join(", "))}"></label>`
+    : `<p>${esc(t("wf_other"))} ${esc(t(flow.paid ? "wf_paid_yes" : "wf_paid_no"))}</p>`;
+  $("#wf-side").innerHTML = `
+    <h3>${esc(t("wf_rules"))}</h3>${rule}
+    <h3>${esc(t("wf_params"))}</h3>
+    <label>${esc(t("p_city_tax"))} <input id="wf-tax" type="number" min="0" step="0.01" value="${p.city_tax_amount}"></label>
+    <label>${esc(t("p_unit"))} <select id="wf-unit">${c.city_tax_units.map(u => `<option value="${u}" ${u === p.city_tax_unit ? "selected" : ""}>${esc(t("unit_" + u))}</option>`).join("")}</select></label>
+    <label>${esc(t("p_currency"))} <input id="wf-cur" type="text" maxlength="3" value="${esc(p.currency)}"></label>`;
+  const src = $("#wf-sources");
+  if (src) src.onchange = () => { flow.sources = src.value.split(",").map(x => x.trim()).filter(Boolean); setDirty(); };
+  $("#wf-tax").onchange = () => { p.city_tax_amount = parseFloat($("#wf-tax").value || "0"); setDirty(); };
+  $("#wf-unit").onchange = () => { p.city_tax_unit = $("#wf-unit").value; setDirty(); };
+  $("#wf-cur").onchange = () => { p.currency = $("#wf-cur").value.toUpperCase(); setDirty(); };
+}
+
+async function saveWorkflow() {
+  const r = await fetch(API + `/api/monitor/${$("#hotel").value}/workflow`, {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ parameters: wf.parameters, flows: wf.flows }),
+  });
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok) { $("#wf-state").textContent = d.error || `${t("load_error")} ${r.status}`; $("#wf-state").className = "err"; return; }
+  wf = d; wfDirty = false;
+  $("#wf-state").className = "muted";
+  $("#wf-state").textContent = t("wf_saved");
+  renderWorkflow();
+}
+
+async function resetWorkflow() {
+  if (!confirm(t("wf_reset_confirm"))) return;
+  wf = await get(`/api/monitor/${$("#hotel").value}/workflow?action=reset`, { method: "POST" });
+  wfDirty = false;
+  $("#wf-state").textContent = "";
+  renderWorkflow();
 }
 
 init().catch(e => { document.body.insertAdjacentHTML("beforeend", `<p class="err">${t("load_error")}: ${esc(e.message)}</p>`); });

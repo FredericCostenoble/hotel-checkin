@@ -93,31 +93,133 @@ accent_donker = "#5C6478" # knoppen en titels
 tekst = "#2B2F38"
 achtergrond = "#F4F5F8"
 
-# Workflow: welke stappen wanneer (zie src/hotel_checkin/core/workflow.py).
-# step = berichttype (teksten in messaging/texts) of actie; when = after_booking,
-# days_before_arrival (met days) of at_start; only_if = voorwaarden; channels = email, sms, whatsapp.
-# replaced_by = stap overslaan als die andere stap al aan de beurt is (late boeking: meteen alleen
-# de code-mail); skip_if_booked_late = geen herinnering als de boeking pas op of na die dag kwam.
+# Workflow: welke stappen wanneer, apart per flow (zie src/hotel_checkin/core/workflow.py).
+# Dit is de standaard; in de monitor (tabblad Workflow) kan hij gewijzigd worden en die versie gaat voor.
+# Flows: booking (Booking.com), expedia (Expedia), website_paid en website_unpaid (andere kanalen,
+# volgens betaalstatus). Per stap: when = after_booking of days_before_arrival (met days),
+# only_if = voorwaarden, channels = email, sms, whatsapp, replaced_by = overslaan als die andere
+# stap al aan de beurt is (late boeking: meteen alleen de code-mail), skip_if_booked_late = geen
+# herinnering als de boeking pas op of na die dag kwam, pay = betaalknop (none, open_amount, city_tax).
 
-[[workflow]]
-step = "confirmation"            # mail met link naar het check-in-formulier
+[workflow_parameters]
+city_tax_amount = 5.0            # toeristenbelasting in euro
+city_tax_unit = "person_night"   # per persoon per nacht (person_night) of per persoon per verblijf (person_stay)
+currency = "EUR"
+
+[flows.booking]
+sources = ["Booking.com"]   # herkend aan het kanaal ("Via")
+
+[[flows.booking.steps]]
+step = "confirmation"   # mail met link naar het check-in-formulier
 when = "after_booking"
 only_if = ["not_cancelled"]
 channels = ["email"]
 replaced_by = ["access_code"]
+pay = "none"
 
-[[workflow]]
-step = "reminder"                # herinnering als het formulier nog niet ingevuld is
+[[flows.booking.steps]]
+step = "reminder"   # herinnering als het formulier niet ingevuld is
 when = "days_before_arrival"
 days = 7
 only_if = ["form_not_completed", "not_cancelled"]
 channels = ["email"]
 replaced_by = ["access_code"]
 skip_if_booked_late = true
+pay = "none"
 
-[[workflow]]
-step = "access_code"             # pincode en praktische info
+[[flows.booking.steps]]
+step = "access_code"   # pincode en praktische info
+when = "days_before_arrival"
+days = 2
+only_if = ["not_cancelled"]
+channels = ["email", "sms"]
+pay = "city_tax"
+
+[flows.expedia]
+sources = ["Expedia"]
+
+[[flows.expedia.steps]]
+step = "confirmation"   # mail met link naar het check-in-formulier
+when = "after_booking"
+only_if = ["not_cancelled"]
+channels = ["email"]
+replaced_by = ["access_code"]
+pay = "none"
+
+[[flows.expedia.steps]]
+step = "reminder"   # herinnering als het formulier niet ingevuld is
+when = "days_before_arrival"
+days = 7
+only_if = ["form_not_completed", "not_cancelled"]
+channels = ["email"]
+replaced_by = ["access_code"]
+skip_if_booked_late = true
+pay = "none"
+
+[[flows.expedia.steps]]
+step = "access_code"   # pincode en praktische info
+when = "days_before_arrival"
+days = 2
+only_if = ["not_cancelled"]
+channels = ["email", "sms"]
+pay = "city_tax"
+
+[flows.website_paid]
+sources = []                 # alle andere kanalen
+paid = true
+
+[[flows.website_paid.steps]]
+step = "confirmation"   # mail met link naar het check-in-formulier
+when = "after_booking"
+only_if = ["not_cancelled"]
+channels = ["email"]
+replaced_by = ["access_code"]
+pay = "none"
+
+[[flows.website_paid.steps]]
+step = "reminder"   # herinnering als het formulier niet ingevuld is
+when = "days_before_arrival"
+days = 7
+only_if = ["form_not_completed", "not_cancelled"]
+channels = ["email"]
+replaced_by = ["access_code"]
+skip_if_booked_late = true
+pay = "none"
+
+[[flows.website_paid.steps]]
+step = "access_code"   # pincode en praktische info
 when = "days_before_arrival"
 days = 2
 only_if = ["paid", "not_cancelled"]
 channels = ["email", "sms"]
+pay = "none"
+
+[flows.website_unpaid]
+sources = []
+paid = false
+
+[[flows.website_unpaid.steps]]
+step = "confirmation"   # mail met link naar het check-in-formulier
+when = "after_booking"
+only_if = ["not_cancelled"]
+channels = ["email"]
+replaced_by = ["access_code"]
+pay = "none"
+
+[[flows.website_unpaid.steps]]
+step = "reminder"   # herinnering als het formulier niet ingevuld is
+when = "days_before_arrival"
+days = 7
+only_if = ["form_not_completed", "not_cancelled"]
+channels = ["email"]
+replaced_by = ["access_code"]
+skip_if_booked_late = true
+pay = "none"
+
+[[flows.website_unpaid.steps]]
+step = "access_code"   # pincode en praktische info
+when = "days_before_arrival"
+days = 2
+only_if = ["not_cancelled"]
+channels = ["email", "sms"]
+pay = "open_amount"

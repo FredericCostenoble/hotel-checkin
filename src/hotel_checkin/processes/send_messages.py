@@ -1,7 +1,7 @@
 """Proces: de berichten uit de workflow van een hotel versturen (bevestiging, herinnering, ...).
 
-Leest de workflow ([[workflow]] in config/hotels/<hotel_id>.toml) en beslist per reservatie
-welke stap nu moet gebeuren. Elk bericht wordt één keer verstuurd (berichtenlog, tabel Messages).
+Leest de workflow (core/workflow.py: per flow, standaard uit het hotelbestand, gewijzigd in de
+monitor) en beslist per reservatie welke flow geldt en welke stap nu moet gebeuren. Elk bericht wordt één keer verstuurd (berichtenlog, tabel Messages).
 Buiten PRD gaat alles naar het testadres (core/safety.py).
 
 Veiligheid: alleen reservaties die na [messaging] start toegevoegd werden, en alleen als
@@ -71,13 +71,14 @@ def run(hotel_id: str, today: date | None = None) -> int:
         return 0
     today = today or date.today()
     started = datetime.now(timezone.utc)
-    all_steps = workflow.steps(hotel_id)
-    steps = [s for s in all_steps if s.step in READY_STEPS and "email" in s.channels]
+    cfg = workflow.config(hotel_id)
     sent, failed = [], []
     for r in guests.list_reservations(hotel_id):
         if not r.created_at or r.created_at < begin or not r.guest.email:
             continue
-        for step in steps:
+        flow = workflow.flow_for(hotel_id, r, cfg)  # kanaal en betaalstatus
+        all_steps = [s for s in workflow._steps_from(cfg, flow) if s.enabled]
+        for step in [s for s in all_steps if s.step in READY_STEPS and "email" in s.channels]:
             if not workflow.is_due(step, r, today) or not step.conditions_met(r):
                 continue
             if workflow.is_replaced(step, r, today, all_steps):
