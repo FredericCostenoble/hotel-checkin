@@ -17,3 +17,6 @@ build/
 
 # Verkenning van Lighthouse (schermafbeeldingen met gastgegevens)
 lighthouse-explore/
+
+# Verkenning van de mailbox (kan gastgegevens bevatten)
+mail-explore/
