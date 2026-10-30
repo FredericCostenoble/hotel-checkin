@@ -48,7 +48,7 @@ def grant(hotel_id: str, r: Reservation) -> str:
         user_id = salto.create_user(hotel_id, r.guest.first_name, r.guest.last_name, alias=name)
         group_id = salto.create_access_group(hotel_id, name)
         salto.add_locks(hotel_id, group_id, lock_ids)
-        salto.add_time_schedule(hotel_id, group_id, valid_from, valid_until)
+        schedule_id = salto.add_time_schedule(hotel_id, group_id, valid_from, valid_until)
         salto.add_user_to_group(hotel_id, group_id, user_id)
         pin = salto.create_pin(hotel_id, user_id, expiry=valid_until)
     except Exception:
@@ -56,8 +56,40 @@ def grant(hotel_id: str, r: Reservation) -> str:
         raise
     r.access_pin, r.salto_user_id, r.salto_group_id = pin, user_id, group_id
     r.access_valid_from, r.access_valid_until = valid_from, valid_until
+    r.salto_schedule_id, r.access_rooms = schedule_id, list(r.rooms)
     guests.save_reservation(r)
     return pin
+
+
+def follow_changes(hotel_id: str, r: Reservation) -> list[str]:
+    """De pincode volgt de gast: andere kamer = andere deuren in dezelfde access group (zelfde
+    gebruiker, zelfde pincode); andere data = schema aangepast; geannuleerd = toegang weg.
+    Geeft een korte beschrijving van wat veranderde (leeg = niets)."""
+    from hotel_checkin.core.models import ReservationStatus
+
+    if not r.salto_group_id:
+        return []
+    if r.status == ReservationStatus.CANCELLED:
+        revoke(hotel_id, r)
+        return ["geannuleerd: toegang ingetrokken"]
+    changes: list[str] = []
+    if r.rooms and sorted(r.rooms) != sorted(r.access_rooms):
+        old = set(salto.lock_ids_for(hotel_id, r.access_rooms)) if r.access_rooms else set()
+        new = set(salto.lock_ids_for(hotel_id, r.rooms))
+        salto.change_locks(hotel_id, r.salto_group_id, sorted(new - old), sorted(old - new))
+        changes.append(f"kamer {', '.join(r.access_rooms) or '?'} naar {', '.join(r.rooms)}")
+        r.access_rooms = list(r.rooms)
+    valid_from, valid_until = period(hotel_id, r)
+    if (valid_from, valid_until) != (r.access_valid_from, r.access_valid_until):
+        if r.salto_schedule_id:
+            salto.update_time_schedule(hotel_id, r.salto_group_id, r.salto_schedule_id, valid_from, valid_until)
+        else:
+            r.salto_schedule_id = salto.add_time_schedule(hotel_id, r.salto_group_id, valid_from, valid_until)
+        changes.append(f"periode {valid_from:%d/%m %H:%M} tot {valid_until:%d/%m %H:%M}")
+        r.access_valid_from, r.access_valid_until = valid_from, valid_until
+    if changes:
+        guests.save_reservation(r)
+    return changes
 
 
 def revoke(hotel_id: str, r: Reservation) -> bool:
@@ -65,8 +97,8 @@ def revoke(hotel_id: str, r: Reservation) -> bool:
     if not (r.salto_user_id or r.salto_group_id):
         return False
     _cleanup(hotel_id, r.salto_user_id, r.salto_group_id)
-    r.salto_user_id = r.salto_group_id = None
-    r.access_pin = None
+    r.salto_user_id = r.salto_group_id = r.salto_schedule_id = None
+    r.access_pin, r.access_rooms = None, []
     guests.save_reservation(r)
     return True
 

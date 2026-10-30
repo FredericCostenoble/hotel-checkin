@@ -136,3 +136,31 @@ def test_maintenance_revokes_after_departure(monkeypatch):
     assert maintenance.run("lucca")["access_revoked"] == 2
     assert sorted(revoked) == [("u", "g"), ("u2", "g2")]
     assert repo.get_reservation("lucca", "d1").access_pin is None
+
+
+def test_room_change_keeps_user_and_pin(monkeypatch):
+    calls = []
+    monkeypatch.setattr(grant_access.salto, "change_locks", lambda h, g, add, remove: calls.append(("locks", g, add, remove)))
+    monkeypatch.setattr(grant_access.salto, "update_time_schedule", lambda h, g, s, a, b: calls.append(("schedule", s, a, b)))
+    r = _res(rooms=("12",))
+    r.salto_user_id, r.salto_group_id, r.salto_schedule_id, r.access_pin = "u", "g", "s", "482916"
+    r.access_rooms = ["12"]
+    r.access_valid_from, r.access_valid_until = grant_access.period("lucca", r)
+    repo.save_reservation(r)
+    r.rooms = ["14"]
+    assert grant_access.follow_changes("lucca", r) == ["kamer 12 naar 14"]
+    assert calls == [("locks", "g", ["lock14a", "lock14b"], ["lock12"])]
+    r.departure = r.departure + timedelta(days=1)  # verblijf verlengd
+    assert grant_access.follow_changes("lucca", r)[0].startswith("periode")
+    assert calls[-1][0] == "schedule" and calls[-1][3].day == 13
+    saved = repo.get_reservation("lucca", "r1")
+    assert saved.access_pin == "482916" and saved.access_rooms == ["14"] and saved.salto_user_id == "u"
+
+
+def test_cancel_revokes_immediately(monkeypatch):
+    removed = []
+    monkeypatch.setattr(grant_access, "_cleanup", lambda h, u, g: removed.append((u, g)))
+    r = _res()
+    r.salto_user_id, r.salto_group_id, r.access_pin = "u", "g", "1"
+    r.status = ReservationStatus.CANCELLED
+    assert grant_access.follow_changes("lucca", r) == ["geannuleerd: toegang ingetrokken"] and removed == [("u", "g")]

@@ -15,7 +15,7 @@ from hotel_checkin.core import workflow
 from hotel_checkin.core.models import ReservationStatus
 from hotel_checkin.guests import repository as guests
 from hotel_checkin.pms import lighthouse
-from hotel_checkin.processes import guest_profiles
+from hotel_checkin.processes import grant_access, guest_profiles
 from hotel_checkin.processes.new_reservation import _apply_contact, _ContactStats
 
 TASK = "contactgegevens_nalezen"
@@ -41,14 +41,17 @@ def arrivals_due(hotel_id: str) -> list:
     today = date.today()
     days = max([s.days for s in workflow.steps(hotel_id) if s.step == "access_code"] or [0]) + 1
     todo = [r for r in guests.list_reservations(hotel_id)
-            if not r.access_pin and r.status != ReservationStatus.CANCELLED
-            and today <= r.arrival <= today + timedelta(days=days)]
+            if (not r.access_pin and r.status != ReservationStatus.CANCELLED
+                and today <= r.arrival <= today + timedelta(days=days))
+            # met pincode (nog niet vertrokken): volgen of kamer, data of status veranderen
+            or (r.salto_group_id and r.departure >= today)]
     return sorted(todo, key=lambda r: r.arrival)
 
 
 def _apply_detail(r, d) -> None:
     """Kamer, betaling, status en Lighthouse-status van de detailpagina; contact alleen aanvullen."""
     r.rooms = d.rooms or r.rooms
+    r.arrival, r.departure = d.arrival, d.departure
     r.paid = d.paid if d.paid is not None else r.paid
     r.status = d.status
     r.pms_status = d.pms_status or r.pms_status
@@ -63,6 +66,7 @@ def run(hotel_id: str) -> int:
     todo = due(hotel_id)
     arrivals = [r for r in arrivals_due(hotel_id) if r.reservation_id not in {x.reservation_id for x in todo}]
     details_read = 0
+    access_changes: list[str] = []
     stats = _ContactStats()
     skipped: list[str] = []
     timings: dict[str, float] = {}  # gemeten duur per onderdeel (seconden), voor de monitor
@@ -98,12 +102,22 @@ def run(hotel_id: str) -> int:
                     _apply_detail(reservation, detail)
                     guests.save_reservation(reservation)
                     details_read += 1
+                    if reservation.salto_group_id:
+                        try:
+                            changes = grant_access.follow_changes(hotel_id, reservation)
+                        except Exception as exc:  # noqa: BLE001 - volgende keer opnieuw
+                            skipped.append(f"{reservation.booking_number or 'reservatie'}: Salto {exc}")
+                            continue
+                        if changes:
+                            access_changes.append(f"{reservation.booking_number}: {'; '.join(changes)}")
     except Exception as exc:
         guests.log_robot_run(hotel_id, TASK, started, False, len(todo), 0, f"{type(exc).__name__}: {exc}", timings=timings)
         raise
     parts = [stats.note()] if stats.read else []
     if details_read:
-        parts.append(f"{details_read} aankomsten nagekeken (kamer, betaling)")
+        parts.append(f"{details_read} aankomsten en verblijven nagekeken (kamer, data, betaling)")
+    if access_changes:
+        parts.append("Salto aangepast: " + ", ".join(access_changes))
     if skipped:
         parts.append(f"{len(skipped)} niet gelezen: " + "; ".join(skipped[:5]))
     guests.log_robot_run(hotel_id, TASK, started, True, len(todo) + len(arrivals), stats.with_email, ". ".join(parts) or None,

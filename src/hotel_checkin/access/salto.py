@@ -130,13 +130,33 @@ def add_locks(hotel_id: str, group_id: str, lock_ids: list[str], client: httpx.C
         _call(hotel_id, "POST", f"/v1.2/sites/{{site}}/access_groups/{group_id}/locks", {"lock_id": lock_id}, client)
 
 
-def add_time_schedule(hotel_id: str, group_id: str, valid_from: datetime, valid_until: datetime,
-                      client: httpx.Client | None = None) -> None:
-    """Elke dag, de hele dag, tussen check-in en check-out (datum met uur)."""
+def _schedule(valid_from: datetime, valid_until: datetime) -> dict:
     body = {d: True for d in ("monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday")}
-    body |= {"start_time": "00:00", "end_time": "23:59",
-             "start_date": valid_from.strftime("%Y-%m-%dT%H:%M:%S"), "end_date": valid_until.strftime("%Y-%m-%dT%H:%M:%S")}
-    _call(hotel_id, "POST", f"/v1.1/sites/{{site}}/access_groups/{group_id}/time_schedules", body, client)
+    return body | {"start_time": "00:00", "end_time": "23:59",
+                   "start_date": valid_from.strftime("%Y-%m-%dT%H:%M:%S"),
+                   "end_date": valid_until.strftime("%Y-%m-%dT%H:%M:%S")}
+
+
+def add_time_schedule(hotel_id: str, group_id: str, valid_from: datetime, valid_until: datetime,
+                      client: httpx.Client | None = None) -> str | None:
+    """Elke dag, de hele dag, tussen check-in en check-out (datum met uur). Geeft het id van het schema."""
+    data = _call(hotel_id, "POST", f"/v1.1/sites/{{site}}/access_groups/{group_id}/time_schedules",
+                 _schedule(valid_from, valid_until), client)
+    return data.get("id") if isinstance(data, dict) else None
+
+
+def update_time_schedule(hotel_id: str, group_id: str, schedule_id: str, valid_from: datetime,
+                         valid_until: datetime, client: httpx.Client | None = None) -> None:
+    """Andere periode (verblijf verlengd of verschoven)."""
+    _call(hotel_id, "PATCH", f"/v1.1/sites/{{site}}/access_groups/{group_id}/time_schedules/{schedule_id}",
+          _schedule(valid_from, valid_until), client)
+
+
+def change_locks(hotel_id: str, group_id: str, add: list[str], remove: list[str],
+                 client: httpx.Client | None = None) -> None:
+    """Deuren van de access group wisselen (andere kamer): zelfde gebruiker, zelfde pincode."""
+    _call(hotel_id, "PATCH", f"/v1.2/sites/{{site}}/access_groups/{group_id}/locks",
+          {"add_ids": add, "remove_ids": remove}, client)
 
 
 def add_user_to_group(hotel_id: str, group_id: str, user_id: str, client: httpx.Client | None = None) -> None:

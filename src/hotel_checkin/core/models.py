@@ -68,6 +68,8 @@ class Reservation:
     access_valid_until: datetime | None = None
     salto_user_id: str | None = None  # om op te ruimen na vertrek of bij annulering
     salto_group_id: str | None = None
+    salto_schedule_id: str | None = None
+    access_rooms: list[str] = field(default_factory=list)  # kamers waarvoor de pincode nu geldt
     stay_counted_at: datetime | None = None  # wanneer het verblijf meegeteld werd in het gastprofiel
     cancel_counted_at: datetime | None = None  # wanneer de annulering meegeteld werd in het gastprofiel
     created_at: datetime | None = None  # wanneer de robot de reservatie voor het eerst bewaarde (alleen lezen)
