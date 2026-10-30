@@ -10,7 +10,7 @@ const T = {
     yes: "ja", no: "nee", none: "geen", count: n => `${n} reservaties`, no_res: "Geen reservaties",
     hours_a: "Nieuwe reservaties van de laatste", hours_b: "uur", run: "Robot nu draaien",
     r_start: "Start", r_duration: "Duur", r_task: "Taak", r_result: "Resultaat", r_found: "Gevonden", r_new: "Nieuw", r_error: "Opmerking",
-    all_tasks: "Alle taken", task_nieuwe_reservaties: "Nieuwe reservaties", task_contactgegevens_nalezen: "Contactgegevens nalezen",
+    all_tasks: "Alle", task_nieuwe_reservaties: "Nieuwe reservaties", task_contactgegevens_nalezen: "Reservaties bijwerken",
     ok: "ok", fail: "fout", busy: "De robot is bezig...", scheduled: "Draait ook automatisch op schema.",
     not_installed: "De robot is in deze omgeving nog niet geïnstalleerd.", no_runs: "Nog geen afgeronde run",
     load_error: "Fout bij laden",
@@ -24,7 +24,7 @@ const T = {
     yes: "yes", no: "no", none: "none", count: n => `${n} reservations`, no_res: "No reservations",
     hours_a: "New reservations of the last", hours_b: "hours", run: "Run robot now",
     r_start: "Start", r_duration: "Duration", r_task: "Task", r_result: "Result", r_found: "Found", r_new: "New", r_error: "Note",
-    all_tasks: "All tasks", task_nieuwe_reservaties: "New reservations", task_contactgegevens_nalezen: "Recheck contact details",
+    all_tasks: "All", task_nieuwe_reservaties: "New reservations", task_contactgegevens_nalezen: "Update reservations",
     ok: "ok", fail: "failed", busy: "The robot is running...", scheduled: "Also runs automatically on a schedule.",
     not_installed: "The robot is not installed in this environment yet.", no_runs: "No finished run yet",
     load_error: "Loading failed",
@@ -39,6 +39,7 @@ const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "
 const day = iso => iso ? new Date(iso + (iso.length === 10 ? "T00:00" : "")).toLocaleDateString(locale(), { day: "2-digit", month: "2-digit", year: "2-digit" }) : "";
 const stamp = iso => iso ? new Date(iso).toLocaleString(locale(), { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) : "";
 let rows = [], runsData = null, timer = null, waitTries = 0;
+const TASKS = ["nieuwe_reservaties", "contactgegevens_nalezen"];
 const taskName = k => T[lang]["task_" + k] || k;
 let taskFilter = "";
 try { taskFilter = localStorage.getItem("monitor-task") || ""; } catch (e) { /* geen opslag */ }
@@ -140,9 +141,9 @@ function renderRuns(d) {
   // In de cloud bepaalt de robot zelf vanaf wanneer (sinds de vorige geslaagde run)
   $("#hours-wrap").hidden = !!d.cloud;
   $("#robot-state").textContent = busy ? t("busy") : (d.can_run ? (d.cloud ? t("scheduled") : "") : t("not_installed"));
-  // Filter op taak: keuzes uit de taken die in het logboek voorkomen
+  // Filter op taak: vaste keuzes, plus eventuele andere taken uit het logboek
   const sel = $("#task"), chosen = sel.value || taskFilter;
-  const tasks = [...new Set(d.runs.map(x => x.task))];
+  const tasks = [...new Set([...TASKS, ...d.runs.map(x => x.task)])];
   sel.innerHTML = `<option value="">${t("all_tasks")}</option>` +
     tasks.map(k => `<option value="${esc(k)}">${esc(taskName(k))}</option>`).join("");
   sel.value = tasks.includes(chosen) ? chosen : "";
