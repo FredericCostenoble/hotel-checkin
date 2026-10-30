@@ -9,6 +9,7 @@ Regels om te beslissen of twee boekingen van dezelfde gast zijn (voorspelbaar, g
 
 Gegevens van het check-in-formulier (door de gast zelf ingevuld) gaan voor op die uit Lighthouse.
 Een verblijf telt mee in het profiel zodra het vertrek voorbij is en het niet geannuleerd werd.
+Geannuleerde reservaties tellen meteen mee als annulering (de gast blijft bereikbaar).
 Een verblijf is een periode: reservaties van dezelfde gast die in de tijd overlappen (bv. twee
 kamers voor dezelfde nachten) vormen samen één verblijf; de nachten tellen één keer.
 """
@@ -101,6 +102,8 @@ def link(r: Reservation, all_profiles: list[GuestProfile] | None = None) -> Gues
     if r.guest_id != g.guest_id:
         r.guest_id = g.guest_id
         guests.save_reservation(r)
+    if count_cancellation(r):
+        g = profiles.get_profile(r.hotel_id, g.guest_id) or g
     if all_profiles is not None:
         all_profiles[:] = [p for p in all_profiles if p.guest_id != g.guest_id and (other is None or p.guest_id != other.guest_id)] + [g]
     return g
@@ -164,19 +167,35 @@ def count_stay(r: Reservation, today: date | None = None) -> bool:
     return True
 
 
+def count_cancellation(r: Reservation, today: date | None = None) -> bool:
+    """Tel een geannuleerde reservatie één keer mee in het profiel."""
+    if r.cancel_counted_at or not r.guest_id or r.status != ReservationStatus.CANCELLED:
+        return False
+    g = profiles.get_profile(r.hotel_id, r.guest_id)
+    if g is None:
+        return False
+    g.cancellations += 1
+    g.last_cancelled = today or date.today()
+    profiles.save_profile(g)
+    r.cancel_counted_at = datetime.now(timezone.utc)
+    guests.save_reservation(r)
+    return True
+
+
 def reset_counts(hotel_id: str) -> int:
     """Alle tellingen opnieuw (na een wijziging in de manier van tellen). Geeft het aantal
     reservaties terug dat opnieuw meegeteld kan worden. Reservaties die al opgeruimd zijn, tellen
     dan niet meer mee."""
     for g in profiles.list_profiles(hotel_id):
-        g.stays = g.nights = g.persons = g.persons_stays = 0
+        g.stays = g.nights = g.persons = g.persons_stays = g.cancellations = 0
+        g.last_cancelled = None
         g.stay_periods, g.rooms, g.room_types, g.channels = [], {}, {}, {}
         g.first_stay = g.last_stay = None
         profiles.save_profile(g)
     n = 0
     for r in guests.list_reservations(hotel_id):
-        if r.stay_counted_at:
-            r.stay_counted_at = None
+        if r.stay_counted_at or r.cancel_counted_at:
+            r.stay_counted_at = r.cancel_counted_at = None
             guests.save_reservation(r)
             n += 1
     return n
@@ -192,7 +211,8 @@ def merge(hotel_id: str, keep_id: str, other_id: str, keep: GuestProfile | None 
     other = other or profiles.get_profile(hotel_id, other_id)
     if keep is None or other is None or keep.guest_id == other.guest_id:
         return keep or other
-    for k in ("persons", "persons_stays"):
+    keep.last_cancelled = max(filter(None, (keep.last_cancelled, other.last_cancelled)), default=None)
+    for k in ("persons", "persons_stays", "cancellations"):
         setattr(keep, k, getattr(keep, k) + getattr(other, k))
     keep.stay_periods = keep.stay_periods + other.stay_periods
     for k in ("rooms", "room_types", "channels"):

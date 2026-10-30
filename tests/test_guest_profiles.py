@@ -81,7 +81,7 @@ def test_maintenance_keeps_guest_deletes_old_reservation():
     assert done["counted"] == 1 and done["reservations_deleted"] == 2
     assert repo.get_reservation("lucca", "old") is None and repo.get_reservation("lucca", "future")
     names = sorted((g.first_name, g.stays) for g in profiles.list_profiles("lucca"))
-    assert names == [("Jan", 0), ("Jan", 1)]  # Ann (alleen geannuleerd) is weg; gast van "old" blijft
+    assert names == [("Ann", 0), ("Jan", 0), ("Jan", 1)]  # Ann (geannuleerd) blijft bereikbaar; gast van "old" blijft
     assert "onderhoud" == repo.robot_runs("lucca")[0]["task"]
 
 
@@ -126,3 +126,16 @@ def test_maintenance_recounts_old_style_profiles():
     profiles.save_profile(g)
     maintenance.run("lucca")
     assert profiles.list_profiles("lucca")[0].stays == 1
+
+
+def test_cancelled_guest_kept_and_counted():
+    r = _res("c1", "Ann", "Test", email="ann@example.com", days_ago=60)
+    r.status = ReservationStatus.CANCELLED
+    repo.save_reservation(r)
+    g = gp.link(r)
+    assert g.cancellations == 1 and not gp.count_cancellation(repo.get_reservation("lucca", "c1"))
+    maintenance.run("lucca")  # reservatie weg, gast blijft (annulering)
+    assert repo.get_reservation("lucca", "c1") is None
+    kept = profiles.list_profiles("lucca")
+    assert [(x.first_name, x.cancellations) for x in kept] == [("Ann", 1)]
+    assert maintenance.run("lucca", today=date.today() + timedelta(days=800))["guests_deleted"] == 1

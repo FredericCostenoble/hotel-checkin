@@ -17,7 +17,7 @@ T_GUESTS = "Guests"
 T_PAIRS = "GuestPairs"
 
 _JSON = ("rooms", "room_types", "channels", "reservation_ids", "stay_periods")
-_DATES = ("first_stay", "last_stay")
+_DATES = ("first_stay", "last_stay", "last_cancelled")
 _TIMES = ("created_at", "updated_at")
 
 

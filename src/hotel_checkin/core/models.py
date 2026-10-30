@@ -62,6 +62,7 @@ class Reservation:
     contact_checked_at: datetime | None = None  # wanneer de contactgegevens in Lighthouse gelezen werden
     guest_id: str | None = None  # gastprofiel (tabel Guests), zie processes/guest_profiles.py
     stay_counted_at: datetime | None = None  # wanneer het verblijf meegeteld werd in het gastprofiel
+    cancel_counted_at: datetime | None = None  # wanneer de annulering meegeteld werd in het gastprofiel
     created_at: datetime | None = None  # wanneer de robot de reservatie voor het eerst bewaarde (alleen lezen)
     updated_at: datetime | None = None  # laatste keer dat er iets aan de gegevens veranderde (alleen lezen)
 
@@ -84,6 +85,8 @@ class GuestProfile:
     stays: int = 0  # aantal verblijven = aantal aparte periodes (overlappende reservaties = één verblijf)
     nights: int = 0  # nachten over die periodes (twee kamers dezelfde nacht = één nacht)
     stay_periods: list[list[str]] = field(default_factory=list)  # [[aankomst, vertrek], ...] ISO-datums
+    cancellations: int = 0  # aantal geannuleerde reservaties
+    last_cancelled: date | None = None  # dag waarop de laatste annulering gezien werd
     persons: int = 0  # som over de verblijven met gekend aantal personen
     persons_stays: int = 0  # aantal verblijven met gekend aantal personen
     rooms: dict[str, int] = field(default_factory=dict)  # kamer -> aantal verblijven

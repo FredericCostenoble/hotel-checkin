@@ -124,6 +124,7 @@ def _to_entity(r: Reservation) -> dict:
         "contact_checked_at": r.contact_checked_at.isoformat() if r.contact_checked_at else "",
         "guest_id": r.guest_id or "",
         "stay_counted_at": r.stay_counted_at.isoformat() if r.stay_counted_at else "",
+        "cancel_counted_at": r.cancel_counted_at.isoformat() if r.cancel_counted_at else "",
         "updated_at": _now().isoformat(),
     }
 
@@ -160,13 +161,14 @@ def _from_entity(e: dict) -> Reservation:
         contact_checked_at=datetime.fromisoformat(e["contact_checked_at"]) if e.get("contact_checked_at") else None,
         guest_id=e.get("guest_id") or None,
         stay_counted_at=datetime.fromisoformat(e["stay_counted_at"]) if e.get("stay_counted_at") else None,
+        cancel_counted_at=datetime.fromisoformat(e["cancel_counted_at"]) if e.get("cancel_counted_at") else None,
         created_at=datetime.fromisoformat(e["created_at"]) if e.get("created_at") else None,
         updated_at=datetime.fromisoformat(e["updated_at"]) if e.get("updated_at") else None,
     )
 
 
 # Velden die niet meetellen voor "bijgewerkt": tijdstempels en technische velden van de tabel
-_NOT_DATA = {"created_at", "updated_at", "contact_checked_at", "stay_counted_at", "Timestamp", "etag", "odata.etag", "odata.metadata"}
+_NOT_DATA = {"created_at", "updated_at", "contact_checked_at", "stay_counted_at", "cancel_counted_at", "Timestamp", "etag", "odata.etag", "odata.metadata"}
 
 
 def save_reservation(reservation: Reservation) -> Reservation:

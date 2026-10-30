@@ -5,8 +5,8 @@ const T = {
   nl: {
     title: "Check-in monitor", hotel: "Hotel", tab_res: "Reservaties", tab_robot: "Robot", tab_guests: "Gasten",
     returning: n => `terugkerend (${n}×)`, show_guest: "Gastgegevens tonen", show_res: "Reservaties van deze gast tonen",
-    g_update: "Synchroniseren", g_busy: "Bezig...", g_done: d => `${d.linked} gekoppeld, ${d.counted} verblijven meegeteld, ${d.reservations_deleted} oude reservaties en ${d.guests_deleted} gasten verwijderd`,
-    g_search: "Zoek op naam, e-mail, telefoon", g_count: n => `${n} gasten`, g_country: "Land", g_stays: "Verblijven",
+    g_update: "Synchroniseren", g_busy: "Bezig...", g_done: d => `${d.linked} gekoppeld, ${d.counted} verblijven en ${d.cancellations} annuleringen meegeteld, ${d.reservations_deleted} oude reservaties en ${d.guests_deleted} gasten verwijderd`,
+    g_search: "Zoek op naam, e-mail, telefoon", g_count: n => `${n} gasten`, g_country: "Land", g_stays: "Verblijven", g_cancelled: "Geannuleerd",
     g_avg_nights: "Gem. nachten", g_avg_persons: "Gem. pers.", g_first: "Eerste verblijf", g_last: "Laatste verblijf",
     g_channel: "Kanaal", g_rooms: "Kamers", g_relay: "doorstuuradres, niet voor marketing", g_form: "formulier",
     g_optout: "geen marketing", no_guests: "Nog geen gasten (klik op Synchroniseren)",
@@ -29,8 +29,8 @@ const T = {
   en: {
     title: "Check-in monitor", hotel: "Hotel", tab_res: "Reservations", tab_robot: "Robot", tab_guests: "Guests",
     returning: n => `returning (${n}×)`, show_guest: "Show guest data", show_res: "Show this guest's reservations",
-    g_update: "Synchronize", g_busy: "Working...", g_done: d => `${d.linked} linked, ${d.counted} stays counted, ${d.reservations_deleted} old reservations and ${d.guests_deleted} guests deleted`,
-    g_search: "Search name, e-mail, phone", g_count: n => `${n} guests`, g_country: "Country", g_stays: "Stays",
+    g_update: "Synchronize", g_busy: "Working...", g_done: d => `${d.linked} linked, ${d.counted} stays and ${d.cancellations} cancellations counted, ${d.reservations_deleted} old reservations and ${d.guests_deleted} guests deleted`,
+    g_search: "Search name, e-mail, phone", g_count: n => `${n} guests`, g_country: "Country", g_stays: "Stays", g_cancelled: "Cancelled",
     g_avg_nights: "Avg nights", g_avg_persons: "Avg pers.", g_first: "First stay", g_last: "Last stay",
     g_channel: "Channel", g_rooms: "Rooms", g_relay: "relay address, not for marketing", g_form: "form",
     g_optout: "no marketing", no_guests: "No guests yet (click Synchronize)",
@@ -200,12 +200,12 @@ function renderGuests() {
     <tr>
       <td>${g.reservations.length ? `<a href="#" class="jump" data-res="${esc(g.id)}" title="${esc(t("show_res"))}">${esc(g.name)}</a>` : esc(g.name)}</td><td class="wrap">${contactCell(g)}</td>
       <td>${esc(g.country)}${g.language ? ` <span class="muted">${esc(g.language)}</span>` : ""}</td>
-      <td>${g.stays}</td><td>${g.avg_nights ?? ""}</td><td>${g.avg_persons ?? ""}</td>
+      <td>${g.stays}</td><td>${g.cancellations ? `<span title="${esc(day(g.last_cancelled))}">${g.cancellations}</span>` : ""}</td><td>${g.avg_nights ?? ""}</td><td>${g.avg_persons ?? ""}</td>
       <td>${day(g.first_stay)}</td><td>${day(g.last_stay)}</td>
       <td title="${esc(g.channels.map(c => `${c.name} ${c.count}×`).join(", "))}">${esc(g.preferred_channel)}</td>
       <td>${esc(g.rooms.join(", "))}${g.room_type ? ` <span class="muted">${esc(g.room_type)}</span>` : ""}</td>
       <td>${g.reservations.length ? `<a href="#" class="jump" data-res="${esc(g.id)}" title="${esc(t("show_res"))}">${ICON_RES} ${g.reservations.length}</a>` : "0"}</td>
-    </tr>`).join("") || `<tr><td colspan="11" class="muted">${t("no_guests")}</td></tr>`;
+    </tr>`).join("") || `<tr><td colspan="12" class="muted">${t("no_guests")}</td></tr>`;
   document.querySelectorAll("#guests a[data-res]").forEach(a => a.onclick = e => { e.preventDefault(); openReservations(a.dataset.res); });
   renderMatches();
 }
