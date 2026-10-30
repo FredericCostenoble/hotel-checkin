@@ -36,7 +36,8 @@ th[data-sort]:hover { color: #1F2433; }
 th[data-sort].sorted[data-dir="asc"]::after { content: " \2191"; }
 th[data-sort].sorted[data-dir="desc"]::after { content: " \2193"; }
 .task-meldingen { background: #E8F5EC; color: #1E6B3A; }
-.subtabs { display: flex; gap: 4px; }
+.subtabs { display: flex; gap: 6px; align-items: center; }
+#task:disabled { opacity: 0.45; }
 .tools .right { margin-left: auto; display: flex; gap: 12px; align-items: center; }
 .subtabs button { border: 1px solid var(--line); background: transparent; padding: 4px 12px; border-radius: 14px; cursor: pointer; font-size: 0.9em; }
 .subtabs button.active { background: #E6EAF2; font-weight: bold; }

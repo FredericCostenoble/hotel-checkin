@@ -176,7 +176,7 @@ function showSub(name) {
   subTab = name;
   document.querySelectorAll(".subtabs button").forEach(b => b.classList.toggle("active", b.dataset.sub === name));
   $("#sub-log").hidden = name !== "log";
-  $("#task").hidden = name !== "log";  // filter op taak geldt alleen voor het logboek
+  $("#task").disabled = name !== "log";  // filter op taak geldt alleen voor het logboek (blijft staan, niets verspringt)
   $("#exec-wrap").hidden = name !== "azure";
 }
 
