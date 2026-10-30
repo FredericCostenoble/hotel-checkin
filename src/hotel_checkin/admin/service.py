@@ -27,7 +27,10 @@ def reservations(hotel_id: str) -> list[dict]:
     from hotel_checkin.core import workflow
     from hotel_checkin.processes import send_messages
 
-    periods = {g.guest_id: g.stay_periods for g in profiles.list_profiles(hotel_id)}
+    all_profiles = profiles.list_profiles(hotel_id)
+    periods = {g.guest_id: g.stay_periods for g in all_profiles}
+    muted = {g.guest_id: set(g.muted_channels) for g in all_profiles}
+    phone = send_messages.phone_enabled(hotel_id)
     cfg, ready = workflow.config(hotel_id), send_messages.ready_steps(hotel_id)
     begin, on, today = send_messages.start(hotel_id), send_messages.enabled(hotel_id), date.today()
 
@@ -59,7 +62,8 @@ def reservations(hotel_id: str) -> list[dict]:
             "guest_stays": earlier_stays(r) if r.guest_id else 0,
             "added_at": r.created_at.isoformat() if r.created_at else "",
             "updated_at": r.updated_at.isoformat() if r.updated_at else "",
-            "plan": send_messages.plan(hotel_id, r, msgs, cfg, ready, today, begin, on),
+            "plan": send_messages.plan(hotel_id, r, msgs, cfg, ready, today, begin, on, phone,
+                                       muted.get(r.guest_id or "", set())),
             "messages": [
                 {"type": m["message_type"], "channel": m["channel"], "ok": m["ok"], "at": m["sent_at"],
                  "to": m.get("recipient", ""), "status": m.get("status") or ("sent" if m["ok"] else "failed"),

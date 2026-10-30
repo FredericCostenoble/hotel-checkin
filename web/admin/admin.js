@@ -32,7 +32,8 @@ const T = {
     returning: n => `terugkerend (${n}×)`, mg_message: "Bericht", mg_time: "Tijdstip", short_confirmation: "Bevestiging", short_reminder: "Herinnering", short_access_code: "Code-mail", mg_channel: "Kanaal", mg_to: "Naar",
     mg_title: (num, guest) => `Berichten voor ${guest} (${num})`, mg_click: "Klik voor alle details",
     mg_plan: "Tijdlijn", mg_attempts: "Alle pogingen", mg_next: "volgt",
-    pl_sent: "verstuurd", pl_failed: "mislukt", pl_planned: "gepland", pl_due: "volgende run", pl_skipped: "valt weg", pl_off: "niet actief",
+    pl_sent: "verstuurd", pl_failed: "mislukt", pl_planned: "gepland", pl_due: "volgende run", pl_skipped: "valt weg", pl_off: "niet actief", pl_not_tried: "niet geprobeerd",
+    chr_muted: "uitgezet voor deze gast", chr_phone_off: "nog niet actief (Twilio)", chr_fallback: "alleen als WhatsApp niet lukt",
     rs_disabled: "stap staat uit", rs_messaging_off: "berichten staan uit in deze omgeving", rs_before_start: "reservatie van voor de start",
     rs_booked_late: "boeking kwam te laat", rs_later_due: "een latere mail is al aan de beurt", rs_not_ready: "nog niet gebouwd",
     rs_no_contact: "geen e-mail of telefoon", rs_window_passed: "moment voorbij", rs_condition: "voorwaarde niet voldaan",
@@ -89,7 +90,8 @@ const T = {
     returning: n => `returning (${n}×)`, mg_message: "Message", mg_time: "Time", short_confirmation: "Confirmation", short_reminder: "Reminder", short_access_code: "Code mail", mg_channel: "Channel", mg_to: "To",
     mg_title: (num, guest) => `Messages for ${guest} (${num})`, mg_click: "Click for all details",
     mg_plan: "Timeline", mg_attempts: "All attempts", mg_next: "next",
-    pl_sent: "sent", pl_failed: "failed", pl_planned: "planned", pl_due: "next run", pl_skipped: "skipped", pl_off: "not active",
+    pl_sent: "sent", pl_failed: "failed", pl_planned: "planned", pl_due: "next run", pl_skipped: "skipped", pl_off: "not active", pl_not_tried: "not tried",
+    chr_muted: "switched off for this guest", chr_phone_off: "not active yet (Twilio)", chr_fallback: "only if WhatsApp fails",
     rs_disabled: "step is off", rs_messaging_off: "messages are off in this environment", rs_before_start: "reservation from before the start",
     rs_booked_late: "booked too late", rs_later_due: "a later mail is already due", rs_not_ready: "not built yet",
     rs_no_contact: "no e-mail or phone", rs_window_passed: "moment passed", rs_condition: "condition not met",
@@ -236,12 +238,30 @@ function showMessages(id) {
   if (!r) return;
   $("#msgs-title").textContent = t("mg_title", r.booking_number, r.guest);
   $("#msgs-plan").innerHTML = (r.plan || []).map(p => {
-    const sent = r.messages.filter(m => m.type === p.step && m.ok);
-    const channels = [...new Set(sent.map(m => t(CH[m.channel] || m.channel)))].join(", ");
+    const mine = r.messages.filter(m => m.type === p.step);
+    const sent = mine.filter(m => m.ok);
     const when = p.state === "sent" && sent.length ? stamp(sent[0].at) : day(p.due);
+    // per kanaal: laatste poging uit het log, anders wat er gaat gebeuren
+    const used = new Set([...(p.channels || []).map(c => c.channel), ...mine.map(m => m.channel)]);
+    const chips = [...used].map(ch => {
+      const tries = mine.filter(m => m.channel === ch);
+      const last = tries[tries.length - 1];
+      const plan = (p.channels || []).find(c => c.channel === ch) || {};
+      let cls = "", txt;
+      if (last) {
+        cls = last.ok ? "ok" : "fail";
+        txt = (t("st_" + last.status) || last.status) + (tries.length > 1 ? ` (${tries.length}×)` : "");
+      } else if (["sent", "failed", "planned", "due"].includes(p.state)) {
+        txt = plan.reason ? t("chr_" + plan.reason) : t("pl_" + (p.state === "sent" || p.state === "failed" ? "not_tried" : p.state));
+        cls = plan.reason ? "off" : "todo";
+      } else return "";
+      const title = last ? [stamp(last.at), last.to, last.error, last.note].filter(Boolean).join(" · ") : "";
+      return `<span class="tag ch ${cls}" title="${esc(title)}">${esc(t(CH[ch] || ch))}: ${esc(txt)}</span>`;
+    }).join("");
     return `<li class="pl-${p.state}"><span class="dot"></span><strong>${esc(stepShort(p.step))}</strong>
-      <span class="muted">${esc(when)}</span> <span class="tag pl">${esc(t("pl_" + p.state))}${channels ? ": " + esc(channels) : ""}</span>
-      ${p.reason ? `<span class="muted">${esc(reasonText(p.reason))}</span>` : ""}</li>`;
+      <span class="muted">${esc(when)}</span> <span class="tag pl">${esc(t("pl_" + p.state))}</span>
+      ${p.reason ? `<span class="muted">${esc(reasonText(p.reason))}</span>` : ""}
+      ${chips ? `<div class="chs">${chips}</div>` : ""}</li>`;
   }).join("");
   $("#msgs-attempts").hidden = !r.messages.length;
   $("#msgs-rows").innerHTML = [...r.messages].reverse().map(m => `<tr>

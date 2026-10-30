@@ -205,9 +205,19 @@ def muted_channels(hotel_id: str, r: Reservation) -> set[str]:
 
 
 def plan(hotel_id: str, r: Reservation, rows: list[dict], cfg: dict, ready: tuple[str, ...],
-         today: date, begin: datetime | None, on: bool) -> list[dict]:
+         today: date, begin: datetime | None, on: bool, phone: bool = False,
+         muted: set[str] | frozenset = frozenset()) -> list[dict]:
     """De tijdlijn van één reservatie voor de monitor: per stap van haar flow wat er gebeurde of
-    nog gaat gebeuren. state: sent, failed, planned, due, skipped, off. reason bij skipped/off."""
+    nog gaat gebeuren. state: sent, failed, planned, due, skipped, off. reason bij skipped/off.
+    channels: per kanaal wat er gebeurt (mail altijd; WhatsApp met gsm-nummer, sms als terugval).
+    Het scherm toont per kanaal de pogingen uit het berichtenlog."""
+    channels = []
+    if r.guest.email:
+        channels.append({"channel": "email", "reason": "muted" if "email" in muted else ""})
+    if r.guest.phone:
+        off = "" if phone else "phone_off"
+        channels.append({"channel": "whatsapp", "reason": "muted" if "whatsapp" in muted else off})
+        channels.append({"channel": "sms", "reason": "muted" if "sms" in muted else off or "fallback"})
     flow = workflow.flow_for(hotel_id, r, cfg)
     steps = workflow._steps_from(cfg, flow)
     active = [s for s in steps if s.enabled]
@@ -216,7 +226,7 @@ def plan(hotel_id: str, r: Reservation, rows: list[dict], cfg: dict, ready: tupl
         mine = [m for m in rows if m["message_type"] == step.step]
         due = step.due_date(r) or (r.created_at.date() if r.created_at else None)
         item = {"step": step.step, "when": step.when, "days": step.days,
-                "due": due.isoformat() if due else "", "state": "", "reason": ""}
+                "due": due.isoformat() if due else "", "state": "", "reason": "", "channels": channels}
         failed_now = [c for c in step.only_if if not workflow.CONDITIONS[c](r)]
         if any(m["ok"] for m in mine):
             item["state"] = "sent"
