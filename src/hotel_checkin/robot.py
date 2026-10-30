@@ -6,6 +6,10 @@ opvolgpagina. Leest Lighthouse alleen; schrijft niets in Lighthouse.
     python -m hotel_checkin.robot                  # alle hotels, sinds de nieuwste opgeslagen boeking
     python -m hotel_checkin.robot --hotel lucca --hours 48
 
+Elke run zoekt nieuwe reservaties (en leest van nieuwe meteen de contactgegevens). Om de zoveel
+uur ([robot] contact_refresh_hours in het hotelbestand, standaard 2) leest hij ook de
+contactgegevens opnieuw van reservaties die binnenkort aankomen en nog geen e-mailadres hebben.
+
 Zonder --hours leest de robot alles sinds de nieuwste boeking die al opgeslagen is (min 1 uur
 marge), of de laatste 30 dagen als er nog niets opgeslagen is. Had de vorige run een fout of
 overgeslagen rijen, dan leest hij dezelfde periode opnieuw.
@@ -21,7 +25,8 @@ from datetime import datetime, timedelta, timezone
 
 from hotel_checkin.core.hotels import list_hotels
 from hotel_checkin.guests import repository as guests
-from hotel_checkin.processes import new_reservation
+from hotel_checkin.core.config import hotel_setting
+from hotel_checkin.processes import new_reservation, refresh_contacts
 
 
 def _since(hotel_id: str, hours: int | None) -> datetime:
@@ -44,6 +49,17 @@ def _since(hotel_id: str, hours: int | None) -> datetime:
     return now - timedelta(days=30)
 
 
+def _refresh_due(hotel_id: str) -> bool:
+    """Is het tijd om de contactgegevens opnieuw na te lezen?"""
+    hours = float(hotel_setting(hotel_id, "ROBOT_CONTACT_REFRESH_HOURS", default="2", shared=False))
+    runs = [r for r in guests.robot_runs(hotel_id) if r.get("task") == refresh_contacts.TASK and r.get("ok")]
+    if not runs:
+        return True
+    last = datetime.fromisoformat(runs[0]["started_at"])
+    # 5 minuten marge, zodat een run op schema net na het uur niet een beurt overslaat
+    return datetime.now(timezone.utc) - last >= timedelta(hours=hours) - timedelta(minutes=5)
+
+
 def main() -> int:
     p = argparse.ArgumentParser()
     p.add_argument("--hotel", default=os.environ.get("ROBOT_HOTEL") or None)
@@ -57,6 +73,9 @@ def main() -> int:
         try:
             new = new_reservation.run(hotel_id, since)
             logging.info("%s: %s nieuwe reservaties", hotel_id, new)
+            if _refresh_due(hotel_id):
+                found = refresh_contacts.run(hotel_id)
+                logging.info("%s: %s e-mailadressen gevonden bij nalezen", hotel_id, found)
             # Log van de robot opruimen (standaard 30 dagen, instelling ROBOT_LOG_DAYS)
             guests.prune_robot_runs(hotel_id, int(os.environ.get("ROBOT_LOG_DAYS") or 30))
         except Exception:  # noqa: BLE001 - staat ook in het robotlog (opvolgpagina)

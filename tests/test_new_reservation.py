@@ -107,8 +107,9 @@ def test_backfill_missing_contact(monkeypatch):
     later.reservation_id = "u3"
     later.arrival, later.departure = date(2099, 1, 1), date(2099, 1, 2)
     repo.save_reservation(later)  # verre aankomst: nog niet nodig
-    monkeypatch.setattr(new_reservation.lighthouse, "get_new_reservations", lambda *a, **k: [])
-    new_reservation.run("lucca", datetime(2000, 1, 1))
+    from hotel_checkin.processes import refresh_contacts
+
+    refresh_contacts.run("lucca")
     assert repo.get_reservation("lucca", "u2").guest.email == "jan@example.com"
     assert repo.get_reservation("lucca", "u3").guest.email is None
     assert "1 contactgegevens gevonden" in repo.robot_runs("lucca")[0]["error"]
@@ -122,11 +123,37 @@ def test_contact_without_email_read_again(monkeypatch):
     stored.arrival, stored.departure = soon, soon + timedelta(days=1)
     repo.save_reservation(stored)
     calls = []
-    monkeypatch.setattr(new_reservation.lighthouse, "get_new_reservations", lambda *a, **k: [])
-    monkeypatch.setattr(new_reservation.lighthouse, "get_contact",
+    from hotel_checkin.processes import refresh_contacts
+
+    monkeypatch.setattr(refresh_contacts.lighthouse, "get_contact",
                         lambda h, rid, lh=None: calls.append(rid) or Guest("", "", phone="+32470000000"))
-    new_reservation.run("lucca", datetime(2000, 1, 1))
-    new_reservation.run("lucca", datetime(2000, 1, 1))
+    refresh_contacts.run("lucca")
+    refresh_contacts.run("lucca")
     assert calls == ["u1", "u1"]  # e-mail kan later nog in Lighthouse komen
     note = repo.robot_runs("lucca")[0]["error"]
     assert "1 nog zonder e-mail in Lighthouse" in note and "gevonden" not in note
+
+
+def test_existing_without_email_not_read_in_quick_run(monkeypatch):
+    stored = _res()
+    repo.save_reservation(stored)
+    calls = []
+    monkeypatch.setattr(new_reservation.lighthouse, "get_new_reservations", lambda *a, **k: [_res()])
+    monkeypatch.setattr(new_reservation.lighthouse, "get_contact", lambda h, rid, lh=None: calls.append(rid))
+    new_reservation.run("lucca", datetime(2000, 1, 1))
+    assert calls == []
+
+
+def test_robot_refresh_every_two_hours(monkeypatch):
+    from datetime import timedelta, timezone
+
+    from hotel_checkin import robot
+    from hotel_checkin.processes import refresh_contacts
+
+    assert robot._refresh_due("lucca")
+    now = datetime.now(timezone.utc)
+    repo.log_robot_run("lucca", refresh_contacts.TASK, now - timedelta(minutes=30), True)
+    assert not robot._refresh_due("lucca")
+    repo.log_robot_run("lucca", refresh_contacts.TASK, now - timedelta(hours=1, minutes=58), True)
+    # nieuwste run telt (30 min geleden)
+    assert not robot._refresh_due("lucca")

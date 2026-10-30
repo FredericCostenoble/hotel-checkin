@@ -44,6 +44,11 @@ nummer = "+32 471 18 15 74"   # TODO: nummer voor 's avonds en 's nachts
 sms_from = "+4915888620339"        # TODO: trialnummer, vervangen door eigen nummer na opwaardering
 whatsapp_from = "+4915888620339"   # TODO: idem
 
+[robot]
+# De robot zoekt bij elke run nieuwe reservaties. Om de zoveel uur leest hij ook de contactgegevens
+# opnieuw van reservaties die binnenkort aankomen en nog geen e-mailadres hebben.
+contact_refresh_hours = 2
+
 [lighthouse]
 # Reservation Manager. Aanmelden met robotgebruiker uit Key Vault: lucca-lighthouse-username / -password
 base_url = "https://reservationmanager.mylighthouse.com"
