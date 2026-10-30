@@ -6,8 +6,8 @@ opvolgpagina. Leest Lighthouse alleen; schrijft niets in Lighthouse.
     python -m hotel_checkin.robot                  # alle hotels, sinds de nieuwste opgeslagen boeking
     python -m hotel_checkin.robot --hotel lucca --hours 48
 
-Schema van de job per omgeving: GitHub-variabele ROBOT_SCHEDULE (cron, UTC), standaard elk
-kwartier. Per hotel kan het trager: [robot] check_minutes in het hotelbestand, per omgeving te
+Schema van de job per omgeving: GitHub-variabele ROBOT_SCHEDULE (cron, UTC), standaard elke
+20 minuten. Per hotel kan het trager: [robot] check_minutes in het hotelbestand, per omgeving te
 overschrijven met Key Vault-geheim <hotel>-robot-check-minutes. Op vraag (knop in de monitor,
 ROBOT_MANUAL=1) worden alle hotels gelezen.
 
