@@ -36,3 +36,4 @@ th[data-sort] { cursor: pointer; user-select: none; white-space: nowrap; }
 th[data-sort]:hover { color: #1F2433; }
 th[data-sort].sorted[data-dir="asc"]::after { content: " \2191"; }
 th[data-sort].sorted[data-dir="desc"]::after { content: " \2193"; }
+.task-meldingen { background: #E8F5EC; color: #1E6B3A; }

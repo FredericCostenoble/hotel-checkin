@@ -40,6 +40,7 @@ T_RESERVATIONS = "Reservations"
 T_MESSAGES = "Messages"
 T_OPTOUT = "MarketingOptOut"
 T_ROBOT = "RobotRuns"
+T_STATE = "RobotState"  # kleine toestand per hotel, bv. tot waar de mailbox gelezen is
 
 _client_factory = None  # alleen voor tests: functie die een tabelnaam krijgt en een tabel teruggeeft
 
@@ -303,6 +304,18 @@ def log_robot_run(
         # gemeten duur per onderdeel in seconden, bv. {"login": 25, "list": 6, "contact": 9}
         "timings": json.dumps(timings or {}),
     })
+
+
+def get_state(hotel_id: str, key: str) -> str | None:
+    try:
+        return _table(T_STATE).get_entity(_key(hotel_id), _key(key)).get("value") or None
+    except Exception:  # noqa: BLE001 - nog niet gezet
+        return None
+
+
+def set_state(hotel_id: str, key: str, value: str) -> None:
+    _table(T_STATE).upsert_entity({"PartitionKey": _key(hotel_id), "RowKey": _key(key), "value": value,
+                                   "updated_at": _now().isoformat()})
 
 
 def prune_robot_runs(hotel_id: str, keep_days: int = 30) -> int:

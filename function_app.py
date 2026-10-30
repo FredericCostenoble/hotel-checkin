@@ -128,3 +128,18 @@ def admin_api(req: func.HttpRequest) -> func.HttpResponse:
             return _json(501, {"error": "robot_not_in_cloud"})
         return _json(200, {"started": cloud_robot.start()})
     return _json(404, {"error": "not_found"})
+
+
+@app.timer_trigger(schedule="0 * * * * *", arg_name="timer", run_on_startup=False, use_monitor=False)
+def mail_trigger(timer: func.TimerRequest) -> None:
+    """Elke minuut: meldingen van Lighthouse/Cubilis in de mailbox starten de robot (processes/mail_trigger.py)."""
+    import logging
+
+    from hotel_checkin.processes import mail_trigger as process
+
+    for hotel_id in list_hotels():
+        try:
+            if process.enabled(hotel_id):
+                process.run(hotel_id)
+        except Exception:  # noqa: BLE001 - het volgende hotel mag niet tegengehouden worden
+            logging.exception("%s: mail_trigger mislukt", hotel_id)
