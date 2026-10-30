@@ -55,6 +55,8 @@ def _apply_detail(r, d) -> None:
     r.rooms = d.rooms or r.rooms
     r.arrival, r.departure = d.arrival, d.departure
     r.paid = d.paid if d.paid is not None else r.paid
+    if d.open_amount is not None:  # prijzen en openstaand bedrag voor de betaalknop in de mail
+        r.open_amount, r.folio, r.folio_total = d.open_amount, d.folio, d.folio_total
     r.status = d.status
     r.pms_status = d.pms_status or r.pms_status
     if not r.checkin_completed_at:

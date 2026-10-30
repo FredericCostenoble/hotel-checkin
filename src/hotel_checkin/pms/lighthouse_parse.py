@@ -161,6 +161,7 @@ def parse_detail(hotel_id: str, reservation_id: str, d: dict) -> Reservation:
     status = (ReservationStatus.CANCELLED if "annul" in pms_status.lower()
               else accommodation_status([r.get("status", "") for r in d.get("rooms", [])]))
     paid_text = d.get("paid_text", "").lower()
+    folio = parse_folio(d.get("folio_text", "") or d.get("paid_text", ""))
     return Reservation(
         hotel_id=hotel_id,
         reservation_id=reservation_id.lower(),
@@ -178,10 +179,65 @@ def parse_detail(hotel_id: str, reservation_id: str, d: dict) -> Reservation:
         status=status,
         source=_after("Via", general) or None,
         paid=True if "volledig betaald" in paid_text else (False if paid_text else None),
+        open_amount=folio["open"],
+        folio=folio["lines"],
+        folio_total=folio["total"],
         booking_number=number.group(0) if number else None,
         pms_status=pms_status or None,
         booked_at=parse_datetime(booked_line) if booked_line else None,
     )
+
+
+_EURO = re.compile(r"€\s*(-?[\d.]+,\d{2})")
+_FOLIO_SKIP = ("extra toevoegen", "folio sluiten", "factuur maken", "toevoegen")
+
+
+def _euro(text: str) -> float:
+    return float(text.replace(".", "").replace(",", "."))
+
+
+def parse_folio(text: str) -> dict:
+    """Folio van de detailpagina: lijnen (kamer, toeristenbelasting, extra's), totaal en openstaand saldo.
+
+    Links staan de lijnen ("Quad kamer - STANDARD RATE ... € 215,00", "Citytax 4 x € 16,80",
+    "Totaal € 231,80"), rechts de transacties met "Openstaand saldo van € 231,80" of "volledig betaald".
+    Bedrag en omschrijving mogen op dezelfde regel (tabel) of op opeenvolgende regels staan.
+    Geeft {"lines": [{"label", "qty", "amount"}], "total": float|None, "open": float|None}.
+    """
+    before, _, after = text.partition("Transacties")
+    out: dict = {"lines": [], "total": None, "open": None}
+    opened = re.search(r"Openstaand saldo van\s*€\s*(-?[\d.]+,\d{2})", text)
+    if opened:
+        out["open"] = _euro(opened.group(1))
+    elif "volledig betaald" in text.lower():
+        out["open"] = 0.0
+    pending, pending_qty, total_next = "", None, False
+    for raw in before.splitlines():
+        line = " ".join(raw.replace("\t", " ").split())
+        if not line or line.lower() in _FOLIO_SKIP:
+            continue
+        amounts = _EURO.findall(line)
+        label = _EURO.split(line)[0].strip()
+        if label.lower().startswith("totaal") or total_next:
+            if amounts:
+                out["total"], total_next = _euro(amounts[-1]), False
+            else:
+                total_next = True
+            continue
+        only_qty = re.fullmatch(r"(\d+)\s*[x×]", line)
+        if only_qty:  # aantal op een eigen regel, bij de omschrijving erboven
+            pending_qty = int(only_qty.group(1))
+            continue
+        if not amounts:
+            pending, pending_qty = line, None
+            continue
+        qty = re.search(r"(\d+)\s*[x×]\s*$", label)
+        if qty:
+            label = label[:qty.start()].strip()
+        out["lines"].append({"label": label or pending, "qty": int(qty.group(1)) if qty else pending_qty,
+                             "amount": _euro(amounts[-1])})
+        pending, pending_qty = "", None
+    return out
 
 
 def parse_contact(text: str) -> dict | None:

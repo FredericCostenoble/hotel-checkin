@@ -69,9 +69,17 @@ def money(amount: float, currency: str = "EUR") -> str:
     return f"{symbol} {amount:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
 
-def pay_data(hotel_id: str, r: Reservation, cfg: dict, open_amount: float | None = None) -> dict[str, str]:
-    """Velden voor de betaalknop: toeristenbelasting (volgens de parameters) en openstaand bedrag."""
+def pay_data(hotel_id: str, r: Reservation, cfg: dict, open_amount: float | None = None) -> dict:
+    """Velden voor de betaalknop: openstaand bedrag (uit de folio in Lighthouse) met de prijzen
+    erboven (_folio: lijnen, _total, _paid, _open), en de toeristenbelasting volgens de parameters."""
     p = cfg["parameters"]
+    open_amount = r.open_amount if open_amount is None else open_amount
+    cur = p["currency"]
+    folio = []
+    for x in r.folio:
+        label = x["label"] + (f" ({x['qty']}×)" if x.get("qty") else "")
+        folio.append((label, money(x["amount"], cur)))
+    paid = (r.folio_total - open_amount) if r.folio_total is not None and open_amount is not None else None
     lang = r.guest.language if r.guest.language in CITY_TAX_UNIT_TEXT else "en"
     return {
         "toeristenbelasting": money(workflow.city_tax(hotel_id, r, cfg), p["currency"]),
@@ -79,6 +87,10 @@ def pay_data(hotel_id: str, r: Reservation, cfg: dict, open_amount: float | None
             bedrag=money(p["city_tax_amount"], p["currency"])),
         "openstaand_bedrag": money(open_amount, p["currency"]) if open_amount is not None else "",
         "kanaal": r.source or "",
+        "_folio": folio,
+        "_total": money(r.folio_total, cur) if r.folio_total is not None else "",
+        "_paid": money(paid, cur) if paid and paid > 0.004 else "",
+        "_open": money(open_amount, cur) if open_amount is not None else "",
     }
 
 

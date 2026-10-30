@@ -120,3 +120,21 @@ def test_parse_contact():
     assert parse_contact(html) == {"email": "jan@example.com", "phone": "+32470123456"}
     assert parse_contact('<span data-field="email">j***@***.com</span>') is None
     assert parse_contact("<html>login</html>") is None
+
+
+def test_parse_folio_table_and_lines():
+    from hotel_checkin.pms.lighthouse_parse import parse_folio
+
+    table = ("Folio sluiten\nExtra toevoegen\n24 QUAD KAMER - 2e verdiep\n"
+             "Quad kamer - STANDARD RATE BREAKFAST EXCL\t€ 215,00\nCitytax\t4 x\t€ 16,80\nTotaal\t€ 231,80\n"
+             "Transacties\nOpenstaand saldo van € 231,80")
+    f = parse_folio(table)
+    assert f["lines"] == [{"label": "Quad kamer - STANDARD RATE BREAKFAST EXCL", "qty": None, "amount": 215.0},
+                          {"label": "Citytax", "qty": 4, "amount": 16.8}]
+    assert f["total"] == 231.8 and f["open"] == 231.8
+    lines = ("Quad kamer\n€ 215,00\nCitytax\n4 x\n€ 16,80\nTotaal\n€ 1.231,80\n"
+             "Transacties\nOverschrijving € 1.000,00\nDe reservering is volledig betaald")
+    f = parse_folio(lines)
+    assert f["lines"][1] == {"label": "Citytax", "qty": 4, "amount": 16.8}
+    assert f["total"] == 1231.8 and f["open"] == 0.0
+    assert parse_folio("") == {"lines": [], "total": None, "open": None}

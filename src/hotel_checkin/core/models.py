@@ -54,6 +54,9 @@ class Reservation:
     status: ReservationStatus = ReservationStatus.READY_FOR_CHECKIN
     source: str | None = None  # Booking.com, Expedia, Booking Engine, ...
     paid: bool | None = None  # None = nog niet gecontroleerd
+    open_amount: float | None = None  # openstaand saldo in Lighthouse (folio), None = niet gekend
+    folio: list[dict] = field(default_factory=list)  # lijnen van de folio: {"label", "qty", "amount"}
+    folio_total: float | None = None  # totaal van de folio
     room_type: str | None = None
     token: str | None = None  # geheime sleutel in de link naar het check-in-formulier
     checkin_completed_at: datetime | None = None  # wanneer de gast het formulier invulde

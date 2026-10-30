@@ -88,7 +88,7 @@ def checkin_link(hotel_id: str, token: str) -> str:
     return url.replace("{token}", token)
 
 
-MODULES = ("reservation", "checkin_form", "pay", "code", "practical_info")  # volgorde in de mail
+MODULES = ("code", "reservation", "checkin_form", "pay", "practical_info")  # volgorde in de mail: pincode altijd bovenaan
 
 
 def compose_blocks(texts: dict, message: str, content: dict | None, pay: str = "none") -> list[dict]:
@@ -97,7 +97,7 @@ def compose_blocks(texts: dict, message: str, content: dict | None, pay: str = "
     content: {"reservation": bool, "checkin_form": bool, "code": bool, "practical_info": bool}.
     Zonder content: de tekst van het berichttype zoals ze is. Blokken met module = ... horen bij
     een bouwsteen; ontbreekt een gekozen bouwsteen in de eigen tekst, dan komt hij uit [modules].
-    Volgorde: inleiding, reservatie, check-in-formulier, betalen, code, praktische info, slot.
+    Volgorde: inleiding, code, reservatie, check-in-formulier, betalen, praktische info, slot.
     """
     blocks = texts[message].get("blokken", [])  # at_the_door: alleen sms
     if content is None and pay == "none":
@@ -165,6 +165,8 @@ def _render_text(t: dict, common: dict, f: dict) -> str:
             lines += [_fill(p, f) for p in block.get("alineas", [])]
         elif kind == "list":
             lines += [f"- {_fill(i, f)}" for i in block["items"]]
+        elif kind == "prices":
+            lines += [f"{label}: {amount}" for label, amount in _price_rows(block, f)]
         elif kind == "button":
             lines.append(f"{_fill(block['tekst'], f)}: {_fill(block['link'], f)}")
         lines.append("")
@@ -240,6 +242,21 @@ def _render_html(t: dict, common: dict, f: dict, config: dict, language: str) ->
                 f'font-weight:bold;color:{c["tekst"]};">{_e(_fill(block["waarde"], f))}</p>'
                 f"{extra}</td></tr></table>{_gap(22)}"
             )
+        elif kind == "prices":
+            rows = _price_rows(block, f)
+            if rows:
+                cell = f"padding:6px 12px;font-family:{FONT};font-size:14px;color:{c['tekst']};border-bottom:1px solid #E3E6ED;"
+                last = len(rows) - 1
+                body = "".join(
+                    f'<tr><td style="{cell}{"font-weight:bold;" if i == last else ""}">{_e(label)}</td>'
+                    f'<td align="right" style="{cell}white-space:nowrap;{"font-weight:bold;" if i == last else ""}">{_e(amount)}</td></tr>'
+                    for i, (label, amount) in enumerate(rows)
+                )
+                parts.append(
+                    f'<table role="presentation" width="100%" cellpadding="0" cellspacing="0" '
+                    f'style="border-collapse:collapse;background:{c["achtergrond"]};margin:0 0 6px 0;">{body}</table>'
+                    f"{_gap(10)}"
+                )
         elif kind == "list":
             items = "".join(
                 f'<li style="margin:0 0 8px 0;font-family:{FONT};font-size:15px;line-height:1.6;'
@@ -315,6 +332,21 @@ SAMPLE = {
            "kamertype": "Superior Double", "code_geldig_van": "14. November, 14:00 Uhr",
            "code_geldig_tot": "16. November, 11:00 Uhr"},
 }
+
+
+def _price_rows(block: dict, f: dict) -> list[tuple[str, str]]:
+    """Prijzen boven de betaalknop: de lijnen van de folio, het totaal, wat al betaald is en wat
+    nog open staat (laatste rij, vet). Leeg als de folio niet gekend is."""
+    lines = list(f.get("_folio") or [])
+    if not lines:
+        return []
+    if f.get("_total"):
+        lines.append((block.get("totaal", "Totaal"), f["_total"]))
+    if f.get("_paid"):
+        lines.append((block.get("betaald", "Betaald"), "- " + f["_paid"]))
+    if f.get("_open"):
+        lines.append((block.get("open", "Open"), f["_open"]))
+    return lines
 
 
 def sample_data(language: str) -> dict[str, str]:

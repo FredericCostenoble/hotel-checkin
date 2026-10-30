@@ -225,6 +225,12 @@ titel = "Zahlung"
 alineas = ["Für Ihren Aufenthalt ist noch ein Betrag von {openstaand_bedrag} offen. Sie können ihn jetzt schon sicher online bezahlen, dann müssen Sie bei der Ankunft nicht mehr daran denken."]
 
 [[modules.pay_open_amount]]
+type = "prices"
+totaal = "Gesamt"
+betaald = "Bereits bezahlt"
+open = "Noch zu zahlen"
+
+[[modules.pay_open_amount]]
 type = "button"
 tekst = "Jetzt bezahlen ({openstaand_bedrag})"
 link = "{betaal_link}"

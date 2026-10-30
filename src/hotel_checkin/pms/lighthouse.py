@@ -104,6 +104,9 @@ _DETAIL_JS = r"""() => {
     general: txt(widget('Algemene informatie')),
     rooms,
     paid_text: txt(trans && (trans.closest('.jarviswidget, .col-md-6, .col-lg-6') || trans.parentElement.parentElement)),
+    // Hele folio (lijnen links, transacties rechts): eerste blok rond "Transacties" waar ook "Totaal" in staat
+    folio_text: (() => { let b = trans; while (b && b !== document.body && !/\bTotaal\b/.test(b.innerText || '')) b = b.parentElement;
+                         return b && b !== document.body ? txt(b) : ''; })(),
   };
 }"""
 

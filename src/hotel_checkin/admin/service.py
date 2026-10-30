@@ -242,7 +242,11 @@ def workflow_preview(hotel_id: str, body: dict) -> dict:
     arrival = date.today() + timedelta(days=14)
     sample = Reservation(hotel_id, "voorbeeld", Guest("Anna", "Peeters", language=language), arrival,
                          arrival + timedelta(days=2), guest_count=2, source=source)
-    data = {**templates.sample_data(language), **send_messages.pay_data(hotel_id, sample, cfg, open_amount=245.0),
+    # voorbeeldfolio: kamer voor 2 nachten, toeristenbelasting voor 2 personen, voorschot betaald
+    sample.folio = [{"label": "Superior Double Room - Standard rate", "qty": None, "amount": 240.0},
+                    {"label": "Citytax", "qty": 4, "amount": 20.0}]
+    sample.folio_total, sample.open_amount = 260.0, 245.0
+    data = {**templates.sample_data(language), **send_messages.pay_data(hotel_id, sample, cfg),
             "betaal_link": "#betalen"}
     msg = templates.render(hotel_id, step.step, language, data, step.mail_content(), step.pay)
     return {"subject": msg.subject, "html": msg.html}
