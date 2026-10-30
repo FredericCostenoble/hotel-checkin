@@ -27,6 +27,7 @@ class Channel(str, Enum):
     EMAIL = "email"
     SMS = "sms"
     WHATSAPP = "whatsapp"
+    SALTO = "salto"  # pincode maken (logboek van de code-mail)
 
 
 @dataclass
@@ -62,6 +63,11 @@ class Reservation:
     booked_at: datetime | None = None  # "Gemaakt op" in Lighthouse
     contact_checked_at: datetime | None = None  # wanneer de contactgegevens in Lighthouse gelezen werden
     guest_id: str | None = None  # gastprofiel (tabel Guests), zie processes/guest_profiles.py
+    access_pin: str | None = None  # pincode van Salto (processes/grant_access.py)
+    access_valid_from: datetime | None = None
+    access_valid_until: datetime | None = None
+    salto_user_id: str | None = None  # om op te ruimen na vertrek of bij annulering
+    salto_group_id: str | None = None
     stay_counted_at: datetime | None = None  # wanneer het verblijf meegeteld werd in het gastprofiel
     cancel_counted_at: datetime | None = None  # wanneer de annulering meegeteld werd in het gastprofiel
     created_at: datetime | None = None  # wanneer de robot de reservatie voor het eerst bewaarde (alleen lezen)

@@ -42,7 +42,8 @@ def run(hotel_id: str, today: date | None = None) -> dict:
     today = today or date.today()
     keep_res = _days(hotel_id, "RETENTION_RESERVATION_DAYS", 30)
     keep_guest = _days(hotel_id, "RETENTION_GUEST_DAYS", 730)
-    done = {"linked": 0, "counted": 0, "cancellations": 0, "reservations_deleted": 0, "guests_deleted": 0}
+    done = {"linked": 0, "counted": 0, "cancellations": 0, "reservations_deleted": 0, "guests_deleted": 0,
+            "access_revoked": 0}
     try:
         pool = profiles.list_profiles(hotel_id)
         # Eenmalig: profielen geteld voor verblijven als periodes geteld werden, opnieuw tellen
@@ -57,6 +58,16 @@ def run(hotel_id: str, today: date | None = None) -> dict:
                 done["counted"] += 1
             if guest_profiles.count_cancellation(r, today):
                 done["cancellations"] += 1
+        # Toegang bij Salto opruimen: geannuleerd of vertrokken
+        from hotel_checkin.processes import grant_access
+
+        for r in guests.list_reservations(hotel_id):
+            if (r.salto_user_id or r.salto_group_id) and (r.status == ReservationStatus.CANCELLED or r.departure < today):
+                try:
+                    if grant_access.revoke(hotel_id, r):
+                        done["access_revoked"] += 1
+                except Exception:  # noqa: BLE001 - volgende keer opnieuw
+                    pass
         remaining: set[str] = set()
         for r in guests.list_reservations(hotel_id):
             old = r.departure < today - timedelta(days=keep_res)
@@ -81,7 +92,8 @@ def run(hotel_id: str, today: date | None = None) -> dict:
         raise
     note = (f"{done['linked']} gekoppeld, {done['counted']} verblijven en {done['cancellations']} annuleringen meegeteld, "
             f"{done['reservations_deleted']} reservaties verwijderd (vertrek voor "
-            f"{today - timedelta(days=keep_res):%d/%m/%Y}), {done['guests_deleted']} gasten verwijderd")
+            f"{today - timedelta(days=keep_res):%d/%m/%Y}), {done['guests_deleted']} gasten verwijderd, "
+            f"{done['access_revoked']} toegangen bij Salto ingetrokken")
     guests.log_robot_run(hotel_id, TASK, started, True, done["counted"], done["linked"], note)
     guests.set_state(hotel_id, STATE_KEY, today.isoformat())
     return done

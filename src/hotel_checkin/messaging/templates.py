@@ -378,3 +378,18 @@ def format_date(d, language: str) -> str:
     if lang == "en":
         return f"{day} {d.day} {month} {d.year}"
     return f"{day} {d.day} {month} {d.year}"
+
+
+def format_moment(dt, language: str) -> str:
+    """Dag en uur zoals in de code-mail: '14 november, 14:00', '14 novembre, 14h00',
+    '14 November, 2 pm', '14. November, 14:00 Uhr'."""
+    lang = language if language in _MONTHS else FALLBACK_LANGUAGE
+    month = _MONTHS[lang][dt.month - 1]
+    if lang == "fr":
+        return f"{dt.day} {month}, {dt.hour}h{dt.minute:02d}"
+    if lang == "en":
+        h = dt.hour % 12 or 12
+        return f"{dt.day} {month}, {h}{':%02d' % dt.minute if dt.minute else ''} {'am' if dt.hour < 12 else 'pm'}"
+    if lang == "de":
+        return f"{dt.day}. {month}, {dt.hour:02d}:{dt.minute:02d} Uhr"
+    return f"{dt.day} {month}, {dt.hour:02d}:{dt.minute:02d}"

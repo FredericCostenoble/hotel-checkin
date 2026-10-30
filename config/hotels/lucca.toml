@@ -81,6 +81,21 @@ phone = false
 reservation_days = 30
 guest_days = 730
 
+[salto]
+# Salto KS (KS Connect API), zie src/hotel_checkin/access/salto.py en projectnotitie claude/salto-ks-connect.md.
+# Aanmeldgegevens in Key Vault: lucca-salto-client-id, -client-secret, -username, -password.
+# Test (developer kit): de standaardadressen hieronder. Productie: identity_url = "https://identity.eu.my-clay.com",
+# api_url = productieadres van Salto (nog te bevestigen). Per omgeving te overschrijven in Key Vault
+# (lucca-salto-identity-url, lucca-salto-api-url, lucca-salto-site-id).
+identity_url = "https://identity-acc.eu.my-clay.com"
+api_url = "https://clp-accept-user.my-clay.com"
+site_id = ""                       # TODO: id van de site (na levering van de kit); leeg = Salto uit
+guest_role_id = ""                 # leeg = de rol met "guest" of "gast" in de naam
+common_lock_ids = []               # TODO: voordeur en andere gemeenschappelijke deuren (python -m hotel_checkin.access.salto lucca)
+
+[salto.rooms]
+# kamernummer = id van de deur bij Salto (of een lijst van ids), bv. "12" = "a1b2c3..."
+
 [lighthouse]
 # Reservation Manager. Aanmelden met robotgebruiker uit Key Vault: lucca-lighthouse-username / -password
 base_url = "https://reservationmanager.mylighthouse.com"

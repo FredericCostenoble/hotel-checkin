@@ -34,6 +34,13 @@ TASK = "berichten"
 READY_STEPS = ("confirmation", "reminder")  # stappen die alleen een bericht zijn
 
 
+def ready_steps(hotel_id: str) -> tuple[str, ...]:
+    """access_code pas als Salto ingesteld is (eerst een pincode maken, dan versturen)."""
+    from hotel_checkin.access import salto
+
+    return READY_STEPS + (("access_code",) if salto.configured(hotel_id) else ())
+
+
 def enabled(hotel_id: str) -> bool:
     flag = hotel_setting(hotel_id, f"MESSAGING_ENABLED_{environment().upper()}", default="false", shared=False)
     return str(flag).lower() == "true"
@@ -88,7 +95,12 @@ def payments_ready(hotel_id: str) -> bool:
 
 def message_data(hotel_id: str, r: Reservation) -> dict[str, str]:
     lang = r.guest.language
-    return {
+    code = {}
+    if r.access_pin:
+        code = {"pincode": r.access_pin,
+                "code_geldig_van": templates.format_moment(r.access_valid_from, lang) if r.access_valid_from else "",
+                "code_geldig_tot": templates.format_moment(r.access_valid_until, lang) if r.access_valid_until else ""}
+    return {**code,
         "voornaam": r.guest.first_name or r.guest.last_name, "achternaam": r.guest.last_name,
         "reservatienummer": r.booking_number or "", "kamertype": r.room_type or "",
         "kamernummer": ", ".join(r.rooms), "aankomst": templates.format_date(r.arrival, lang),
@@ -188,16 +200,19 @@ def run(hotel_id: str, today: date | None = None) -> int:
     today = today or date.today()
     started = datetime.now(timezone.utc)
     cfg = workflow.config(hotel_id)
+    ready = ready_steps(hotel_id)
     sent, failed = [], []
     for r in guests.list_reservations(hotel_id):
         if not r.created_at or r.created_at < begin or not (r.guest.email or r.guest.phone):
             continue
         flow = workflow.flow_for(hotel_id, r, cfg)  # kanaal en betaalstatus
         all_steps = [s for s in workflow._steps_from(cfg, flow) if s.enabled]
-        for step in [s for s in all_steps if s.step in READY_STEPS]:
+        for step in [s for s in all_steps if s.step in ready]:
             if not workflow.is_due(step, r, today) or not step.conditions_met(r):
                 continue
             if workflow.is_replaced(step, r, today, all_steps):
+                continue
+            if step.step == "access_code" and not code_ready(hotel_id, r, failed):
                 continue
             for channel, result in deliver(hotel_id, step, r, cfg):
                 label = f"{step.step} {channel} {r.booking_number or r.reservation_id[:8]}"
@@ -206,6 +221,32 @@ def run(hotel_id: str, today: date | None = None) -> int:
         note = ", ".join(sent) + (f". Mislukt: {'; '.join(failed)}" if failed else "")
         guests.log_robot_run(hotel_id, TASK, started, not failed, len(sent) + len(failed), len(sent), note[:1900])
     return len(sent)
+
+
+def code_ready(hotel_id: str, r: Reservation, failed: list[str]) -> bool:
+    """Pincode bij Salto maken als ze er nog niet is. Zonder kamer: later opnieuw (stil).
+    Andere fout: in het berichtenlog (kanaal salto), max. MAX_ATTEMPTS keer."""
+    from hotel_checkin.access import salto
+    from hotel_checkin.core.models import Channel
+    from hotel_checkin.processes import grant_access
+
+    if r.access_pin:
+        return True
+    if not r.rooms:
+        return False
+    tries = sum(1 for m in guests.messages_for(hotel_id, r.reservation_id)
+                if m["message_type"] == "access_code" and m["channel"] == "salto")
+    if tries >= MAX_ATTEMPTS:
+        return False
+    try:
+        grant_access.grant(hotel_id, r)
+    except Exception as exc:  # noqa: BLE001 - in het logboek, volgende run opnieuw
+        error = f"{type(exc).__name__}: {exc}" if not isinstance(exc, salto.SaltoError) else str(exc)
+        guests.log_message(hotel_id, r.reservation_id, "access_code",
+                           SendResult(Channel.SALTO, "Salto", False, error=error))
+        failed.append(f"access_code salto {r.booking_number or r.reservation_id[:8]} ({error})")
+        return False
+    return True
 
 
 def twilio_status(hotel_id: str, reservation_id: str, message_id: str, status: str, error_code: str = "") -> None:
