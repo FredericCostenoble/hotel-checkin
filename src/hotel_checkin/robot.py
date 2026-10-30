@@ -6,6 +6,11 @@ opvolgpagina. Leest Lighthouse alleen; schrijft niets in Lighthouse.
     python -m hotel_checkin.robot                  # alle hotels, sinds de nieuwste opgeslagen boeking
     python -m hotel_checkin.robot --hotel lucca --hours 48
 
+Schema van de job per omgeving: GitHub-variabele ROBOT_SCHEDULE (cron, UTC), standaard elk
+kwartier. Per hotel kan het trager: [robot] check_minutes in het hotelbestand, per omgeving te
+overschrijven met Key Vault-geheim <hotel>-robot-check-minutes. Op vraag (knop in de monitor,
+ROBOT_MANUAL=1) worden alle hotels gelezen.
+
 Elke run zoekt nieuwe reservaties (en leest van nieuwe meteen de contactgegevens). Om de zoveel
 uur ([robot] contact_refresh_hours in het hotelbestand, standaard 2) leest hij ook de
 contactgegevens opnieuw van reservaties die binnenkort aankomen en nog geen e-mailadres hebben.
@@ -49,6 +54,19 @@ def _since(hotel_id: str, hours: int | None) -> datetime:
     return now - timedelta(days=30)
 
 
+def _check_due(hotel_id: str) -> bool:
+    """Is het tijd om opnieuw naar nieuwe reservaties te kijken voor dit hotel?"""
+    if os.environ.get("ROBOT_MANUAL"):
+        return True
+    minutes = float(hotel_setting(hotel_id, "ROBOT_CHECK_MINUTES", default="15", shared=False))
+    runs = [r for r in guests.robot_runs(hotel_id) if r.get("task") == new_reservation.TASK and r.get("ok")]
+    if not runs:
+        return True
+    last = datetime.fromisoformat(runs[0]["started_at"])
+    # 2 minuten marge: een run op schema start nooit precies op dezelfde seconde
+    return datetime.now(timezone.utc) - last >= timedelta(minutes=minutes) - timedelta(minutes=2)
+
+
 def _refresh_due(hotel_id: str) -> bool:
     """Is het tijd om de contactgegevens opnieuw na te lezen?"""
     hours = float(hotel_setting(hotel_id, "ROBOT_CONTACT_REFRESH_HOURS", default="2", shared=False))
@@ -69,6 +87,9 @@ def main() -> int:
 
     failed = False
     for hotel_id in [args.hotel] if args.hotel else list_hotels():
+        if not args.hours and not _check_due(hotel_id):
+            logging.info("%s: interval nog niet om, overgeslagen", hotel_id)
+            continue
         since = _since(hotel_id, args.hours)
         try:
             new = new_reservation.run(hotel_id, since)

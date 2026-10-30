@@ -157,3 +157,20 @@ def test_robot_refresh_every_two_hours(monkeypatch):
     repo.log_robot_run("lucca", refresh_contacts.TASK, now - timedelta(hours=1, minutes=58), True)
     # nieuwste run telt (30 min geleden)
     assert not robot._refresh_due("lucca")
+
+
+def test_robot_check_interval_per_hotel(monkeypatch):
+    from datetime import timedelta, timezone
+
+    from hotel_checkin import robot
+
+    monkeypatch.delenv("ROBOT_MANUAL", raising=False)
+    assert robot._check_due("lucca")
+    now = datetime.now(timezone.utc)
+    repo.log_robot_run("lucca", new_reservation.TASK, now - timedelta(minutes=5), True)
+    assert not robot._check_due("lucca")  # check_minutes = 15
+    monkeypatch.setenv("LUCCA_ROBOT_CHECK_MINUTES", "5")
+    assert robot._check_due("lucca")  # per omgeving overschreven
+    monkeypatch.delenv("LUCCA_ROBOT_CHECK_MINUTES")
+    monkeypatch.setenv("ROBOT_MANUAL", "1")
+    assert robot._check_due("lucca")  # knop in de monitor

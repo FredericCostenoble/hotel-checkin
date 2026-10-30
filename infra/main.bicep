@@ -60,8 +60,8 @@ param robotImage string = ''
 param acrName string = ''
 param acrResourceGroup string = ''
 
-@description('Schema van de robot (cron, UTC).')
-param robotSchedule string = env == 'prd' ? '*/15 * * * *' : '0 * * * *'
+@description('Schema van de robot (cron, UTC). GitHub-variabele ROBOT_SCHEDULE per omgeving. Per hotel kan het trager: [robot] check_minutes.')
+param robotSchedule string = '*/15 * * * *'
 
 @description('Id van de rol waarmee de Function App de robot mag starten (Container Apps Jobs Operator). Leeg = geen knop.')
 param robotStarterRoleId string = ''
@@ -416,7 +416,6 @@ resource robotJob 'Microsoft.App/jobs@2024-03-01' = if (withRobot) {
             { name: 'KEY_VAULT_URL', value: kv.properties.vaultUri }
             { name: 'STORAGE_TABLE_ENDPOINT', value: st.properties.primaryEndpoints.table }
             { name: 'AZURE_CLIENT_ID', value: robotId!.properties.clientId }
-            { name: 'ROBOT_HOURS', value: '2' }
           ]
         }
       ]

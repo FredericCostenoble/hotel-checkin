@@ -26,9 +26,20 @@ def _headers() -> dict:
 
 
 def start() -> bool:
-    """Start een run nu (zelfde instellingen als de geplande runs)."""
+    """Start een run nu. Zelfde instellingen als de geplande runs, plus ROBOT_MANUAL=1: dan leest de
+    robot alle hotels, ook als hun eigen interval ([robot] check_minutes) nog niet om is."""
     job = os.environ["ROBOT_JOB_ID"]
-    r = httpx.post(f"{ARM}{job}/start?api-version={API_VERSION}", json={}, headers=_headers(), timeout=30)
+    headers = _headers()
+    body: dict = {}
+    r = httpx.get(f"{ARM}{job}?api-version={API_VERSION}", headers=headers, timeout=30)
+    if r.status_code == 200:
+        containers = r.json().get("properties", {}).get("template", {}).get("containers", [])
+        for c in containers:
+            c["env"] = [e for e in c.get("env", []) if e.get("name") != "ROBOT_MANUAL"] + [
+                {"name": "ROBOT_MANUAL", "value": "1"}]
+        if containers:
+            body = {"containers": containers}
+    r = httpx.post(f"{ARM}{job}/start?api-version={API_VERSION}", json=body, headers=headers, timeout=30)
     return r.status_code in (200, 202)
 
 

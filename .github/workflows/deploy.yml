@@ -97,6 +97,7 @@ jobs:
                          acrResourceGroup=rg-checkin-prd \
                          robotStarterRoleId="$STARTER" \
                          budgetAmount="${{ vars.BUDGET_AMOUNT || '0' }}" \
+                         robotSchedule="${{ vars.ROBOT_SCHEDULE || '*/15 * * * *' }}" \
                          alertEmail="${{ vars.ALERT_EMAIL }}" \
                          testEmail="${{ vars.TEST_EMAIL }}" \
                          testPhone="${{ vars.TEST_PHONE }}" \

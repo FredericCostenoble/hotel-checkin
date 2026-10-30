@@ -47,6 +47,10 @@ whatsapp_from = "+4915888620339"   # TODO: idem
 [robot]
 # De robot zoekt bij elke run nieuwe reservaties. Om de zoveel uur leest hij ook de contactgegevens
 # opnieuw van reservaties die binnenkort aankomen en nog geen e-mailadres hebben.
+# check_minutes: hoe vaak naar nieuwe reservaties kijken. Nooit sneller dan het schema van de job
+# (GitHub-variabele ROBOT_SCHEDULE per omgeving). Per omgeving te overschrijven met Key Vault-geheim
+# lucca-robot-check-minutes (bv. trager in TST).
+check_minutes = 15
 contact_refresh_hours = 2
 
 [lighthouse]
