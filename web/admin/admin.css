@@ -76,8 +76,9 @@ a.jump svg { vertical-align: -1px; }
 .tl-phase.after { --ph: #D9822B; --ph-bg: #FDF5EC; }
 .tl-phase.after:empty { display: none; }
 .tl-node { font-size: 1.02em; }
-.tl-phase .tl-node .dot, .tl-phase .tl-when .dot { left: -27px; border-color: var(--ph); }
-.tl-phase .tl-node .dot { background: var(--ph); width: 14px; height: 14px; left: -28px; }
+/* bolletjes gecentreerd op de gekleurde rand: rand 4px breed, inhoud begint 4 + 22 = 26px verder, midden rand op 2px */
+.tl-phase .tl-when .dot { left: -32px; width: 16px; height: 16px; top: 1px; border: 3px solid var(--ph); background: #fff; }
+.tl-phase .tl-node .dot { left: -33px; width: 18px; height: 18px; top: 0; border-color: var(--ph); background: var(--ph); }
 .tl-phase .tl-node strong { color: var(--ph); text-transform: uppercase; letter-spacing: 0.03em; font-size: 0.85em; }
 .tl-phase .tl-when { color: var(--ph); }
 .tl-when { color: #5C6478; font-weight: bold; font-size: 0.9em; margin-top: 14px; }

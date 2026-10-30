@@ -139,3 +139,17 @@ def test_cancelled_guest_kept_and_counted():
     kept = profiles.list_profiles("lucca")
     assert [(x.first_name, x.cancellations) for x in kept] == [("Ann", 1)]
     assert maintenance.run("lucca", today=date.today() + timedelta(days=800))["guests_deleted"] == 1
+
+
+def test_extra_contact_is_proposed_not_merged():
+    from hotel_checkin.guests import profiles
+    from hotel_checkin.processes import guest_profiles
+
+    a = profiles.new_profile("lucca")
+    a.first_name, a.last_name, a.email, a.backup_email = "Jan", "Peeters", "jan@telenet.be", "els@gmail.com"
+    b = profiles.new_profile("lucca")
+    b.first_name, b.last_name, b.email = "Els", "Maes", "els@gmail.com"
+    profiles.save_profile(a)
+    profiles.save_profile(b)
+    m = guest_profiles.possible_matches("lucca")
+    assert {"a": min(a.guest_id, b.guest_id), "b": max(a.guest_id, b.guest_id), "reason": "extra_contact"} in m

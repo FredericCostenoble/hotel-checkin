@@ -258,6 +258,21 @@ def possible_matches(hotel_id: str, limit: int = 50) -> list[dict]:
             if len(token) > 2:
                 by_token.setdefault(token, []).append(g)
     seen, out = set(), []
+    # extra adres of nummer uit het formulier van de ene gast = adres of nummer van de andere:
+    # misschien dezelfde persoon, misschien een partner. Daarom alleen voorstellen.
+    by_contact: dict[str, list[GuestProfile]] = {}
+    for g in profiles.list_profiles(hotel_id):
+        for v in {(g.email or "").lower(), (g.backup_email or "").lower(), g.phone or "", g.backup_phone or ""}:
+            if v and (("@" not in v) or is_own_email(v)):
+                by_contact.setdefault(v, []).append(g)
+    for group in by_contact.values():
+        for i, a in enumerate(group):
+            for b in group[i + 1:]:
+                pair = tuple(sorted((a.guest_id, b.guest_id)))
+                if a.guest_id == b.guest_id or pair in seen or profiles.is_marked_different(different, *pair):
+                    continue
+                seen.add(pair)
+                out.append({"a": pair[0], "b": pair[1], "reason": "extra_contact"})
     for group in by_token.values():
         for i, a in enumerate(group):
             for b in group[i + 1:]:
