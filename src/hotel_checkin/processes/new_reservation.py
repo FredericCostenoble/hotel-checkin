@@ -37,8 +37,7 @@ def run(hotel_id: str, since: datetime) -> int:
                 if existing is None:
                     new += 1
                 contact = None
-                needs_detail = existing is None or (not existing.guest.email and not existing.checkin_completed_at
-                                                     and not existing.contact_checked_at)
+                needs_detail = existing is None or (not existing.guest.email and not existing.checkin_completed_at)
                 if needs_detail and existing is None and not workflow.needs_details_after_booking(hotel_id):
                     needs_detail = False  # geen stap na de boeking: details pas als de aankomst nadert
                 if needs_detail:
@@ -92,12 +91,12 @@ DETAIL_BACKFILL_SECONDS = 10 * 60
 
 def _missing_details(hotel_id: str, seen: set[str]) -> list:
     """Niet geannuleerde reservaties met aankomst binnenkort, zonder e-mailadres, nog niet door de
-    gast aangevuld en nog niet eerder in Lighthouse nagekeken. Eerst wie het eerst aankomt."""
+    gast aangevuld. Elke run opnieuw: het e-mailadres kan later nog in Lighthouse komen.
+    Eerst wie het eerst aankomt."""
     today = date.today()
     horizon = today + timedelta(days=workflow.detail_window_days(hotel_id))
     todo = [r for r in guests.list_reservations(hotel_id)
             if r.reservation_id not in seen and not r.guest.email and not r.checkin_completed_at
-            and not r.contact_checked_at
             and r.status != ReservationStatus.CANCELLED and r.departure >= today and r.arrival <= horizon]
     return sorted(todo, key=lambda r: r.arrival)
 
@@ -115,10 +114,12 @@ class _ContactStats:
         self.seconds += seconds
 
     def note(self) -> str:
-        text = f"{self.read} contactgegevens gelezen ({self.seconds / self.read:.0f} s per reservatie)"
+        parts = []
+        if self.with_email:
+            parts.append(f"{self.with_email} contactgegevens gevonden")
         if self.read - self.with_email:
-            text += f", {self.read - self.with_email} zonder e-mail in Lighthouse"
-        return text
+            parts.append(f"{self.read - self.with_email} nog zonder e-mail in Lighthouse")
+        return ", ".join(parts) + f" ({self.seconds / self.read:.0f} s per reservatie)"
 
 
 def _apply_contact(reservation, contact) -> None:
