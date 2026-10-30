@@ -26,7 +26,6 @@ import httpx
 
 from hotel_checkin.core.config import hotel_setting
 from hotel_checkin.core.hotels import load_hotel
-from hotel_checkin.core.models import AccessCode
 
 DEFAULT_IDENTITY_URL = "https://identity-acc.eu.my-clay.com"  # test (accept); productie: https://identity.eu.my-clay.com
 DEFAULT_API_URL = "https://clp-accept-user.my-clay.com"  # test (accept)
@@ -169,18 +168,6 @@ def lock_ids_for(hotel_id: str, rooms: list[str]) -> list[str]:
         v = rooms_map[r]
         ids += v if isinstance(v, list) else [v]
     return list(dict.fromkeys(ids))
-
-
-# ---------------------------------------------------------------- oude functies (send_access_code)
-
-
-def reserve_code(reservation_id: str, room: str, valid_from: datetime, valid_until: datetime,
-                 guest_name: str) -> AccessCode:
-    raise NotImplementedError("Gebruik processes/grant_access.py")
-
-
-def cancel_code(code: AccessCode) -> None:
-    raise NotImplementedError("Gebruik processes/grant_access.revoke")
 
 
 if __name__ == "__main__":

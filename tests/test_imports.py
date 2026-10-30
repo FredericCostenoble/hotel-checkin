@@ -15,7 +15,8 @@ MODULES = [
     "hotel_checkin.access.salto",
     "hotel_checkin.voice.ivr",
     "hotel_checkin.processes.new_reservation",
-    "hotel_checkin.processes.send_access_code",
+    "hotel_checkin.processes.grant_access",
+    "hotel_checkin.processes.send_messages",
 ]
 
 
