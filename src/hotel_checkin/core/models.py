@@ -59,6 +59,7 @@ class Reservation:
     pms_status: str | None = None  # status zoals Lighthouse ze toont: Nieuw, Bevestigd, Geannuleerd
     guest_count: int | None = None
     booked_at: datetime | None = None  # "Gemaakt op" in Lighthouse
+    contact_checked_at: datetime | None = None  # wanneer de contactgegevens in Lighthouse gelezen werden
 
 
 @dataclass

@@ -119,6 +119,7 @@ def _to_entity(r: Reservation) -> dict:
         "pms_status": r.pms_status or "",
         "guest_count": "" if r.guest_count is None else str(r.guest_count),
         "booked_at": r.booked_at.isoformat() if r.booked_at else "",
+        "contact_checked_at": r.contact_checked_at.isoformat() if r.contact_checked_at else "",
         "updated_at": _now().isoformat(),
     }
 
@@ -152,6 +153,7 @@ def _from_entity(e: dict) -> Reservation:
         pms_status=e.get("pms_status") or None,
         guest_count=int(e["guest_count"]) if e.get("guest_count") else None,
         booked_at=datetime.fromisoformat(e["booked_at"]) if e.get("booked_at") else None,
+        contact_checked_at=datetime.fromisoformat(e["contact_checked_at"]) if e.get("contact_checked_at") else None,
     )
 
 

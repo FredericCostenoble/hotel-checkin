@@ -111,4 +111,21 @@ def test_backfill_missing_contact(monkeypatch):
     new_reservation.run("lucca", datetime(2000, 1, 1))
     assert repo.get_reservation("lucca", "u2").guest.email == "jan@example.com"
     assert repo.get_reservation("lucca", "u3").guest.email is None
-    assert "aangevuld" in repo.robot_runs("lucca")[0]["error"]
+    assert "1 contactgegevens gelezen" in repo.robot_runs("lucca")[0]["error"]
+
+
+def test_contact_without_email_not_read_again(monkeypatch):
+    from datetime import timedelta
+
+    soon = date.today() + timedelta(days=3)
+    stored = _res()
+    stored.arrival, stored.departure = soon, soon + timedelta(days=1)
+    repo.save_reservation(stored)
+    calls = []
+    monkeypatch.setattr(new_reservation.lighthouse, "get_new_reservations", lambda *a, **k: [])
+    monkeypatch.setattr(new_reservation.lighthouse, "get_contact",
+                        lambda h, rid, lh=None: calls.append(rid) or Guest("", "", phone="+32470000000"))
+    new_reservation.run("lucca", datetime(2000, 1, 1))
+    new_reservation.run("lucca", datetime(2000, 1, 1))
+    assert calls == ["u1"]  # tweede run leest niet opnieuw
+    assert "zonder e-mail" in repo.robot_runs("lucca")[1]["error"]
