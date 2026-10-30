@@ -7,6 +7,9 @@ Buiten PRD gaat alles naar het testadres (core/safety.py).
 Veiligheid: alleen reservaties die na [messaging] start toegevoegd werden, en alleen als
 [messaging] enabled_<omgeving> = true. Zo krijgen de reservaties die er al waren geen mail.
 
+Late boeking (bv. 2 dagen voor aankomst): stappen met replaced_by = ["access_code"] vallen weg,
+de gast krijgt meteen alleen de code-mail.
+
 Voorlopig alleen e-mail. Stappen die meer vragen dan een bericht (access_code: eerst een code
 bij Salto) of een kanaal dat er nog niet is (sms, WhatsApp), worden overgeslagen.
 """
@@ -40,14 +43,6 @@ def start(hotel_id: str) -> datetime | None:
     return s if s.tzinfo else s.replace(tzinfo=timezone.utc)
 
 
-def is_due(step: workflow.Step, r: Reservation, today: date) -> bool:
-    if step.when == "after_booking":
-        return True
-    if step.when == "days_before_arrival":
-        return step.due_date(r) <= today < r.arrival
-    return False  # at_start: niet gebruikt (bestaande reservaties krijgen geen mail)
-
-
 def message_data(hotel_id: str, r: Reservation) -> dict[str, str]:
     lang = r.guest.language
     return {
@@ -76,13 +71,16 @@ def run(hotel_id: str, today: date | None = None) -> int:
         return 0
     today = today or date.today()
     started = datetime.now(timezone.utc)
-    steps = [s for s in workflow.steps(hotel_id) if s.step in READY_STEPS and "email" in s.channels]
+    all_steps = workflow.steps(hotel_id)
+    steps = [s for s in all_steps if s.step in READY_STEPS and "email" in s.channels]
     sent, failed = [], []
     for r in guests.list_reservations(hotel_id):
         if not r.created_at or r.created_at < begin or not r.guest.email:
             continue
         for step in steps:
-            if not is_due(step, r, today) or not step.conditions_met(r):
+            if not workflow.is_due(step, r, today) or not step.conditions_met(r):
+                continue
+            if workflow.is_replaced(step, r, today, all_steps):
                 continue
             if guests.was_sent(hotel_id, r.reservation_id, step.step, Channel.EMAIL.value):
                 continue

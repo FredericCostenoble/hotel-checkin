@@ -96,12 +96,15 @@ achtergrond = "#F4F5F8"
 # Workflow: welke stappen wanneer (zie src/hotel_checkin/core/workflow.py).
 # step = berichttype (teksten in messaging/texts) of actie; when = after_booking,
 # days_before_arrival (met days) of at_start; only_if = voorwaarden; channels = email, sms, whatsapp.
+# replaced_by = stap overslaan als die andere stap al aan de beurt is (late boeking: meteen alleen
+# de code-mail); skip_if_booked_late = geen herinnering als de boeking pas op of na die dag kwam.
 
 [[workflow]]
 step = "confirmation"            # mail met link naar het check-in-formulier
 when = "after_booking"
 only_if = ["not_cancelled"]
 channels = ["email"]
+replaced_by = ["access_code"]
 
 [[workflow]]
 step = "reminder"                # herinnering als het formulier nog niet ingevuld is
@@ -109,6 +112,8 @@ when = "days_before_arrival"
 days = 7
 only_if = ["form_not_completed", "not_cancelled"]
 channels = ["email"]
+replaced_by = ["access_code"]
+skip_if_booked_late = true
 
 [[workflow]]
 step = "access_code"             # pincode en praktische info

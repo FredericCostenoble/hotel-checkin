@@ -50,15 +50,19 @@ def test_old_reservations_and_cancelled_get_nothing(setup, monkeypatch):
     assert send_messages.run("lucca") == 0 and setup == []
 
 
-def test_reminder_seven_days_before(setup):
-    r = _res("r1", arrival_in=5)
-    repo.log_message("lucca", "r1", "confirmation", SendResult(Channel.EMAIL, "x", True))
-    assert send_messages.run("lucca") == 1  # herinnering (formulier niet ingevuld)
-    repo.mark_checkin_completed("lucca", r.reservation_id, "jan@example.com", None, "nl")
+def test_reminder_seven_days_before(setup, monkeypatch):
+    # reservaties al 10 dagen gekend (vóór de dag van de herinnering), bevestiging al verstuurd
+    real_now = repo._now
+    monkeypatch.setattr(repo, "_now", lambda: real_now() - timedelta(days=10))
+    _res("r1", arrival_in=5)
     _res("r2", arrival_in=5)
-    repo.mark_checkin_completed("lucca", "r2", "jan@example.com", None, "nl")
-    send_messages.run("lucca")
-    assert not repo.was_sent("lucca", "r2", "reminder")
+    monkeypatch.setattr(repo, "_now", real_now)
+    monkeypatch.setattr(send_messages, "start", lambda h: real_now() - timedelta(days=30))
+    for rid in ("r1", "r2"):
+        repo.log_message("lucca", rid, "confirmation", SendResult(Channel.EMAIL, "x", True))
+    repo.mark_checkin_completed("lucca", "r2", "jan@example.com", None, "nl")  # formulier ingevuld
+    assert send_messages.run("lucca") == 1
+    assert repo.was_sent("lucca", "r1", "reminder") and not repo.was_sent("lucca", "r2", "reminder")
 
 
 def test_disabled_in_prd(monkeypatch, setup):
@@ -71,3 +75,15 @@ def test_format_date():
     d = date(2026, 11, 14)
     assert templates.format_date(d, "nl") == "zaterdag 14 november 2026"
     assert templates.format_date(d, "de") == "Samstag, 14. November 2026"
+
+
+def test_late_booking_gets_only_code_mail(setup):
+    _res("late", arrival_in=2)  # binnen het venster van access_code
+    assert send_messages.run("lucca") == 0  # geen bevestiging, geen herinnering (code-mail volgt met Salto)
+    assert not repo.was_sent("lucca", "late", "confirmation")
+
+
+def test_booked_five_days_before_no_reminder(setup):
+    _res("r5", arrival_in=5)  # bevestiging ja, herinnering niet (boeking kwam na de herinneringsdag)
+    assert send_messages.run("lucca") == 1
+    assert repo.was_sent("lucca", "r5", "confirmation") and not repo.was_sent("lucca", "r5", "reminder")
