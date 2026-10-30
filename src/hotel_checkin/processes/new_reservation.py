@@ -28,9 +28,15 @@ def run(hotel_id: str, since: datetime) -> int:
     found = new = 0
     stats = _ContactStats()
     skipped: list[str] = []
+    timing: list[str] = []  # gemeten duur per onderdeel, voor de monitor
     try:
+        t0 = time.monotonic()
         with lighthouse.connect(hotel_id) as lh:
-            for reservation in lighthouse.get_new_reservations(hotel_id, since, lh, skipped):
+            timing.append(f"aanmelden {time.monotonic() - t0:.0f} s")
+            t0 = time.monotonic()
+            listed = lighthouse.get_new_reservations(hotel_id, since, lh, skipped)
+            timing.append(f"lijst {time.monotonic() - t0:.0f} s")
+            for reservation in listed:
                 found += 1
                 existing = guests.get_reservation(hotel_id, reservation.reservation_id)
                 if existing is None:
@@ -55,7 +61,7 @@ def run(hotel_id: str, since: datetime) -> int:
         guests.log_robot_run(hotel_id, TASK, started, False, found, new, f"{type(exc).__name__}: {exc}",
                              since=since, skipped=len(skipped))
         raise
-    parts = [stats.note()] if stats.read else []
+    parts = [", ".join(timing).capitalize()] + ([stats.note()] if stats.read else [])
     if skipped:
         parts.append(f"{len(skipped)} overgeslagen: " + "; ".join(skipped[:5]))
     note = ". ".join(parts) or None

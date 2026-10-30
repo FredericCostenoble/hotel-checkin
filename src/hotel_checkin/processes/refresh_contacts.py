@@ -39,9 +39,12 @@ def run(hotel_id: str) -> int:
     todo = due(hotel_id)
     stats = _ContactStats()
     skipped: list[str] = []
+    timing: list[str] = []  # gemeten duur per onderdeel, voor de monitor
     try:
         if todo:
+            t0 = time.monotonic()
             with lighthouse.connect(hotel_id) as lh:
+                timing.append(f"aanmelden {time.monotonic() - t0:.0f} s")
                 deadline = time.monotonic() + MAX_SECONDS
                 for reservation in todo:
                     if time.monotonic() > deadline:
@@ -58,7 +61,8 @@ def run(hotel_id: str) -> int:
     except Exception as exc:
         guests.log_robot_run(hotel_id, TASK, started, False, len(todo), 0, f"{type(exc).__name__}: {exc}")
         raise
-    parts = [stats.note()] if stats.read else []
+    parts = [", ".join(timing).capitalize()] if timing else []
+    parts += [stats.note()] if stats.read else []
     if skipped:
         parts.append(f"{len(skipped)} niet gelezen: " + "; ".join(skipped[:5]))
     guests.log_robot_run(hotel_id, TASK, started, True, len(todo), stats.with_email, ". ".join(parts) or None,
