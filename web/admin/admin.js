@@ -629,6 +629,7 @@ function stepCard(s, i, flow, c) {
     <div class="card">
       <div class="card-head"><label class="chk title" title="${esc(t("f_enabled"))}"><input type="checkbox" data-i="${i}" data-f="enabled" ${s.enabled ? "checked" : ""}> <strong>${esc(t("step_" + s.step))}</strong></label>${notReady}
         <button type="button" class="link right" data-preview="${i}">${esc(t("wf_example"))}</button></div>
+      ${others.some(o => isLater(flow.steps.find(x => x.step === o), s)) ? `<p class="info top">${esc(t("wf_later_rule"))}</p>` : ""}
       <div class="group">
         <div class="group-title">${esc(t("g_when"))}</div>
         <div class="fields">
@@ -637,7 +638,6 @@ function stepCard(s, i, flow, c) {
             <select data-i="${i}" data-f="when">${c.when.map(w => `<option value="${w}" ${w === s.when ? "selected" : ""}>${esc(t("when_" + w))}</option>`).join("")}</select></label>
           <div><span class="lbl">${esc(t("f_only_if"))}</span>${checks("only_if", i, c.conditions, s.only_if, x => t("c_" + x))}</div>
           ${s.when === "days_before_arrival" ? `<label class="chk"><input type="checkbox" data-i="${i}" data-f="skip_if_booked_late" ${s.skip_if_booked_late ? "checked" : ""}> ${esc(t("f_late"))}</label>` : ""}
-          ${others.some(o => isLater(flow.steps.find(x => x.step === o), s)) ? `<p class="info">${esc(t("wf_later_rule"))}</p>` : ""}
         </div>
       </div>
       <div class="group">
