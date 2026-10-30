@@ -119,7 +119,7 @@ def admin_api(req: func.HttpRequest) -> func.HttpResponse:
     if req.method == "GET" and what == "guests":
         return _json(200, admin.guests(hotel))
     if req.method == "POST" and what == "maintenance":
-        # Knop "Gasten nu bijwerken": het nachtelijke onderhoud meteen draaien
+        # Knop "Synchroniseren": gasten koppelen, voorbije verblijven meetellen, opruimen
         from hotel_checkin.processes import maintenance
 
         return _json(200, maintenance.run(hotel))
@@ -164,16 +164,3 @@ def mail_trigger(timer: func.TimerRequest) -> None:
         except Exception:  # noqa: BLE001 - het volgende hotel mag niet tegengehouden worden
             logging.exception("%s: mail_trigger mislukt", hotel_id)
 
-
-@app.timer_trigger(schedule="0 30 2 * * *", arg_name="timer", run_on_startup=False, use_monitor=False)
-def maintenance(timer: func.TimerRequest) -> None:
-    """Elke nacht (02:30 UTC): gastprofielen bijwerken en oude reservaties opruimen (processes/maintenance.py)."""
-    import logging
-
-    from hotel_checkin.processes import maintenance as process
-
-    for hotel_id in list_hotels():
-        try:
-            process.run(hotel_id)
-        except Exception:  # noqa: BLE001
-            logging.exception("%s: onderhoud mislukt", hotel_id)

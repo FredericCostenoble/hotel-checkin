@@ -32,7 +32,7 @@ from datetime import datetime, timedelta, timezone
 from hotel_checkin.core.hotels import list_hotels
 from hotel_checkin.guests import repository as guests
 from hotel_checkin.core.config import hotel_setting
-from hotel_checkin.processes import new_reservation, refresh_contacts
+from hotel_checkin.processes import maintenance, new_reservation, refresh_contacts
 
 
 def _since(hotel_id: str, hours: int | None) -> datetime:
@@ -95,6 +95,9 @@ def main() -> int:
         try:
             new = new_reservation.run(hotel_id, since)
             logging.info("%s: %s nieuwe reservaties", hotel_id, new)
+            # Gasten synchroniseren: één keer per dag mee in een run die toch al draait (geen eigen schema)
+            if maintenance.due(hotel_id):
+                maintenance.run(hotel_id)
             if _refresh_due(hotel_id):
                 found = refresh_contacts.run(hotel_id)
                 logging.info("%s: %s e-mailadressen gevonden bij nalezen", hotel_id, found)

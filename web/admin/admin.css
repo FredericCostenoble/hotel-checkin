@@ -52,3 +52,4 @@ th[data-gsort].sorted[data-dir="asc"]::after { content: " \2191"; }
 th[data-gsort].sorted[data-dir="desc"]::after { content: " \2193"; }
 td a { color: inherit; text-decoration: underline dotted; }
 .tag.back { background: #E8F5EC; color: #1E6B3A; }
+.task-onderhoud { background: #FFF1E0; color: #8A4B00; }

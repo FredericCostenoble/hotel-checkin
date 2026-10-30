@@ -5,11 +5,11 @@ const T = {
   nl: {
     title: "Check-in monitor", hotel: "Hotel", tab_res: "Reservaties", tab_robot: "Robot", tab_guests: "Gasten",
     returning: n => `terugkerend (${n}×)`,
-    g_update: "Gasten nu bijwerken", g_busy: "Bezig...", g_done: d => `${d.linked} gekoppeld, ${d.counted} verblijven meegeteld, ${d.reservations_deleted} oude reservaties en ${d.guests_deleted} gasten verwijderd`,
+    g_update: "Synchroniseren", g_busy: "Bezig...", g_done: d => `${d.linked} gekoppeld, ${d.counted} verblijven meegeteld, ${d.reservations_deleted} oude reservaties en ${d.guests_deleted} gasten verwijderd`,
     g_search: "Zoek op naam, e-mail, telefoon", g_count: n => `${n} gasten`, g_country: "Land", g_stays: "Verblijven",
     g_avg_nights: "Gem. nachten", g_avg_persons: "Gem. pers.", g_first: "Eerste verblijf", g_last: "Laatste verblijf",
     g_channel: "Kanaal", g_rooms: "Kamers", g_relay: "doorstuuradres, niet voor marketing", g_form: "formulier",
-    g_optout: "geen marketing", no_guests: "Nog geen gasten (worden elke nacht bijgewerkt)",
+    g_optout: "geen marketing", no_guests: "Nog geen gasten (klik op Synchroniseren)",
     m_title: n => `Mogelijke dubbels (${n})`, m_help: "Zelfde of bijna dezelfde naam in hetzelfde land. Nooit automatisch samengevoegd.",
     m_same_name: "zelfde naam", m_similar_name: "bijna zelfde naam", m_merge: "Samenvoegen", m_different: "Andere persoon",
     m_confirm: "Deze twee gasten samenvoegen tot één?", filter_guest: name => `Gast: ${name}`, show_all: "alles tonen",
@@ -20,7 +20,7 @@ const T = {
     hours_a: "Nieuwe reservaties van de laatste", hours_b: "uur", run: "Robot nu draaien",
     r_start: "Start", r_duration: "Duur", r_task: "Taak", r_result: "Resultaat", r_found: "Gevonden", r_new: "Nieuw", r_error: "Opmerking",
     all_tasks: "Alle", sub_log: "Logboek robot", del: "Verwijderen", del_confirm: "Deze regel uit het logboek verwijderen?", del_all: "Alles verwijderen",
-    del_all_confirm: (n, task) => `${n} regels${task ? ` van "${task}"` : ""} uit het logboek verwijderen?`, t_login: "aanmelden", t_list: "lijst", t_contact: (n, sec) => `${n} contact${n > 1 ? "en" : ""} à ${sec} s`, task_nieuwe_reservaties: "Nieuwe reservaties", task_contactgegevens_nalezen: "Reservaties bijwerken", task_meldingen: "Meldingen per mail",
+    del_all_confirm: (n, task) => `${n} regels${task ? ` van "${task}"` : ""} uit het logboek verwijderen?`, t_login: "aanmelden", t_list: "lijst", t_contact: (n, sec) => `${n} contact${n > 1 ? "en" : ""} à ${sec} s`, task_nieuwe_reservaties: "Nieuwe reservaties", task_contactgegevens_nalezen: "Reservaties bijwerken", task_meldingen: "Meldingen per mail", task_onderhoud: "Gasten synchroniseren",
     ok: "ok", fail: "fout", busy: "De robot is bezig...", scheduled: "Draait ook automatisch op schema.",
     not_installed: "De robot is in deze omgeving nog niet geïnstalleerd.", no_runs: "Nog geen afgeronde run",
     load_error: "Fout bij laden",
@@ -29,11 +29,11 @@ const T = {
   en: {
     title: "Check-in monitor", hotel: "Hotel", tab_res: "Reservations", tab_robot: "Robot", tab_guests: "Guests",
     returning: n => `returning (${n}×)`,
-    g_update: "Update guests now", g_busy: "Working...", g_done: d => `${d.linked} linked, ${d.counted} stays counted, ${d.reservations_deleted} old reservations and ${d.guests_deleted} guests deleted`,
+    g_update: "Synchronize", g_busy: "Working...", g_done: d => `${d.linked} linked, ${d.counted} stays counted, ${d.reservations_deleted} old reservations and ${d.guests_deleted} guests deleted`,
     g_search: "Search name, e-mail, phone", g_count: n => `${n} guests`, g_country: "Country", g_stays: "Stays",
     g_avg_nights: "Avg nights", g_avg_persons: "Avg pers.", g_first: "First stay", g_last: "Last stay",
     g_channel: "Channel", g_rooms: "Rooms", g_relay: "relay address, not for marketing", g_form: "form",
-    g_optout: "no marketing", no_guests: "No guests yet (updated every night)",
+    g_optout: "no marketing", no_guests: "No guests yet (click Synchronize)",
     m_title: n => `Possible duplicates (${n})`, m_help: "Same or almost the same name in the same country. Never merged automatically.",
     m_same_name: "same name", m_similar_name: "similar name", m_merge: "Merge", m_different: "Different person",
     m_confirm: "Merge these two guests into one?", filter_guest: name => `Guest: ${name}`, show_all: "show all",
@@ -44,7 +44,7 @@ const T = {
     hours_a: "New reservations of the last", hours_b: "hours", run: "Run robot now",
     r_start: "Start", r_duration: "Duration", r_task: "Task", r_result: "Result", r_found: "Found", r_new: "New", r_error: "Note",
     all_tasks: "All", sub_log: "Robot log", del: "Delete", del_confirm: "Delete this line from the log?", del_all: "Delete all",
-    del_all_confirm: (n, task) => `Delete ${n} lines${task ? ` of "${task}"` : ""} from the log?`, t_login: "login", t_list: "list", t_contact: (n, sec) => `${n} contact${n > 1 ? "s" : ""} × ${sec} s`, task_nieuwe_reservaties: "New reservations", task_contactgegevens_nalezen: "Update reservations", task_meldingen: "Mail notifications",
+    del_all_confirm: (n, task) => `Delete ${n} lines${task ? ` of "${task}"` : ""} from the log?`, t_login: "login", t_list: "list", t_contact: (n, sec) => `${n} contact${n > 1 ? "s" : ""} × ${sec} s`, task_nieuwe_reservaties: "New reservations", task_contactgegevens_nalezen: "Update reservations", task_meldingen: "Mail notifications", task_onderhoud: "Synchronize guests",
     ok: "ok", fail: "failed", busy: "The robot is running...", scheduled: "Also runs automatically on a schedule.",
     not_installed: "The robot is not installed in this environment yet.", no_runs: "No finished run yet",
     load_error: "Loading failed",
@@ -59,7 +59,7 @@ const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "
 const day = iso => iso ? new Date(iso + (iso.length === 10 ? "T00:00" : "")).toLocaleDateString(locale(), { day: "2-digit", month: "2-digit", year: "2-digit" }) : "";
 const stamp = iso => iso ? new Date(iso).toLocaleString(locale(), { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) : "";
 let rows = [], runsData = null, timer = null, waitTries = 0;
-const TASKS = ["nieuwe_reservaties", "contactgegevens_nalezen", "meldingen"];
+const TASKS = ["nieuwe_reservaties", "contactgegevens_nalezen", "meldingen", "onderhoud"];
 const taskName = k => T[lang]["task_" + k] || k;
 let taskFilter = "";
 try { taskFilter = localStorage.getItem("monitor-task") || ""; } catch (e) { /* geen opslag */ }
@@ -138,7 +138,7 @@ const gValue = (g, k) => k === "rooms" ? g.rooms.join(", ") : k === "reservation
   : k === "email" ? (g.email || g.phone) : (g[k] ?? "");
 function gSortBy(k) { gSortDir = k === gSortKey ? -gSortDir : 1; gSortKey = k; renderGuests(); }
 
-// Zelfde als het nachtelijke onderhoud: koppelen, verblijven meetellen, opruimen
+// Synchroniseren: koppelen, voorbije verblijven meetellen (nooit dubbel), opruimen
 async function updateGuests() {
   $("#g-update").disabled = true;
   $("#g-state").textContent = t("g_busy");

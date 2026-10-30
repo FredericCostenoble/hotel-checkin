@@ -1,4 +1,7 @@
-"""Proces: dagelijks onderhoud per hotel (Function App, timer 's nachts).
+"""Proces: gasten synchroniseren en opruimen per hotel.
+
+Geen eigen schema: draait met de knop "Synchroniseren" in de monitor, en één keer per dag mee in
+een run van de robot die toch al draait. Telt nooit iets dubbel (stay_counted_at).
 
 1. Reservaties zonder gastprofiel koppelen (processes/guest_profiles.py).
 2. Voorbije, niet geannuleerde verblijven meetellen in het gastprofiel.
@@ -22,6 +25,12 @@ from hotel_checkin.guests import repository as guests
 from hotel_checkin.processes import guest_profiles
 
 TASK = "onderhoud"
+STATE_KEY = "maintenance_last_day"
+
+
+def due(hotel_id: str, today: date | None = None) -> bool:
+    """Vandaag nog niet gesynchroniseerd?"""
+    return guests.get_state(hotel_id, STATE_KEY) != (today or date.today()).isoformat()
 
 
 def _days(hotel_id: str, name: str, default: int) -> int:
@@ -66,4 +75,5 @@ def run(hotel_id: str, today: date | None = None) -> dict:
             f"{done['reservations_deleted']} reservaties verwijderd (vertrek voor "
             f"{today - timedelta(days=keep_res):%d/%m/%Y}), {done['guests_deleted']} gasten verwijderd")
     guests.log_robot_run(hotel_id, TASK, started, True, done["counted"], done["linked"], note)
+    guests.set_state(hotel_id, STATE_KEY, today.isoformat())
     return done
