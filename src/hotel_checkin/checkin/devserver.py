@@ -72,8 +72,13 @@ class Handler(BaseHTTPRequestHandler):
             hours = int((self.path.split("hours=") + ["48"])[1].split("&")[0] or 48)
             self._json(200, {"started": admin.start_robot(parts[2], hours)})
         elif method == "DELETE" and len(parts) == 4 and parts[3] == "runs":
-            run_id = (self.path.split("id=") + [""])[1].split("&")[0]
-            self._json(200, {"deleted": admin.delete_run(parts[2], run_id)})
+            from urllib.parse import parse_qs, urlparse
+
+            q = {k: v[0] for k, v in parse_qs(urlparse(self.path).query).items()}
+            if q.get("all") == "1":
+                self._json(200, {"deleted": admin.delete_runs(parts[2], q.get("task"))})
+            else:
+                self._json(200, {"deleted": admin.delete_run(parts[2], q.get("id", ""))})
         else:
             self._send(404, b"Not found", "text/plain")
         return True

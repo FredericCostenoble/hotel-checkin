@@ -64,6 +64,11 @@ def delete_run(hotel_id: str, run_id: str) -> bool:
     return hotel_id in list_hotels() and repo.delete_robot_run(hotel_id, run_id)
 
 
+def delete_runs(hotel_id: str, task: str | None = None) -> int:
+    """Alle regels uit het robotlogboek (of alleen die van één taak) verwijderen."""
+    return repo.delete_robot_runs(hotel_id, task or None) if hotel_id in list_hotels() else 0
+
+
 def start_robot(hotel_id: str, hours: int = 48) -> bool:
     """Start de robot (nieuwe reservaties) op de achtergrond. False als hij al loopt."""
     from hotel_checkin.processes import new_reservation

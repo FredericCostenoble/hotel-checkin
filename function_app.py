@@ -129,6 +129,8 @@ def admin_api(req: func.HttpRequest) -> func.HttpResponse:
         return _json(200, {"started": cloud_robot.start()})
     if req.method == "DELETE" and what == "runs":
         # Eén regel uit het robotlogboek verwijderen (vuilbakje in de monitor)
+        if req.params.get("all") == "1":
+            return _json(200, {"deleted": admin.delete_runs(hotel, req.params.get("task"))})
         return _json(200, {"deleted": admin.delete_run(hotel, req.params.get("id", ""))})
     return _json(404, {"error": "not_found"})
 

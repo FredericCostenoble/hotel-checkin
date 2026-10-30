@@ -150,3 +150,16 @@ def test_delete_robot_run():
     run_id = repo.robot_runs("lucca")[0]["RowKey"]
     assert not repo.delete_robot_run("lucca", "x' or 1 eq 1")
     assert repo.delete_robot_run("lucca", run_id) and repo.robot_runs("lucca") == []
+
+
+def test_delete_robot_runs_all_or_per_task():
+    from datetime import datetime, timezone
+
+    from hotel_checkin.guests import repository as repo
+
+    repo.use_memory_store()
+    now = datetime.now(timezone.utc)
+    for task in ("nieuwe_reservaties", "nieuwe_reservaties", "meldingen"):
+        repo.log_robot_run("lucca", task, now, True)
+    assert repo.delete_robot_runs("lucca", "meldingen") == 1
+    assert repo.delete_robot_runs("lucca") == 2 and repo.robot_runs("lucca") == []

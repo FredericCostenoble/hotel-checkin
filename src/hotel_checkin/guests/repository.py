@@ -327,6 +327,16 @@ def delete_robot_run(hotel_id: str, run_id: str) -> bool:
     return True
 
 
+def delete_robot_runs(hotel_id: str, task: str | None = None) -> int:
+    """Verwijder alle runs van een hotel uit het logboek, of alleen die van één taak. Geeft het aantal terug."""
+    table = _table(T_ROBOT)
+    rows = [e for e in table.query_entities(f"PartitionKey eq '{_q(_key(hotel_id))}'")
+            if not task or e.get("task") == task]
+    for e in rows:
+        table.delete_entity(e["PartitionKey"], e["RowKey"])
+    return len(rows)
+
+
 def prune_robot_runs(hotel_id: str, keep_days: int = 30) -> int:
     """Verwijder robotruns ouder dan keep_days. Geeft het aantal verwijderde runs terug."""
     cutoff = (_now() - timedelta(days=keep_days)).isoformat()
