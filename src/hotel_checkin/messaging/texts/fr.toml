@@ -16,26 +16,31 @@ type = "text"
 alineas = ["Nous vous remercions pour votre réservation à l'{hotel_naam}. Nous nous réjouissons de vous accueillir au cœur de Bruges."]
 
 [[confirmation.blokken]]
+module = "reservation"
 type = "details"
 titel = "Votre réservation"
 rijen = [["Arrivée", "{aankomst}"], ["Départ", "{vertrek}"], ["Chambre", "{kamertype}"], ["Numéro de réservation", "{reservatienummer}"]]
 
 [[confirmation.blokken]]
+module = "checkin_form"
 type = "text"
 titel = "Un enregistrement facile"
 alineas = ["Pour que votre arrivée se passe le mieux possible, nous vous demandons de compléter quelques données. Nous en avons déjà rempli une partie pour vous. Cela ne prend que quelques minutes."]
 
 [[confirmation.blokken]]
+module = "checkin_form"
 type = "button"
 tekst = "Compléter mes données"
 link = "{checkin_link}"
 
 [[confirmation.blokken]]
+module = "checkin_form"
 type = "text"
-alineas = [
-  "Grâce à ces données, nous vous enverrons avant votre arrivée toutes les informations pratiques, dont un code PIN personnel pour la porte d'entrée et la porte de votre chambre pendant votre séjour. Vous pourrez ainsi entrer à tout moment, même en dehors des heures d'ouverture de la réception.",
-  "Notre réception est ouverte tous les jours de {receptie_van} à {receptie_tot}. Vous y êtes toujours le bienvenu pour vos questions ou des conseils sur Bruges.",
-]
+alineas = ["Grâce à ces données, nous vous enverrons avant votre arrivée toutes les informations pratiques, dont un code PIN personnel pour la porte d'entrée et la porte de votre chambre pendant votre séjour. Vous pourrez ainsi entrer à tout moment, même en dehors des heures d'ouverture de la réception."]
+
+[[confirmation.blokken]]
+type = "text"
+alineas = ["Notre réception est ouverte tous les jours de {receptie_van} à {receptie_tot}. Vous y êtes toujours le bienvenu pour vos questions ou des conseils sur Bruges."]
 
 [reminder]
 onderwerp = "Plus qu'une semaine avant votre séjour à l'{hotel_naam}"
@@ -49,15 +54,18 @@ type = "text"
 alineas = ["Dans une semaine, nous aurons le plaisir de vous accueillir à l'{hotel_naam}. Nous avons remarqué que vos données d'enregistrement ne sont pas encore complètes."]
 
 [[reminder.blokken]]
+module = "reservation"
 type = "details"
 titel = "Votre réservation"
 rijen = [["Arrivée", "{aankomst}"], ["Départ", "{vertrek}"], ["Numéro de réservation", "{reservatienummer}"]]
 
 [[reminder.blokken]]
+module = "checkin_form"
 type = "text"
-alineas = ["Complétez-les maintenant et vous recevrez la veille de votre arrivée toutes les informations pratiques ainsi que votre code PIN personnel pour la porte d'entrée et la porte de votre chambre. Cela ne prend que quelques minutes."]
+alineas = ["Complétez-les maintenant et vous recevrez avant votre arrivée toutes les informations pratiques ainsi que votre code PIN personnel pour la porte d'entrée et la porte de votre chambre. Cela ne prend que quelques minutes."]
 
 [[reminder.blokken]]
+module = "checkin_form"
 type = "button"
 tekst = "Compléter mes données"
 link = "{checkin_link}"
@@ -70,20 +78,22 @@ alineas = ["Notre réception est ouverte tous les jours de {receptie_van} à {re
 onderwerp = "Votre code PIN et les informations pratiques pour l'{hotel_naam}"
 voorvertoning = "Votre code PIN personnel et tout ce dont vous avez besoin pour votre séjour."
 aanhef = "Bonjour {voornaam},"
-afsluiting = "À demain,"
-sms = "{hotel_naam} : {voornaam}, bienvenue demain ! Votre code PIN pour la porte d'entrée et la chambre {kamernummer} : {pincode}. Valable du {code_geldig_van} au {code_geldig_tot}. Toutes les informations se trouvent dans votre e-mail."
+afsluiting = "À très bientôt,"
+sms = "{hotel_naam} : {voornaam}, à très bientôt ! Votre code PIN pour la porte d'entrée et la chambre {kamernummer} : {pincode}. Valable du {code_geldig_van} au {code_geldig_tot}. Toutes les informations se trouvent dans votre e-mail."
 
 [[access_code.blokken]]
 type = "text"
-alineas = ["C'est demain. Vous trouverez ci-dessous tout ce dont vous avez besoin pour votre séjour."]
+alineas = ["Votre séjour approche. Vous trouverez ci-dessous tout ce dont vous avez besoin pour votre séjour."]
 
 [[access_code.blokken]]
+module = "code"
 type = "highlight"
 titel = "Votre code PIN personnel"
 waarde = "{pincode}"
 alineas = ["Ce code ouvre la porte d'entrée et la porte de votre chambre du {code_geldig_van} au {code_geldig_tot}.", "Votre chambre : {kamernummer}"]
 
 [[access_code.blokken]]
+module = "practical_info"
 type = "list"
 titel = "Votre arrivée"
 items = [
@@ -94,6 +104,7 @@ items = [
 ]
 
 [[access_code.blokken]]
+module = "practical_info"
 type = "list"
 titel = "Pendant votre séjour"
 items = [
@@ -103,6 +114,7 @@ items = [
 ]
 
 [[access_code.blokken]]
+module = "practical_info"
 type = "text"
 titel = "Départ"
 alineas = ["Le départ se fait jusqu'à {checkout_tot}. Vous pouvez laisser vos bagages chez nous gratuitement."]
@@ -113,3 +125,90 @@ alineas = ["Une question ? Appelez-nous au {hotel_telefoon} ou répondez simplem
 
 [at_the_door]
 sms = "{hotel_naam} : bienvenue, {voornaam} ! Saisissez {pincode} sur le clavier de la porte d'entrée, puis sur celui de la chambre {kamernummer}. Un problème ? Appelez le {nood_nummer}."
+
+# Bouwstenen die een stap kan meekrijgen als ze niet in de eigen tekst staan (tabblad Workflow,
+# inhoud van de mail). module = ... in een blok hierboven: dat blok hoort bij die bouwsteen.
+
+[[modules.reservation]]
+type = "details"
+titel = "Votre réservation"
+rijen = [[
+  "Arrivée",
+  "{aankomst}",
+], [
+  "Départ",
+  "{vertrek}",
+], [
+  "Chambre",
+  "{kamertype}",
+], [
+  "Numéro de réservation",
+  "{reservatienummer}",
+]]
+
+[[modules.checkin_form]]
+type = "text"
+titel = "Un enregistrement facile"
+alineas = ["Pour que votre arrivée se passe le mieux possible, nous vous demandons de compléter quelques données. Nous en avons déjà rempli une partie pour vous. Cela ne prend que quelques minutes."]
+
+[[modules.checkin_form]]
+type = "button"
+tekst = "Compléter mes données"
+link = "{checkin_link}"
+
+[[modules.checkin_form]]
+type = "text"
+alineas = ["Grâce à ces données, nous vous enverrons avant votre arrivée toutes les informations pratiques, dont un code PIN personnel pour la porte d'entrée et la porte de votre chambre pendant votre séjour. Vous pourrez ainsi entrer à tout moment, même en dehors des heures d'ouverture de la réception."]
+
+[[modules.code]]
+type = "highlight"
+titel = "Votre code PIN personnel"
+waarde = "{pincode}"
+alineas = [
+  "Ce code ouvre la porte d'entrée et la porte de votre chambre du {code_geldig_van} au {code_geldig_tot}.",
+  "Votre chambre : {kamernummer}",
+]
+
+[[modules.practical_info]]
+type = "list"
+titel = "Votre arrivée"
+items = [
+  "Adresse : {hotel_adres}",
+  "L'enregistrement est possible à partir de {receptie_van}. La réception est ouverte jusqu'à {receptie_tot}. Si vous arrivez plus tard, rendez-vous directement dans votre chambre grâce à votre code PIN.",
+  "Saisissez votre code PIN sur le clavier de la porte d'entrée, puis sur celui de la porte de votre chambre.",
+  "Notre hôtel ne dispose pas d'ascenseur. Si vous avez besoin d'aide pour vos bagages, adressez-vous à la réception.",
+]
+
+[[modules.practical_info]]
+type = "list"
+titel = "Pendant votre séjour"
+items = [
+  "Petit-déjeuner : tous les jours de {ontbijt_van} à {ontbijt_tot} dans notre cave voûtée du XIVe siècle.",
+  "Wi-Fi : {wifi_naam}, mot de passe {wifi_wachtwoord}",
+  "Stationnement : l'hôtel ne dispose pas de parking privé. Le parking {parking_naam} se trouve à {parking_minuten} minutes à pied.",
+]
+
+[[modules.practical_info]]
+type = "text"
+titel = "Départ"
+alineas = ["Le départ se fait jusqu'à {checkout_tot}. Vous pouvez laisser vos bagages chez nous gratuitement."]
+
+[[modules.pay_open_amount]]
+type = "text"
+titel = "Paiement"
+alineas = ["Il reste {openstaand_bedrag} à régler pour votre séjour. Vous pouvez le payer dès maintenant en ligne, en toute sécurité, et vous n'aurez plus à y penser à votre arrivée."]
+
+[[modules.pay_open_amount]]
+type = "button"
+tekst = "Payer maintenant ({openstaand_bedrag})"
+link = "{betaal_link}"
+
+[[modules.pay_city_tax]]
+type = "text"
+titel = "Taxe de séjour"
+alineas = ["La ville de Bruges perçoit une taxe de séjour de {toeristenbelasting_tarief}. Pour votre séjour, elle s'élève à {toeristenbelasting}. Elle n'est pas comprise dans le prix payé via {kanaal}. Vous pouvez la régler dès maintenant en ligne, en toute sécurité."]
+
+[[modules.pay_city_tax]]
+type = "button"
+tekst = "Payer la taxe de séjour ({toeristenbelasting})"
+link = "{betaal_link}"

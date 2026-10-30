@@ -60,3 +60,17 @@ def test_checkin_link_override_for_tst(monkeypatch):
     monkeypatch.setenv("CHECKIN_FORM_URL", "https://test.example/?r={token}")
     r = render("lucca", "confirmation", "nl", sample_data("nl") | {"token": "abc"})
     assert "https://test.example/?r=abc" in r.html
+
+
+def test_compose_content_and_pay():
+    from hotel_checkin.messaging.templates import compose_blocks, load_texts
+
+    texts = load_texts("lucca", "nl")
+    blocks = compose_blocks(texts, "access_code", {"reservation": True, "checkin_form": True, "code": False,
+                                                   "practical_info": False}, "city_tax")
+    kinds = [b.get("module") or b["type"] for b in blocks]
+    assert "details" in [b["type"] for b in blocks] and not any(b["type"] == "highlight" for b in blocks)
+    assert any(b.get("link") == "{betaal_link}" for b in blocks)
+    assert kinds[0] == "text" and blocks[-1].get("alineas", [""])[0].startswith("Hebt u een vraag")
+    # zonder keuzes: de tekst zoals ze is
+    assert compose_blocks(texts, "confirmation", None) == texts["confirmation"]["blokken"]

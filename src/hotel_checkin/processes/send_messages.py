@@ -43,6 +43,45 @@ def start(hotel_id: str) -> datetime | None:
     return s if s.tzinfo else s.replace(tzinfo=timezone.utc)
 
 
+CITY_TAX_UNIT_TEXT = {
+    "nl": {"person_night": "{bedrag} per persoon per nacht", "person_stay": "{bedrag} per persoon per verblijf"},
+    "fr": {"person_night": "{bedrag} par personne et par nuit", "person_stay": "{bedrag} par personne et par séjour"},
+    "en": {"person_night": "{bedrag} per person per night", "person_stay": "{bedrag} per person per stay"},
+    "de": {"person_night": "{bedrag} pro Person und Nacht", "person_stay": "{bedrag} pro Person und Aufenthalt"},
+}
+
+
+def money(amount: float, currency: str = "EUR") -> str:
+    symbol = {"EUR": "€"}.get(currency, currency)
+    return f"{symbol} {amount:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+
+
+def pay_data(hotel_id: str, r: Reservation, cfg: dict, open_amount: float | None = None) -> dict[str, str]:
+    """Velden voor de betaalknop: toeristenbelasting (volgens de parameters) en openstaand bedrag."""
+    p = cfg["parameters"]
+    lang = r.guest.language if r.guest.language in CITY_TAX_UNIT_TEXT else "en"
+    return {
+        "toeristenbelasting": money(workflow.city_tax(hotel_id, r, cfg), p["currency"]),
+        "toeristenbelasting_tarief": CITY_TAX_UNIT_TEXT[lang][p["city_tax_unit"]].format(
+            bedrag=money(p["city_tax_amount"], p["currency"])),
+        "openstaand_bedrag": money(open_amount, p["currency"]) if open_amount is not None else "",
+        "kanaal": r.source or "",
+    }
+
+
+def mail_content(step: workflow.Step, r: Reservation) -> dict[str, bool]:
+    """Inhoud van de mail voor deze gast: geen link naar het formulier als het al ingevuld is."""
+    content = step.mail_content()
+    if r.checkin_completed_at:
+        content["checkin_form"] = False
+    return content
+
+
+def payments_ready(hotel_id: str) -> bool:
+    """Betaalknop pas als Saferpay ingesteld is (nog niet gebouwd)."""
+    return bool(hotel_setting(hotel_id, "SAFERPAY_TERMINAL_ID", required=False, shared=False))
+
+
 def message_data(hotel_id: str, r: Reservation) -> dict[str, str]:
     lang = r.guest.language
     return {
@@ -53,8 +92,10 @@ def message_data(hotel_id: str, r: Reservation) -> dict[str, str]:
     }
 
 
-def send(hotel_id: str, step: str, r: Reservation) -> SendResult:
-    msg = templates.render(hotel_id, step, r.guest.language, message_data(hotel_id, r))
+def send(hotel_id: str, step: workflow.Step, r: Reservation, cfg: dict) -> SendResult:
+    pay = step.pay if payments_ready(hotel_id) else "none"
+    data = {**message_data(hotel_id, r), **pay_data(hotel_id, r, cfg)}
+    msg = templates.render(hotel_id, step.step, r.guest.language, data, mail_content(step, r), pay)
     reply_to = templates.load_hotel_config(hotel_id).get("hotel", {}).get("email")
     sender = hotel_setting(hotel_id, "VERZENDING_MAIL_AFZENDER", shared=False)
     return email.send_email(to=r.guest.email, subject=msg.subject, html_body=msg.html, sender=sender,
@@ -85,7 +126,7 @@ def run(hotel_id: str, today: date | None = None) -> int:
                 continue
             if guests.was_sent(hotel_id, r.reservation_id, step.step, Channel.EMAIL.value):
                 continue
-            result = send(hotel_id, step.step, r)
+            result = send(hotel_id, step, r, cfg)
             guests.log_message(hotel_id, r.reservation_id, step.step, result)
             (sent if result.ok else failed).append(f"{step.step} {r.booking_number or r.reservation_id[:8]}"
                                                    + ("" if result.ok else f" ({result.error})"))

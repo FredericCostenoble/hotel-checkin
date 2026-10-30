@@ -21,6 +21,8 @@ Een stap:
     skip_if_booked_late = true        # niet als de reservatie pas op of na deze dag binnenkwam
     pay = "none"                      # betaalknop: none | open_amount | city_tax
     enabled = true
+    content = { reservation = true, checkin_form = true, code = false, practical_info = false }
+                                      # wat in de mail staat (bouwstenen, zie messaging/templates.py)
 
 De bouwblokken (Lighthouse, mail, SMS, Salto) kennen deze workflow niet; alleen de processen
 lezen hem en beslissen daarmee wat wanneer gebeurt, en welke gegevens ze daarvoor nodig hebben.
@@ -42,6 +44,13 @@ PAY = ("none", "open_amount", "city_tax")
 STEP_TYPES = ("confirmation", "reminder", "access_code")
 CITY_TAX_UNITS = ("person_night", "person_stay")
 CONFIG_DOC = "workflow"
+CONTENT = ("reservation", "checkin_form", "code", "practical_info")
+# Standaardinhoud per berichttype (als een stap niets opgeeft)
+DEFAULT_CONTENT = {
+    "confirmation": {"reservation": True, "checkin_form": True, "code": False, "practical_info": False},
+    "reminder": {"reservation": True, "checkin_form": True, "code": False, "practical_info": False},
+    "access_code": {"reservation": False, "checkin_form": False, "code": True, "practical_info": True},
+}
 
 CONDITIONS = {
     "not_cancelled": lambda r: r.status != ReservationStatus.CANCELLED,
@@ -72,6 +81,11 @@ class Step:
     skip_if_booked_late: bool = False
     pay: str = "none"
     enabled: bool = True
+    content: dict[str, bool] = field(default_factory=dict)  # leeg = standaard voor dit berichttype
+
+    def mail_content(self) -> dict[str, bool]:
+        """Wat in de mail staat: standaard voor het berichttype, aangevuld met de keuzes van de stap."""
+        return {**DEFAULT_CONTENT.get(self.step, {}), **self.content}
 
     def conditions_met(self, r: Reservation) -> bool:
         return all(CONDITIONS[c](r) for c in self.only_if)
@@ -150,6 +164,8 @@ def validate(hotel_id: str, cfg: dict) -> dict:
                     replaced_by=list(s.get("replaced_by", [])),
                     skip_if_booked_late=bool(s.get("skip_if_booked_late", False)),
                     pay=str(s.get("pay", "none")), enabled=bool(s.get("enabled", True)),
+                    content={**DEFAULT_CONTENT.get(str(s.get("step")), {}),
+                             **{k: bool(v) for k, v in (s.get("content") or {}).items()}},
                 )
             except (KeyError, TypeError, ValueError) as exc:
                 problems.append(f"{where}: {exc}")
@@ -163,6 +179,8 @@ def validate(hotel_id: str, cfg: dict) -> dict:
             unknown = [c for c in step.only_if if c not in CONDITIONS] + [c for c in step.channels if c not in CHANNELS]
             if unknown:
                 problems.append(f"{where}: onbekend {unknown}")
+            if [k for k in step.content if k not in CONTENT]:
+                problems.append(f"{where}: onbekende inhoud {[k for k in step.content if k not in CONTENT]}")
             if step.pay not in PAY:
                 problems.append(f"{where}: onbekende betaalknop {step.pay!r}")
             clean_steps.append(step)

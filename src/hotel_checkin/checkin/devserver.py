@@ -66,6 +66,9 @@ class Handler(BaseHTTPRequestHandler):
             self._json(200, admin.hotels())
         elif method == "GET" and len(parts) == 4 and parts[3] == "reservations":
             self._json(200, admin.reservations(parts[2]))
+        elif method == "POST" and len(parts) == 4 and parts[3] == "preview":
+            body = json.loads(self.rfile.read(int(self.headers.get("Content-Length", 0))) or b"{}")
+            self._json(200, admin.workflow_preview(parts[2], body))
         elif len(parts) == 4 and parts[3] == "workflow":
             if method == "GET":
                 self._json(200, admin.workflow_view(parts[2]))

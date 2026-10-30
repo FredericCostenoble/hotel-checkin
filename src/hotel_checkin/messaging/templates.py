@@ -81,8 +81,42 @@ def _fill(text: str, fields: dict) -> str:
     return text.format_map(fields)
 
 
-def render(hotel_id: str, message: str, language: str, data: dict[str, str]) -> RenderedMessage:
-    """Stel een bericht samen. `data` bevat de gastgegevens, bv. voornaam, aankomst, pincode."""
+MODULES = ("reservation", "checkin_form", "pay", "code", "practical_info")  # volgorde in de mail
+
+
+def compose_blocks(texts: dict, message: str, content: dict | None, pay: str = "none") -> list[dict]:
+    """De blokken van een mail, volgens de gekozen inhoud (tabblad Workflow).
+
+    content: {"reservation": bool, "checkin_form": bool, "code": bool, "practical_info": bool}.
+    Zonder content: de tekst van het berichttype zoals ze is. Blokken met module = ... horen bij
+    een bouwsteen; ontbreekt een gekozen bouwsteen in de eigen tekst, dan komt hij uit [modules].
+    Volgorde: inleiding, reservatie, check-in-formulier, betalen, code, praktische info, slot.
+    """
+    blocks = texts[message].get("blokken", [])  # at_the_door: alleen sms
+    if content is None and pay == "none":
+        return blocks
+    content = content or {}
+    first_tagged = next((i for i, b in enumerate(blocks) if b.get("module")), len(blocks))
+    intro = [b for b in blocks[:first_tagged] if not b.get("module")]
+    closing = [b for b in blocks[first_tagged:] if not b.get("module")]
+    shared = texts.get("modules", {})
+    middle: list[dict] = []
+    for mod in MODULES:
+        if mod == "pay":
+            if pay and pay != "none":
+                middle += shared.get(f"pay_{pay}", [])
+            continue
+        if not content.get(mod, any(b.get("module") == mod for b in blocks)):
+            continue
+        own = [b for b in blocks if b.get("module") == mod]
+        middle += own or shared.get(mod, [])
+    return intro + middle + closing
+
+
+def render(hotel_id: str, message: str, language: str, data: dict[str, str],
+           content: dict | None = None, pay: str = "none") -> RenderedMessage:
+    """Stel een bericht samen. `data` bevat de gastgegevens, bv. voornaam, aankomst, pincode.
+    content en pay: welke bouwstenen in de mail komen (zie compose_blocks)."""
     from hotel_checkin.core.models import normalize_language
 
     language = normalize_language(language)
@@ -95,7 +129,7 @@ def render(hotel_id: str, message: str, language: str, data: dict[str, str]) -> 
         url = os.environ.get("CHECKIN_FORM_URL") or config["checkin"]["formulier_url"]
         fields["checkin_link"] = _fill(url, fields)
 
-    t = texts[message]
+    t = {**texts[message], "blokken": compose_blocks(texts, message, content, pay)}
     sms = _fill(t["sms"], fields)
     if message not in EMAIL_MESSAGES:
         return RenderedMessage(subject=None, html=None, text=None, sms=sms)

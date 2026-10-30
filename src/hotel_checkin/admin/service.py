@@ -176,3 +176,33 @@ def workflow_reset(hotel_id: str) -> dict:
 
     workflow.reset_config(hotel_id)
     return workflow_view(hotel_id)
+
+
+def workflow_preview(hotel_id: str, body: dict) -> dict:
+    """Voorbeeldmail voor een stap zoals ze nu op het scherm staat (ook niet bewaard), met
+    voorbeeldgegevens. body: {"step": {...}, "flow": "booking", "language": "nl"}."""
+    from datetime import date, timedelta
+
+    from hotel_checkin.core import workflow
+    from hotel_checkin.core.models import Guest, Reservation
+    from hotel_checkin.messaging import templates
+    from hotel_checkin.processes import send_messages
+
+    language = body.get("language") or "nl"
+    raw = body.get("step") or {}
+    cfg = workflow.config(hotel_id)
+    try:
+        if body.get("parameters"):
+            cfg = {**cfg, "parameters": workflow.validate(hotel_id, {"parameters": body["parameters"], "flows": cfg["flows"]})["parameters"]}
+        step = workflow.Step(step=raw["step"], when=raw.get("when", "after_booking"), days=int(raw.get("days", 0) or 0),
+                             pay=raw.get("pay", "none"), content={k: bool(v) for k, v in (raw.get("content") or {}).items()})
+    except (KeyError, TypeError, ValueError) as exc:
+        return {"error": str(exc)}
+    source = {"booking": "Booking.com", "expedia": "Expedia"}.get(body.get("flow", ""), "Website")
+    arrival = date.today() + timedelta(days=14)
+    sample = Reservation(hotel_id, "voorbeeld", Guest("Anna", "Peeters", language=language), arrival,
+                         arrival + timedelta(days=2), guest_count=2, source=source)
+    data = {**templates.sample_data(language), **send_messages.pay_data(hotel_id, sample, cfg, open_amount=245.0),
+            "betaal_link": "#betalen"}
+    msg = templates.render(hotel_id, step.step, language, data, step.mail_content(), step.pay)
+    return {"subject": msg.subject, "html": msg.html}

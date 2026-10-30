@@ -116,6 +116,12 @@ def admin_api(req: func.HttpRequest) -> func.HttpResponse:
         return _json(404, {"error": "hotel"})
     if req.method == "GET" and what == "reservations":
         return _json(200, admin.reservations(hotel))
+    if what == "preview" and req.method == "POST":
+        # Voorbeeldmail voor een stap (tabblad Workflow)
+        try:
+            return _json(200, admin.workflow_preview(hotel, req.get_json()))
+        except ValueError:
+            return _json(400, {"error": "json"})
     if what == "workflow":
         # Tabblad Workflow: lezen, wijzigen (met wie en wanneer) of terug naar de standaard
         if req.method == "GET":

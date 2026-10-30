@@ -18,26 +18,31 @@ type = "text"
 alineas = ["Hartelijk dank voor uw reservatie in {hotel_naam}. We kijken ernaar uit u te verwelkomen in hartje Brugge."]
 
 [[confirmation.blokken]]
+module = "reservation"
 type = "details"
 titel = "Uw reservatie"
 rijen = [["Aankomst", "{aankomst}"], ["Vertrek", "{vertrek}"], ["Kamer", "{kamertype}"], ["Reservatienummer", "{reservatienummer}"]]
 
 [[confirmation.blokken]]
+module = "checkin_form"
 type = "text"
 titel = "Vlot inchecken"
 alineas = ["Om uw aankomst zo vlot mogelijk te laten verlopen, vragen we u enkele gegevens aan te vullen. Een deel hebben we al voor u ingevuld. Het duurt maar een paar minuten."]
 
 [[confirmation.blokken]]
+module = "checkin_form"
 type = "button"
 tekst = "Check-in gegevens aanvullen"
 link = "{checkin_link}"
 
 [[confirmation.blokken]]
+module = "checkin_form"
 type = "text"
-alineas = [
-  "Via deze gegevens sturen we u voor uw aankomst alle praktische informatie, waaronder een persoonlijke pincode voor de voordeur en uw kamerdeur tijdens uw verblijf. Zo kunt u op elk moment binnen, ook buiten de openingsuren van de receptie.",
-  "Onze receptie is elke dag open van {receptie_van} tot {receptie_tot}. U bent er altijd welkom voor vragen of tips over Brugge.",
-]
+alineas = ["Via deze gegevens sturen we u voor uw aankomst alle praktische informatie, waaronder een persoonlijke pincode voor de voordeur en uw kamerdeur tijdens uw verblijf. Zo kunt u op elk moment binnen, ook buiten de openingsuren van de receptie."]
+
+[[confirmation.blokken]]
+type = "text"
+alineas = ["Onze receptie is elke dag open van {receptie_van} tot {receptie_tot}. U bent er altijd welkom voor vragen of tips over Brugge."]
 
 [reminder]
 onderwerp = "Nog een week tot uw verblijf in {hotel_naam}"
@@ -51,15 +56,18 @@ type = "text"
 alineas = ["Over een week bent u welkom in {hotel_naam}. We merkten dat uw check-in-gegevens nog niet volledig zijn."]
 
 [[reminder.blokken]]
+module = "reservation"
 type = "details"
 titel = "Uw reservatie"
 rijen = [["Aankomst", "{aankomst}"], ["Vertrek", "{vertrek}"], ["Reservatienummer", "{reservatienummer}"]]
 
 [[reminder.blokken]]
+module = "checkin_form"
 type = "text"
-alineas = ["Vul ze nu in, dan krijgt u de dag voor uw aankomst alle praktische informatie en uw persoonlijke pincode voor de voordeur en uw kamerdeur. Het duurt maar een paar minuten."]
+alineas = ["Vul ze nu in, dan krijgt u voor uw aankomst alle praktische informatie en uw persoonlijke pincode voor de voordeur en uw kamerdeur. Het duurt maar een paar minuten."]
 
 [[reminder.blokken]]
+module = "checkin_form"
 type = "button"
 tekst = "Check-in gegevens aanvullen"
 link = "{checkin_link}"
@@ -72,20 +80,22 @@ alineas = ["Onze receptie is elke dag open van {receptie_van} tot {receptie_tot}
 onderwerp = "Uw pincode en praktische info voor {hotel_naam}"
 voorvertoning = "Uw persoonlijke pincode en alles wat u nodig hebt voor uw verblijf."
 aanhef = "Beste {voornaam},"
-afsluiting = "Tot morgen,"
-sms = "{hotel_naam}: beste {voornaam}, welkom morgen! Uw pincode voor de voordeur en kamer {kamernummer}: {pincode}. Geldig van {code_geldig_van} tot {code_geldig_tot}. Alle info staat in uw mail."
+afsluiting = "Tot binnenkort,"
+sms = "{hotel_naam}: beste {voornaam}, tot binnenkort! Uw pincode voor de voordeur en kamer {kamernummer}: {pincode}. Geldig van {code_geldig_van} tot {code_geldig_tot}. Alle info staat in uw mail."
 
 [[access_code.blokken]]
 type = "text"
-alineas = ["Morgen is het zover. Hieronder vindt u alles wat u nodig hebt voor uw verblijf."]
+alineas = ["Uw verblijf komt eraan. Hieronder vindt u alles wat u nodig hebt voor uw verblijf."]
 
 [[access_code.blokken]]
+module = "code"
 type = "highlight"
 titel = "Uw persoonlijke pincode"
 waarde = "{pincode}"
 alineas = ["Met deze code opent u de voordeur en uw kamerdeur, van {code_geldig_van} tot {code_geldig_tot}.", "Uw kamer: {kamernummer}"]
 
 [[access_code.blokken]]
+module = "practical_info"
 type = "list"
 titel = "Aankomen"
 items = [
@@ -96,6 +106,7 @@ items = [
 ]
 
 [[access_code.blokken]]
+module = "practical_info"
 type = "list"
 titel = "Tijdens uw verblijf"
 items = [
@@ -105,6 +116,7 @@ items = [
 ]
 
 [[access_code.blokken]]
+module = "practical_info"
 type = "text"
 titel = "Vertrek"
 alineas = ["Uitchecken kan tot {checkout_tot}. U kunt uw bagage gratis bij ons achterlaten."]
@@ -115,3 +127,90 @@ alineas = ["Hebt u een vraag? Bel ons op {hotel_telefoon} of antwoord gewoon op 
 
 [at_the_door]
 sms = "{hotel_naam}: welkom, {voornaam}! Toets {pincode} op het klavier van de voordeur en daarna op dat van kamer {kamernummer}. Problemen? Bel {nood_nummer}."
+
+# Bouwstenen die een stap kan meekrijgen als ze niet in de eigen tekst staan (tabblad Workflow,
+# inhoud van de mail). module = ... in een blok hierboven: dat blok hoort bij die bouwsteen.
+
+[[modules.reservation]]
+type = "details"
+titel = "Uw reservatie"
+rijen = [[
+  "Aankomst",
+  "{aankomst}",
+], [
+  "Vertrek",
+  "{vertrek}",
+], [
+  "Kamer",
+  "{kamertype}",
+], [
+  "Reservatienummer",
+  "{reservatienummer}",
+]]
+
+[[modules.checkin_form]]
+type = "text"
+titel = "Vlot inchecken"
+alineas = ["Om uw aankomst zo vlot mogelijk te laten verlopen, vragen we u enkele gegevens aan te vullen. Een deel hebben we al voor u ingevuld. Het duurt maar een paar minuten."]
+
+[[modules.checkin_form]]
+type = "button"
+tekst = "Check-in gegevens aanvullen"
+link = "{checkin_link}"
+
+[[modules.checkin_form]]
+type = "text"
+alineas = ["Via deze gegevens sturen we u voor uw aankomst alle praktische informatie, waaronder een persoonlijke pincode voor de voordeur en uw kamerdeur tijdens uw verblijf. Zo kunt u op elk moment binnen, ook buiten de openingsuren van de receptie."]
+
+[[modules.code]]
+type = "highlight"
+titel = "Uw persoonlijke pincode"
+waarde = "{pincode}"
+alineas = [
+  "Met deze code opent u de voordeur en uw kamerdeur, van {code_geldig_van} tot {code_geldig_tot}.",
+  "Uw kamer: {kamernummer}",
+]
+
+[[modules.practical_info]]
+type = "list"
+titel = "Aankomen"
+items = [
+  "Adres: {hotel_adres}",
+  "Inchecken kan vanaf {receptie_van}. De receptie is open tot {receptie_tot}. Komt u later aan, dan gaat u met uw pincode rechtstreeks naar uw kamer.",
+  "Toets uw pincode in op het klavier van de voordeur en daarna op dat van uw kamerdeur.",
+  "Ons hotel heeft geen lift. Wie hulp nodig heeft met de bagage, kan terecht aan de receptie.",
+]
+
+[[modules.practical_info]]
+type = "list"
+titel = "Tijdens uw verblijf"
+items = [
+  "Ontbijt: elke dag van {ontbijt_van} tot {ontbijt_tot} in onze 14de-eeuwse gewelfde kelder.",
+  "Wifi: {wifi_naam}, wachtwoord {wifi_wachtwoord}",
+  "Parkeren: het hotel heeft geen eigen parking. Parking {parking_naam} ligt op {parking_minuten} minuten wandelen.",
+]
+
+[[modules.practical_info]]
+type = "text"
+titel = "Vertrek"
+alineas = ["Uitchecken kan tot {checkout_tot}. U kunt uw bagage gratis bij ons achterlaten."]
+
+[[modules.pay_open_amount]]
+type = "text"
+titel = "Betalen"
+alineas = ["Voor uw verblijf staat nog {openstaand_bedrag} open. U kunt dit nu al veilig online betalen, dan hoeft u er bij aankomst niet meer aan te denken."]
+
+[[modules.pay_open_amount]]
+type = "button"
+tekst = "Nu betalen ({openstaand_bedrag})"
+link = "{betaal_link}"
+
+[[modules.pay_city_tax]]
+type = "text"
+titel = "Toeristenbelasting"
+alineas = ["De stad Brugge heft een toeristenbelasting van {toeristenbelasting_tarief}. Voor uw verblijf is dat {toeristenbelasting}. Die zit niet in de prijs die u via {kanaal} betaalde. U kunt ze nu al veilig online betalen."]
+
+[[modules.pay_city_tax]]
+type = "button"
+tekst = "Toeristenbelasting betalen ({toeristenbelasting})"
+link = "{betaal_link}"

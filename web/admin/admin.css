@@ -83,3 +83,12 @@ a.jump svg { vertical-align: -1px; }
 #wf-side input[type=text] { width: 100%; }
 button.primary { background: #5C6478; color: #fff; border: none; padding: 6px 14px; border-radius: 4px; cursor: pointer; }
 button.primary:disabled { opacity: 0.4; cursor: default; }
+
+.modal { position: fixed; inset: 0; background: rgba(30, 34, 45, 0.45); display: flex; align-items: center; justify-content: center; z-index: 10; }
+.modal[hidden] { display: none; }
+.modal-box { background: #fff; border-radius: 8px; width: min(760px, 94vw); height: min(90vh, 1000px); display: flex; flex-direction: column; padding: 12px 16px; }
+.modal-head { display: flex; gap: 12px; align-items: center; }
+.modal-head .reset { margin-left: auto; }
+#pv-frame { flex: 1; border: 1px solid var(--line); border-radius: 4px; width: 100%; }
+button.link { background: none; border: none; color: #1F5FBF; cursor: pointer; padding: 0 4px; }
+button.link:hover { text-decoration: underline; }

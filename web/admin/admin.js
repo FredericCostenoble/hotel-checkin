@@ -13,7 +13,9 @@ const T = {
     wf_right_after: "Meteen na de boeking", step_confirmation: "Bevestiging met link naar het check-in-formulier",
     step_reminder: "Herinnering (formulier niet ingevuld)", step_access_code: "Code en praktische info",
     f_enabled: "Actief", f_when: "Wanneer", f_days: "Dagen voor aankomst", f_channels: "Kanalen", f_only_if: "Alleen als",
-    f_replaced_by: "Overslaan als al aan de beurt", f_late: "Niet als de boeking pas op of na die dag binnenkwam", f_pay: "Betaalknop",
+    f_replaced_by: "Overslaan als al aan de beurt", f_late: "Niet als de boeking pas op of na die dag binnenkwam", f_pay: "Betaalknop", f_content: "In de mail", wf_example: "Voorbeeldmail", pv_subject: "Onderwerp",
+    m_reservation: "reservatiegegevens", m_checkin_form: "link check-in-formulier", m_code: "pincode", m_practical_info: "praktische info",
+    wf_form_note: "De link naar het formulier valt vanzelf weg als de gast het al invulde.",
     when_after_booking: "na de boeking", when_days_before_arrival: "dagen voor aankomst",
     ch_email: "e-mail", ch_sms: "sms", ch_whatsapp: "WhatsApp",
     pay_none: "geen", pay_open_amount: "openstaand bedrag", pay_city_tax: "toeristenbelasting",
@@ -56,7 +58,9 @@ const T = {
     wf_right_after: "Right after booking", step_confirmation: "Confirmation with link to the check-in form",
     step_reminder: "Reminder (form not filled in)", step_access_code: "Code and practical info",
     f_enabled: "Active", f_when: "When", f_days: "Days before arrival", f_channels: "Channels", f_only_if: "Only if",
-    f_replaced_by: "Skip if already due", f_late: "Not if the booking only came in on or after that day", f_pay: "Pay button",
+    f_replaced_by: "Skip if already due", f_late: "Not if the booking only came in on or after that day", f_pay: "Pay button", f_content: "In the mail", wf_example: "Example mail", pv_subject: "Subject",
+    m_reservation: "reservation details", m_checkin_form: "check-in form link", m_code: "PIN code", m_practical_info: "practical info",
+    wf_form_note: "The form link is left out automatically when the guest already filled it in.",
     when_after_booking: "after booking", when_days_before_arrival: "days before arrival",
     ch_email: "e-mail", ch_sms: "SMS", ch_whatsapp: "WhatsApp",
     pay_none: "none", pay_open_amount: "open amount", pay_city_tax: "city tax",
@@ -147,6 +151,8 @@ async function init() {
   $("#g-update").onclick = updateGuests;
   $("#wf-save").onclick = saveWorkflow;
   $("#wf-reset").onclick = resetWorkflow;
+  $("#pv-close").onclick = () => { $("#preview").hidden = true; };
+  $("#preview").onclick = e => { if (e.target.id === "preview") $("#preview").hidden = true; };
   document.querySelectorAll("#g-head th[data-gsort]").forEach(th => th.onclick = () => gSortBy(th.dataset.gsort));
   $("#search").oninput = render;
   document.querySelectorAll("#res-head th[data-sort]").forEach(th => th.onclick = () => sortBy(th.dataset.sort));
@@ -463,8 +469,10 @@ function stepCard(s, i, flow, c) {
     <div class="tl-when"><span class="dot"></span>${esc(when)}</div>
     <div class="card">
       <div class="card-head"><strong>${esc(t("step_" + s.step))}</strong>${notReady}
+        <button type="button" class="link" data-preview="${i}">${esc(t("wf_example"))}</button>
         <label class="chk right"><input type="checkbox" data-i="${i}" data-f="enabled" ${s.enabled ? "checked" : ""}> ${esc(t("f_enabled"))}</label></div>
       <div class="fields">
+        <div><span class="lbl">${esc(t("f_content"))}</span>${CONTENT.map(m => `<label class="chk" title="${m === "checkin_form" ? esc(t("wf_form_note")) : ""}"><input type="checkbox" data-i="${i}" data-f="content" value="${m}" ${contentOf(s)[m] ? "checked" : ""}> ${esc(t("m_" + m))}</label>`).join("")}</div>
         <label>${esc(t("f_when"))} <select data-i="${i}" data-f="when">${c.when.map(w => `<option value="${w}" ${w === s.when ? "selected" : ""}>${esc(t("when_" + w))}</option>`).join("")}</select></label>
         ${s.when === "days_before_arrival" ? `<label>${esc(t("f_days"))} <input type="number" min="0" max="365" data-i="${i}" data-f="days" value="${s.days}"></label>` : ""}
         <label>${esc(t("f_pay"))} <select data-i="${i}" data-f="pay">${c.pay.map(p => `<option value="${p}" ${p === s.pay ? "selected" : ""}>${esc(t("pay_" + p))}</option>`).join("")}</select></label>
@@ -476,10 +484,38 @@ function stepCard(s, i, flow, c) {
     </div></div>`;
 }
 
+const CONTENT = ["reservation", "checkin_form", "code", "practical_info"];
+const DEFAULT_CONTENT = {
+  confirmation: { reservation: true, checkin_form: true, code: false, practical_info: false },
+  reminder: { reservation: true, checkin_form: true, code: false, practical_info: false },
+  access_code: { reservation: false, checkin_form: false, code: true, practical_info: true },
+};
+const contentOf = s => ({ ...(DEFAULT_CONTENT[s.step] || {}), ...(s.content || {}) });
+
+// Voorbeeldmail: de stap zoals ze nu op het scherm staat (ook als ze nog niet bewaard is)
+let pvStep = null, pvLang = "nl";
+async function showPreview(step) {
+  pvStep = step;
+  $("#preview").hidden = false;
+  $("#pv-title").textContent = `${t("wf_example")}: ${t("step_" + step.step)} (${t("flow_" + wfFlow)})`;
+  $("#pv-langs").innerHTML = ["nl", "fr", "en", "de"].map(l => `<button type="button" data-l="${l}" class="${l === pvLang ? "active" : ""}">${l.toUpperCase()}</button>`).join("");
+  document.querySelectorAll("#pv-langs button").forEach(b => b.onclick = () => { pvLang = b.dataset.l; showPreview(pvStep); });
+  const r = await fetch(API + `/api/monitor/${$("#hotel").value}/preview`, {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ step, flow: wfFlow, language: pvLang, parameters: wf.parameters }),
+  });
+  const d = await r.json().catch(() => ({}));
+  $("#pv-subject").textContent = d.error ? d.error : `${t("pv_subject")}: ${d.subject}`;
+  $("#pv-frame").srcdoc = d.html || "";
+}
+
 function bindSteps(flow) {
+  document.querySelectorAll("#wf-timeline [data-preview]").forEach(b => b.onclick = () => showPreview(flow.steps[+b.dataset.preview]));
   document.querySelectorAll("#wf-timeline [data-f]").forEach(el => el.onchange = () => {
     const s = flow.steps[+el.dataset.i], f = el.dataset.f;
-    if (["channels", "only_if", "replaced_by"].includes(f)) {
+    if (f === "content") {
+      s.content = { ...contentOf(s), [el.value]: el.checked };
+    } else if (["channels", "only_if", "replaced_by"].includes(f)) {
       s[f] = [...document.querySelectorAll(`#wf-timeline [data-i="${el.dataset.i}"][data-f="${f}"]:checked`)].map(x => x.value);
     } else if (f === "enabled" || f === "skip_if_booked_late") {
       s[f] = el.checked;
