@@ -56,3 +56,5 @@ a.jump:hover { text-decoration: underline; }
 a.jump svg { vertical-align: -1px; }
 .tag.back { background: #E8F5EC; color: #1E6B3A; }
 .task-onderhoud { background: #FFF1E0; color: #8A4B00; }
+.reset { margin-left: -12px; border: 1px solid var(--line); background: #fff; padding: 2px 8px; cursor: pointer; color: #8A90A0; }
+.reset:hover { color: var(--err); }

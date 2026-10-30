@@ -12,7 +12,7 @@ const T = {
     g_optout: "geen marketing", no_guests: "Nog geen gasten (klik op Synchroniseren)",
     m_title: n => `Mogelijke dubbels (${n})`, m_help: "Zelfde of bijna dezelfde naam in hetzelfde land. Nooit automatisch samengevoegd.",
     m_same_name: "zelfde naam", m_similar_name: "bijna zelfde naam", m_merge: "Samenvoegen", m_different: "Andere persoon",
-    m_confirm: "Deze twee gasten samenvoegen tot één?", filter_guest: name => `Gast: ${name}`, show_all: "alles tonen",
+    m_confirm: "Deze twee gasten samenvoegen tot één?", reset: "Filter wissen",
     search: "Zoek op naam, nummer, e-mail", stay_from: "Verblijf van", stay_to: "tot", from_today: "Vanaf vandaag",
     c_arrival: "Aankomst", c_departure: "Vertrek", c_number: "Nummer", c_guest: "Gast", c_pers: "Pers.",
     c_room: "Kamer", c_via: "Via", c_booked: "Geboekt", c_added: "Toegevoegd", c_updated: "Bijgewerkt", c_form: "Formulier", c_contact: "Contact", c_messages: "Berichten",
@@ -36,7 +36,7 @@ const T = {
     g_optout: "no marketing", no_guests: "No guests yet (click Synchronize)",
     m_title: n => `Possible duplicates (${n})`, m_help: "Same or almost the same name in the same country. Never merged automatically.",
     m_same_name: "same name", m_similar_name: "similar name", m_merge: "Merge", m_different: "Different person",
-    m_confirm: "Merge these two guests into one?", filter_guest: name => `Guest: ${name}`, show_all: "show all",
+    m_confirm: "Merge these two guests into one?", reset: "Clear filter",
     search: "Search name, number, e-mail", stay_from: "Stay from", stay_to: "to", from_today: "From today",
     c_arrival: "Arrival", c_departure: "Departure", c_number: "Number", c_guest: "Guest", c_pers: "Pers.",
     c_room: "Room", c_via: "Via", c_booked: "Booked", c_added: "Added", c_updated: "Updated", c_form: "Form", c_contact: "Contact", c_messages: "Messages",
@@ -82,6 +82,7 @@ function setLang(l) {
   document.documentElement.lang = lang;
   document.querySelectorAll("[data-t]").forEach(e => { e.textContent = t(e.dataset.t); });
   document.querySelectorAll("[data-tp]").forEach(e => { e.placeholder = t(e.dataset.tp); });
+  document.querySelectorAll("[data-tt]").forEach(e => { e.title = t(e.dataset.tt); });
   document.querySelectorAll(".langs button").forEach(b => b.classList.toggle("active", b.dataset.lang === lang));
   render();
   renderGuests();
@@ -101,6 +102,9 @@ async function init() {
   $("#bin-all").onclick = deleteAllRuns;
   document.querySelectorAll("nav button").forEach(b => b.onclick = () => showTab(b.dataset.tab));
   $("#g-search").oninput = renderGuests;
+  // Filter wissen: zoekvak leeg (reservaties: ook terug "vanaf vandaag")
+  $("#search-reset").onclick = () => { $("#search").value = ""; $("#from").value = todayIso(); $("#to").value = ""; render(); };
+  $("#g-search-reset").onclick = () => { $("#g-search").value = ""; renderGuests(); };
   $("#g-update").onclick = updateGuests;
   document.querySelectorAll("#g-head th[data-gsort]").forEach(th => th.onclick = () => gSortBy(th.dataset.gsort));
   $("#search").oninput = render;
@@ -124,7 +128,6 @@ function showTab(name) {
 
 async function load() {
   const h = $("#hotel").value;
-  resIds = null; guestId = null;
   rows = await get(`/api/monitor/${h}/reservations`);
   render();
   loadGuests();
@@ -132,7 +135,7 @@ async function load() {
 }
 
 // ---------------------------------------------------------------- gasten
-let guestData = { guests: [], matches: [] }, guestId = null, resIds = null;
+let guestData = { guests: [], matches: [] };
 const ICON_GUEST = `<svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true"><path fill="currentColor" d="M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm-5 6c0-2.8 2.2-4.5 5-4.5s5 1.7 5 4.5v.5H3v-.5z"/></svg>`;
 const ICON_RES = `<svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true"><path fill="currentColor" d="M4 1h1v1.5h6V1h1v1.5h2V15H2V2.5h2V1zm-1 5v8h10V6H3zm2 2h2v2H5V8z"/></svg>`;
 let gSortKey = "last_stay", gSortDir = -1;
@@ -164,10 +167,13 @@ async function loadGuests() {
 
 function guestById(id) { return guestData.guests.find(g => g.id === id); }
 
-// Van een reservatie naar de gast
-function openGuest(id) { guestId = id; showTab("guests"); renderGuests(); }
-// Van een gast naar zijn reservaties
-function openReservations(id) { resIds = guestById(id)?.reservations || []; guestId = id; $("#from").value = ""; showTab("res"); render(); }
+// Van een reservatie naar de gast, en van een gast naar zijn reservaties: gewoon het zoekvak invullen
+function openGuest(id) { $("#g-search").value = guestById(id)?.name || ""; showTab("guests"); renderGuests(); }
+function openReservations(id) {
+  $("#search").value = guestById(id)?.name || "";
+  $("#from").value = ""; $("#to").value = "";  // ook voorbije verblijven
+  showTab("res"); render();
+}
 
 function contactCell(g) {
   const tags = [];
@@ -179,14 +185,7 @@ function contactCell(g) {
 
 function renderGuests() {
   const q = $("#g-search").value.toLowerCase();
-  const chip = $("#g-filter"), focus = guestId && guestById(guestId);
-  chip.hidden = !focus;
-  if (focus) {
-    chip.innerHTML = `${esc(t("filter_guest", focus.name))} <a href="#">${esc(t("show_all"))}</a>`;
-    chip.querySelector("a").onclick = e => { e.preventDefault(); guestId = null; renderGuests(); };
-  }
-  const list = guestData.guests.filter(g => (!focus || g.id === guestId) &&
-    (!q || [g.name, g.email, g.phone].join(" ").toLowerCase().includes(q)));
+  const list = guestData.guests.filter(g => (!q || [g.name, g.email, g.phone].join(" ").toLowerCase().includes(q)));
   list.sort((a, b) => {
     const x = gValue(a, gSortKey), y = gValue(b, gSortKey);
     if (x === "" || x === null || y === "" || y === null) return x === y ? 0 : (x === "" || x === null ? 1 : -1);
@@ -244,13 +243,7 @@ function render() {
   const q = $("#search").value.toLowerCase();
   // Verblijf dat (deels) in de gekozen periode valt; lege datum = geen grens
   const from = $("#from").value, to = $("#to").value;
-  const chip = $("#res-filter"), focus = resIds && guestId && guestById(guestId);
-  chip.hidden = !resIds;
-  if (resIds) {
-    chip.innerHTML = `${esc(t("filter_guest", focus ? focus.name : ""))} <a href="#">${esc(t("show_all"))}</a>`;
-    chip.querySelector("a").onclick = e => { e.preventDefault(); resIds = null; $("#from").value = todayIso(); render(); };
-  }
-  const list = rows.filter(r => (!resIds || resIds.includes(r.id)) && (!from || r.departure >= from) && (!to || r.arrival <= to) &&
+  const list = rows.filter(r => (!from || r.departure >= from) && (!to || r.arrival <= to) &&
     (!q || [r.guest, r.booking_number, r.email, r.phone].join(" ").toLowerCase().includes(q)));
   list.sort((a, b) => {
     const x = sortValue(a, sortKey), y = sortValue(b, sortKey);
