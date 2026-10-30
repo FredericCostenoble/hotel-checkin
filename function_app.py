@@ -164,3 +164,17 @@ def mail_trigger(timer: func.TimerRequest) -> None:
         except Exception:  # noqa: BLE001 - het volgende hotel mag niet tegengehouden worden
             logging.exception("%s: mail_trigger mislukt", hotel_id)
 
+
+
+@app.timer_trigger(schedule="0 */2 * * * *", arg_name="timer", run_on_startup=False, use_monitor=False)
+def send_messages(timer: func.TimerRequest) -> None:
+    """Elke 2 minuten: berichten uit de workflow versturen die nu moeten (processes/send_messages.py)."""
+    import logging
+
+    from hotel_checkin.processes import send_messages as process
+
+    for hotel_id in list_hotels():
+        try:
+            process.run(hotel_id)
+        except Exception:  # noqa: BLE001
+            logging.exception("%s: berichten versturen mislukt", hotel_id)

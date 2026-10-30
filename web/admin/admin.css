@@ -58,3 +58,4 @@ a.jump svg { vertical-align: -1px; }
 .task-onderhoud { background: #FFF1E0; color: #8A4B00; }
 .reset { margin-left: -12px; border: 1px solid var(--line); background: #fff; padding: 2px 8px; cursor: pointer; color: #8A90A0; }
 .reset:hover { color: var(--err); }
+.task-berichten { background: #EAF0FF; color: #2B3F8C; }

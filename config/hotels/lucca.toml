@@ -57,6 +57,14 @@ contact_refresh_hours = 2
 # met Key Vault-geheim lucca-robot-mail-trigger = false.
 mail_trigger = true
 
+[messaging]
+# Berichten uit de workflow (processes/send_messages.py). Per omgeving aan of uit.
+# Buiten PRD gaat alles naar het testadres (TEST_EMAIL). PRD pas aanzetten als alles getest is.
+enabled_tst = true
+enabled_prd = false
+# Alleen reservaties die vanaf dit moment toegevoegd worden, krijgen berichten (de bestaande niet).
+start = "2026-10-30T15:30:00+01:00"
+
 [retention]
 # Opruimen bij het synchroniseren van de gasten (processes/maintenance.py). Dagen na vertrek / na het laatste verblijf.
 # reservation_days: reservaties en hun berichtenlog (privacyverklaring: einde verblijf + max. 1 maand).

@@ -309,3 +309,34 @@ if __name__ == "__main__":
             )
             print(lang, msg, "ok" if result.ok else result.error)
         print(lang, "sms at_the_door:", render(hotel, "at_the_door", lang, sample_data(lang)).sms)
+
+
+# ---------------------------------------------------------------- datums in de taal van de gast
+
+_DAYS = {
+    "nl": ["maandag", "dinsdag", "woensdag", "donderdag", "vrijdag", "zaterdag", "zondag"],
+    "fr": ["lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche"],
+    "en": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+    "de": ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"],
+}
+_MONTHS = {
+    "nl": ["januari", "februari", "maart", "april", "mei", "juni", "juli", "augustus", "september",
+           "oktober", "november", "december"],
+    "fr": ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre",
+           "octobre", "novembre", "décembre"],
+    "en": ["January", "February", "March", "April", "May", "June", "July", "August", "September",
+           "October", "November", "December"],
+    "de": ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September",
+           "Oktober", "November", "Dezember"],
+}
+
+
+def format_date(d, language: str) -> str:
+    """Datum zoals in de voorbeeldteksten: 'vrijdag 14 november 2026', 'Freitag, 14. November 2026'."""
+    lang = language if language in _DAYS else FALLBACK_LANGUAGE
+    day, month = _DAYS[lang][d.weekday()], _MONTHS[lang][d.month - 1]
+    if lang == "de":
+        return f"{day}, {d.day}. {month} {d.year}"
+    if lang == "en":
+        return f"{day} {d.day} {month} {d.year}"
+    return f"{day} {d.day} {month} {d.year}"
