@@ -63,7 +63,7 @@
         <th data-gsort="avg_nights" data-t="g_avg_nights"></th><th data-gsort="avg_persons" data-t="g_avg_persons"></th>
         <th data-gsort="first_stay" data-t="g_first"></th><th data-gsort="last_stay" data-t="g_last"></th>
         <th data-gsort="preferred_channel" data-t="g_channel"></th><th data-gsort="rooms" data-t="g_rooms"></th>
-        <th data-gsort="reservations" data-t="tab_res"></th>
+        <th data-gsort="reservations" data-t="tab_res"></th><th data-t="g_msgs"></th>
       </tr></thead>
       <tbody id="guests"></tbody>
     </table>
@@ -117,10 +117,15 @@
 <div id="msgs" class="modal" hidden>
   <div class="modal-box small">
     <div class="modal-head"><strong id="msgs-title"></strong><button id="msgs-close" type="button" class="reset">&times;</button></div>
+    <h3 data-t="mg_plan"></h3>
+    <ul id="msgs-plan" class="plan"></ul>
+    <div id="msgs-attempts">
+    <h3 data-t="mg_attempts"></h3>
     <table>
       <thead><tr><th data-t="mg_time"></th><th data-t="mg_message"></th><th data-t="mg_channel"></th><th data-t="mg_to"></th><th data-t="exec_status"></th><th data-t="r_error"></th></tr></thead>
       <tbody id="msgs-rows"></tbody>
     </table>
+    </div>
   </div>
 </div>
 

@@ -228,6 +228,7 @@ def merge(hotel_id: str, keep_id: str, other_id: str, keep: GuestProfile | None 
                         or (other.from_checkin_form and not keep.from_checkin_form)):
         keep.email, keep.email_own = other.email, other.email_own
     keep.message_channels = keep.message_channels or other.message_channels
+    keep.muted_channels = sorted(set(keep.muted_channels) | set(other.muted_channels))
     keep.phone = keep.phone or other.phone
     keep.country = keep.country or other.country
     keep.from_checkin_form = keep.from_checkin_form or other.from_checkin_form

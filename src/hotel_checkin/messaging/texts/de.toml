@@ -79,7 +79,7 @@ onderwerp = "Ihr PIN-Code und praktische Informationen für das {hotel_naam}"
 voorvertoning = "Ihr persönlicher PIN-Code und alles, was Sie für Ihren Aufenthalt brauchen."
 aanhef = "Guten Tag {voornaam} {achternaam},"
 afsluiting = "Bis bald,"
-sms = "{hotel_naam}: bis bald, {voornaam}! Ihr PIN-Code für die Haustür und Zimmer {kamernummer}: {pincode}. Gültig von {code_geldig_van} bis {code_geldig_tot}. Alle Informationen finden Sie in Ihrer E-Mail."
+sms = "{hotel_naam}: bis bald, {voornaam}! Ihr PIN-Code für die Haustür und Zimmer {kamernummer}: {pincode}, danach die Pfeiltaste. Gültig von {code_geldig_van} bis {code_geldig_tot}. Alle Informationen finden Sie in Ihrer E-Mail."
 
 [[access_code.blokken]]
 type = "text"
@@ -90,7 +90,7 @@ module = "code"
 type = "highlight"
 titel = "Ihr persönlicher PIN-Code"
 waarde = "{pincode}"
-alineas = ["Mit diesem Code öffnen Sie die Haustür und Ihre Zimmertür, von {code_geldig_van} bis {code_geldig_tot}.", "Ihr Zimmer: {kamernummer}"]
+alineas = ["Mit diesem Code öffnen Sie die Haustür und Ihre Zimmertür, von {code_geldig_van} bis {code_geldig_tot}.", "Drücken Sie nach dem Code immer die Pfeiltaste ↵.", "Ihr Zimmer: {kamernummer}"]
 
 [[access_code.blokken]]
 module = "practical_info"
@@ -99,7 +99,7 @@ titel = "Anreise"
 items = [
   "Adresse: {hotel_adres}",
   "Der Check-in ist ab {receptie_van} Uhr möglich. Die Rezeption ist bis {receptie_tot} Uhr geöffnet. Wenn Sie später ankommen, gehen Sie mit Ihrem PIN-Code direkt zu Ihrem Zimmer.",
-  "Geben Sie Ihren PIN-Code zuerst am Tastenfeld der Haustür und danach an dem Ihrer Zimmertür ein.",
+  "Geben Sie Ihren PIN-Code am Tastenfeld der Haustür ein und drücken Sie danach die Pfeiltaste ↵. Machen Sie es an Ihrer Zimmertür genauso.",
   "Unser Hotel hat keinen Aufzug. Wenn Sie Hilfe mit Ihrem Gepäck brauchen, wenden Sie sich bitte an die Rezeption.",
 ]
 
@@ -124,7 +124,33 @@ type = "text"
 alineas = ["Haben Sie Fragen? Rufen Sie uns unter {hotel_telefoon} an oder antworten Sie einfach auf diese E-Mail."]
 
 [at_the_door]
-sms = "{hotel_naam}: Willkommen, {voornaam}! Geben Sie {pincode} am Tastenfeld der Haustür und danach an dem von Zimmer {kamernummer} ein. Probleme? Rufen Sie {nood_nummer} an."
+sms = "{hotel_naam}: Willkommen, {voornaam}! Geben Sie {pincode} und danach die Pfeiltaste ein, zuerst an der Haustür, dann an Zimmer {kamernummer}. Probleme? Rufen Sie {nood_nummer} an."
+
+[thank_you]
+onderwerp = "Vielen Dank für Ihren Aufenthalt im {hotel_naam}"
+voorvertoning = "Vielen Dank und bis zum nächsten Mal."
+aanhef = "Guten Tag {voornaam},"
+afsluiting = "Mit freundlichen Grüßen,"
+sms = "{hotel_naam}: Guten Tag {voornaam}, vielen Dank für Ihren Aufenthalt. Bis zum nächsten Mal!"
+
+[[thank_you.blokken]]
+type = "text"
+alineas = ["Vielen Dank für Ihren Aufenthalt im {hotel_naam}. Wir hoffen, Sie haben Brügge und Ihr Zimmer genossen.", "Wir freuen uns, Sie wieder begrüßen zu dürfen. Wenn Sie direkt über unsere Website buchen, erhalten Sie garantiert den besten Preis."]
+
+[payment_request]
+onderwerp = "Offener Betrag für Ihren Aufenthalt im {hotel_naam}"
+voorvertoning = "Für Ihren Aufenthalt ist noch ein Betrag offen."
+aanhef = "Guten Tag {voornaam},"
+afsluiting = "Mit freundlichen Grüßen,"
+sms = "{hotel_naam}: Guten Tag {voornaam}, für Ihren Aufenthalt sind noch {openstaand_bedrag} offen. Mehr dazu in Ihrer E-Mail."
+
+[[payment_request.blokken]]
+type = "text"
+alineas = ["Vielen Dank für Ihren Aufenthalt im {hotel_naam}. Bei der Kontrolle Ihrer Rechnung haben wir festgestellt, dass noch ein Betrag offen ist."]
+
+[[payment_request.blokken]]
+type = "text"
+alineas = ["Haben Sie eine Frage zur Rechnung? Antworten Sie einfach auf diese E-Mail oder rufen Sie uns an unter {hotel_telefoon}."]
 
 # Bouwstenen die een stap kan meekrijgen als ze niet in de eigen tekst staan (tabblad Workflow,
 # inhoud van de mail). module = ... in een blok hierboven: dat blok hoort bij die bouwsteen.
@@ -165,7 +191,7 @@ type = "highlight"
 titel = "Ihr persönlicher PIN-Code"
 waarde = "{pincode}"
 alineas = [
-  "Mit diesem Code öffnen Sie die Haustür und Ihre Zimmertür, von {code_geldig_van} bis {code_geldig_tot}.",
+  "Mit diesem Code öffnen Sie die Haustür und Ihre Zimmertür, von {code_geldig_van} bis {code_geldig_tot}.", "Drücken Sie nach dem Code immer die Pfeiltaste ↵.",
   "Ihr Zimmer: {kamernummer}",
 ]
 
@@ -175,7 +201,7 @@ titel = "Anreise"
 items = [
   "Adresse: {hotel_adres}",
   "Der Check-in ist ab {receptie_van} Uhr möglich. Die Rezeption ist bis {receptie_tot} Uhr geöffnet. Wenn Sie später ankommen, gehen Sie mit Ihrem PIN-Code direkt zu Ihrem Zimmer.",
-  "Geben Sie Ihren PIN-Code zuerst am Tastenfeld der Haustür und danach an dem Ihrer Zimmertür ein.",
+  "Geben Sie Ihren PIN-Code am Tastenfeld der Haustür ein und drücken Sie danach die Pfeiltaste ↵. Machen Sie es an Ihrer Zimmertür genauso.",
   "Unser Hotel hat keinen Aufzug. Wenn Sie Hilfe mit Ihrem Gepäck brauchen, wenden Sie sich bitte an die Rezeption.",
 ]
 

@@ -30,7 +30,7 @@ from pathlib import Path
 TEXTS_DIR = Path(__file__).parent / "texts"
 LANGUAGES = ("nl", "fr", "en", "de")
 FALLBACK_LANGUAGE = "en"
-EMAIL_MESSAGES = ("confirmation", "reminder", "access_code")
+EMAIL_MESSAGES = ("confirmation", "reminder", "access_code", "thank_you", "payment_request")
 
 
 @dataclass
@@ -320,7 +320,7 @@ SAMPLE = {
 def sample_data(language: str) -> dict[str, str]:
     return {
         "voornaam": "Anna", "achternaam": "Peeters", "reservatienummer": "LUC-12345",
-        "kamernummer": "14", "pincode": "482916", "token": "voorbeeld",
+        "kamernummer": "14", "pincode": "482916", "token": "voorbeeld", "openstaand_bedrag": "€ 245,00",
         **SAMPLE.get(language, SAMPLE["en"]),
     }
 

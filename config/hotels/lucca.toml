@@ -157,6 +157,22 @@ only_if = ["not_cancelled"]
 channels = ["email", "sms"]
 pay = "city_tax"
 
+[[flows.booking.steps]]
+step = "thank_you"   # bedankmail na vertrek
+when = "days_after_departure"
+days = 1
+only_if = ["not_cancelled"]
+channels = ["email"]
+pay = "none"
+
+[[flows.booking.steps]]
+step = "payment_request"   # betaalverzoek als er na vertrek nog iets openstaat
+when = "days_after_departure"
+days = 1
+only_if = ["not_cancelled", "not_paid"]
+channels = ["email"]
+pay = "open_amount"
+
 [flows.expedia]
 sources = ["Expedia"]
 
@@ -183,6 +199,22 @@ days = 2
 only_if = ["not_cancelled"]
 channels = ["email", "sms"]
 pay = "city_tax"
+
+[[flows.expedia.steps]]
+step = "thank_you"   # bedankmail na vertrek
+when = "days_after_departure"
+days = 1
+only_if = ["not_cancelled"]
+channels = ["email"]
+pay = "none"
+
+[[flows.expedia.steps]]
+step = "payment_request"   # betaalverzoek als er na vertrek nog iets openstaat
+when = "days_after_departure"
+days = 1
+only_if = ["not_cancelled", "not_paid"]
+channels = ["email"]
+pay = "open_amount"
 
 [flows.website_paid]
 sources = []                 # alle andere kanalen
@@ -212,6 +244,22 @@ only_if = ["paid", "not_cancelled"]
 channels = ["email", "sms"]
 pay = "none"
 
+[[flows.website_paid.steps]]
+step = "thank_you"   # bedankmail na vertrek
+when = "days_after_departure"
+days = 1
+only_if = ["not_cancelled"]
+channels = ["email"]
+pay = "none"
+
+[[flows.website_paid.steps]]
+step = "payment_request"   # betaalverzoek als er na vertrek nog iets openstaat
+when = "days_after_departure"
+days = 1
+only_if = ["not_cancelled", "not_paid"]
+channels = ["email"]
+pay = "open_amount"
+
 [flows.website_unpaid]
 sources = []
 paid = false
@@ -238,4 +286,20 @@ when = "days_before_arrival"
 days = 2
 only_if = ["not_cancelled"]
 channels = ["email", "sms"]
+pay = "open_amount"
+
+[[flows.website_unpaid.steps]]
+step = "thank_you"   # bedankmail na vertrek
+when = "days_after_departure"
+days = 1
+only_if = ["not_cancelled"]
+channels = ["email"]
+pay = "none"
+
+[[flows.website_unpaid.steps]]
+step = "payment_request"   # betaalverzoek als er na vertrek nog iets openstaat
+when = "days_after_departure"
+days = 1
+only_if = ["not_cancelled", "not_paid"]
+channels = ["email"]
 pay = "open_amount"

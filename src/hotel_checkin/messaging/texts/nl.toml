@@ -81,7 +81,7 @@ onderwerp = "Uw pincode en praktische info voor {hotel_naam}"
 voorvertoning = "Uw persoonlijke pincode en alles wat u nodig hebt voor uw verblijf."
 aanhef = "Beste {voornaam},"
 afsluiting = "Tot binnenkort,"
-sms = "{hotel_naam}: beste {voornaam}, tot binnenkort! Uw pincode voor de voordeur en kamer {kamernummer}: {pincode}. Geldig van {code_geldig_van} tot {code_geldig_tot}. Alle info staat in uw mail."
+sms = "{hotel_naam}: beste {voornaam}, tot binnenkort! Uw pincode voor de voordeur en kamer {kamernummer}: {pincode}, daarna de pijltoets. Geldig van {code_geldig_van} tot {code_geldig_tot}. Alle info staat in uw mail."
 
 [[access_code.blokken]]
 type = "text"
@@ -92,7 +92,7 @@ module = "code"
 type = "highlight"
 titel = "Uw persoonlijke pincode"
 waarde = "{pincode}"
-alineas = ["Met deze code opent u de voordeur en uw kamerdeur, van {code_geldig_van} tot {code_geldig_tot}.", "Uw kamer: {kamernummer}"]
+alineas = ["Met deze code opent u de voordeur en uw kamerdeur, van {code_geldig_van} tot {code_geldig_tot}.", "Druk na de code altijd op de pijltoets ↵.", "Uw kamer: {kamernummer}"]
 
 [[access_code.blokken]]
 module = "practical_info"
@@ -101,7 +101,7 @@ titel = "Aankomen"
 items = [
   "Adres: {hotel_adres}",
   "Inchecken kan vanaf {receptie_van}. De receptie is open tot {receptie_tot}. Komt u later aan, dan gaat u met uw pincode rechtstreeks naar uw kamer.",
-  "Toets uw pincode in op het klavier van de voordeur en daarna op dat van uw kamerdeur.",
+  "Toets uw pincode in op het klavier van de voordeur en druk daarna op de pijltoets ↵. Doe hetzelfde aan uw kamerdeur.",
   "Ons hotel heeft geen lift. Wie hulp nodig heeft met de bagage, kan terecht aan de receptie.",
 ]
 
@@ -126,7 +126,33 @@ type = "text"
 alineas = ["Hebt u een vraag? Bel ons op {hotel_telefoon} of antwoord gewoon op deze mail."]
 
 [at_the_door]
-sms = "{hotel_naam}: welkom, {voornaam}! Toets {pincode} op het klavier van de voordeur en daarna op dat van kamer {kamernummer}. Problemen? Bel {nood_nummer}."
+sms = "{hotel_naam}: welkom, {voornaam}! Toets {pincode} en daarna de pijltoets, eerst aan de voordeur en dan aan kamer {kamernummer}. Problemen? Bel {nood_nummer}."
+
+[thank_you]
+onderwerp = "Bedankt voor uw verblijf in {hotel_naam}"
+voorvertoning = "Bedankt en graag tot een volgende keer."
+aanhef = "Beste {voornaam},"
+afsluiting = "Hartelijke groeten,"
+sms = "{hotel_naam}: beste {voornaam}, bedankt voor uw verblijf. Graag tot een volgende keer!"
+
+[[thank_you.blokken]]
+type = "text"
+alineas = ["Hartelijk dank voor uw verblijf in {hotel_naam}. We hopen dat u genoten hebt van Brugge en van uw kamer.", "We verwelkomen u graag opnieuw. Boekt u rechtstreeks via onze website, dan bent u zeker van de beste prijs."]
+
+[payment_request]
+onderwerp = "Openstaand bedrag voor uw verblijf in {hotel_naam}"
+voorvertoning = "Voor uw verblijf staat nog een bedrag open."
+aanhef = "Beste {voornaam},"
+afsluiting = "Hartelijke groeten,"
+sms = "{hotel_naam}: beste {voornaam}, voor uw verblijf staat nog {openstaand_bedrag} open. Meer info in uw mail."
+
+[[payment_request.blokken]]
+type = "text"
+alineas = ["Bedankt voor uw verblijf in {hotel_naam}. Bij het nakijken van uw rekening zagen we dat er nog een bedrag openstaat."]
+
+[[payment_request.blokken]]
+type = "text"
+alineas = ["Hebt u een vraag over de rekening? Antwoord gewoon op deze mail of bel ons op {hotel_telefoon}."]
 
 # Bouwstenen die een stap kan meekrijgen als ze niet in de eigen tekst staan (tabblad Workflow,
 # inhoud van de mail). module = ... in een blok hierboven: dat blok hoort bij die bouwsteen.
@@ -167,7 +193,7 @@ type = "highlight"
 titel = "Uw persoonlijke pincode"
 waarde = "{pincode}"
 alineas = [
-  "Met deze code opent u de voordeur en uw kamerdeur, van {code_geldig_van} tot {code_geldig_tot}.",
+  "Met deze code opent u de voordeur en uw kamerdeur, van {code_geldig_van} tot {code_geldig_tot}.", "Druk na de code altijd op de pijltoets ↵.",
   "Uw kamer: {kamernummer}",
 ]
 
@@ -177,7 +203,7 @@ titel = "Aankomen"
 items = [
   "Adres: {hotel_adres}",
   "Inchecken kan vanaf {receptie_van}. De receptie is open tot {receptie_tot}. Komt u later aan, dan gaat u met uw pincode rechtstreeks naar uw kamer.",
-  "Toets uw pincode in op het klavier van de voordeur en daarna op dat van uw kamerdeur.",
+  "Toets uw pincode in op het klavier van de voordeur en druk daarna op de pijltoets ↵. Doe hetzelfde aan uw kamerdeur.",
   "Ons hotel heeft geen lift. Wie hulp nodig heeft met de bagage, kan terecht aan de receptie.",
 ]
 

@@ -79,7 +79,7 @@ onderwerp = "Your PIN code and practical information for {hotel_naam}"
 voorvertoning = "Your personal PIN code and everything you need for your stay."
 aanhef = "Dear {voornaam},"
 afsluiting = "See you soon,"
-sms = "{hotel_naam}: dear {voornaam}, see you soon! Your PIN code for the front door and room {kamernummer}: {pincode}. Valid from {code_geldig_van} to {code_geldig_tot}. All details are in your email."
+sms = "{hotel_naam}: dear {voornaam}, see you soon! Your PIN code for the front door and room {kamernummer}: {pincode}, then the arrow key. Valid from {code_geldig_van} to {code_geldig_tot}. All details are in your email."
 
 [[access_code.blokken]]
 type = "text"
@@ -90,7 +90,7 @@ module = "code"
 type = "highlight"
 titel = "Your personal PIN code"
 waarde = "{pincode}"
-alineas = ["This code opens the front door and your room door from {code_geldig_van} to {code_geldig_tot}.", "Your room: {kamernummer}"]
+alineas = ["This code opens the front door and your room door from {code_geldig_van} to {code_geldig_tot}.", "Always press the arrow key ↵ after the code.", "Your room: {kamernummer}"]
 
 [[access_code.blokken]]
 module = "practical_info"
@@ -99,7 +99,7 @@ titel = "Arriving"
 items = [
   "Address: {hotel_adres}",
   "Check-in is possible from {receptie_van}. Reception is open until {receptie_tot}. If you arrive later, use your PIN code to go straight to your room.",
-  "Enter your PIN code on the keypad of the front door, then on the keypad of your room door.",
+  "Enter your PIN code on the keypad of the front door, then press the arrow key ↵. Do the same at your room door.",
   "Our hotel has no lift. If you need help with your luggage, please ask at reception.",
 ]
 
@@ -124,7 +124,33 @@ type = "text"
 alineas = ["Any questions? Call us on {hotel_telefoon} or simply reply to this email."]
 
 [at_the_door]
-sms = "{hotel_naam}: welcome, {voornaam}! Enter {pincode} on the keypad of the front door, then on the keypad of room {kamernummer}. Any problems? Call {nood_nummer}."
+sms = "{hotel_naam}: welcome, {voornaam}! Enter {pincode} followed by the arrow key, first at the front door, then at room {kamernummer}. Any problems? Call {nood_nummer}."
+
+[thank_you]
+onderwerp = "Thank you for staying at {hotel_naam}"
+voorvertoning = "Thank you, and we hope to see you again."
+aanhef = "Dear {voornaam},"
+afsluiting = "Kind regards,"
+sms = "{hotel_naam}: dear {voornaam}, thank you for your stay. We hope to see you again!"
+
+[[thank_you.blokken]]
+type = "text"
+alineas = ["Thank you very much for staying at {hotel_naam}. We hope you enjoyed Bruges and your room.", "We would be happy to welcome you again. Book directly on our website and you are sure of the best price."]
+
+[payment_request]
+onderwerp = "Outstanding amount for your stay at {hotel_naam}"
+voorvertoning = "An amount is still open for your stay."
+aanhef = "Dear {voornaam},"
+afsluiting = "Kind regards,"
+sms = "{hotel_naam}: dear {voornaam}, {openstaand_bedrag} is still open for your stay. More information in your e-mail."
+
+[[payment_request.blokken]]
+type = "text"
+alineas = ["Thank you for staying at {hotel_naam}. When checking your bill, we noticed that an amount is still open."]
+
+[[payment_request.blokken]]
+type = "text"
+alineas = ["Any questions about the bill? Simply reply to this e-mail or call us on {hotel_telefoon}."]
 
 # Bouwstenen die een stap kan meekrijgen als ze niet in de eigen tekst staan (tabblad Workflow,
 # inhoud van de mail). module = ... in een blok hierboven: dat blok hoort bij die bouwsteen.
@@ -165,7 +191,7 @@ type = "highlight"
 titel = "Your personal PIN code"
 waarde = "{pincode}"
 alineas = [
-  "This code opens the front door and your room door from {code_geldig_van} to {code_geldig_tot}.",
+  "This code opens the front door and your room door from {code_geldig_van} to {code_geldig_tot}.", "Always press the arrow key ↵ after the code.",
   "Your room: {kamernummer}",
 ]
 
@@ -175,7 +201,7 @@ titel = "Arriving"
 items = [
   "Address: {hotel_adres}",
   "Check-in is possible from {receptie_van}. Reception is open until {receptie_tot}. If you arrive later, use your PIN code to go straight to your room.",
-  "Enter your PIN code on the keypad of the front door, then on the keypad of your room door.",
+  "Enter your PIN code on the keypad of the front door, then press the arrow key ↵. Do the same at your room door.",
   "Our hotel has no lift. If you need help with your luggage, please ask at reception.",
 ]
 

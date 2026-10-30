@@ -167,6 +167,10 @@ def admin_api(req: func.HttpRequest) -> func.HttpResponse:
             return _json(200, {"ok": admin.merge_guests(hotel, a, b)})
         if req.params.get("action") == "different":
             return _json(200, {"ok": admin.mark_guests_different(hotel, a, b)})
+        if req.params.get("action") == "channels":
+            # kanalen voor één gast uitzetten: ?action=channels&a=<guest_id>&muted=email,sms
+            muted = [c for c in req.params.get("muted", "").split(",") if c]
+            return _json(200, {"ok": admin.set_muted_channels(hotel, a, muted)})
         return _json(400, {"error": "action"})
     if req.method == "GET" and what == "runs":
         data = admin.runs(hotel)

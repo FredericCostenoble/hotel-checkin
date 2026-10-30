@@ -37,10 +37,11 @@ from hotel_checkin.core.hotels import load_hotel
 from hotel_checkin.core.models import Reservation, ReservationStatus
 
 FLOWS = ("booking", "expedia", "website_paid", "website_unpaid")
-WHEN = ("after_booking", "days_before_arrival")
+WHEN = ("after_booking", "days_before_arrival", "days_after_departure")
+AFTER_DEPARTURE_WINDOW = 14  # dagen: een bericht na vertrek dat zo lang niet weg kon, vervalt
 CHANNELS = ("email", "sms", "whatsapp")
 PAY = ("none", "open_amount", "city_tax")
-STEP_TYPES = ("confirmation", "reminder", "access_code")
+STEP_TYPES = ("confirmation", "reminder", "access_code", "thank_you", "payment_request")
 CITY_TAX_UNITS = ("person_night", "person_stay")
 CONFIG_DOC = "workflow"
 CONTENT = ("reservation", "checkin_form", "code", "practical_info")
@@ -49,6 +50,8 @@ DEFAULT_CONTENT = {
     "confirmation": {"reservation": True, "checkin_form": True, "code": False, "practical_info": False},
     "reminder": {"reservation": True, "checkin_form": True, "code": False, "practical_info": False},
     "access_code": {"reservation": False, "checkin_form": False, "code": True, "practical_info": True},
+    "thank_you": {"reservation": False, "checkin_form": False, "code": False, "practical_info": False},
+    "payment_request": {"reservation": True, "checkin_form": False, "code": False, "practical_info": False},
 }
 
 CONDITIONS = {
@@ -56,6 +59,7 @@ CONDITIONS = {
     "form_completed": lambda r: r.checkin_completed_at is not None,
     "form_not_completed": lambda r: r.checkin_completed_at is None,
     "paid": lambda r: r.paid is True,
+    "not_paid": lambda r: r.paid is False,  # alleen als Lighthouse "openstaand" toont (onbekend telt niet)
     "checked_in": lambda r: r.status == ReservationStatus.CHECKED_IN,
     "has_email": lambda r: bool(r.guest.email),
     "has_phone": lambda r: bool(r.guest.phone),
@@ -88,8 +92,12 @@ class Step:
         return all(CONDITIONS[c](r) for c in self.only_if)
 
     def due_date(self, r: Reservation) -> date | None:
-        """Dag waarop de stap moet gebeuren (alleen bij days_before_arrival)."""
-        return r.arrival - timedelta(days=self.days) if self.when == "days_before_arrival" else None
+        """Dag waarop de stap moet gebeuren (niet bij after_booking)."""
+        if self.when == "days_before_arrival":
+            return r.arrival - timedelta(days=self.days)
+        if self.when == "days_after_departure":
+            return r.departure + timedelta(days=self.days)
+        return None
 
 
 # ---------------------------------------------------------------- configuratie lezen en bewaren
@@ -110,8 +118,20 @@ def config(hotel_id: str) -> dict:
     if doc is None:
         cfg = validate(hotel_id, file_config(hotel_id))
         return {**cfg, "meta": {"source": "file", "updated_by": "", "updated_at": ""}}
-    cfg = validate(hotel_id, doc["value"])
+    cfg = validate(hotel_id, _with_new_steps(doc["value"], file_config(hotel_id)))
     return {**cfg, "meta": {"source": "monitor", "updated_by": doc["updated_by"], "updated_at": doc["updated_at"]}}
+
+
+def _with_new_steps(saved: dict, default: dict) -> dict:
+    """Stappen die later aan de standaard zijn toegevoegd (bv. na vertrek) ook tonen in een eerder
+    bewaarde workflow. Een stap uitzetten gebeurt met enabled, dus ontbrekend betekent nieuw."""
+    out = copy.deepcopy(saved)
+    for name, flow in default.get("flows", {}).items():
+        mine = out.setdefault("flows", {}).setdefault(name, copy.deepcopy(flow))
+        known = {s.get("step") for s in mine.get("steps", [])}
+        mine.setdefault("steps", []).extend(copy.deepcopy(s) for s in flow.get("steps", [])
+                                            if s.get("step") not in known)
+    return out
 
 
 def save_config(hotel_id: str, cfg: dict, user: str) -> dict:
@@ -171,7 +191,7 @@ def validate(hotel_id: str, cfg: dict) -> dict:
                 problems.append(f"{where}: onbekende stap (kies uit {', '.join(STEP_TYPES)})")
             if step.when not in WHEN:
                 problems.append(f"{where}: onbekende 'when' {step.when!r} (kies uit {', '.join(WHEN)})")
-            if step.when == "days_before_arrival" and not 0 <= step.days <= 365:
+            if step.when != "after_booking" and not 0 <= step.days <= 365:
                 problems.append(f"{where}: aantal dagen moet tussen 0 en 365 liggen")
             unknown = [c for c in step.only_if if c not in CONDITIONS] + [c for c in step.channels if c not in CHANNELS]
             if unknown:
@@ -236,9 +256,11 @@ def city_tax(hotel_id: str, r: Reservation, cfg: dict | None = None) -> float:
 def is_due(step: Step, r: Reservation, today: date) -> bool:
     """Moet deze stap nu gebeuren (los van de voorwaarden in only_if)?"""
     if step.when == "after_booking":
-        return True
+        return today < r.departure  # niet meer als de gast al vertrokken is (laat ingelezen)
     if step.when == "days_before_arrival":
         return step.due_date(r) <= today < r.arrival
+    if step.when == "days_after_departure":
+        return step.due_date(r) <= today < step.due_date(r) + timedelta(days=AFTER_DEPARTURE_WINDOW)
     return False
 
 

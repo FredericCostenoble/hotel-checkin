@@ -44,7 +44,9 @@ def arrivals_due(hotel_id: str) -> list:
             if (not r.access_pin and r.status != ReservationStatus.CANCELLED
                 and today <= r.arrival <= today + timedelta(days=days))
             # met pincode (nog niet vertrokken): volgen of kamer, data of status veranderen
-            or (r.salto_group_id and r.departure >= today)]
+            or (r.salto_group_id and r.departure >= today)
+            # net vertrokken: betaalstatus voor een betaalverzoek na vertrek
+            or (r.status != ReservationStatus.CANCELLED and today - timedelta(days=2) <= r.departure <= today)]
     return sorted(todo, key=lambda r: r.arrival)
 
 

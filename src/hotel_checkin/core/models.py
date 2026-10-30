@@ -104,6 +104,7 @@ class GuestProfile:
     reservation_ids: list[str] = field(default_factory=list)  # gekoppelde reservaties (ook toekomstige)
     from_checkin_form: bool = False  # contactgegevens bevestigd door de gast zelf
     message_channels: list[str] = field(default_factory=list)  # gekozen kanalen voor berichten (check-in-formulier)
+    muted_channels: list[str] = field(default_factory=list)  # door het hotel uitgezet: email, whatsapp, sms
     created_at: datetime | None = None
     updated_at: datetime | None = None
 

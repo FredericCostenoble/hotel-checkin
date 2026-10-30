@@ -8,7 +8,7 @@ from __future__ import annotations
 import json
 
 import threading
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 
 from hotel_checkin.core.hotels import list_hotels, load_hotel
 from hotel_checkin.guests import repository as repo
@@ -24,7 +24,12 @@ def hotels() -> list[dict]:
 def reservations(hotel_id: str) -> list[dict]:
     from hotel_checkin.guests import profiles
 
+    from hotel_checkin.core import workflow
+    from hotel_checkin.processes import send_messages
+
     periods = {g.guest_id: g.stay_periods for g in profiles.list_profiles(hotel_id)}
+    cfg, ready = workflow.config(hotel_id), send_messages.ready_steps(hotel_id)
+    begin, on, today = send_messages.start(hotel_id), send_messages.enabled(hotel_id), date.today()
 
     def earlier_stays(r) -> int:
         """Verblijven van de gast buiten de periode van deze reservatie (terugkerende gast)."""
@@ -54,6 +59,7 @@ def reservations(hotel_id: str) -> list[dict]:
             "guest_stays": earlier_stays(r) if r.guest_id else 0,
             "added_at": r.created_at.isoformat() if r.created_at else "",
             "updated_at": r.updated_at.isoformat() if r.updated_at else "",
+            "plan": send_messages.plan(hotel_id, r, msgs, cfg, ready, today, begin, on),
             "messages": [
                 {"type": m["message_type"], "channel": m["channel"], "ok": m["ok"], "at": m["sent_at"],
                  "to": m.get("recipient", ""), "status": m.get("status") or ("sent" if m["ok"] else "failed"),
@@ -96,6 +102,7 @@ def guests(hotel_id: str) -> dict:
             "rooms": [k for k, _ in rooms], "room_type": max(g.room_types, key=g.room_types.get) if g.room_types else "",
             "channels": [{"name": k, "count": v} for k, v in channels],
             "preferred_channel": channels[0][0] if channels else "",
+            "muted": g.muted_channels,
             "reservations": g.reservation_ids,
             "updated_at": g.updated_at.isoformat() if g.updated_at else "",
         })
@@ -106,6 +113,18 @@ def merge_guests(hotel_id: str, keep: str, other: str) -> bool:
     from hotel_checkin.processes import guest_profiles
 
     return hotel_id in list_hotels() and guest_profiles.merge(hotel_id, keep, other) is not None
+
+
+def set_muted_channels(hotel_id: str, guest_id: str, muted: list[str]) -> bool:
+    """Kanalen voor één gast uit- of aanzetten (tabblad Gasten)."""
+    from hotel_checkin.guests import profiles
+
+    g = profiles.get_profile(hotel_id, guest_id) if hotel_id in list_hotels() else None
+    if g is None:
+        return False
+    g.muted_channels = sorted({c for c in muted if c in ("email", "whatsapp", "sms")})
+    profiles.save_profile(g)
+    return True
 
 
 def mark_guests_different(hotel_id: str, a: str, b: str) -> bool:
@@ -154,8 +173,9 @@ def start_robot(hotel_id: str, hours: int = 48) -> bool:
 def workflow_view(hotel_id: str) -> dict:
     """De geldende workflow plus de keuzes voor het scherm."""
     from hotel_checkin.core import workflow
+    from hotel_checkin.processes import send_messages
 
-    return {**workflow.config(hotel_id), "choices": {
+    return {**workflow.config(hotel_id), "ready": list(send_messages.ready_steps(hotel_id)), "choices": {
         "flows": list(workflow.FLOWS), "when": list(workflow.WHEN), "channels": list(workflow.CHANNELS),
         "pay": list(workflow.PAY), "conditions": list(workflow.CONDITIONS), "steps": list(workflow.STEP_TYPES),
         "city_tax_units": list(workflow.CITY_TAX_UNITS),

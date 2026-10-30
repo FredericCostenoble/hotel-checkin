@@ -143,3 +143,33 @@ def test_twilio_signature():
         assert not _twilio.valid_signature("lucca", url, {**params, "MessageStatus": "read"}, sig)
     finally:
         mp.undo()
+
+
+def test_plan_timeline(setup):
+    from hotel_checkin.core import workflow
+
+    r = _res("t1")
+    send_messages.run("lucca")
+    rows = repo.messages_for("lucca", "t1")
+    plan = send_messages.plan("lucca", r, rows, workflow.config("lucca"), send_messages.ready_steps("lucca"),
+                              date.today(), send_messages.start("lucca"), True)
+    states = {p["step"]: p["state"] for p in plan}
+    assert states["confirmation"] == "sent" and states["reminder"] == "planned"
+    assert states["thank_you"] == "planned"
+    code = next(p for p in plan if p["step"] == "access_code")
+    assert code["state"] == "planned" and code["reason"] == "not_ready"  # Salto nog niet ingesteld
+    assert code["due"] == (r.arrival - timedelta(days=2)).isoformat()
+    pay = next(p for p in plan if p["step"] == "payment_request")
+    assert pay["state"] == "skipped" and pay["reason"].startswith("condition:")  # betaalstatus onbekend
+
+
+def test_muted_email_for_guest(setup):
+    from hotel_checkin.guests import profiles
+
+    g = profiles.new_profile("lucca")
+    g.muted_channels = ["email"]
+    profiles.save_profile(g)
+    r = _res("m1")
+    r.guest_id = g.guest_id
+    repo.save_reservation(r)
+    assert send_messages.run("lucca") == 0 and not setup

@@ -79,7 +79,7 @@ onderwerp = "Votre code PIN et les informations pratiques pour l'{hotel_naam}"
 voorvertoning = "Votre code PIN personnel et tout ce dont vous avez besoin pour votre séjour."
 aanhef = "Bonjour {voornaam},"
 afsluiting = "À très bientôt,"
-sms = "{hotel_naam} : {voornaam}, à très bientôt ! Votre code PIN pour la porte d'entrée et la chambre {kamernummer} : {pincode}. Valable du {code_geldig_van} au {code_geldig_tot}. Toutes les informations se trouvent dans votre e-mail."
+sms = "{hotel_naam} : {voornaam}, à très bientôt ! Votre code PIN pour la porte d'entrée et la chambre {kamernummer} : {pincode}, puis la touche flèche. Valable du {code_geldig_van} au {code_geldig_tot}. Toutes les informations se trouvent dans votre e-mail."
 
 [[access_code.blokken]]
 type = "text"
@@ -90,7 +90,7 @@ module = "code"
 type = "highlight"
 titel = "Votre code PIN personnel"
 waarde = "{pincode}"
-alineas = ["Ce code ouvre la porte d'entrée et la porte de votre chambre du {code_geldig_van} au {code_geldig_tot}.", "Votre chambre : {kamernummer}"]
+alineas = ["Ce code ouvre la porte d'entrée et la porte de votre chambre du {code_geldig_van} au {code_geldig_tot}.", "Appuyez toujours sur la touche flèche ↵ après le code.", "Votre chambre : {kamernummer}"]
 
 [[access_code.blokken]]
 module = "practical_info"
@@ -99,7 +99,7 @@ titel = "Votre arrivée"
 items = [
   "Adresse : {hotel_adres}",
   "L'enregistrement est possible à partir de {receptie_van}. La réception est ouverte jusqu'à {receptie_tot}. Si vous arrivez plus tard, rendez-vous directement dans votre chambre grâce à votre code PIN.",
-  "Saisissez votre code PIN sur le clavier de la porte d'entrée, puis sur celui de la porte de votre chambre.",
+  "Saisissez votre code PIN sur le clavier de la porte d'entrée, puis appuyez sur la touche flèche ↵. Faites de même à la porte de votre chambre.",
   "Notre hôtel ne dispose pas d'ascenseur. Si vous avez besoin d'aide pour vos bagages, adressez-vous à la réception.",
 ]
 
@@ -124,7 +124,33 @@ type = "text"
 alineas = ["Une question ? Appelez-nous au {hotel_telefoon} ou répondez simplement à cet e-mail."]
 
 [at_the_door]
-sms = "{hotel_naam} : bienvenue, {voornaam} ! Saisissez {pincode} sur le clavier de la porte d'entrée, puis sur celui de la chambre {kamernummer}. Un problème ? Appelez le {nood_nummer}."
+sms = "{hotel_naam} : bienvenue, {voornaam} ! Saisissez {pincode} puis la touche flèche, d'abord à la porte d'entrée, ensuite à la chambre {kamernummer}. Un problème ? Appelez le {nood_nummer}."
+
+[thank_you]
+onderwerp = "Merci pour votre séjour à l'{hotel_naam}"
+voorvertoning = "Merci et à une prochaine fois."
+aanhef = "Bonjour {voornaam},"
+afsluiting = "Bien cordialement,"
+sms = "{hotel_naam} : {voornaam}, merci pour votre séjour. Au plaisir de vous revoir !"
+
+[[thank_you.blokken]]
+type = "text"
+alineas = ["Merci beaucoup pour votre séjour à l'{hotel_naam}. Nous espérons que vous avez apprécié Bruges et votre chambre.", "Nous serons ravis de vous accueillir à nouveau. En réservant directement sur notre site, vous êtes sûr d'obtenir le meilleur prix."]
+
+[payment_request]
+onderwerp = "Montant restant dû pour votre séjour à l'{hotel_naam}"
+voorvertoning = "Un montant reste dû pour votre séjour."
+aanhef = "Bonjour {voornaam},"
+afsluiting = "Bien cordialement,"
+sms = "{hotel_naam} : {voornaam}, il reste {openstaand_bedrag} à régler pour votre séjour. Plus d'infos dans votre e-mail."
+
+[[payment_request.blokken]]
+type = "text"
+alineas = ["Merci pour votre séjour à l'{hotel_naam}. En vérifiant votre facture, nous avons constaté qu'un montant reste dû."]
+
+[[payment_request.blokken]]
+type = "text"
+alineas = ["Une question sur la facture ? Répondez simplement à cet e-mail ou appelez-nous au {hotel_telefoon}."]
 
 # Bouwstenen die een stap kan meekrijgen als ze niet in de eigen tekst staan (tabblad Workflow,
 # inhoud van de mail). module = ... in een blok hierboven: dat blok hoort bij die bouwsteen.
@@ -165,7 +191,7 @@ type = "highlight"
 titel = "Votre code PIN personnel"
 waarde = "{pincode}"
 alineas = [
-  "Ce code ouvre la porte d'entrée et la porte de votre chambre du {code_geldig_van} au {code_geldig_tot}.",
+  "Ce code ouvre la porte d'entrée et la porte de votre chambre du {code_geldig_van} au {code_geldig_tot}.", "Appuyez toujours sur la touche flèche ↵ après le code.",
   "Votre chambre : {kamernummer}",
 ]
 
@@ -175,7 +201,7 @@ titel = "Votre arrivée"
 items = [
   "Adresse : {hotel_adres}",
   "L'enregistrement est possible à partir de {receptie_van}. La réception est ouverte jusqu'à {receptie_tot}. Si vous arrivez plus tard, rendez-vous directement dans votre chambre grâce à votre code PIN.",
-  "Saisissez votre code PIN sur le clavier de la porte d'entrée, puis sur celui de la porte de votre chambre.",
+  "Saisissez votre code PIN sur le clavier de la porte d'entrée, puis appuyez sur la touche flèche ↵. Faites de même à la porte de votre chambre.",
   "Notre hôtel ne dispose pas d'ascenseur. Si vous avez besoin d'aide pour vos bagages, adressez-vous à la réception.",
 ]
 

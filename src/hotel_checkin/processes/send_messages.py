@@ -31,14 +31,16 @@ from hotel_checkin.guests import repository as guests
 from hotel_checkin.messaging import email, sms, templates, whatsapp
 
 TASK = "berichten"
-READY_STEPS = ("confirmation", "reminder")  # stappen die alleen een bericht zijn
+READY_STEPS = ("confirmation", "reminder", "thank_you")  # stappen die alleen een bericht zijn
 
 
 def ready_steps(hotel_id: str) -> tuple[str, ...]:
     """access_code pas als Salto ingesteld is (eerst een pincode maken, dan versturen)."""
     from hotel_checkin.access import salto
 
-    return READY_STEPS + (("access_code",) if salto.configured(hotel_id) else ())
+    steps = READY_STEPS + (("access_code",) if salto.configured(hotel_id) else ())
+    # betaalverzoek pas met een betaalknop (Saferpay) en het openstaande bedrag uit Lighthouse
+    return steps + (("payment_request",) if payments_ready(hotel_id) else ())
 
 
 def enabled(hotel_id: str) -> bool:
@@ -153,7 +155,7 @@ def send_mail(hotel_id: str, step: workflow.Step, r: Reservation, cfg: dict) -> 
 def deliver(hotel_id: str, step: workflow.Step, r: Reservation, cfg: dict) -> list[tuple[str, SendResult]]:
     """Stuur één stap naar de gast via alle kanalen die nu aan de beurt zijn.
 
-    Altijd per mail. Met gsm-nummer ook per WhatsApp; heeft het nummer geen WhatsApp (mislukt
+    Altijd per mail (tenzij het hotel een kanaal voor deze gast uitzette). Met gsm-nummer ook per WhatsApp; heeft het nummer geen WhatsApp (mislukt
     meteen, of Twilio meldt het later), dan per sms. Elke poging staat in het berichtenlog;
     na MAX_ATTEMPTS mislukte pogingen per kanaal stopt het.
     """
@@ -161,6 +163,9 @@ def deliver(hotel_id: str, step: workflow.Step, r: Reservation, cfg: dict) -> li
     ok = {c: any(m["ok"] and m["channel"] == c for m in rows) for c in ("email", "whatsapp", "sms")}
     tries = {c: sum(1 for m in rows if m["channel"] == c) for c in ("email", "whatsapp", "sms")}
     out: list[tuple[str, SendResult]] = []
+    muted = muted_channels(hotel_id, r)
+    if "email" in muted:
+        ok["email"] = True  # uitgezet voor deze gast: niets sturen
     if r.guest.email and not ok["email"] and tries["email"] < MAX_ATTEMPTS:
         result = send_mail(hotel_id, step, r, cfg)
         guests.log_message(hotel_id, r.reservation_id, step.step, result)
@@ -168,7 +173,7 @@ def deliver(hotel_id: str, step: workflow.Step, r: Reservation, cfg: dict) -> li
     if not (r.guest.phone and phone_enabled(hotel_id)) or ok["whatsapp"] or ok["sms"]:
         return out
     msg, data = _rendered(hotel_id, step, r, cfg)
-    template = whatsapp_template(hotel_id, step.step, r.guest.language)
+    template = None if "whatsapp" in muted else whatsapp_template(hotel_id, step.step, r.guest.language)
     if template and tries["whatsapp"] == 0:
         mid = guests.new_message_id()
         values = {**data, "checkin_link": templates.checkin_link(hotel_id, r.token or "")}
@@ -179,13 +184,68 @@ def deliver(hotel_id: str, step: workflow.Step, r: Reservation, cfg: dict) -> li
         out.append(("whatsapp", result))
         if result.ok:
             return out  # sms alleen als WhatsApp mislukt (meteen of later gemeld door Twilio)
-    if tries["sms"] < MAX_ATTEMPTS and msg.sms:
+    if "sms" not in muted and tries["sms"] < MAX_ATTEMPTS and msg.sms:
         mid = guests.new_message_id()
         result = sms.send_sms(hotel_id, r.guest.phone, msg.sms,
                               status_callback=status_url(hotel_id, r.reservation_id, mid))
         note = "terugval: geen WhatsApp" if template else ""
         guests.log_message(hotel_id, r.reservation_id, step.step, result, message_id=mid, note=note)
         out.append(("sms", result))
+    return out
+
+
+def muted_channels(hotel_id: str, r: Reservation) -> set[str]:
+    """Kanalen die het hotel voor deze gast uitzette (tabblad Gasten), om boze klanten te vermijden."""
+    from hotel_checkin.guests import profiles
+
+    if not r.guest_id:
+        return set()
+    g = profiles.get_profile(hotel_id, r.guest_id)
+    return set(g.muted_channels) if g else set()
+
+
+def plan(hotel_id: str, r: Reservation, rows: list[dict], cfg: dict, ready: tuple[str, ...],
+         today: date, begin: datetime | None, on: bool) -> list[dict]:
+    """De tijdlijn van één reservatie voor de monitor: per stap van haar flow wat er gebeurde of
+    nog gaat gebeuren. state: sent, failed, planned, due, skipped, off. reason bij skipped/off."""
+    flow = workflow.flow_for(hotel_id, r, cfg)
+    steps = workflow._steps_from(cfg, flow)
+    active = [s for s in steps if s.enabled]
+    out = []
+    for step in steps:
+        mine = [m for m in rows if m["message_type"] == step.step]
+        due = step.due_date(r) or (r.created_at.date() if r.created_at else None)
+        item = {"step": step.step, "when": step.when, "days": step.days,
+                "due": due.isoformat() if due else "", "state": "", "reason": ""}
+        failed_now = [c for c in step.only_if if not workflow.CONDITIONS[c](r)]
+        if any(m["ok"] for m in mine):
+            item["state"] = "sent"
+        elif mine:
+            item["state"] = "failed"
+        elif not step.enabled:
+            item.update(state="off", reason="disabled")
+        elif not on:
+            item.update(state="off", reason="messaging_off")
+        elif not r.created_at or (begin and r.created_at < begin):
+            item.update(state="off", reason="before_start")
+        elif failed_now:
+            item.update(state="skipped", reason="condition:" + ",".join(failed_now))
+        elif workflow._booked_late(step, r):
+            item.update(state="skipped", reason="booked_late")
+        elif workflow.is_due(step, r, today):
+            if workflow.is_replaced(step, r, today, active):
+                item.update(state="skipped", reason="later_due")
+            elif step.step not in ready:
+                item.update(state="planned", reason="not_ready", due=today.isoformat())  # zodra dit gebouwd is
+            elif not (r.guest.email or r.guest.phone):
+                item.update(state="skipped", reason="no_contact")
+            else:
+                item["state"] = "due"
+        elif due and due > today:
+            item.update(state="planned", reason="" if step.step in ready else "not_ready")
+        else:
+            item.update(state="skipped", reason="window_passed")
+        out.append(item)
     return out
 
 

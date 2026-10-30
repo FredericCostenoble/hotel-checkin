@@ -64,10 +64,22 @@ a.jump svg { vertical-align: -1px; }
 .wf-grid { display: grid; grid-template-columns: minmax(0, 1fr) 280px; gap: 24px; align-items: start; }
 @media (max-width: 900px) { .wf-grid { grid-template-columns: 1fr; } }
 #wf-timeline { position: relative; padding-left: 22px; }
-#wf-timeline::before { content: ""; position: absolute; left: 7px; top: 10px; bottom: 10px; width: 2px; background: #C9CFDB; }
+
 .tl-node, .tl-when { position: relative; margin: 6px 0; }
 .tl-node .dot, .tl-when .dot { position: absolute; left: -20px; top: 4px; width: 12px; height: 12px; border-radius: 50%; background: #fff; border: 2px solid #5C6478; }
 .tl-node.start .dot, .tl-node.end .dot { background: #5C6478; }
+/* fases in kleur: voor de aankomst (blauw), het verblijf (groen), na het vertrek (oranje) */
+.tl-phase { position: relative; border-left: 4px solid var(--ph); background: var(--ph-bg); border-radius: 0 8px 8px 0;
+  padding: 6px 12px 8px 22px; margin: 0 0 10px -22px; }
+.tl-phase.before { --ph: #3E63DD; --ph-bg: #F3F6FF; }
+.tl-phase.stay { --ph: #2E9E5B; --ph-bg: #EEF8F1; }
+.tl-phase.after { --ph: #D9822B; --ph-bg: #FDF5EC; }
+.tl-phase.after:empty { display: none; }
+.tl-node { font-size: 1.02em; }
+.tl-phase .tl-node .dot, .tl-phase .tl-when .dot { left: -27px; border-color: var(--ph); }
+.tl-phase .tl-node .dot { background: var(--ph); width: 14px; height: 14px; left: -28px; }
+.tl-phase .tl-node strong { color: var(--ph); text-transform: uppercase; letter-spacing: 0.03em; font-size: 0.85em; }
+.tl-phase .tl-when { color: var(--ph); }
 .tl-when { color: #5C6478; font-weight: bold; font-size: 0.9em; margin-top: 14px; }
 .tl-step .card { border: 1px solid var(--line); border-radius: 8px; background: #fff; padding: 10px 14px; margin: 6px 0 4px; }
 .tl-step.off .card { opacity: 0.5; }
@@ -97,3 +109,18 @@ input.days { width: 60px; }
 .tag.warn { background: #FFF1E0; color: #8A4B00; }
 a.msgs { text-decoration: none; color: inherit; cursor: pointer; }
 .info { margin: 0; color: #5C6478; font-size: 0.9em; background: #F4F5F8; padding: 6px 10px; border-radius: 4px; }
+
+/* Tijdlijn van één reservatie in de berichtenpopup */
+.modal-box h3 { font-size: 0.95em; margin: 12px 0 6px; color: #5C6478; }
+ul.plan { list-style: none; margin: 0; padding: 0 0 0 18px; border-left: 2px solid #C9CFDB; }
+ul.plan li { position: relative; padding: 4px 0 6px 6px; }
+ul.plan li .dot { position: absolute; left: -26px; top: 8px; width: 12px; height: 12px; border-radius: 50%; background: #fff; border: 2px solid #9AA3B5; }
+ul.plan li.pl-sent .dot { background: #2E9E5B; border-color: #2E9E5B; }
+ul.plan li.pl-failed .dot { background: var(--err); border-color: var(--err); }
+ul.plan li.pl-planned .dot, ul.plan li.pl-due .dot { border-color: #3E63DD; }
+ul.plan li.pl-due .dot { background: #3E63DD; }
+ul.plan li.pl-skipped, ul.plan li.pl-off { opacity: 0.6; }
+.pl-sent .tag.pl { background: #E8F5EC; color: #1E6B3A; }
+.pl-failed .tag.pl { background: #F6E3E3; color: var(--err); }
+.pl-planned .tag.pl, .pl-due .tag.pl { background: #EAF0FF; color: #2B3F8C; }
+td.mute label { font-size: 12px; margin-right: 6px; }
