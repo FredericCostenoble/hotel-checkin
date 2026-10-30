@@ -174,3 +174,5 @@ a.settings-btn { text-decoration: none; }
 .page-title { display: flex; align-items: center; gap: 10px; padding: 18px 16px 4px; color: #2B3F8C; }
 .page-title h1 { margin: 0; font-size: 22px; font-weight: 600; color: var(--text); }
 .tl-step .info.top { margin: 0 0 8px; }
+a.brand { text-decoration: none; }
+a.brand:hover .name b { text-decoration: underline; }
