@@ -28,14 +28,14 @@ def run(hotel_id: str, since: datetime) -> int:
     found = new = 0
     stats = _ContactStats()
     skipped: list[str] = []
-    timing: list[str] = []  # gemeten duur per onderdeel, voor de monitor
+    timings: dict[str, float] = {}  # gemeten duur per onderdeel (seconden), voor de monitor
     try:
         t0 = time.monotonic()
         with lighthouse.connect(hotel_id) as lh:
-            timing.append(f"aanmelden {time.monotonic() - t0:.0f} s")
+            timings["login"] = round(time.monotonic() - t0, 1)
             t0 = time.monotonic()
             listed = lighthouse.get_new_reservations(hotel_id, since, lh, skipped)
-            timing.append(f"lijst {time.monotonic() - t0:.0f} s")
+            timings["list"] = round(time.monotonic() - t0, 1)
             for reservation in listed:
                 found += 1
                 existing = guests.get_reservation(hotel_id, reservation.reservation_id)
@@ -59,13 +59,13 @@ def run(hotel_id: str, since: datetime) -> int:
                 guests.save_reservation(reservation)
     except Exception as exc:
         guests.log_robot_run(hotel_id, TASK, started, False, found, new, f"{type(exc).__name__}: {exc}",
-                             since=since, skipped=len(skipped))
+                             since=since, skipped=len(skipped), timings=timings | stats.timings())
         raise
-    parts = [", ".join(timing).capitalize()] + ([stats.note()] if stats.read else [])
+    parts = [stats.note()] if stats.read else []
     if skipped:
         parts.append(f"{len(skipped)} overgeslagen: " + "; ".join(skipped[:5]))
     note = ". ".join(parts) or None
-    guests.log_robot_run(hotel_id, TASK, started, True, found, new, note, since=since, skipped=len(skipped))
+    guests.log_robot_run(hotel_id, TASK, started, True, found, new, note, since=since, skipped=len(skipped), timings=timings | stats.timings())
     return new
 
 
@@ -87,7 +87,11 @@ class _ContactStats:
             parts.append(f"{self.with_email} contactgegevens gevonden")
         if self.read - self.with_email:
             parts.append(f"{self.read - self.with_email} nog zonder e-mail in Lighthouse")
-        return ", ".join(parts) + f" ({self.seconds / self.read:.0f} s per reservatie)"
+        return ", ".join(parts)
+
+    def timings(self) -> dict[str, float]:
+        """Gemiddelde duur per reservatie (seconden), alleen als er gelezen werd."""
+        return {"contact": round(self.seconds / self.read, 1), "contacts": self.read} if self.read else {}
 
 
 def _apply_contact(reservation, contact) -> None:

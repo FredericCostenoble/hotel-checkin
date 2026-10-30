@@ -10,7 +10,7 @@ const T = {
     yes: "ja", no: "nee", none: "geen", count: n => `${n} reservaties`, no_res: "Geen reservaties",
     hours_a: "Nieuwe reservaties van de laatste", hours_b: "uur", run: "Robot nu draaien",
     r_start: "Start", r_duration: "Duur", r_task: "Taak", r_result: "Resultaat", r_found: "Gevonden", r_new: "Nieuw", r_error: "Opmerking",
-    all_tasks: "Alle", task_nieuwe_reservaties: "Nieuwe reservaties", task_contactgegevens_nalezen: "Reservaties bijwerken",
+    all_tasks: "Alle", t_login: "aanmelden", t_list: "lijst", t_contact: (n, sec) => `${n} contact${n > 1 ? "en" : ""} à ${sec} s`, task_nieuwe_reservaties: "Nieuwe reservaties", task_contactgegevens_nalezen: "Reservaties bijwerken",
     ok: "ok", fail: "fout", busy: "De robot is bezig...", scheduled: "Draait ook automatisch op schema.",
     not_installed: "De robot is in deze omgeving nog niet geïnstalleerd.", no_runs: "Nog geen afgeronde run",
     load_error: "Fout bij laden",
@@ -24,7 +24,7 @@ const T = {
     yes: "yes", no: "no", none: "none", count: n => `${n} reservations`, no_res: "No reservations",
     hours_a: "New reservations of the last", hours_b: "hours", run: "Run robot now",
     r_start: "Start", r_duration: "Duration", r_task: "Task", r_result: "Result", r_found: "Found", r_new: "New", r_error: "Note",
-    all_tasks: "All", task_nieuwe_reservaties: "New reservations", task_contactgegevens_nalezen: "Update reservations",
+    all_tasks: "All", t_login: "login", t_list: "list", t_contact: (n, sec) => `${n} contact${n > 1 ? "s" : ""} × ${sec} s`, task_nieuwe_reservaties: "New reservations", task_contactgegevens_nalezen: "Update reservations",
     ok: "ok", fail: "failed", busy: "The robot is running...", scheduled: "Also runs automatically on a schedule.",
     not_installed: "The robot is not installed in this environment yet.", no_runs: "No finished run yet",
     load_error: "Loading failed",
@@ -135,6 +135,16 @@ async function loadRuns() {
   if (runsData.running || $("#run").dataset.waiting) timer = setTimeout(loadRuns, 5000);
 }
 
+// Gemeten duur per onderdeel onder de totale duur, bv. "aanmelden 25 s, lijst 6 s, 2 contacten à 9 s"
+function timingText(tm) {
+  if (!tm || !Object.keys(tm).length) return "";
+  const p = [];
+  if (tm.login != null) p.push(`${t("t_login")} ${Math.round(tm.login)} s`);
+  if (tm.list != null) p.push(`${t("t_list")} ${Math.round(tm.list)} s`);
+  if (tm.contact != null) p.push(t("t_contact", tm.contacts || 1, Math.round(tm.contact)));
+  return `<div class="timing">${esc(p.join(", "))}</div>`;
+}
+
 function renderRuns(d) {
   const busy = d.running || !!$("#run").dataset.waiting;
   $("#run").disabled = busy || !d.can_run;
@@ -152,7 +162,7 @@ function renderRuns(d) {
     const secs = (new Date(x.finished_at) - new Date(x.started_at)) / 1000;
     // Rood alleen bij een fout of overgeslagen rijen; anders is de opmerking gewoon informatie
     const problem = !x.ok || Number(x.skipped || 0) > 0;
-    return `<tr><td>${stamp(x.started_at)}</td><td>${Math.round(secs)} s</td>
+    return `<tr><td>${stamp(x.started_at)}</td><td>${Math.round(secs)} s${timingText(x.timings)}</td>
       <td><span class="task task-${esc(x.task)}">${esc(taskName(x.task))}</span></td>
       <td class="${x.ok ? "ok" : "err"}">${x.ok ? t("ok") : t("fail")}</td><td>${x.found}</td><td>${x.new}</td>
       <td class="wrap ${problem ? "err" : ""}">${esc(x.error)}</td></tr>`;

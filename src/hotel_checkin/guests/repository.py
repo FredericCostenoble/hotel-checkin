@@ -265,7 +265,7 @@ def list_reservations(hotel_id: str) -> list[Reservation]:
 def log_robot_run(
     hotel_id: str, task: str, started: datetime, ok: bool,
     found: int = 0, new: int = 0, error: str | None = None,
-    since: datetime | None = None, skipped: int = 0,
+    since: datetime | None = None, skipped: int = 0, timings: dict | None = None,
 ) -> None:
     """Noteer een run van de robot (bv. task="nieuwe_reservaties").
 
@@ -287,6 +287,8 @@ def log_robot_run(
         "error": (error or "")[:2000],
         "since": since.isoformat() if since else "",
         "skipped": skipped,
+        # gemeten duur per onderdeel in seconden, bv. {"login": 25, "list": 6, "contact": 9}
+        "timings": json.dumps(timings or {}),
     })
 
 

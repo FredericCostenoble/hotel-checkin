@@ -31,3 +31,4 @@ h3 { font-size: 13px; text-transform: uppercase; letter-spacing: .5px; color: va
 .task-nieuwe_reservaties { background: #E6F0FB; color: #1F4E8C; }
 .task-contactgegevens_nalezen { background: #F3ECFA; color: #5B2E91; }
 #task { margin-left: auto; }
+.timing { font-size: 0.8em; color: #8A90A0; white-space: nowrap; }

@@ -5,6 +5,8 @@ Bevat gastgegevens: in de cloud alleen achter een Microsoft-login.
 
 from __future__ import annotations
 
+import json
+
 import threading
 from datetime import datetime, timedelta, timezone
 
@@ -51,6 +53,7 @@ def reservations(hotel_id: str) -> list[dict]:
 def runs(hotel_id: str) -> dict:
     return {"running": _robot_state.get(hotel_id) == "bezig", "runs": [
         {k: e.get(k) for k in ("task", "started_at", "finished_at", "ok", "found", "new", "error", "skipped")}
+        | {"timings": json.loads(e.get("timings") or "{}")}
         for e in repo.robot_runs(hotel_id, limit=200)
     ]}
 
