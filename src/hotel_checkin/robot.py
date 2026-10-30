@@ -1,13 +1,14 @@
 """De Lighthouse-robot als los programma (container in Azure Container Apps).
 
-Draait op schema (bv. elke 20 minuten) en op vraag via de knop "Robot nu draaien" op de
+Draait op schema (standaard elk uur, als vangnet) en op vraag via de knop "Robot nu draaien" op de
 opvolgpagina. Leest Lighthouse alleen; schrijft niets in Lighthouse.
 
     python -m hotel_checkin.robot                  # alle hotels, sinds de nieuwste opgeslagen boeking
     python -m hotel_checkin.robot --hotel lucca --hours 48
 
-Schema van de job per omgeving: GitHub-variabele ROBOT_SCHEDULE (cron, UTC), standaard elke
-20 minuten. Per hotel kan het trager: [robot] check_minutes in het hotelbestand, per omgeving te
+Schema van de job per omgeving: GitHub-variabele ROBOT_SCHEDULE (cron, UTC), standaard elk
+uur. Nieuwe boekingen komen normaal meteen binnen via de meldingsmail (processes/mail_trigger.py);
+het schema vangt op wat geen mail kreeg. Per hotel kan het trager: [robot] check_minutes in het hotelbestand, per omgeving te
 overschrijven met Key Vault-geheim <hotel>-robot-check-minutes. Op vraag (knop in de monitor,
 ROBOT_MANUAL=1) worden alle hotels gelezen.
 
@@ -58,7 +59,7 @@ def _check_due(hotel_id: str) -> bool:
     """Is het tijd om opnieuw naar nieuwe reservaties te kijken voor dit hotel?"""
     if os.environ.get("ROBOT_MANUAL"):
         return True
-    minutes = float(hotel_setting(hotel_id, "ROBOT_CHECK_MINUTES", default="20", shared=False))
+    minutes = float(hotel_setting(hotel_id, "ROBOT_CHECK_MINUTES", default="60", shared=False))
     runs = [r for r in guests.robot_runs(hotel_id) if r.get("task") == new_reservation.TASK and r.get("ok")]
     if not runs:
         return True
