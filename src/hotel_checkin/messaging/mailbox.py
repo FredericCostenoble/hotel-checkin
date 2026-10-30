@@ -76,7 +76,20 @@ def mask(text: str, names: list[str]) -> str:
     """Gastgegevens weglaten: gekende namen, e-mail, telefoon, waarden bij naam- en adresvelden,
     lange vrije tekst. Labels, datums, bedragen en reservatienummers blijven staan."""
     out = []
+    in_guest_block = False
     for line in [x.rstrip() for x in text.splitlines()]:
+        # Cubilis: "Gemaakt door <naam> op <datum>", daarna naam en adres op losse regels tot "Aankomst:"
+        if re.match(r"\s*(Gemaakt door|Made by|Created by|Créée? par|Erstellt von)\b", line, re.I):
+            line = re.sub(r"\b(door|by|par|von)\b.*?\b(op|on|le|am)\b", r"\1 <naam> \2", line, count=1, flags=re.I)
+            out.append(line)
+            in_guest_block = True
+            continue
+        if in_guest_block:
+            if re.match(r"\s*(Aankomst|Arrival|Arrivée|Anreise)\b", line, re.I):
+                in_guest_block = False
+            elif line.strip():
+                out.append("<gastgegevens>")
+                continue
         line = re.sub(r"[\w.+-]+@[\w-]+(?:\.[\w-]+)+", "<email>", line)
         # telefoon: begint met +, 00 of 0, alleen spaties/punten als scheiding, minstens 9 cijfers
         line = re.sub(r"(?<![\w/-])(?:\+|0)\d[\d .]{7,}\d(?![\w/-])",

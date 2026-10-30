@@ -18,6 +18,7 @@ TZ = ZoneInfo("Europe/Brussels")
 MONTHS = {
     "jan": 1, "feb": 2, "mrt": 3, "maa": 3, "apr": 4, "mei": 5, "jun": 6, "jul": 7,
     "aug": 8, "sep": 9, "okt": 10, "nov": 11, "dec": 12,
+    "mar": 3, "may": 5, "oct": 10,  # Engels (bv. meldingen van Cubilis)
 }
 _DATE = r"(\d{1,2})\s+([a-z]{3})[a-z]*\.?\s+(\d{4})"
 # Taal afleiden uit het land (Lighthouse toont de taal niet op de detailpagina). De gast kan

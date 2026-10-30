@@ -34,3 +34,11 @@ def test_mask_hides_guest_data_keeps_structure():
     out = mailbox.mask(text, ["Voorbeeld"])
     assert "CPB-4276-002731" in out and "02/11/2026" in out
     assert "Jan" not in out and "Voorbeeld" not in out and "jan@example.com" not in out and "470" not in out
+
+
+def test_mask_cubilis_guest_block():
+    text = ("Reserveringsnummer: 12345678,\n\nGemaakt door Jan Voorbeeld op 30 oktober 2026 11:16.\n\n"
+            "Jan Voorbeeld\n\nTeststraat 1\n\n9999 Testdorp BE\n\nAankomst:\n\nmaandag 2 november 2026")
+    out = mailbox.mask(text, [])
+    assert "Jan" not in out and "Teststraat" not in out and "Testdorp" not in out
+    assert "12345678" in out and "Gemaakt door <naam> op 30 oktober 2026" in out and "2 november 2026" in out
