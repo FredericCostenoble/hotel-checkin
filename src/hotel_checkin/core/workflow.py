@@ -18,7 +18,7 @@ Een stap:
     only_if = ["form_not_completed", "not_cancelled"]
     channels = ["email"]
     skip_if_booked_late = true        # niet als de reservatie pas op of na deze dag binnenkwam
-    pay = "none"                      # betaalknop: none | open_amount | city_tax
+    pay = "none"                      # betaalknop: none | open_amount (wat nog openstaat: alleen de taks of alles)
     enabled = true
     content = { reservation = true, checkin_form = true, code = false, practical_info = false }
                                       # wat in de mail staat (bouwstenen, zie messaging/templates.py)
@@ -40,7 +40,8 @@ FLOWS = ("booking", "expedia", "website_paid", "website_unpaid")
 WHEN = ("after_booking", "days_before_arrival", "days_after_departure")
 AFTER_DEPARTURE_WINDOW = 14  # dagen: een bericht na vertrek dat zo lang niet weg kon, vervalt
 CHANNELS = ("email", "sms", "whatsapp")
-PAY = ("none", "open_amount", "city_tax")
+PAY = ("none", "open_amount")
+_OLD_PAY = {"city_tax": "open_amount"}  # vroeger een aparte knop voor de toeristenbelasting
 STEP_TYPES = ("confirmation", "reminder", "access_code", "thank_you", "payment_request")
 CITY_TAX_UNITS = ("person_night", "person_stay")
 CONFIG_DOC = "workflow"
@@ -180,7 +181,7 @@ def validate(hotel_id: str, cfg: dict) -> dict:
                     only_if=list(s.get("only_if", [])), channels=list(s.get("channels", ["email"])),
                     replaced_by=list(s.get("replaced_by", [])),
                     skip_if_booked_late=bool(s.get("skip_if_booked_late", False)),
-                    pay=str(s.get("pay", "none")), enabled=bool(s.get("enabled", True)),
+                    pay=_OLD_PAY.get(str(s.get("pay", "none")), str(s.get("pay", "none"))), enabled=bool(s.get("enabled", True)),
                     content={**DEFAULT_CONTENT.get(str(s.get("step")), {}),
                              **{k: bool(v) for k, v in (s.get("content") or {}).items()}},
                 )

@@ -59,7 +59,7 @@ def test_reminder_seven_days_before(setup, monkeypatch):
     monkeypatch.setattr(repo, "_now", real_now)
     monkeypatch.setattr(send_messages, "start", lambda h: real_now() - timedelta(days=30))
     for rid in ("r1", "r2"):
-        repo.log_message("lucca", rid, "confirmation", SendResult(Channel.EMAIL, "x", True))
+        repo.log_message("lucca", rid, "confirmation", SendResult(Channel.EMAIL, "jan@example.com", True))
     repo.mark_checkin_completed("lucca", "r2", "jan@example.com", None, "nl")  # formulier ingevuld
     assert send_messages.run("lucca") == 1
     assert repo.was_sent("lucca", "r1", "reminder") and not repo.was_sent("lucca", "r2", "reminder")
@@ -118,7 +118,7 @@ def test_phone_whatsapp_then_sms_fallback(setup, monkeypatch):
 
 def test_failed_mail_retried_max_three_times(setup, monkeypatch):
     monkeypatch.setattr(send_messages.email, "send_email",
-                        lambda *a, **k: SendResult(Channel.EMAIL, "x", False, error="403"))
+                        lambda *a, **k: SendResult(Channel.EMAIL, k["to"], False, error="403"))
     _res("f1")
     for _ in range(5):
         send_messages.run("lucca")
@@ -173,3 +173,25 @@ def test_muted_email_for_guest(setup):
     r.guest_id = g.guest_id
     repo.save_reservation(r)
     assert send_messages.run("lucca") == 0 and not setup
+
+
+def test_backup_contacts_get_messages_and_resend(setup, monkeypatch):
+    monkeypatch.setattr(send_messages, "phone_enabled", lambda h: True)
+    monkeypatch.setattr(send_messages, "whatsapp_template", lambda h, s, lang: None)
+    texts = []
+    monkeypatch.setattr(send_messages.sms, "send_sms",
+                        lambda h, to, text, status_callback=None: texts.append(to) or SendResult(Channel.SMS, to, True))
+    r = _res("b1")
+    r.guest.backup_email, r.guest.phone, r.guest.backup_phone = "Partner@example.com", "+32470000001", "+32470000002"
+    repo.save_reservation(r)
+    send_messages.run("lucca")
+    assert sorted(to for to, _ in setup) == ["jan@example.com", "partner@example.com"]
+    assert texts == ["+32470000001", "+32470000002"]
+    rows = repo.messages_for("lucca", "b1")
+    assert {m["recipient"] for m in rows} == {"jan@example.com", "partner@example.com", "+32470000001", "+32470000002"}
+    send_messages.run("lucca")
+    assert len(setup) == 2  # niets dubbel
+    out = send_messages.resend("lucca", "b1", "confirmation", "email", "partner@example.com", "frederic")
+    assert out["ok"] and len(setup) == 3
+    assert any(m["note"] == "opnieuw verstuurd door frederic" for m in repo.messages_for("lucca", "b1"))
+    assert not send_messages.resend("lucca", "b1", "confirmation", "email", "other@example.com", "x")["ok"]

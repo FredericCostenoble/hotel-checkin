@@ -72,6 +72,9 @@ def _update_contact(g: GuestProfile, r: Reservation) -> None:
         g.email, g.email_own = email, is_own_email(email)
     if r.guest.phone and (from_form or not g.phone):
         g.phone = r.guest.phone
+    if from_form:  # extra adres en nummer uit het formulier (leeg = door de gast weggehaald)
+        g.backup_email = (r.guest.backup_email or "").lower() or None
+        g.backup_phone = r.guest.backup_phone or None
     if r.guest.country and (from_form or not g.country):
         g.country = r.guest.country
     if r.guest.language and (from_form or not g.from_checkin_form):
@@ -228,6 +231,8 @@ def merge(hotel_id: str, keep_id: str, other_id: str, keep: GuestProfile | None 
                         or (other.from_checkin_form and not keep.from_checkin_form)):
         keep.email, keep.email_own = other.email, other.email_own
     keep.message_channels = keep.message_channels or other.message_channels
+    keep.backup_email = keep.backup_email or other.backup_email
+    keep.backup_phone = keep.backup_phone or other.backup_phone
     keep.muted_channels = sorted(set(keep.muted_channels) | set(other.muted_channels))
     keep.phone = keep.phone or other.phone
     keep.country = keep.country or other.country

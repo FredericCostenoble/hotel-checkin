@@ -144,54 +144,114 @@ def _rendered(hotel_id: str, step: workflow.Step, r: Reservation, cfg: dict):
     return templates.render(hotel_id, step.step, r.guest.language, data, mail_content(step, r), pay), data
 
 
-def send_mail(hotel_id: str, step: workflow.Step, r: Reservation, cfg: dict) -> SendResult:
+def send_mail(hotel_id: str, step: workflow.Step, r: Reservation, cfg: dict, to: str | None = None) -> SendResult:
     msg, _ = _rendered(hotel_id, step, r, cfg)
     reply_to = templates.load_hotel_config(hotel_id).get("hotel", {}).get("email")
     sender = hotel_setting(hotel_id, "VERZENDING_MAIL_AFZENDER", shared=False)
-    return email.send_email(to=r.guest.email, subject=msg.subject, html_body=msg.html, sender=sender,
+    return email.send_email(to=to or r.guest.email, subject=msg.subject, html_body=msg.html, sender=sender,
                             reply_to=reply_to)
 
 
-def deliver(hotel_id: str, step: workflow.Step, r: Reservation, cfg: dict) -> list[tuple[str, SendResult]]:
-    """Stuur één stap naar de gast via alle kanalen die nu aan de beurt zijn.
+def recipients(r: Reservation, kind: str) -> list[str]:
+    """Adressen van de gast: het hoofdadres en het extra adres uit het check-in-formulier.
+    kind: "email" of "phone". Dubbels vallen weg."""
+    values = [r.guest.email, r.guest.backup_email] if kind == "email" else [r.guest.phone, r.guest.backup_phone]
+    out: list[str] = []
+    for v in values:
+        if v and v.strip().lower() not in [o.lower() for o in out]:
+            out.append(v.strip())
+    return out
 
-    Altijd per mail (tenzij het hotel een kanaal voor deze gast uitzette). Met gsm-nummer ook per WhatsApp; heeft het nummer geen WhatsApp (mislukt
-    meteen, of Twilio meldt het later), dan per sms. Elke poging staat in het berichtenlog;
-    na MAX_ATTEMPTS mislukte pogingen per kanaal stopt het.
+
+def _same(a: str, b: str) -> bool:
+    return (a or "").strip().lower() == (b or "").strip().lower()
+
+
+def deliver(hotel_id: str, step: workflow.Step, r: Reservation, cfg: dict,
+            only: tuple[str, str] | None = None, note: str = "") -> list[tuple[str, SendResult]]:
+    """Stuur één stap naar de gast via alle kanalen en adressen die nu aan de beurt zijn.
+
+    Per adres (hoofdadres en extra adres uit het formulier): altijd per mail (tenzij het hotel
+    een kanaal voor deze gast uitzette). Per gsm-nummer ook per WhatsApp; heeft het nummer geen
+    WhatsApp (mislukt meteen, of Twilio meldt het later), dan per sms. Elke poging staat in het
+    berichtenlog met de ontvanger; na MAX_ATTEMPTS mislukte pogingen per kanaal en adres stopt het.
+
+    only=(kanaal, adres): opnieuw versturen vanuit de monitor, alleen dat kanaal en adres, ook als
+    het al eens lukte. note komt in het berichtenlog.
     """
     rows = [m for m in guests.messages_for(hotel_id, r.reservation_id) if m["message_type"] == step.step]
-    ok = {c: any(m["ok"] and m["channel"] == c for m in rows) for c in ("email", "whatsapp", "sms")}
-    tries = {c: sum(1 for m in rows if m["channel"] == c) for c in ("email", "whatsapp", "sms")}
-    out: list[tuple[str, SendResult]] = []
     muted = muted_channels(hotel_id, r)
-    if "email" in muted:
-        ok["email"] = True  # uitgezet voor deze gast: niets sturen
-    if r.guest.email and not ok["email"] and tries["email"] < MAX_ATTEMPTS:
-        result = send_mail(hotel_id, step, r, cfg)
-        guests.log_message(hotel_id, r.reservation_id, step.step, result)
-        out.append(("email", result))
-    if not (r.guest.phone and phone_enabled(hotel_id)) or ok["whatsapp"] or ok["sms"]:
+
+    def done(channel: str, to: str) -> bool:
+        return any(m["ok"] and m["channel"] == channel and _same(m.get("recipient", ""), to) for m in rows)
+
+    def tries(channel: str, to: str) -> int:
+        return sum(1 for m in rows if m["channel"] == channel and _same(m.get("recipient", ""), to))
+
+    def wanted(channel: str, to: str) -> bool:
+        if only:
+            return only[0] == channel and _same(only[1], to)
+        return channel not in muted and not done(channel, to) and tries(channel, to) < MAX_ATTEMPTS
+
+    out: list[tuple[str, SendResult]] = []
+    for to in recipients(r, "email"):
+        if wanted("email", to):
+            result = send_mail(hotel_id, step, r, cfg, to=to)
+            guests.log_message(hotel_id, r.reservation_id, step.step, result, note=note)
+            out.append(("email", result))
+    phones = recipients(r, "phone")
+    if not phones or not phone_enabled(hotel_id) or (only and only[0] == "email"):
         return out
     msg, data = _rendered(hotel_id, step, r, cfg)
-    template = None if "whatsapp" in muted else whatsapp_template(hotel_id, step.step, r.guest.language)
-    if template and tries["whatsapp"] == 0:
+    template = whatsapp_template(hotel_id, step.step, r.guest.language)
+    values = {**data, "checkin_link": templates.checkin_link(hotel_id, r.token or "")}
+    variables = {str(i): str(values.get(k, "")) for i, k in enumerate(WHATSAPP_VARIABLES.get(step.step, ()), 1)}
+    for to in phones:
+        if not only and (done("whatsapp", to) or done("sms", to)):
+            continue
+        wa_ok = False
+        if template and ((only and wanted("whatsapp", to)) or
+                         (not only and "whatsapp" not in muted and tries("whatsapp", to) == 0)):
+            mid = guests.new_message_id()
+            result = whatsapp.send_whatsapp_template(hotel_id, to, template, variables,
+                                                     status_callback=status_url(hotel_id, r.reservation_id, mid))
+            guests.log_message(hotel_id, r.reservation_id, step.step, result, message_id=mid, note=note)
+            out.append(("whatsapp", result))
+            wa_ok = result.ok
+        if wa_ok or not msg.sms or not wanted("sms", to):
+            continue  # sms alleen als WhatsApp mislukt (meteen of later gemeld door Twilio)
         mid = guests.new_message_id()
-        values = {**data, "checkin_link": templates.checkin_link(hotel_id, r.token or "")}
-        variables = {str(i): str(values.get(k, "")) for i, k in enumerate(WHATSAPP_VARIABLES.get(step.step, ()), 1)}
-        result = whatsapp.send_whatsapp_template(hotel_id, r.guest.phone, template, variables,
-                                                 status_callback=status_url(hotel_id, r.reservation_id, mid))
-        guests.log_message(hotel_id, r.reservation_id, step.step, result, message_id=mid)
-        out.append(("whatsapp", result))
-        if result.ok:
-            return out  # sms alleen als WhatsApp mislukt (meteen of later gemeld door Twilio)
-    if "sms" not in muted and tries["sms"] < MAX_ATTEMPTS and msg.sms:
-        mid = guests.new_message_id()
-        result = sms.send_sms(hotel_id, r.guest.phone, msg.sms,
-                              status_callback=status_url(hotel_id, r.reservation_id, mid))
-        note = "terugval: geen WhatsApp" if template else ""
-        guests.log_message(hotel_id, r.reservation_id, step.step, result, message_id=mid, note=note)
+        result = sms.send_sms(hotel_id, to, msg.sms, status_callback=status_url(hotel_id, r.reservation_id, mid))
+        fallback = "terugval: geen WhatsApp" if template and not only else ""
+        guests.log_message(hotel_id, r.reservation_id, step.step, result, message_id=mid,
+                           note=", ".join(x for x in (note, fallback) if x))
         out.append(("sms", result))
     return out
+
+
+def resend(hotel_id: str, reservation_id: str, step_name: str, channel: str, to: str, user: str) -> dict:
+    """Eén bericht nu (opnieuw) versturen vanuit de monitor, naar één kanaal en adres.
+    Buiten PRD gaat het zoals altijd naar het testadres (core/safety.py)."""
+    if not enabled(hotel_id):
+        return {"ok": False, "error": "Berichten staan uit in deze omgeving"}
+    r = guests.get_reservation(hotel_id, reservation_id)
+    if r is None:
+        return {"ok": False, "error": "Reservatie niet gevonden"}
+    if not any(_same(to, a) for a in recipients(r, "email" if channel == "email" else "phone")):
+        return {"ok": False, "error": "Onbekend adres voor deze reservatie"}
+    if channel != "email" and not phone_enabled(hotel_id):
+        return {"ok": False, "error": "WhatsApp en sms zijn nog niet actief"}
+    cfg = workflow.config(hotel_id)
+    step = next((s for s in workflow._steps_from(cfg, workflow.flow_for(hotel_id, r, cfg)) if s.step == step_name), None)
+    if step is None or step.step not in ready_steps(hotel_id):
+        return {"ok": False, "error": "Dit bericht kan nog niet verstuurd worden"}
+    if step.step == "access_code" and not code_ready(hotel_id, r, []):
+        return {"ok": False, "error": "Nog geen pincode bij Salto"}
+    results = deliver(hotel_id, step, r, cfg, only=(channel, to), note=f"opnieuw verstuurd door {user or 'monitor'}")
+    if not results:
+        return {"ok": False, "error": "Niets verstuurd (geen sjabloon of sms-tekst voor dit kanaal)"}
+    return {"ok": all(res.ok for _, res in results),
+            "error": "; ".join(res.error or "" for _, res in results if not res.ok)}
 
 
 def muted_channels(hotel_id: str, r: Reservation) -> set[str]:
@@ -212,12 +272,12 @@ def plan(hotel_id: str, r: Reservation, rows: list[dict], cfg: dict, ready: tupl
     channels: per kanaal wat er gebeurt (mail altijd; WhatsApp met gsm-nummer, sms als terugval).
     Het scherm toont per kanaal de pogingen uit het berichtenlog."""
     channels = []
-    if r.guest.email:
-        channels.append({"channel": "email", "reason": "muted" if "email" in muted else ""})
-    if r.guest.phone:
-        off = "" if phone else "phone_off"
-        channels.append({"channel": "whatsapp", "reason": "muted" if "whatsapp" in muted else off})
-        channels.append({"channel": "sms", "reason": "muted" if "sms" in muted else off or "fallback"})
+    for to in recipients(r, "email"):
+        channels.append({"channel": "email", "to": to, "reason": "muted" if "email" in muted else ""})
+    off = "" if phone else "phone_off"
+    for to in recipients(r, "phone"):
+        channels.append({"channel": "whatsapp", "to": to, "reason": "muted" if "whatsapp" in muted else off})
+        channels.append({"channel": "sms", "to": to, "reason": "muted" if "sms" in muted else off or "fallback"})
     flow = workflow.flow_for(hotel_id, r, cfg)
     steps = workflow._steps_from(cfg, flow)
     active = [s for s in steps if s.enabled]
@@ -247,7 +307,7 @@ def plan(hotel_id: str, r: Reservation, rows: list[dict], cfg: dict, ready: tupl
                 item.update(state="skipped", reason="later_due")
             elif step.step not in ready:
                 item.update(state="planned", reason="not_ready", due=today.isoformat())  # zodra dit gebouwd is
-            elif not (r.guest.email or r.guest.phone):
+            elif not (recipients(r, "email") or recipients(r, "phone")):
                 item.update(state="skipped", reason="no_contact")
             else:
                 item["state"] = "due"

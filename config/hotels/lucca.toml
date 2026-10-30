@@ -122,7 +122,7 @@ achtergrond = "#F4F5F8"
 # Flows: booking (Booking.com), expedia (Expedia), website_paid en website_unpaid (andere kanalen,
 # volgens betaalstatus). Per stap: when = after_booking of days_before_arrival (met days),
 # only_if = voorwaarden, skip_if_booked_late = geen herinnering als de boeking pas op of na die dag
-# kwam, pay = betaalknop (none, open_amount, city_tax). Vaste regel: een bericht gaat niet weg als
+# kwam, pay = betaalknop (none of open_amount: wat nog openstaat, alleen de taks of alles). Vaste regel: een bericht gaat niet weg als
 # een later bericht nu al aan de beurt is (late boeking: meteen alleen de code-mail).
 
 [workflow_parameters]
@@ -155,7 +155,7 @@ when = "days_before_arrival"
 days = 2
 only_if = ["not_cancelled"]
 channels = ["email", "sms"]
-pay = "city_tax"
+pay = "open_amount"
 
 [[flows.booking.steps]]
 step = "thank_you"   # bedankmail na vertrek
@@ -198,7 +198,7 @@ when = "days_before_arrival"
 days = 2
 only_if = ["not_cancelled"]
 channels = ["email", "sms"]
-pay = "city_tax"
+pay = "open_amount"
 
 [[flows.expedia.steps]]
 step = "thank_you"   # bedankmail na vertrek

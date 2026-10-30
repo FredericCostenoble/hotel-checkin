@@ -17,8 +17,9 @@ const T = {
     step_reminder: "Herinnering (formulier niet ingevuld)", step_access_code: "Code en praktische info",
     f_enabled: "Actief", f_when: "Wanneer", f_days: "Dagen voor aankomst", f_channels: "Kanalen", f_only_if: "Alleen als",
     f_replaced_by: "Overslaan als al aan de beurt", f_late: "Alleen als de boeking vóór die dag binnenkwam (anders kreeg de gast net de bevestiging)",
-    wf_later_rule: "Deze mail gaat niet weg als op dat moment al een latere mail aan de beurt is (bv. bij een late boeking krijgt de gast meteen alleen de code-mail).", f_pay: "Betaalknop", f_content: "In de mail", wf_example: "Voorbeeldmail", pv_subject: "Onderwerp",
-    m_reservation: "reservatiegegevens", m_checkin_form: "link check-in-formulier", m_code: "pincode", m_practical_info: "praktische info",
+    wf_later_rule: "Deze mail gaat niet weg als op dat moment al een latere mail aan de beurt is (bv. bij een late boeking krijgt de gast meteen alleen de code-mail).", f_pay: "Betaalknop", f_content: "In de mail", g_when: "Wanneer versturen", wf_example: "Voorbeeldmail", pv_subject: "Onderwerp",
+    m_reservation: "reservatiegegevens", m_checkin_form: "link check-in-formulier", m_code: "pincode", m_practical_info: "praktische info", m_pay: "betaalknop",
+    wf_pay_note: "Knop om het openstaande bedrag online te betalen: alleen de toeristenbelasting of alles, wat in Lighthouse nog openstaat.",
     wf_form_note: "De link naar het formulier valt vanzelf weg als de gast het al invulde.",
     when_after_booking: "na de boeking", when_days_before_arrival: "dagen voor aankomst",
     ch_email: "e-mail", ch_sms: "sms", ch_whatsapp: "WhatsApp",
@@ -32,7 +33,8 @@ const T = {
     returning: n => `terugkerend (${n}×)`, mg_message: "Bericht", mg_time: "Tijdstip", short_confirmation: "Bevestiging", short_reminder: "Herinnering", short_access_code: "Code-mail", mg_channel: "Kanaal", mg_to: "Naar",
     mg_title: (num, guest) => `Berichten voor ${guest} (${num})`, mg_click: "Klik voor alle details",
     mg_plan: "Tijdlijn", mg_attempts: "Alle pogingen", mg_next: "volgt",
-    pl_sent: "verstuurd", pl_failed: "mislukt", pl_planned: "gepland", pl_due: "volgende run", pl_skipped: "valt weg", pl_off: "niet actief", pl_not_tried: "niet geprobeerd",
+    pl_sent: "verstuurd", pl_failed: "mislukt", pl_planned: "gepland", pl_due: "volgende run", pl_skipped: "valt weg", pl_off: "niet actief", pl_not_tried: "niet geprobeerd", backup: "extra adres uit het check-in-formulier",
+    rs_now: "Nu versturen", rs_again: "Opnieuw versturen", rs_confirm: (step, ch, to) => `${step} nu versturen per ${ch} naar ${to}?`,
     chr_muted: "uitgezet voor deze gast", chr_phone_off: "nog niet actief (Twilio)", chr_fallback: "alleen als WhatsApp niet lukt",
     rs_disabled: "stap staat uit", rs_messaging_off: "berichten staan uit in deze omgeving", rs_before_start: "reservatie van voor de start",
     rs_booked_late: "boeking kwam te laat", rs_later_due: "een latere mail is al aan de beurt", rs_not_ready: "nog niet gebouwd",
@@ -75,8 +77,9 @@ const T = {
     step_reminder: "Reminder (form not filled in)", step_access_code: "Code and practical info",
     f_enabled: "Active", f_when: "When", f_days: "Days before arrival", f_channels: "Channels", f_only_if: "Only if",
     f_replaced_by: "Skip if already due", f_late: "Only if the booking came in before that day (otherwise the guest just got the confirmation)",
-    wf_later_rule: "This mail is not sent if a later mail is already due at that moment (e.g. with a late booking the guest only gets the code mail).", f_pay: "Pay button", f_content: "In the mail", wf_example: "Example mail", pv_subject: "Subject",
-    m_reservation: "reservation details", m_checkin_form: "check-in form link", m_code: "PIN code", m_practical_info: "practical info",
+    wf_later_rule: "This mail is not sent if a later mail is already due at that moment (e.g. with a late booking the guest only gets the code mail).", f_pay: "Pay button", f_content: "In the mail", g_when: "When to send", wf_example: "Example mail", pv_subject: "Subject",
+    m_reservation: "reservation details", m_checkin_form: "check-in form link", m_code: "PIN code", m_practical_info: "practical info", m_pay: "pay button",
+    wf_pay_note: "Button to pay the open amount online: just the city tax or everything, whatever is still open in Lighthouse.",
     wf_form_note: "The form link is left out automatically when the guest already filled it in.",
     when_after_booking: "after booking", when_days_before_arrival: "days before arrival",
     ch_email: "e-mail", ch_sms: "SMS", ch_whatsapp: "WhatsApp",
@@ -90,7 +93,8 @@ const T = {
     returning: n => `returning (${n}×)`, mg_message: "Message", mg_time: "Time", short_confirmation: "Confirmation", short_reminder: "Reminder", short_access_code: "Code mail", mg_channel: "Channel", mg_to: "To",
     mg_title: (num, guest) => `Messages for ${guest} (${num})`, mg_click: "Click for all details",
     mg_plan: "Timeline", mg_attempts: "All attempts", mg_next: "next",
-    pl_sent: "sent", pl_failed: "failed", pl_planned: "planned", pl_due: "next run", pl_skipped: "skipped", pl_off: "not active", pl_not_tried: "not tried",
+    pl_sent: "sent", pl_failed: "failed", pl_planned: "planned", pl_due: "next run", pl_skipped: "skipped", pl_off: "not active", pl_not_tried: "not tried", backup: "extra address from the check-in form",
+    rs_now: "Send now", rs_again: "Send again", rs_confirm: (step, ch, to) => `Send ${step} now by ${ch} to ${to}?`,
     chr_muted: "switched off for this guest", chr_phone_off: "not active yet (Twilio)", chr_fallback: "only if WhatsApp fails",
     rs_disabled: "step is off", rs_messaging_off: "messages are off in this environment", rs_before_start: "reservation from before the start",
     rs_booked_late: "booked too late", rs_later_due: "a later mail is already due", rs_not_ready: "not built yet",
@@ -242,21 +246,29 @@ function showMessages(id) {
     const sent = mine.filter(m => m.ok);
     const when = p.state === "sent" && sent.length ? stamp(sent[0].at) : day(p.due);
     // per kanaal: laatste poging uit het log, anders wat er gaat gebeuren
-    const used = new Set([...(p.channels || []).map(c => c.channel), ...mine.map(m => m.channel)]);
-    const chips = [...used].map(ch => {
-      const tries = mine.filter(m => m.channel === ch);
+    // per kanaal en adres: laatste poging uit het log, anders wat er gaat gebeuren
+    const key = (ch, to) => ch + "|" + (to || "").toLowerCase();
+    const targets = new Map();
+    (p.channels || []).forEach(c => targets.set(key(c.channel, c.to), c));
+    mine.forEach(m => { if (!targets.has(key(m.channel, m.to))) targets.set(key(m.channel, m.to), { channel: m.channel, to: m.to, reason: "" }); });
+    const firstOf = {};
+    const chips = [...targets.values()].map(c => {
+      const ch = c.channel;
+      const tries = mine.filter(m => key(m.channel, m.to) === key(ch, c.to));
       const last = tries[tries.length - 1];
-      const plan = (p.channels || []).find(c => c.channel === ch) || {};
+      const nr = (firstOf[ch] = (firstOf[ch] || 0) + 1);
       let cls = "", txt;
       if (last) {
         cls = last.ok ? "ok" : "fail";
         txt = (t("st_" + last.status) || last.status) + (tries.length > 1 ? ` (${tries.length}×)` : "");
       } else if (["sent", "failed", "planned", "due"].includes(p.state)) {
-        txt = plan.reason ? t("chr_" + plan.reason) : t("pl_" + (p.state === "sent" || p.state === "failed" ? "not_tried" : p.state));
-        cls = plan.reason ? "off" : "todo";
+        txt = c.reason ? t("chr_" + c.reason) : t("pl_" + (p.state === "sent" || p.state === "failed" ? "not_tried" : p.state));
+        cls = c.reason ? "off" : "todo";
       } else return "";
-      const title = last ? [stamp(last.at), last.to, last.error, last.note].filter(Boolean).join(" · ") : "";
-      return `<span class="tag ch ${cls}" title="${esc(title)}">${esc(t(CH[ch] || ch))}: ${esc(txt)}</span>`;
+      const title = [c.to, last && stamp(last.at), last && last.error, last && last.note].filter(Boolean).join(" · ");
+      const canSend = READY.includes(p.step) && c.reason !== "phone_off" && c.to;
+      const btn = canSend ? `<button type="button" class="resend" title="${esc(last ? t("rs_again") : t("rs_now"))}" data-step="${esc(p.step)}" data-ch="${esc(ch)}" data-to="${esc(c.to)}">&#8635;</button>` : "";
+      return `<span class="tag ch ${cls}" title="${esc(title)}">${esc(t(CH[ch] || ch))}${nr > 1 ? " 2" : ""}: ${esc(txt)}${btn}</span>`;
     }).join("");
     return `<li class="pl-${p.state}"><span class="dot"></span><strong>${esc(stepShort(p.step))}</strong>
       <span class="muted">${esc(when)}</span> <span class="tag pl">${esc(t("pl_" + p.state))}</span>
@@ -264,6 +276,15 @@ function showMessages(id) {
       ${chips ? `<div class="chs">${chips}</div>` : ""}</li>`;
   }).join("");
   $("#msgs-attempts").hidden = !r.messages.length;
+  document.querySelectorAll("#msgs-plan button.resend").forEach(b => b.onclick = async () => {
+    if (!confirm(t("rs_confirm", stepShort(b.dataset.step), t(CH[b.dataset.ch]), b.dataset.to))) return;
+    b.disabled = true;
+    const q = new URLSearchParams({ id: r.id, step: b.dataset.step, channel: b.dataset.ch, to: b.dataset.to });
+    const d = await get(`/api/monitor/${$("#hotel").value}/resend?${q}`, { method: "POST" }).catch(e => ({ ok: false, error: String(e) }));
+    if (!d.ok) alert(d.error || t("load_error"));
+    await load();
+    showMessages(r.id);
+  });
   $("#msgs-rows").innerHTML = [...r.messages].reverse().map(m => `<tr>
     <td>${stamp(m.at)}</td><td>${esc(stepShort(m.type))}</td><td>${esc(t(CH[m.channel] || m.channel))}</td>
     <td>${esc(m.to)}</td><td class="${m.ok ? "ok" : "err"}">${esc(t("st_" + m.status) || m.status)}${m.status_at ? ` <span class="muted">${esc(stamp(m.status_at))}</span>` : ""}</td>
@@ -322,12 +343,19 @@ function contactCell(g) {
   if (g.email && !g.email_own) tags.push(`<span class="tag" title="${esc(t("g_relay"))}">OTA</span>`);
   if (g.form) tags.push(`<span class="tag">${esc(t("g_form"))}</span>`);
   if (g.opt_out) tags.push(`<span class="tag fail">${esc(t("g_optout"))}</span>`);
-  return `${esc(g.email)}${g.email && g.phone ? "<br>" : ""}${esc(g.phone)} ${tags.join("")}`;
+  return `${contactLines(g)} ${tags.join("")}`;
+}
+
+// Hoofdadres en nummer, plus het extra adres en nummer uit het check-in-formulier
+function contactLines(x) {
+  const extra = v => `<span class="muted" title="${esc(t("backup"))}">${esc(v)} (2)</span>`;
+  return [x.email && esc(x.email), x.backup_email && extra(x.backup_email), x.phone && esc(x.phone), x.backup_phone && extra(x.backup_phone)]
+    .filter(Boolean).join("<br>");
 }
 
 function renderGuests() {
   const q = $("#g-search").value.toLowerCase();
-  const list = guestData.guests.filter(g => (!q || [g.name, g.email, g.phone].join(" ").toLowerCase().includes(q)));
+  const list = guestData.guests.filter(g => (!q || [g.name, g.email, g.phone, g.backup_email, g.backup_phone].join(" ").toLowerCase().includes(q)));
   list.sort((a, b) => {
     const x = gValue(a, gSortKey), y = gValue(b, gSortKey);
     if (x === "" || x === null || y === "" || y === null) return x === y ? 0 : (x === "" || x === null ? 1 : -1);
@@ -394,7 +422,7 @@ function render() {
   // Verblijf dat (deels) in de gekozen periode valt; lege datum = geen grens
   const from = $("#from").value, to = $("#to").value;
   const list = rows.filter(r => (!from || r.departure >= from) && (!to || r.arrival <= to) &&
-    (!q || [r.guest, r.booking_number, r.email, r.phone].join(" ").toLowerCase().includes(q)));
+    (!q || [r.guest, r.booking_number, r.email, r.phone, r.backup_email, r.backup_phone].join(" ").toLowerCase().includes(q)));
   list.sort((a, b) => {
     const x = sortValue(a, sortKey), y = sortValue(b, sortKey);
     // lege waarden altijd onderaan
@@ -413,7 +441,7 @@ function render() {
       <td>${esc(r.rooms.join(", ") || r.room_type)}</td><td>${esc(r.source)}</td><td>${esc(r.pms_status)}</td>
       <td>${stamp(r.booked_at)}</td><td>${stamp(r.added_at)}</td><td>${stamp(r.updated_at)}</td>
       <td>${r.checkin_completed_at ? `<span class="ok">${t("yes")}</span> ${stamp(r.checkin_completed_at)}` : `<span class="muted">${t("no")}</span>`}</td>
-      <td class="wrap">${esc(r.email)}${r.email && r.phone ? "<br>" : ""}${esc(r.phone)}</td>
+      <td class="wrap">${contactLines(r)}</td>
       <td class="wrap">${msgSummary(r)}</td>
     </tr>`).join("") || `<tr><td colspan="14" class="muted">${t("no_res")}</td></tr>`;
   document.querySelectorAll("#res a[data-guest]").forEach(a => a.onclick = e => { e.preventDefault(); openGuest(a.dataset.guest); });
@@ -582,15 +610,20 @@ function stepCard(s, i, flow, c) {
       <div class="card-head"><strong>${esc(t("step_" + s.step))}</strong>${notReady}
         <button type="button" class="link" data-preview="${i}">${esc(t("wf_example"))}</button>
         <label class="chk right"><input type="checkbox" data-i="${i}" data-f="enabled" ${s.enabled ? "checked" : ""}> ${esc(t("f_enabled"))}</label></div>
-      <div class="fields">
-        <div><span class="lbl">${esc(t("f_content"))}</span>${CONTENT.map(m => `<label class="chk" title="${m === "checkin_form" ? esc(t("wf_form_note")) : ""}"><input type="checkbox" data-i="${i}" data-f="content" value="${m}" ${contentOf(s)[m] ? "checked" : ""}> ${esc(t("m_" + m))}</label>`).join("")}</div>
-        <label>${esc(t("f_when"))}
-          ${s.when !== "after_booking" ? `<input type="number" class="days" min="0" max="365" data-i="${i}" data-f="days" value="${s.days}">` : ""}
-          <select data-i="${i}" data-f="when">${c.when.map(w => `<option value="${w}" ${w === s.when ? "selected" : ""}>${esc(t("when_" + w))}</option>`).join("")}</select></label>
-        <label>${esc(t("f_pay"))} <select data-i="${i}" data-f="pay">${c.pay.map(p => `<option value="${p}" ${p === s.pay ? "selected" : ""}>${esc(t("pay_" + p))}</option>`).join("")}</select></label>
-        <div><span class="lbl">${esc(t("f_only_if"))}</span>${checks("only_if", i, c.conditions, s.only_if, x => t("c_" + x))}</div>
-        ${s.when === "days_before_arrival" ? `<label class="chk"><input type="checkbox" data-i="${i}" data-f="skip_if_booked_late" ${s.skip_if_booked_late ? "checked" : ""}> ${esc(t("f_late"))}</label>` : ""}
-        ${others.some(o => isLater(flow.steps.find(x => x.step === o), s)) ? `<p class="info">${esc(t("wf_later_rule"))}</p>` : ""}
+      <div class="group">
+        <div class="group-title">${esc(t("g_when"))}</div>
+        <div class="fields">
+          <label><span class="lbl">${esc(t("f_when"))}</span>
+            ${s.when !== "after_booking" ? `<input type="number" class="days" min="0" max="365" data-i="${i}" data-f="days" value="${s.days}">` : ""}
+            <select data-i="${i}" data-f="when">${c.when.map(w => `<option value="${w}" ${w === s.when ? "selected" : ""}>${esc(t("when_" + w))}</option>`).join("")}</select></label>
+          <div><span class="lbl">${esc(t("f_only_if"))}</span>${checks("only_if", i, c.conditions, s.only_if, x => t("c_" + x))}</div>
+          ${s.when === "days_before_arrival" ? `<label class="chk"><input type="checkbox" data-i="${i}" data-f="skip_if_booked_late" ${s.skip_if_booked_late ? "checked" : ""}> ${esc(t("f_late"))}</label>` : ""}
+          ${others.some(o => isLater(flow.steps.find(x => x.step === o), s)) ? `<p class="info">${esc(t("wf_later_rule"))}</p>` : ""}
+        </div>
+      </div>
+      <div class="group">
+        <div class="group-title">${esc(t("f_content"))}</div>
+        <div class="fields"><div>${CONTENT.map(m => `<label class="chk" title="${m === "checkin_form" ? esc(t("wf_form_note")) : ""}"><input type="checkbox" data-i="${i}" data-f="content" value="${m}" ${contentOf(s)[m] ? "checked" : ""}> ${esc(t("m_" + m))}</label>`).join("")}<label class="chk" title="${esc(t("wf_pay_note"))}"><input type="checkbox" data-i="${i}" data-f="pay" ${s.pay !== "none" ? "checked" : ""}> ${esc(t("m_pay"))}</label></div></div>
       </div>
     </div></div>`;
 }
@@ -630,6 +663,8 @@ function bindSteps(flow) {
       s.content = { ...contentOf(s), [el.value]: el.checked };
     } else if (["channels", "only_if", "replaced_by"].includes(f)) {
       s[f] = [...document.querySelectorAll(`#wf-timeline [data-i="${el.dataset.i}"][data-f="${f}"]:checked`)].map(x => x.value);
+    } else if (f === "pay") {
+      s.pay = el.checked ? "open_amount" : "none";
     } else if (f === "enabled" || f === "skip_if_booked_late") {
       s[f] = el.checked;
     } else if (f === "days") {

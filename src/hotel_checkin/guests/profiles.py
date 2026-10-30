@@ -52,7 +52,7 @@ def _from_entity(e: dict) -> GuestProfile:
         elif isinstance(getattr(g, k), int):
             setattr(g, k, int(v or 0))
         else:
-            setattr(g, k, v or (None if k in ("email", "phone", "country") else ""))
+            setattr(g, k, v or (None if k in ("email", "phone", "country", "backup_email", "backup_phone") else ""))
     return g
 
 

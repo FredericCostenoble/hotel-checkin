@@ -49,6 +49,8 @@ def reservations(hotel_id: str) -> list[dict]:
             "guest": f"{r.guest.first_name} {r.guest.last_name}".strip(),
             "email": r.guest.email or "",
             "phone": r.guest.phone or "",
+            "backup_email": r.guest.backup_email or "",
+            "backup_phone": r.guest.backup_phone or "",
             "language": r.guest.language,
             "guests": r.guest_count,
             "room_type": r.room_type or "",
@@ -95,6 +97,7 @@ def guests(hotel_id: str) -> dict:
         out.append({
             "id": g.guest_id, "name": f"{g.first_name} {g.last_name}".strip(),
             "email": g.email or "", "email_own": g.email_own, "phone": g.phone or "",
+            "backup_email": g.backup_email or "", "backup_phone": g.backup_phone or "",
             "language": g.language, "country": g.country or "", "form": g.from_checkin_form,
             "opt_out": bool(g.email and g.email.lower() in opted_out),
             "first_stay": g.first_stay.isoformat() if g.first_stay else "",
@@ -117,6 +120,14 @@ def merge_guests(hotel_id: str, keep: str, other: str) -> bool:
     from hotel_checkin.processes import guest_profiles
 
     return hotel_id in list_hotels() and guest_profiles.merge(hotel_id, keep, other) is not None
+
+
+def resend(hotel_id: str, reservation_id: str, step: str, channel: str, to: str, user: str) -> dict:
+    from hotel_checkin.processes import send_messages
+
+    if hotel_id not in list_hotels() or channel not in ("email", "whatsapp", "sms"):
+        return {"ok": False, "error": "Onbekend hotel of kanaal"}
+    return send_messages.resend(hotel_id, reservation_id, step, channel, to, user)
 
 
 def set_muted_channels(hotel_id: str, guest_id: str, muted: list[str]) -> bool:

@@ -23,7 +23,7 @@ def test_lucca_workflow():
     assert set(steps) == {"confirmation", "reminder", "access_code", "thank_you", "payment_request"}
     assert steps["payment_request"].only_if == ["not_cancelled", "not_paid"]
     assert steps["reminder"].due_date(_r()) == date(2099, 1, 3)
-    assert steps["access_code"].days == 2 and steps["access_code"].pay == "city_tax"
+    assert steps["access_code"].days == 2 and steps["access_code"].pay == "open_amount"
     assert workflow.detail_window_days("lucca") == 8
     assert workflow.needs_details_after_booking("lucca")
 

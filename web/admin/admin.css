@@ -129,3 +129,7 @@ ul.plan .chs { margin: 3px 0 0; }
 .tag.ch.fail { background: #F6E3E3; color: var(--err); }
 .tag.ch.todo { background: #EAF0FF; color: #2B3F8C; }
 .tag.ch.off { color: #9AA3B5; }
+button.resend { border: 0; background: none; cursor: pointer; padding: 0 0 0 4px; font-size: 13px; color: inherit; }
+button.resend:hover { color: #3E63DD; }
+.tl-step .group { border-top: 1px solid var(--line); padding: 8px 0 4px; }
+.tl-step .group-title { font-size: 0.8em; text-transform: uppercase; letter-spacing: 0.03em; color: #5C6478; font-weight: bold; margin-bottom: 6px; }
