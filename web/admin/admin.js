@@ -228,6 +228,7 @@ function contactCell(g) {
   const tags = [];
   if (g.email && !g.email_own) tags.push(`<span class="tag" title="${esc(t("g_relay"))}">OTA</span>`);
   if (g.form) tags.push(`<span class="tag">${esc(t("g_form"))}</span>`);
+  (g.message_channels || []).filter(x => x !== "email").forEach(x => tags.push(`<span class="tag">${esc(t("ch_" + x))}</span>`));
   if (g.opt_out) tags.push(`<span class="tag fail">${esc(t("g_optout"))}</span>`);
   return `${esc(g.email)}${g.email && g.phone ? "<br>" : ""}${esc(g.phone)} ${tags.join("")}`;
 }
@@ -473,10 +474,10 @@ function stepCard(s, i, flow, c) {
         <label class="chk right"><input type="checkbox" data-i="${i}" data-f="enabled" ${s.enabled ? "checked" : ""}> ${esc(t("f_enabled"))}</label></div>
       <div class="fields">
         <div><span class="lbl">${esc(t("f_content"))}</span>${CONTENT.map(m => `<label class="chk" title="${m === "checkin_form" ? esc(t("wf_form_note")) : ""}"><input type="checkbox" data-i="${i}" data-f="content" value="${m}" ${contentOf(s)[m] ? "checked" : ""}> ${esc(t("m_" + m))}</label>`).join("")}</div>
-        <label>${esc(t("f_when"))} <select data-i="${i}" data-f="when">${c.when.map(w => `<option value="${w}" ${w === s.when ? "selected" : ""}>${esc(t("when_" + w))}</option>`).join("")}</select></label>
-        ${s.when === "days_before_arrival" ? `<label>${esc(t("f_days"))} <input type="number" min="0" max="365" data-i="${i}" data-f="days" value="${s.days}"></label>` : ""}
+        <label>${esc(t("f_when"))}
+          ${s.when === "days_before_arrival" ? `<input type="number" class="days" min="0" max="365" data-i="${i}" data-f="days" value="${s.days}">` : ""}
+          <select data-i="${i}" data-f="when">${c.when.map(w => `<option value="${w}" ${w === s.when ? "selected" : ""}>${esc(t("when_" + w))}</option>`).join("")}</select></label>
         <label>${esc(t("f_pay"))} <select data-i="${i}" data-f="pay">${c.pay.map(p => `<option value="${p}" ${p === s.pay ? "selected" : ""}>${esc(t("pay_" + p))}</option>`).join("")}</select></label>
-        <div><span class="lbl">${esc(t("f_channels"))}</span>${checks("channels", i, c.channels, s.channels, x => t("ch_" + x))}</div>
         <div><span class="lbl">${esc(t("f_only_if"))}</span>${checks("only_if", i, c.conditions, s.only_if, x => t("c_" + x))}</div>
         ${others.length ? `<div><span class="lbl">${esc(t("f_replaced_by"))}</span>${checks("replaced_by", i, others, s.replaced_by, x => t("step_" + x))}</div>` : ""}
         ${s.when === "days_before_arrival" ? `<label class="chk"><input type="checkbox" data-i="${i}" data-f="skip_if_booked_late" ${s.skip_if_booked_late ? "checked" : ""}> ${esc(t("f_late"))}</label>` : ""}

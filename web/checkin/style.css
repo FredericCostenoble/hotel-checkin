@@ -84,3 +84,6 @@ button[type="submit"]:disabled { opacity: 0.6; cursor: default; }
   .card { padding: 40px 40px 32px; }
   button[type="submit"] { width: auto; }
 }
+.label { font-weight: 600; margin: 24px 0 0; }
+.channels { display: flex; gap: 22px; flex-wrap: wrap; }
+.channels .check { margin-top: 10px; }

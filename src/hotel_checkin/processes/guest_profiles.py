@@ -76,6 +76,8 @@ def _update_contact(g: GuestProfile, r: Reservation) -> None:
         g.country = r.guest.country
     if r.guest.language and (from_form or not g.from_checkin_form):
         g.language = r.guest.language
+    if from_form and r.guest.channels is not None:
+        g.message_channels = list(r.guest.channels)
     g.from_checkin_form = g.from_checkin_form or from_form
     if r.reservation_id not in g.reservation_ids:
         g.reservation_ids.append(r.reservation_id)
@@ -225,6 +227,7 @@ def merge(hotel_id: str, keep_id: str, other_id: str, keep: GuestProfile | None 
     if other.email and (not keep.email or (other.email_own and not keep.email_own)
                         or (other.from_checkin_form and not keep.from_checkin_form)):
         keep.email, keep.email_own = other.email, other.email_own
+    keep.message_channels = keep.message_channels or other.message_channels
     keep.phone = keep.phone or other.phone
     keep.country = keep.country or other.country
     keep.from_checkin_form = keep.from_checkin_form or other.from_checkin_form

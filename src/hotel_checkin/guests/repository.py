@@ -109,6 +109,7 @@ def _to_entity(r: Reservation) -> dict:
         "country": (r.guest.country or "").upper(),
         "backup_email": (r.guest.backup_email or "").lower(),
         "backup_phone": r.guest.backup_phone or "",
+        "channels": json.dumps(r.guest.channels) if r.guest.channels is not None else "",
         "arrival": r.arrival.isoformat(),
         "departure": r.departure.isoformat(),
         "rooms": json.dumps(r.rooms),
@@ -143,6 +144,7 @@ def _from_entity(e: dict) -> Reservation:
             country=e.get("country") or None,
             backup_email=e.get("backup_email") or None,
             backup_phone=e.get("backup_phone") or None,
+            channels=json.loads(e["channels"]) if e.get("channels") else None,
         ),
         arrival=date.fromisoformat(e["arrival"]),
         departure=date.fromisoformat(e["departure"]),
@@ -229,6 +231,7 @@ def mark_checkin_completed(
     language: str | None,
     backup_email: str | None = None,
     backup_phone: str | None = None,
+    channels: list[str] | None = None,
 ) -> Reservation | None:
     """Gegevens van het check-in-formulier bewaren. Lege reservecontacten wissen een vorige waarde."""
     r = get_reservation(hotel_id, reservation_id)
@@ -242,6 +245,8 @@ def mark_checkin_completed(
         r.guest.language = language
     r.guest.backup_email = backup_email or None
     r.guest.backup_phone = backup_phone or None
+    if channels is not None:
+        r.guest.channels = channels
     r.checkin_completed_at = _now()
     return save_reservation(r)
 

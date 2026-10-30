@@ -92,3 +92,4 @@ button.primary:disabled { opacity: 0.4; cursor: default; }
 #pv-frame { flex: 1; border: 1px solid var(--line); border-radius: 4px; width: 100%; }
 button.link { background: none; border: none; color: #1F5FBF; cursor: pointer; padding: 0 4px; }
 button.link:hover { text-decoration: underline; }
+input.days { width: 60px; }

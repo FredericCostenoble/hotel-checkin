@@ -39,6 +39,7 @@ class Guest:
     country: str | None = None  # land van de gast (woonland, uit de reservatiegegevens), ISO-code: BE, FR, DE
     backup_email: str | None = None
     backup_phone: str | None = None  # E.164
+    channels: list[str] | None = None  # gekozen in het check-in-formulier: email (altijd), sms, whatsapp; None = nog niet gekozen
 
 
 @dataclass
@@ -94,6 +95,7 @@ class GuestProfile:
     channels: dict[str, int] = field(default_factory=dict)  # Booking.com, Expedia, direct, ... -> aantal verblijven
     reservation_ids: list[str] = field(default_factory=list)  # gekoppelde reservaties (ook toekomstige)
     from_checkin_form: bool = False  # contactgegevens bevestigd door de gast zelf
+    message_channels: list[str] = field(default_factory=list)  # gekozen kanalen voor berichten (check-in-formulier)
     created_at: datetime | None = None
     updated_at: datetime | None = None
 

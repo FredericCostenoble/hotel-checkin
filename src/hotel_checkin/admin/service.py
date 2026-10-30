@@ -84,6 +84,7 @@ def guests(hotel_id: str) -> dict:
             "id": g.guest_id, "name": f"{g.first_name} {g.last_name}".strip(),
             "email": g.email or "", "email_own": g.email_own, "phone": g.phone or "",
             "language": g.language, "country": g.country or "", "form": g.from_checkin_form,
+            "message_channels": g.message_channels,
             "opt_out": bool(g.email and g.email.lower() in opted_out),
             "first_stay": g.first_stay.isoformat() if g.first_stay else "",
             "last_stay": g.last_stay.isoformat() if g.last_stay else "",
