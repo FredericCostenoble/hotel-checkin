@@ -55,9 +55,13 @@ def reservations(hotel_id: str) -> list[dict]:
 def runs(hotel_id: str) -> dict:
     return {"running": _robot_state.get(hotel_id) == "bezig", "runs": [
         {k: e.get(k) for k in ("task", "started_at", "finished_at", "ok", "found", "new", "error", "skipped")}
-        | {"timings": json.loads(e.get("timings") or "{}")}
+        | {"timings": json.loads(e.get("timings") or "{}"), "id": e.get("RowKey")}
         for e in repo.robot_runs(hotel_id, limit=200)
     ]}
+
+
+def delete_run(hotel_id: str, run_id: str) -> bool:
+    return hotel_id in list_hotels() and repo.delete_robot_run(hotel_id, run_id)
 
 
 def start_robot(hotel_id: str, hours: int = 48) -> bool:

@@ -138,3 +138,15 @@ def test_updated_at_only_when_something_changed(monkeypatch):
     repo.save_reservation(same)
     changed = repo.get_reservation("lucca", "u9")
     assert changed.created_at == added and changed.updated_at > updated
+
+
+def test_delete_robot_run():
+    from datetime import datetime, timezone
+
+    from hotel_checkin.guests import repository as repo
+
+    repo.use_memory_store()
+    repo.log_robot_run("lucca", "nieuwe_reservaties", datetime.now(timezone.utc), True)
+    run_id = repo.robot_runs("lucca")[0]["RowKey"]
+    assert not repo.delete_robot_run("lucca", "x' or 1 eq 1")
+    assert repo.delete_robot_run("lucca", run_id) and repo.robot_runs("lucca") == []

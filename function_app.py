@@ -107,7 +107,7 @@ def admin_hotels(req: func.HttpRequest) -> func.HttpResponse:
     return _json(200, admin.hotels())
 
 
-@app.route(route="api/monitor/{hotel}/{what}", methods=["GET", "POST"], auth_level=func.AuthLevel.ANONYMOUS)
+@app.route(route="api/monitor/{hotel}/{what}", methods=["GET", "POST", "DELETE"], auth_level=func.AuthLevel.ANONYMOUS)
 def admin_api(req: func.HttpRequest) -> func.HttpResponse:
     if not _admin_user(req):
         return _json(401, {"error": "login"})
@@ -127,6 +127,9 @@ def admin_api(req: func.HttpRequest) -> func.HttpResponse:
         if not cloud_robot.available():
             return _json(501, {"error": "robot_not_in_cloud"})
         return _json(200, {"started": cloud_robot.start()})
+    if req.method == "DELETE" and what == "runs":
+        # Eén regel uit het robotlogboek verwijderen (vuilbakje in de monitor)
+        return _json(200, {"deleted": admin.delete_run(hotel, req.params.get("id", ""))})
     return _json(404, {"error": "not_found"})
 
 

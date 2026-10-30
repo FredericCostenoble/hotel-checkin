@@ -10,7 +10,7 @@ const T = {
     yes: "ja", no: "nee", none: "geen", count: n => `${n} reservaties`, no_res: "Geen reservaties",
     hours_a: "Nieuwe reservaties van de laatste", hours_b: "uur", run: "Robot nu draaien",
     r_start: "Start", r_duration: "Duur", r_task: "Taak", r_result: "Resultaat", r_found: "Gevonden", r_new: "Nieuw", r_error: "Opmerking",
-    all_tasks: "Alle", t_login: "aanmelden", t_list: "lijst", t_contact: (n, sec) => `${n} contact${n > 1 ? "en" : ""} à ${sec} s`, task_nieuwe_reservaties: "Nieuwe reservaties", task_contactgegevens_nalezen: "Reservaties bijwerken", task_meldingen: "Meldingen per mail",
+    all_tasks: "Alle", sub_log: "Logboek robot", del: "Verwijderen", del_confirm: "Deze regel uit het logboek verwijderen?", t_login: "aanmelden", t_list: "lijst", t_contact: (n, sec) => `${n} contact${n > 1 ? "en" : ""} à ${sec} s`, task_nieuwe_reservaties: "Nieuwe reservaties", task_contactgegevens_nalezen: "Reservaties bijwerken", task_meldingen: "Meldingen per mail",
     ok: "ok", fail: "fout", busy: "De robot is bezig...", scheduled: "Draait ook automatisch op schema.",
     not_installed: "De robot is in deze omgeving nog niet geïnstalleerd.", no_runs: "Nog geen afgeronde run",
     load_error: "Fout bij laden",
@@ -24,7 +24,7 @@ const T = {
     yes: "yes", no: "no", none: "none", count: n => `${n} reservations`, no_res: "No reservations",
     hours_a: "New reservations of the last", hours_b: "hours", run: "Run robot now",
     r_start: "Start", r_duration: "Duration", r_task: "Task", r_result: "Result", r_found: "Found", r_new: "New", r_error: "Note",
-    all_tasks: "All", t_login: "login", t_list: "list", t_contact: (n, sec) => `${n} contact${n > 1 ? "s" : ""} × ${sec} s`, task_nieuwe_reservaties: "New reservations", task_contactgegevens_nalezen: "Update reservations", task_meldingen: "Mail notifications",
+    all_tasks: "All", sub_log: "Robot log", del: "Delete", del_confirm: "Delete this line from the log?", t_login: "login", t_list: "list", t_contact: (n, sec) => `${n} contact${n > 1 ? "s" : ""} × ${sec} s`, task_nieuwe_reservaties: "New reservations", task_contactgegevens_nalezen: "Update reservations", task_meldingen: "Mail notifications",
     ok: "ok", fail: "failed", busy: "The robot is running...", scheduled: "Also runs automatically on a schedule.",
     not_installed: "The robot is not installed in this environment yet.", no_runs: "No finished run yet",
     load_error: "Loading failed",
@@ -75,6 +75,7 @@ async function init() {
   const saved = store("hotel");
   if (saved && hotels.some(h => h.id === saved)) $("#hotel").value = saved;
   $("#hotel").onchange = () => { store("hotel", $("#hotel").value); load(); };
+  document.querySelectorAll(".subtabs button").forEach(b => b.onclick = () => showSub(b.dataset.sub));
   document.querySelectorAll("nav button").forEach(b => b.onclick = () => {
     document.querySelectorAll("nav button").forEach(x => x.classList.toggle("active", x === b));
     $("#tab-res").hidden = b.dataset.tab !== "res";
@@ -169,6 +170,24 @@ function timingText(tm) {
   return `<div class="timing">${esc(p.join(", "))}</div>`;
 }
 
+const BIN = `<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path fill="currentColor" d="M6 1h4l.5 1H14v1.5H2V2h3.5L6 1zm-2.5 3.5h9l-.7 9.6a1 1 0 0 1-1 .9H5.2a1 1 0 0 1-1-.9L3.5 4.5zm3 1.5v7h1V6h-1zm2 0v7h1V6h-1z"/></svg>`;
+let subTab = "log";
+function showSub(name) {
+  subTab = name;
+  document.querySelectorAll(".subtabs button").forEach(b => b.classList.toggle("active", b.dataset.sub === name));
+  $("#sub-log").hidden = name !== "log";
+  $("#task").hidden = name !== "log";  // filter op taak geldt alleen voor het logboek
+  $("#exec-wrap").hidden = name !== "azure";
+}
+
+async function deleteRun(id) {
+  if (!confirm(t("del_confirm"))) return;
+  const h = $("#hotel").value;
+  await get(`/api/monitor/${h}/runs?id=${encodeURIComponent(id)}`, { method: "DELETE" });
+  runsData.runs = runsData.runs.filter(x => x.id !== id);
+  renderRuns(runsData);
+}
+
 function renderRuns(d) {
   const busy = d.running || !!$("#run").dataset.waiting;
   $("#run").disabled = busy || !d.can_run;
@@ -189,10 +208,15 @@ function renderRuns(d) {
     return `<tr><td>${stamp(x.started_at)}</td><td>${Math.round(secs)} s${timingText(x.timings)}</td>
       <td><span class="task task-${esc(x.task)}">${esc(taskName(x.task))}</span></td>
       <td class="${x.ok ? "ok" : "err"}">${x.ok ? t("ok") : t("fail")}</td><td>${x.found}</td><td>${x.new}</td>
-      <td class="wrap ${problem ? "err" : ""}">${esc(x.error)}</td></tr>`;
-  }).join("") || `<tr><td colspan="7" class="muted">${t("no_runs")}</td></tr>`;
+      <td class="wrap ${problem ? "err" : ""}">${esc(x.error)}</td>
+      <td>${x.id ? `<button type="button" class="bin" data-id="${esc(x.id)}" title="${esc(t("del"))}" aria-label="${esc(t("del"))}">${BIN}</button>` : ""}</td></tr>`;
+  }).join("") || `<tr><td colspan="8" class="muted">${t("no_runs")}</td></tr>`;
+  document.querySelectorAll("#runs .bin").forEach(b => b.onclick = () => deleteRun(b.dataset.id));
   // In de cloud: ook de runs volgens Azure (toont runs die mislukten voor ze iets konden noteren)
-  $("#exec-wrap").hidden = !d.executions;
+  // Runs volgens Azure: apart subtabblad, alleen in de cloud
+  $("#sub-azure").hidden = !d.executions;
+  if (!d.executions && subTab === "azure") showSub("log");
+  $("#exec-wrap").hidden = !d.executions || subTab !== "azure";
   $("#execs").innerHTML = (d.executions || []).map(e =>
     `<tr><td>${stamp(e.start)}</td><td>${stamp(e.end)}</td>
       <td>${e.start && e.end ? Math.round((new Date(e.end) - new Date(e.start)) / 1000) + " s" : ""}</td>

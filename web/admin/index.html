@@ -49,13 +49,18 @@
       <span id="robot-state" class="muted"></span>
       <select id="task" aria-label="Task"></select>
     </div>
+    <div class="subtabs">
+      <button type="button" data-sub="log" class="active" data-t="sub_log"></button>
+      <button type="button" data-sub="azure" id="sub-azure" hidden data-t="exec_title"></button>
+    </div>
+    <div id="sub-log">
     <table>
       <thead><tr><th data-t="r_start"></th><th data-t="r_duration"></th><th data-t="r_task"></th><th data-t="r_result"></th>
-        <th data-t="r_found"></th><th data-t="r_new"></th><th data-t="r_error"></th></tr></thead>
+        <th data-t="r_found"></th><th data-t="r_new"></th><th data-t="r_error"></th><th></th></tr></thead>
       <tbody id="runs"></tbody>
     </table>
+    </div>
     <div id="exec-wrap" hidden>
-      <h3 data-t="exec_title"></h3>
       <table>
         <thead><tr><th data-t="r_start"></th><th data-t="exec_end"></th><th data-t="r_duration"></th><th data-t="exec_status"></th><th data-t="exec_name"></th></tr></thead>
         <tbody id="execs"></tbody>

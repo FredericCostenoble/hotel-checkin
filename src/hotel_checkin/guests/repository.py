@@ -21,6 +21,7 @@ Bewaartermijnen (zie privacyverklaring): opschonen gebeurt later in een apart pr
 from __future__ import annotations
 
 import json
+import re
 import os
 import secrets
 import uuid
@@ -316,6 +317,14 @@ def get_state(hotel_id: str, key: str) -> str | None:
 def set_state(hotel_id: str, key: str, value: str) -> None:
     _table(T_STATE).upsert_entity({"PartitionKey": _key(hotel_id), "RowKey": _key(key), "value": value,
                                    "updated_at": _now().isoformat()})
+
+
+def delete_robot_run(hotel_id: str, run_id: str) -> bool:
+    """Verwijder één run uit het logboek (monitor, vuilbakje). run_id = RowKey."""
+    if not re.fullmatch(r"\d{10}-[0-9a-f]{6}", run_id or ""):
+        return False
+    _table(T_ROBOT).delete_entity(_key(hotel_id), run_id)
+    return True
 
 
 def prune_robot_runs(hotel_id: str, keep_days: int = 30) -> int:

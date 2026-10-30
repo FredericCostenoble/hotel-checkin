@@ -71,6 +71,9 @@ class Handler(BaseHTTPRequestHandler):
         elif method == "POST" and len(parts) == 4 and parts[3] == "run":
             hours = int((self.path.split("hours=") + ["48"])[1].split("&")[0] or 48)
             self._json(200, {"started": admin.start_robot(parts[2], hours)})
+        elif method == "DELETE" and len(parts) == 4 and parts[3] == "runs":
+            run_id = (self.path.split("id=") + [""])[1].split("&")[0]
+            self._json(200, {"deleted": admin.delete_run(parts[2], run_id)})
         else:
             self._send(404, b"Not found", "text/plain")
         return True
@@ -96,6 +99,10 @@ class Handler(BaseHTTPRequestHandler):
             data = service.form_data(path.rsplit("/", 1)[1])
             return self._json(200, data) if data else self._json(404, {"error": "not_found"})
         return self._file(WEB, path.lstrip("/"))
+
+    def do_DELETE(self):
+        if not self._admin_api("DELETE", self.path.split("?")[0]):
+            self._send(404, b"Not found", "text/plain")
 
     def do_POST(self):
         path = self.path.split("?")[0]
