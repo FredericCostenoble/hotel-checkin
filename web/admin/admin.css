@@ -159,3 +159,13 @@ a.lh { display: inline-flex; align-items: center; justify-content: center; width
   border-radius: 4px; color: #3E63DD; background: #fff; vertical-align: middle; }
 a.lh:hover { background: #EAF0FF; border-color: #3E63DD; }
 td.nowrap { white-space: nowrap; }
+/* Knop Instellingen (workflow en robot op een aparte pagina) */
+.settings-btn { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); background: #fff; color: #5C6478;
+  padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 13px; }
+.settings-btn:hover { color: #2B3F8C; border-color: #3E63DD; }
+.settings-btn.active { background: #2B3F8C; border-color: #2B3F8C; color: #fff; }
+.version + .settings-btn + .langs { margin-left: 0; }
+nav button.back { border: none; background: none; color: #3E63DD; padding-left: 4px; margin-right: 8px; }
+nav button.back:hover { background: none; text-decoration: underline; }
+body.in-settings nav { background: transparent; }
+nav button[hidden] { display: none; }

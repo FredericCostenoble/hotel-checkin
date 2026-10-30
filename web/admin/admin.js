@@ -33,7 +33,7 @@ const T = {
     returning: n => `terugkerend (${n}×)`, mg_message: "Bericht", mg_time: "Tijdstip", short_confirmation: "Bevestiging", short_reminder: "Herinnering", short_access_code: "Code-mail", mg_channel: "Kanaal", mg_to: "Naar",
     mg_title: (num, guest) => `Berichten voor ${guest} (${num})`, mg_click: "Klik voor alle details",
     mg_plan: "Tijdlijn", mg_attempts: "Alle pogingen", mg_next: "volgt",
-    pl_sent: "verstuurd", pl_failed: "mislukt", pl_planned: "gepland", pl_due: "volgende run", pl_skipped: "valt weg", pl_off: "niet actief", open_lh: "Openen in Lighthouse", pl_not_tried: "niet geprobeerd", backup: "extra adres uit het check-in-formulier",
+    pl_sent: "verstuurd", pl_failed: "mislukt", pl_planned: "gepland", pl_due: "volgende run", pl_skipped: "valt weg", pl_off: "niet actief", settings: "Instellingen", back: "Monitor", open_lh: "Openen in Lighthouse", pl_not_tried: "niet geprobeerd", backup: "extra adres uit het check-in-formulier",
     rs_now: "Nu versturen", rs_again: "Opnieuw versturen", rs_confirm: (step, ch, to) => `${step} nu versturen per ${ch} naar ${to}?`,
     chr_muted: "uitgezet voor deze gast", chr_phone_off: "nog niet actief (Twilio)", chr_fallback: "alleen als WhatsApp niet lukt",
     rs_disabled: "stap staat uit", rs_messaging_off: "berichten staan uit in deze omgeving", rs_before_start: "reservatie van voor de start",
@@ -93,7 +93,7 @@ const T = {
     returning: n => `returning (${n}×)`, mg_message: "Message", mg_time: "Time", short_confirmation: "Confirmation", short_reminder: "Reminder", short_access_code: "Code mail", mg_channel: "Channel", mg_to: "To",
     mg_title: (num, guest) => `Messages for ${guest} (${num})`, mg_click: "Click for all details",
     mg_plan: "Timeline", mg_attempts: "All attempts", mg_next: "next",
-    pl_sent: "sent", pl_failed: "failed", pl_planned: "planned", pl_due: "next run", pl_skipped: "skipped", pl_off: "not active", open_lh: "Open in Lighthouse", pl_not_tried: "not tried", backup: "extra address from the check-in form",
+    pl_sent: "sent", pl_failed: "failed", pl_planned: "planned", pl_due: "next run", pl_skipped: "skipped", pl_off: "not active", settings: "Settings", back: "Monitor", open_lh: "Open in Lighthouse", pl_not_tried: "not tried", backup: "extra address from the check-in form",
     rs_now: "Send now", rs_again: "Send again", rs_confirm: (step, ch, to) => `Send ${step} now by ${ch} to ${to}?`,
     chr_muted: "switched off for this guest", chr_phone_off: "not active yet (Twilio)", chr_fallback: "only if WhatsApp fails",
     rs_disabled: "step is off", rs_messaging_off: "messages are off in this environment", rs_before_start: "reservation from before the start",
@@ -173,7 +173,12 @@ async function init() {
   document.querySelectorAll("#tab-robot .subtabs button").forEach(b => b.onclick = () => showSub(b.dataset.sub));
   $("#bin-all").innerHTML = BIN;
   $("#bin-all").onclick = deleteAllRuns;
-  document.querySelectorAll("nav button").forEach(b => b.onclick = () => showTab(b.dataset.tab));
+  document.querySelectorAll("nav button[data-tab]").forEach(b => b.onclick = () => showTab(b.dataset.tab));
+  // Instellingen (workflow, robot) als aparte pagina: eigen adres (#workflow, #robot), terug met de knop of de browser
+  $("#settings").onclick = () => showTab(AREA[current] === "settings" ? lastTab.main : lastTab.settings);
+  $("#back").onclick = () => showTab(lastTab.main);
+  window.addEventListener("hashchange", () => { const n = location.hash.slice(1); if (AREA[n] && n !== current) showTab(n); });
+  showTab(AREA[location.hash.slice(1)] ? location.hash.slice(1) : "res", true);
   if ($("#version").textContent.includes("__")) $("#version").textContent = "dev";  // lokaal, niet uitgerold
   $("#g-search").oninput = renderGuests;
   // Filter wissen: zoekvak leeg (reservaties: ook terug "vanaf vandaag")
@@ -201,10 +206,26 @@ async function init() {
   load();
 }
 
-function showTab(name) {
-  if (wfDirty && name !== "workflow" && !$("#tab-workflow").hidden && !confirm(t("wf_leave"))) return;
-  document.querySelectorAll("nav button").forEach(x => x.classList.toggle("active", x.dataset.tab === name));
+const AREA = { res: "main", guests: "main", workflow: "settings", robot: "settings" };
+let current = "res";
+const lastTab = { main: "res", settings: "workflow" };
+function showTab(name, initial = false) {
+  if (wfDirty && name !== "workflow" && !$("#tab-workflow").hidden && !confirm(t("wf_leave"))) {
+    if (location.hash.slice(1) !== current) history.replaceState(null, "", "#" + current);
+    return;
+  }
+  const area = AREA[name];
+  current = name;
+  lastTab[area] = name;
+  document.querySelectorAll("nav button[data-tab]").forEach(x => {
+    x.hidden = x.dataset.area !== area;
+    x.classList.toggle("active", x.dataset.tab === name);
+  });
+  $("#back").hidden = area !== "settings";
+  $("#settings").classList.toggle("active", area === "settings");
+  document.body.classList.toggle("in-settings", area === "settings");
   ["res", "guests", "workflow", "robot"].forEach(n => { $(`#tab-${n}`).hidden = n !== name; });
+  if (location.hash.slice(1) !== name) history[initial ? "replaceState" : "pushState"](null, "", "#" + name);
 }
 
 async function load() {
