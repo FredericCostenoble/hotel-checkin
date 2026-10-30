@@ -118,6 +118,11 @@ def admin_api(req: func.HttpRequest) -> func.HttpResponse:
         return _json(200, admin.reservations(hotel))
     if req.method == "GET" and what == "guests":
         return _json(200, admin.guests(hotel))
+    if req.method == "POST" and what == "maintenance":
+        # Knop "Gasten nu bijwerken": het nachtelijke onderhoud meteen draaien
+        from hotel_checkin.processes import maintenance
+
+        return _json(200, maintenance.run(hotel))
     if req.method == "POST" and what == "guests":
         # Mogelijke dubbels: samenvoegen of onthouden dat het andere personen zijn
         a, b = req.params.get("a", ""), req.params.get("b", "")

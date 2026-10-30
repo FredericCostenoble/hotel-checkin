@@ -66,6 +66,10 @@ class Handler(BaseHTTPRequestHandler):
             self._json(200, admin.hotels())
         elif method == "GET" and len(parts) == 4 and parts[3] == "reservations":
             self._json(200, admin.reservations(parts[2]))
+        elif method == "POST" and len(parts) == 4 and parts[3] == "maintenance":
+            from hotel_checkin.processes import maintenance
+
+            self._json(200, maintenance.run(parts[2]))
         elif method == "GET" and len(parts) == 4 and parts[3] == "guests":
             self._json(200, admin.guests(parts[2]))
         elif method == "POST" and len(parts) == 4 and parts[3] == "guests":

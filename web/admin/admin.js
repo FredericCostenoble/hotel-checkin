@@ -4,6 +4,7 @@ const API = window.ADMIN_API || "";
 const T = {
   nl: {
     title: "Check-in monitor", hotel: "Hotel", tab_res: "Reservaties", tab_robot: "Robot", tab_guests: "Gasten",
+    g_update: "Gasten nu bijwerken", g_busy: "Bezig...", g_done: d => `${d.linked} gekoppeld, ${d.counted} verblijven meegeteld, ${d.reservations_deleted} oude reservaties en ${d.guests_deleted} gasten verwijderd`,
     g_search: "Zoek op naam, e-mail, telefoon", g_count: n => `${n} gasten`, g_country: "Land", g_stays: "Verblijven",
     g_avg_nights: "Gem. nachten", g_avg_persons: "Gem. pers.", g_first: "Eerste verblijf", g_last: "Laatste verblijf",
     g_channel: "Kanaal", g_rooms: "Kamers", g_relay: "doorstuuradres, niet voor marketing", g_form: "formulier",
@@ -26,6 +27,7 @@ const T = {
   },
   en: {
     title: "Check-in monitor", hotel: "Hotel", tab_res: "Reservations", tab_robot: "Robot", tab_guests: "Guests",
+    g_update: "Update guests now", g_busy: "Working...", g_done: d => `${d.linked} linked, ${d.counted} stays counted, ${d.reservations_deleted} old reservations and ${d.guests_deleted} guests deleted`,
     g_search: "Search name, e-mail, phone", g_count: n => `${n} guests`, g_country: "Country", g_stays: "Stays",
     g_avg_nights: "Avg nights", g_avg_persons: "Avg pers.", g_first: "First stay", g_last: "Last stay",
     g_channel: "Channel", g_rooms: "Rooms", g_relay: "relay address, not for marketing", g_form: "form",
@@ -97,6 +99,7 @@ async function init() {
   $("#bin-all").onclick = deleteAllRuns;
   document.querySelectorAll("nav button").forEach(b => b.onclick = () => showTab(b.dataset.tab));
   $("#g-search").oninput = renderGuests;
+  $("#g-update").onclick = updateGuests;
   document.querySelectorAll("#g-head th[data-gsort]").forEach(th => th.onclick = () => gSortBy(th.dataset.gsort));
   $("#search").oninput = render;
   document.querySelectorAll("#res-head th[data-sort]").forEach(th => th.onclick = () => sortBy(th.dataset.sort));
@@ -132,6 +135,22 @@ let gSortKey = "last_stay", gSortDir = -1;
 const gValue = (g, k) => k === "rooms" ? g.rooms.join(", ") : k === "reservations" ? g.reservations.length
   : k === "email" ? (g.email || g.phone) : (g[k] ?? "");
 function gSortBy(k) { gSortDir = k === gSortKey ? -gSortDir : 1; gSortKey = k; renderGuests(); }
+
+// Zelfde als het nachtelijke onderhoud: koppelen, verblijven meetellen, opruimen
+async function updateGuests() {
+  $("#g-update").disabled = true;
+  $("#g-state").textContent = t("g_busy");
+  try {
+    const d = await get(`/api/monitor/${$("#hotel").value}/maintenance`, { method: "POST" });
+    $("#g-state").textContent = t("g_done", d);
+    await loadGuests();
+    loadRuns();
+  } catch (e) {
+    $("#g-state").textContent = `${t("load_error")}: ${e.message}`;
+  } finally {
+    $("#g-update").disabled = false;
+  }
+}
 
 async function loadGuests() {
   guestData = await get(`/api/monitor/${$("#hotel").value}/guests`);
