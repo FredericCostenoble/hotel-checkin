@@ -171,6 +171,7 @@ function renderRuns(d) {
   $("#exec-wrap").hidden = !d.executions;
   $("#execs").innerHTML = (d.executions || []).map(e =>
     `<tr><td>${stamp(e.start)}</td><td>${stamp(e.end)}</td>
+      <td>${e.start && e.end ? Math.round((new Date(e.end) - new Date(e.start)) / 1000) + " s" : ""}</td>
       <td class="${e.status === "Succeeded" ? "ok" : (e.status === "Failed" ? "err" : "")}">${esc(e.status)}</td>
       <td class="muted">${esc(e.name)}</td></tr>`).join("");
 }
