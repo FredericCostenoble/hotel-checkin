@@ -247,6 +247,7 @@ def workflow_preview(hotel_id: str, body: dict) -> dict:
                     {"label": "Citytax", "qty": 4, "amount": 20.0}]
     sample.folio_total, sample.open_amount = 260.0, 245.0
     data = {**templates.sample_data(language), **send_messages.pay_data(hotel_id, sample, cfg),
+            "token": "voorbeeld-" + hotel_id,  # werkende link naar het formulier (voorbeeld, niets bewaard)
             "betaal_link": "#betalen"}
     msg = templates.render(hotel_id, step.step, language, data, step.mail_content(), step.pay)
     return {"subject": msg.subject, "html": msg.html}

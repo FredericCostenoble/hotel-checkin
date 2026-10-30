@@ -82,3 +82,14 @@ def test_submit_refused_when_not_open():
     assert service.submit("tok", {"email": "a@b.be"}) == (False, {"state": "cancelled"})
     assert service.submit("x", {"email": "a@b.be"}) == (False, {"token": "not_found"})
 
+
+
+def test_demo_link_from_example_mail_is_never_saved():
+    from hotel_checkin.checkin import service
+
+    data = service.form_data("voorbeeld-lucca")
+    assert data["state"] == "open" and data["demo"] and data["first_name"] == "Anna"
+    assert service.form_data("voorbeeld-onbekend") is None
+    ok, errors = service.submit("voorbeeld-lucca", {"email": "a@b.be", "language": "nl"})
+    assert ok and not errors
+    assert service.submit("voorbeeld-lucca", {"email": "fout"})[1] == {"email": "invalid"}

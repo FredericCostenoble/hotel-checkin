@@ -11,7 +11,7 @@ contactgegevens; reservatiegegevens worden alleen-lezen getoond.
 from __future__ import annotations
 
 import re
-from datetime import date
+from datetime import date, timedelta
 
 from hotel_checkin.core.models import ReservationStatus
 from hotel_checkin.guests import repository as repo
@@ -49,8 +49,30 @@ def hotel_info(hotel_id: str, language: str) -> dict:
     }
 
 
+DEMO_PREFIX = "voorbeeld-"  # link in de voorbeeldmail van de monitor: voorbeeld-<hotel_id>
+
+
+def _demo(token: str, today: date) -> dict | None:
+    """Voorbeeldreservatie voor de link in de voorbeeldmail. Wordt nooit bewaard."""
+    from hotel_checkin.core.hotels import list_hotels
+
+    hotel_id = token[len(DEMO_PREFIX):]
+    if hotel_id not in list_hotels():
+        return None
+    arrival = today + timedelta(days=14)
+    return {
+        "state": "open", "demo": True, "first_name": "Anna", "last_name": "Peeters",
+        "arrival": arrival.isoformat(), "departure": (arrival + timedelta(days=2)).isoformat(),
+        "room_type": "Superior Double Room", "email": "anna.peeters@example.com", "phone": "", "country": "BE",
+        "backup_email": "", "backup_phone": "", "language": "nl", "completed": False, "no_marketing": False,
+        "hotel": hotel_info(hotel_id, "nl"),
+    }
+
+
 def form_data(token: str, today: date | None = None) -> dict | None:
     """None als het token onbekend is. state: open, cancelled of closed."""
+    if token.startswith(DEMO_PREFIX):
+        return _demo(token, today or date.today())
     r = repo.get_by_token(token) if token else None
     if r is None:
         return None
@@ -117,6 +139,8 @@ def submit(token: str, form: dict) -> tuple[bool, dict]:
         language = data["language"]
     if errors:
         return False, errors
+    if data.get("demo"):  # voorbeeld: alles gecontroleerd, niets bewaard
+        return True, {}
 
     r = repo.get_by_token(token)
     if form.get("no_marketing"):
