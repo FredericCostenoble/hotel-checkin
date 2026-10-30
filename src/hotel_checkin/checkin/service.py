@@ -75,8 +75,6 @@ def form_data(token: str, today: date | None = None) -> dict | None:
         "backup_email": r.guest.backup_email or "",
         "backup_phone": r.guest.backup_phone or "",
         "language": r.guest.language,
-        # kanalen voor onze berichten: e-mail altijd, sms en WhatsApp naar keuze
-        "channels": r.guest.channels if r.guest.channels is not None else ["email"],
         "completed": r.checkin_completed_at is not None,
         "no_marketing": repo.is_opted_out(r.hotel_id, email) if email else False,
         "hotel": hotel_info(r.hotel_id, r.guest.language),
@@ -86,7 +84,7 @@ def form_data(token: str, today: date | None = None) -> dict | None:
 def submit(token: str, form: dict) -> tuple[bool, dict]:
     """Bewaar de contactgegevens uit het formulier. Geeft (ok, fouten) terug.
 
-    form: email, phone, backup_email, backup_phone, language, channels (sms, whatsapp), no_marketing.
+    form: email, phone, backup_email, backup_phone, language, no_marketing.
     Telefoonnummers komen normaal al in +-formaat van het formulier (landkeuze + nummer).
     """
     data = form_data(token)
@@ -117,10 +115,6 @@ def submit(token: str, form: dict) -> tuple[bool, dict]:
     language = text("language")
     if language not in LANGUAGES:
         language = data["language"]
-    chosen = form.get("channels") or []
-    channels = ["email"] + [c for c in ("sms", "whatsapp") if c in chosen]
-    if len(channels) > 1 and not phones["phone"] and "phone" not in errors:
-        errors["phone"] = "required"  # sms of WhatsApp gekozen zonder gsm-nummer
     if errors:
         return False, errors
 
@@ -129,7 +123,7 @@ def submit(token: str, form: dict) -> tuple[bool, dict]:
         repo.add_opt_out(r.hotel_id, email, "checkin_form")
     saved = repo.mark_checkin_completed(
         r.hotel_id, r.reservation_id, email, phones["phone"], language,
-        backup_email=backup_email or None, backup_phone=phones["backup_phone"], channels=channels,
+        backup_email=backup_email or None, backup_phone=phones["backup_phone"],
     )
     # De gast gaf zelf zijn gegevens: die gaan voor in het gastprofiel (en kunnen profielen samenbrengen)
     try:

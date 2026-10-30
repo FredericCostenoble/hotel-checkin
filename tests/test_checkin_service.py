@@ -82,12 +82,3 @@ def test_submit_refused_when_not_open():
     assert service.submit("tok", {"email": "a@b.be"}) == (False, {"state": "cancelled"})
     assert service.submit("x", {"email": "a@b.be"}) == (False, {"token": "not_found"})
 
-
-def test_channels_chosen_by_guest():
-    _save()
-    assert service.form_data("tok")["channels"] == ["email"]
-    ok, errors = service.submit("tok", {"email": "anna@example.com", "phone": "", "channels": ["whatsapp"]})
-    assert not ok and errors == {"phone": "required"}
-    ok, _ = service.submit("tok", {"email": "anna@example.com", "phone": "0476 89 62 74", "channels": ["whatsapp", "fax"]})
-    assert ok and repo.get_reservation("lucca", "R1").guest.channels == ["email", "whatsapp"]
-    assert service.form_data("tok")["channels"] == ["email", "whatsapp"]

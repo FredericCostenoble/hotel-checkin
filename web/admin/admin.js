@@ -228,7 +228,6 @@ function contactCell(g) {
   const tags = [];
   if (g.email && !g.email_own) tags.push(`<span class="tag" title="${esc(t("g_relay"))}">OTA</span>`);
   if (g.form) tags.push(`<span class="tag">${esc(t("g_form"))}</span>`);
-  (g.message_channels || []).filter(x => x !== "email").forEach(x => tags.push(`<span class="tag">${esc(t("ch_" + x))}</span>`));
   if (g.opt_out) tags.push(`<span class="tag fail">${esc(t("g_optout"))}</span>`);
   return `${esc(g.email)}${g.email && g.phone ? "<br>" : ""}${esc(g.phone)} ${tags.join("")}`;
 }

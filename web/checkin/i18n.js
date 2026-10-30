@@ -1,7 +1,6 @@
 // Teksten van het check-in-formulier. {voornaam} wordt ingevuld met de voornaam van de gast.
 const I18N = {
   nl: {
-    channels: "Hoe wilt u onze berichten ontvangen?", ch_email: "E-mail", ch_sms: "Sms", ch_whatsapp: "WhatsApp", channels_hint: "Per mail sturen we altijd alles. Kiest u ook sms of WhatsApp, dan sturen we uw pincode en belangrijke berichten ook daar naartoe.", err_channels: "Vul uw gsm-nummer in om berichten per sms of WhatsApp te ontvangen.",
     intro_confirm: "Beste {voornaam}, kloppen onderstaande gegevens? Pas aan waar nodig en bevestig. Zo sturen we u voor uw aankomst alle praktische informatie en uw persoonlijke pincode voor de voordeur en uw kamerdeur.",
     backup_toggle: "Extra e-mailadres of gsm-nummer toevoegen (optioneel)", backup_hint: "Een tweede e-mailadres of nummer waarop we u kunnen bereiken.",
     backup_email: "Extra e-mailadres", backup_phone: "Extra gsm-nummer", preferences: "Voorkeuren",
@@ -11,7 +10,7 @@ const I18N = {
     already: "U hebt uw gegevens al ingevuld. U kunt ze hieronder nog aanpassen.",
     reservation: "Uw reservatie", name: "Naam", arrival: "Aankomst", departure: "Vertrek", room: "Kamer",
     contact: "Uw contactgegevens", email: "E-mailadres", phone: "Gsm-nummer",
-    phone_hint: "Optioneel. Kies het land en typ uw nummer, bv. 476123456.",
+    phone_hint: "Optioneel. Kies het land en typ uw nummer, bv. 476123456. Dan kunnen we u bij aankomst ook per sms of WhatsApp bereiken.",
     language: "Taal voor onze berichten",
     no_marketing: "Ik wil geen aanbiedingen of nieuws van Hotel Lucca ontvangen.",
     privacy_before: "Hoe we met uw gegevens omgaan, leest u in onze", privacy_link: "privacyverklaring",
@@ -25,7 +24,6 @@ const I18N = {
     closed_title: "Verblijf afgelopen", closed_text: "Deze reservatie is afgelopen. Bedankt voor uw bezoek en graag tot een volgende keer.",
   },
   fr: {
-    channels: "Comment souhaitez-vous recevoir nos messages ?", ch_email: "E-mail", ch_sms: "SMS", ch_whatsapp: "WhatsApp", channels_hint: "Nous envoyons toujours tout par e-mail. Si vous choisissez aussi SMS ou WhatsApp, nous y enverrons également votre code PIN et les messages importants.", err_channels: "Indiquez votre numéro de portable pour recevoir nos messages par SMS ou WhatsApp.",
     intro_confirm: "Bonjour {voornaam}, les données ci-dessous sont-elles correctes ? Modifiez-les si nécessaire et confirmez. Avant votre arrivée, nous vous enverrons toutes les informations pratiques ainsi que votre code PIN personnel pour la porte d'entrée et la porte de votre chambre.",
     backup_toggle: "Ajouter une adresse e-mail ou un numéro supplémentaire (facultatif)", backup_hint: "Une deuxième adresse e-mail ou un deuxième numéro où nous pouvons vous joindre.",
     backup_email: "Adresse e-mail supplémentaire", backup_phone: "Numéro de portable supplémentaire", preferences: "Préférences",
@@ -35,7 +33,7 @@ const I18N = {
     already: "Vous avez déjà complété vos données. Vous pouvez encore les modifier ci-dessous.",
     reservation: "Votre réservation", name: "Nom", arrival: "Arrivée", departure: "Départ", room: "Chambre",
     contact: "Vos coordonnées", email: "Adresse e-mail", phone: "Numéro de portable",
-    phone_hint: "Facultatif. Choisissez le pays et saisissez votre numéro, p. ex. 612345678.",
+    phone_hint: "Facultatif. Choisissez le pays et saisissez votre numéro, p. ex. 612345678. Nous pourrons ainsi vous joindre aussi par SMS ou WhatsApp à votre arrivée.",
     language: "Langue de nos messages",
     no_marketing: "Je ne souhaite pas recevoir d'offres ni de nouvelles de l'Hotel Lucca.",
     privacy_before: "Pour savoir comment nous traitons vos données, consultez notre", privacy_link: "déclaration de confidentialité",
@@ -49,7 +47,6 @@ const I18N = {
     closed_title: "Séjour terminé", closed_text: "Cette réservation est terminée. Merci pour votre visite et à une prochaine fois.",
   },
   en: {
-    channels: "How would you like to receive our messages?", ch_email: "E-mail", ch_sms: "SMS", ch_whatsapp: "WhatsApp", channels_hint: "We always send everything by e-mail. If you also choose SMS or WhatsApp, we will send your PIN code and important messages there as well.", err_channels: "Please enter your mobile number to receive messages by SMS or WhatsApp.",
     intro_confirm: "Dear {voornaam}, are the details below correct? Change them where needed and confirm. Before you arrive, we will send you all practical information and your personal PIN code for the front door and your room door.",
     backup_toggle: "Add an extra email address or mobile number (optional)", backup_hint: "A second email address or number where we can reach you.",
     backup_email: "Additional email address", backup_phone: "Additional mobile number", preferences: "Preferences",
@@ -59,7 +56,7 @@ const I18N = {
     already: "You have already completed your details. You can still change them below.",
     reservation: "Your reservation", name: "Name", arrival: "Arrival", departure: "Departure", room: "Room",
     contact: "Your contact details", email: "Email address", phone: "Mobile number",
-    phone_hint: "Optional. Choose the country and type your number, e.g. 7700900123.",
+    phone_hint: "Optional. Choose the country and type your number, e.g. 7700900123. This allows us to reach you by text message or WhatsApp on arrival.",
     language: "Language for our messages",
     no_marketing: "I do not want to receive offers or news from Hotel Lucca.",
     privacy_before: "To find out how we handle your data, read our", privacy_link: "privacy statement",
@@ -73,7 +70,6 @@ const I18N = {
     closed_title: "Stay completed", closed_text: "This reservation has ended. Thank you for your visit, we hope to see you again.",
   },
   de: {
-    channels: "Wie möchten Sie unsere Nachrichten erhalten?", ch_email: "E-Mail", ch_sms: "SMS", ch_whatsapp: "WhatsApp", channels_hint: "Per E-Mail senden wir immer alles. Wählen Sie auch SMS oder WhatsApp, senden wir Ihren PIN-Code und wichtige Nachrichten auch dorthin.", err_channels: "Bitte geben Sie Ihre Handynummer an, um Nachrichten per SMS oder WhatsApp zu erhalten.",
     intro_confirm: "Guten Tag {voornaam}, sind die unten stehenden Angaben korrekt? Ändern Sie sie bei Bedarf und bestätigen Sie. Vor Ihrer Anreise senden wir Ihnen alle praktischen Informationen und Ihren persönlichen PIN-Code für die Haustür und Ihre Zimmertür.",
     backup_toggle: "Zusätzliche E-Mail-Adresse oder Handynummer hinzufügen (optional)", backup_hint: "Eine zweite E-Mail-Adresse oder Nummer, unter der wir Sie erreichen können.",
     backup_email: "Zusätzliche E-Mail-Adresse", backup_phone: "Zusätzliche Handynummer", preferences: "Einstellungen",
@@ -83,7 +79,7 @@ const I18N = {
     already: "Sie haben Ihre Daten bereits ergänzt. Unten können Sie sie noch ändern.",
     reservation: "Ihre Reservierung", name: "Name", arrival: "Anreise", departure: "Abreise", room: "Zimmer",
     contact: "Ihre Kontaktdaten", email: "E-Mail-Adresse", phone: "Handynummer",
-    phone_hint: "Optional. Wählen Sie das Land und geben Sie Ihre Nummer ein, z. B. 15123456789.",
+    phone_hint: "Optional. Wählen Sie das Land und geben Sie Ihre Nummer ein, z. B. 15123456789. So können wir Sie bei der Anreise auch per SMS oder WhatsApp erreichen.",
     language: "Sprache unserer Nachrichten",
     no_marketing: "Ich möchte keine Angebote oder Neuigkeiten vom Hotel Lucca erhalten.",
     privacy_before: "Wie wir mit Ihren Daten umgehen, lesen Sie in unserer", privacy_link: "Datenschutzerklärung",

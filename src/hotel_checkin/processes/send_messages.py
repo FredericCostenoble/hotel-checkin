@@ -10,7 +10,8 @@ Veiligheid: alleen reservaties die na [messaging] start toegevoegd werden, en al
 Late boeking (bv. 2 dagen voor aankomst): stappen met replaced_by = ["access_code"] vallen weg,
 de gast krijgt meteen alleen de code-mail.
 
-Voorlopig alleen e-mail. Stappen die meer vragen dan een bericht (access_code: eerst een code
+Kanalen (geen keuze voor de gast): altijd per mail. Is er een gsm-nummer, dan ook per WhatsApp;
+heeft het nummer geen WhatsApp, dan per sms. Voorlopig alleen e-mail (Twilio nog niet betaald). Stappen die meer vragen dan een bericht (access_code: eerst een code
 bij Salto) of een kanaal dat er nog niet is (sms, WhatsApp), worden overgeslagen.
 """
 

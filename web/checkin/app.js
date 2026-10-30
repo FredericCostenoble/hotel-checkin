@@ -38,9 +38,6 @@ const API = window.CHECKIN_API || "";
     sel.addEventListener("change", () => { if ($(id).value) showFieldError(id, !phoneLooksValid(sel, $(id))); });
   });
 
-  // Fout "gsm-nummer nodig" verdwijnt zodra de gast een nummer typt of sms/WhatsApp uitvinkt
-  ["ch_sms", "ch_whatsapp", "phone"].forEach((id) => $(id).addEventListener("input", () => { $("err-channels").hidden = true; }));
-
   function render() {
     document.documentElement.lang = lang;
     document.querySelectorAll("[data-t]").forEach((el) => (el.textContent = t(el.dataset.t)));
@@ -117,8 +114,6 @@ const API = window.CHECKIN_API || "";
     $("backup-box").open = !!(data.backup_email || data.backup_phone);
     $("language").value = lang;
     $("no_marketing").checked = data.no_marketing;
-    $("ch_sms").checked = (data.channels || []).includes("sms");
-    $("ch_whatsapp").checked = (data.channels || []).includes("whatsapp");
     $("already").hidden = !data.completed;
     $("loading").hidden = true;
     $("form-section").hidden = false;
@@ -135,7 +130,7 @@ const API = window.CHECKIN_API || "";
 
   $("form").addEventListener("submit", async (ev) => {
     ev.preventDefault();
-    ["err-email", "err-phone", "err-backup_email", "err-backup_phone", "err-channels", "err-general"].forEach((id) => ($(id).hidden = true));
+    ["err-email", "err-phone", "err-backup_email", "err-backup_phone", "err-general"].forEach((id) => ($(id).hidden = true));
     const btn = $("submit");
     btn.disabled = true;
     btn.textContent = t("saving");
@@ -149,7 +144,6 @@ const API = window.CHECKIN_API || "";
           backup_email: $("backup_email").value,
           backup_phone: composePhone($("backup_phone_cc").value, $("backup_phone").value),
           language: $("language").value,
-          channels: ["sms", "whatsapp"].filter((c) => $("ch_" + c).checked),
           no_marketing: $("no_marketing").checked,
         }),
       });
@@ -161,8 +155,7 @@ const API = window.CHECKIN_API || "";
       }
       const errors = body.errors || {};
       ["email", "backup_email", "backup_phone"].forEach((k) => { if (errors[k]) showFieldError(k, true); });
-      if (errors.phone === "required") showFieldError("channels", true);
-      else if (errors.phone) showFieldError("phone", true);
+      if (errors.phone) showFieldError("phone", true);
       if (errors.backup_email || errors.backup_phone) $("backup-box").open = true;
       if (errors.state) return showMessage(errors.state);
       if (errors.token) return showMessage("notfound");
