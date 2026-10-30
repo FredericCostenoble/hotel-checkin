@@ -607,9 +607,8 @@ function stepCard(s, i, flow, c) {
   return `<div class="tl-step ${s.enabled ? "" : "off"}">
     <div class="tl-when"><span class="dot"></span>${esc(when)}</div>
     <div class="card">
-      <div class="card-head"><strong>${esc(t("step_" + s.step))}</strong>${notReady}
-        <button type="button" class="link" data-preview="${i}">${esc(t("wf_example"))}</button>
-        <label class="chk right"><input type="checkbox" data-i="${i}" data-f="enabled" ${s.enabled ? "checked" : ""}> ${esc(t("f_enabled"))}</label></div>
+      <div class="card-head"><label class="chk title" title="${esc(t("f_enabled"))}"><input type="checkbox" data-i="${i}" data-f="enabled" ${s.enabled ? "checked" : ""}> <strong>${esc(t("step_" + s.step))}</strong></label>${notReady}
+        <button type="button" class="link right" data-preview="${i}">${esc(t("wf_example"))}</button></div>
       <div class="group">
         <div class="group-title">${esc(t("g_when"))}</div>
         <div class="fields">

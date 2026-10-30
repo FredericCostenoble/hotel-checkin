@@ -83,7 +83,7 @@ a.jump svg { vertical-align: -1px; }
 .tl-phase .tl-when { color: var(--ph); }
 .tl-when { color: #5C6478; font-weight: bold; font-size: 0.9em; margin-top: 14px; }
 .tl-step .card { border: 1px solid var(--line); border-radius: 8px; background: #fff; padding: 10px 14px; margin: 6px 0 4px; }
-.tl-step.off .card { opacity: 0.5; }
+.tl-step.off .card { background: #FAFAFB; }
 .card-head { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
 .card-head .right { margin-left: auto; }
 .fields { display: grid; gap: 8px; }
@@ -134,3 +134,6 @@ button.resend { border: 0; background: none; cursor: pointer; padding: 0 0 0 4px
 button.resend:hover { color: #3E63DD; }
 .tl-step .group { border-top: 1px solid var(--line); padding: 8px 0 4px; }
 .tl-step .group-title { font-size: 0.8em; text-transform: uppercase; letter-spacing: 0.03em; color: #5C6478; font-weight: bold; margin-bottom: 6px; }
+.card-head label.title { margin: 0; cursor: pointer; display: inline-flex; gap: 8px; align-items: center; }
+.card-head label.title input { width: 16px; height: 16px; }
+.tl-step.off .card .fields, .tl-step.off .card .group-title { opacity: 0.5; }
