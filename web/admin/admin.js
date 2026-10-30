@@ -4,7 +4,7 @@ const API = window.ADMIN_API || "";
 const T = {
   nl: {
     title: "Check-in monitor", hotel: "Hotel", tab_res: "Reservaties", tab_robot: "Robot", tab_guests: "Gasten",
-    returning: n => `terugkerend (${n}×)`,
+    returning: n => `terugkerend (${n}×)`, show_guest: "Gastgegevens tonen", show_res: "Reservaties van deze gast tonen",
     g_update: "Synchroniseren", g_busy: "Bezig...", g_done: d => `${d.linked} gekoppeld, ${d.counted} verblijven meegeteld, ${d.reservations_deleted} oude reservaties en ${d.guests_deleted} gasten verwijderd`,
     g_search: "Zoek op naam, e-mail, telefoon", g_count: n => `${n} gasten`, g_country: "Land", g_stays: "Verblijven",
     g_avg_nights: "Gem. nachten", g_avg_persons: "Gem. pers.", g_first: "Eerste verblijf", g_last: "Laatste verblijf",
@@ -28,7 +28,7 @@ const T = {
   },
   en: {
     title: "Check-in monitor", hotel: "Hotel", tab_res: "Reservations", tab_robot: "Robot", tab_guests: "Guests",
-    returning: n => `returning (${n}×)`,
+    returning: n => `returning (${n}×)`, show_guest: "Show guest data", show_res: "Show this guest's reservations",
     g_update: "Synchronize", g_busy: "Working...", g_done: d => `${d.linked} linked, ${d.counted} stays counted, ${d.reservations_deleted} old reservations and ${d.guests_deleted} guests deleted`,
     g_search: "Search name, e-mail, phone", g_count: n => `${n} guests`, g_country: "Country", g_stays: "Stays",
     g_avg_nights: "Avg nights", g_avg_persons: "Avg pers.", g_first: "First stay", g_last: "Last stay",
@@ -133,6 +133,8 @@ async function load() {
 
 // ---------------------------------------------------------------- gasten
 let guestData = { guests: [], matches: [] }, guestId = null, resIds = null;
+const ICON_GUEST = `<svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true"><path fill="currentColor" d="M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm-5 6c0-2.8 2.2-4.5 5-4.5s5 1.7 5 4.5v.5H3v-.5z"/></svg>`;
+const ICON_RES = `<svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true"><path fill="currentColor" d="M4 1h1v1.5h6V1h1v1.5h2V15H2V2.5h2V1zm-1 5v8h10V6H3zm2 2h2v2H5V8z"/></svg>`;
 let gSortKey = "last_stay", gSortDir = -1;
 const gValue = (g, k) => k === "rooms" ? g.rooms.join(", ") : k === "reservations" ? g.reservations.length
   : k === "email" ? (g.email || g.phone) : (g[k] ?? "");
@@ -197,13 +199,13 @@ function renderGuests() {
   $("#g-count").textContent = t("g_count", list.length);
   $("#guests").innerHTML = list.map(g => `
     <tr>
-      <td>${esc(g.name)}</td><td class="wrap">${contactCell(g)}</td>
+      <td>${g.reservations.length ? `<a href="#" class="jump" data-res="${esc(g.id)}" title="${esc(t("show_res"))}">${esc(g.name)}</a>` : esc(g.name)}</td><td class="wrap">${contactCell(g)}</td>
       <td>${esc(g.country)}${g.language ? ` <span class="muted">${esc(g.language)}</span>` : ""}</td>
       <td>${g.stays}</td><td>${g.avg_nights ?? ""}</td><td>${g.avg_persons ?? ""}</td>
       <td>${day(g.first_stay)}</td><td>${day(g.last_stay)}</td>
       <td title="${esc(g.channels.map(c => `${c.name} ${c.count}×`).join(", "))}">${esc(g.preferred_channel)}</td>
       <td>${esc(g.rooms.join(", "))}${g.room_type ? ` <span class="muted">${esc(g.room_type)}</span>` : ""}</td>
-      <td>${g.reservations.length ? `<a href="#" data-res="${esc(g.id)}">${g.reservations.length}</a>` : "0"}</td>
+      <td>${g.reservations.length ? `<a href="#" class="jump" data-res="${esc(g.id)}" title="${esc(t("show_res"))}">${ICON_RES} ${g.reservations.length}</a>` : "0"}</td>
     </tr>`).join("") || `<tr><td colspan="11" class="muted">${t("no_guests")}</td></tr>`;
   document.querySelectorAll("#guests a[data-res]").forEach(a => a.onclick = e => { e.preventDefault(); openReservations(a.dataset.res); });
   renderMatches();
@@ -264,7 +266,7 @@ function render() {
   $("#res").innerHTML = list.map(r => `
     <tr class="${r.status === "cancelled" ? "cancelled" : ""}">
       <td>${day(r.arrival)}</td><td>${day(r.departure)}</td>
-      <td>${esc(r.booking_number)}</td><td>${r.guest_id && guestById(r.guest_id) ? `<a href="#" data-guest="${esc(r.guest_id)}">${esc(r.guest)}</a>` : esc(r.guest)}${r.guest_stays ? ` <span class="tag back">${esc(t("returning", r.guest_stays))}</span>` : ""}</td><td>${esc(r.guests ?? "")}</td>
+      <td>${esc(r.booking_number)}</td><td>${r.guest_id && guestById(r.guest_id) ? `<a href="#" class="jump" data-guest="${esc(r.guest_id)}" title="${esc(t("show_guest"))}">${ICON_GUEST} ${esc(r.guest)}</a>` : esc(r.guest)}${r.guest_stays ? ` <span class="tag back">${esc(t("returning", r.guest_stays))}</span>` : ""}</td><td>${esc(r.guests ?? "")}</td>
       <td>${esc(r.rooms.join(", ") || r.room_type)}</td><td>${esc(r.source)}</td><td>${esc(r.pms_status)}</td>
       <td>${stamp(r.booked_at)}</td><td>${stamp(r.added_at)}</td><td>${stamp(r.updated_at)}</td>
       <td>${r.checkin_completed_at ? `<span class="ok">${t("yes")}</span> ${stamp(r.checkin_completed_at)}` : `<span class="muted">${t("no")}</span>`}</td>

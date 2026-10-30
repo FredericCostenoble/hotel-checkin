@@ -51,5 +51,8 @@ th[data-gsort] { cursor: pointer; user-select: none; white-space: nowrap; }
 th[data-gsort].sorted[data-dir="asc"]::after { content: " \2191"; }
 th[data-gsort].sorted[data-dir="desc"]::after { content: " \2193"; }
 td a { color: inherit; text-decoration: underline dotted; }
+a.jump { color: #1F5FBF; text-decoration: none; white-space: nowrap; }
+a.jump:hover { text-decoration: underline; }
+a.jump svg { vertical-align: -1px; }
 .tag.back { background: #E8F5EC; color: #1E6B3A; }
 .task-onderhoud { background: #FFF1E0; color: #8A4B00; }
