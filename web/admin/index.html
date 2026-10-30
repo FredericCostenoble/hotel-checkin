@@ -47,11 +47,13 @@
       <label id="hours-wrap"><span data-t="hours_a"></span> <input id="hours" type="number" value="48" min="1" max="720"> <span data-t="hours_b"></span></label>
       <button id="run" data-t="run"></button>
       <span id="robot-state" class="muted"></span>
-      <select id="task" aria-label="Task"></select>
-    </div>
-    <div class="subtabs">
-      <button type="button" data-sub="log" class="active" data-t="sub_log"></button>
-      <button type="button" data-sub="azure" id="sub-azure" hidden data-t="exec_title"></button>
+      <div class="right">
+        <div class="subtabs">
+          <button type="button" data-sub="log" class="active" data-t="sub_log"></button>
+          <button type="button" data-sub="azure" id="sub-azure" hidden data-t="exec_title"></button>
+        </div>
+        <select id="task" aria-label="Task"></select>
+      </div>
     </div>
     <div id="sub-log">
     <table>
