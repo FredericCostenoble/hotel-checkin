@@ -113,6 +113,6 @@ channels = ["email"]
 [[workflow]]
 step = "access_code"             # pincode en praktische info
 when = "days_before_arrival"
-days = 1
+days = 2
 only_if = ["paid", "not_cancelled"]
 channels = ["email", "sms"]
