@@ -51,7 +51,7 @@ const T = {
     chr_muted: "uitgezet voor deze gast", chr_phone_off: "nog niet actief (Twilio)", chr_fallback: "alleen als WhatsApp niet lukt",
     rs_disabled: "stap staat uit", rs_messaging_off: "berichten staan uit in deze omgeving", rs_before_start: "niet automatisch: reservatie kwam binnen vóór de startdatum van de berichten (Instellingen > Hotel > Berichten > Vanaf)",
     rs_booked_late: "boeking kwam te laat", rs_later_due: "een latere mail is al aan de beurt", rs_not_ready: "nog niet gebouwd",
-    rs_no_contact: "geen e-mailadres of gsm-nummer in Lighthouse: niets te versturen", rs_window_passed: "moment voorbij", rs_condition: "voorwaarde niet voldaan",
+    rs_no_contact: "Geen e-mailadres of gsm-nummer in Lighthouse. Voeg er hieronder een toe, dan kunt u elk bericht versturen.", rs_window_passed: "moment voorbij", rs_condition: "voorwaarde niet voldaan",
     g_msgs: "Berichten", g_mute_hint: "Vinkje weg: dit kanaal nooit gebruiken voor deze gast",
     st_sent: "verstuurd", st_failed: "mislukt", st_delivered: "afgeleverd", st_read: "gelezen", st_undelivered: "niet afgeleverd", show_guest: "Gastgegevens tonen", show_res: "Reservaties van deze gast tonen",
     g_update: "Synchroniseren", g_busy: "Bezig...", g_done: d => `${d.linked} gekoppeld, ${d.counted} verblijven en ${d.cancellations} annuleringen meegeteld, ${d.reservations_deleted} oude reservaties en ${d.guests_deleted} gasten verwijderd`,
@@ -124,7 +124,7 @@ const T = {
     chr_muted: "switched off for this guest", chr_phone_off: "not active yet (Twilio)", chr_fallback: "only if WhatsApp fails",
     rs_disabled: "step is off", rs_messaging_off: "messages are off in this environment", rs_before_start: "not automatic: reservation came in before the messages start date (Settings > Hotel > Messages > From)",
     rs_booked_late: "booked too late", rs_later_due: "a later mail is already due", rs_not_ready: "not built yet",
-    rs_no_contact: "no e-mail address or mobile number in Lighthouse: nothing to send", rs_window_passed: "moment passed", rs_condition: "condition not met",
+    rs_no_contact: "No e-mail address or mobile number in Lighthouse. Add one below, then you can send any message.", rs_window_passed: "moment passed", rs_condition: "condition not met",
     g_msgs: "Messages", g_mute_hint: "Unchecked: never use this channel for this guest",
     st_sent: "sent", st_failed: "failed", st_delivered: "delivered", st_read: "read", st_undelivered: "not delivered", show_guest: "Show guest data", show_res: "Show this guest's reservations",
     g_update: "Synchronize", g_busy: "Working...", g_done: d => `${d.linked} linked, ${d.counted} stays and ${d.cancellations} cancellations counted, ${d.reservations_deleted} old reservations and ${d.guests_deleted} guests deleted`,
@@ -292,6 +292,7 @@ function showMessages(id) {
   const r = rows.find(x => x.id === id);
   if (!r) return;
   $("#msgs-title").textContent = t("mg_title", r.booking_number, r.guest);
+  document.getElementById("msgs-nocontact")?.remove();
   $("#msgs-plan").innerHTML = (r.plan || []).map(p => {
     const mine = r.messages.filter(m => m.type === p.step);
     const sent = mine.filter(m => m.ok);
@@ -328,7 +329,7 @@ function showMessages(id) {
     return `<li class="pl-${p.state}"><span class="dot"></span><strong>${esc(stepShort(p.step))}</strong>
       <span class="muted">${esc(when)}</span> <span class="tag pl">${esc(t("pl_" + p.state))}</span>
       ${p.reason ? `<span class="muted">${esc(reasonText(p.reason))}</span>` : ""}
-      ${chips ? `<div class="chs">${chips}</div>` : (p.channels || []).length ? "" : `<div class="muted small">${esc(t("rs_no_contact"))}</div>`}</li>`;
+      ${chips ? `<div class="chs">${chips}</div>` : ""}</li>`;
   }).join("");
   $("#msgs-attempts").hidden = !r.messages.length;
   // Adres of nummer met de hand toevoegen (bv. als Lighthouse er geen heeft); daarna verschijnen de knoppen
@@ -337,6 +338,8 @@ function showMessages(id) {
     <input id="ct-phone" type="tel" placeholder="${esc(t("ct_phone"))}">
     <button type="button" id="ct-save">${esc(t("wf_save"))}</button> <span id="ct-state" class="muted small"></span></div>`;
   $("#msgs-contact").open = !(r.email || r.phone);
+  // Geen adres: één keer melden (niet bij elke stap)
+  if (!(r.email || r.phone)) $("#msgs-plan").insertAdjacentHTML("beforebegin", `<p class="info" id="msgs-nocontact">${esc(t("rs_no_contact"))}</p>`);
   $("#ct-save").onclick = async () => {
     const q = new URLSearchParams({ id: r.id, email: $("#ct-email").value, phone: $("#ct-phone").value });
     const d = await get(`/api/monitor/${$("#hotel").value}/contact?${q}`, { method: "POST" }).catch(e => ({ ok: false, error: String(e) }));
