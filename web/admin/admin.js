@@ -33,7 +33,9 @@ const T = {
     returning: n => `terugkerend (${n}×)`, mg_message: "Bericht", mg_time: "Tijdstip", short_confirmation: "Bevestiging", short_reminder: "Herinnering", short_access_code: "Code-mail", mg_channel: "Kanaal", mg_to: "Naar",
     mg_title: (num, guest) => `Berichten voor ${guest} (${num})`, mg_click: "Klik voor alle details",
     mg_plan: "Tijdlijn", mg_attempts: "Alle pogingen", mg_next: "volgt",
-    pl_sent: "verstuurd", pl_failed: "mislukt", pl_planned: "gepland", pl_due: "volgende run", pl_skipped: "valt weg", pl_off: "niet actief", pl_not_sent: "niet verstuurd", relay_hint: "Doorstuuradres van het boekingsplatform, geen eigen adres van de gast.", relay_kept: "Doorstuuradres van het boekingsplatform. Bewaard, maar het eigen adres uit het check-in-formulier gaat voor.", mg_test_addr: "testadres", mg_for: "bedoeld voor", tab_hotel: "Hotel",
+    pl_sent: "verstuurd", pl_failed: "mislukt", pl_planned: "gepland", pl_due: "volgende run", pl_skipped: "valt weg", pl_off: "niet actief", env_to_prd: "Naar PRD", env_bar_tst: "TESTOMGEVING (TST): berichten gaan alleen naar het testadres, nooit naar gasten",
+    env_bar_prd: "PRODUCTIE (PRD): berichten gaan naar echte gasten", env_to_tst: "Naar TST",
+    env_confirm_prd: "Overschakelen naar PRODUCTIE? Daar gaan berichten naar echte gasten.", env_confirm_tst: "Overschakelen naar de testomgeving (TST)?", pl_not_sent: "niet verstuurd", relay_hint: "Doorstuuradres van het boekingsplatform, geen eigen adres van de gast.", relay_kept: "Doorstuuradres van het boekingsplatform. Bewaard, maar het eigen adres uit het check-in-formulier gaat voor.", mg_test_addr: "testadres", mg_for: "bedoeld voor", tab_hotel: "Hotel",
     hs_intro: "Gegevens en instellingen van het hotel. Standaard uit het hotelbestand; wat u hier wijzigt, gaat voor (alleen in deze omgeving).",
     hs_default: "standaard", hs_env: "In deze omgeving vastgelegd in Key Vault of de Function App: die waarde gaat voor.",
     hs_add: "Toevoegen", hs_key: "naam", hs_value: "waarde", hs_reset_confirm: "Alle instellingen terug naar het hotelbestand? Alle wijzigingen gaan verloren.",
@@ -104,7 +106,9 @@ const T = {
     returning: n => `returning (${n}×)`, mg_message: "Message", mg_time: "Time", short_confirmation: "Confirmation", short_reminder: "Reminder", short_access_code: "Code mail", mg_channel: "Channel", mg_to: "To",
     mg_title: (num, guest) => `Messages for ${guest} (${num})`, mg_click: "Click for all details",
     mg_plan: "Timeline", mg_attempts: "All attempts", mg_next: "next",
-    pl_sent: "sent", pl_failed: "failed", pl_planned: "planned", pl_due: "next run", pl_skipped: "skipped", pl_off: "not active", pl_not_sent: "not sent", relay_hint: "Relay address of the booking platform, not the guest's own address.", relay_kept: "Relay address of the booking platform. Kept, but the guest's own address from the check-in form takes precedence.", mg_test_addr: "test address", mg_for: "meant for", tab_hotel: "Hotel",
+    pl_sent: "sent", pl_failed: "failed", pl_planned: "planned", pl_due: "next run", pl_skipped: "skipped", pl_off: "not active", env_to_prd: "To PRD", env_bar_tst: "TEST ENVIRONMENT (TST): messages only go to the test address, never to guests",
+    env_bar_prd: "PRODUCTION (PRD): messages go to real guests", env_to_tst: "To TST",
+    env_confirm_prd: "Switch to PRODUCTION? Messages there go to real guests.", env_confirm_tst: "Switch to the test environment (TST)?", pl_not_sent: "not sent", relay_hint: "Relay address of the booking platform, not the guest's own address.", relay_kept: "Relay address of the booking platform. Kept, but the guest's own address from the check-in form takes precedence.", mg_test_addr: "test address", mg_for: "meant for", tab_hotel: "Hotel",
     hs_intro: "Hotel details and settings. Default from the hotel file; what you change here takes precedence (in this environment only).",
     hs_default: "default", hs_env: "Set for this environment in Key Vault or the Function App: that value takes precedence.",
     hs_add: "Add", hs_key: "name", hs_value: "value", hs_reset_confirm: "Reset all settings to the hotel file? All changes will be lost.",
@@ -178,6 +182,8 @@ function setLang(l) {
   document.querySelectorAll("[data-tp]").forEach(e => { e.placeholder = t(e.dataset.tp); });
   document.querySelectorAll("[data-tt]").forEach(e => { e.title = t(e.dataset.tt); });
   document.querySelectorAll(".langs button").forEach(b => b.classList.toggle("active", b.dataset.lang === lang));
+  if ($("#env-bar")) $("#env-bar").textContent = t("env_bar_" + ($(".brand .env")?.textContent || "").trim().toLowerCase());
+  if ($("#env-switch") && !$("#env-switch").hidden) $("#env-switch").textContent = t("env_to_" + ($("#env-switch").className.includes("to-prd") ? "prd" : "tst"));
   if (PAGE === "main") { render(); renderGuests(); } else { renderWorkflow(); renderSettings(); if (runsData) renderRuns(runsData); }
 }
 
@@ -191,6 +197,7 @@ async function init() {
   if (saved && hotels.some(h => h.id === saved)) $("#hotel").value = saved;
   $("#hotel").onchange = () => { store("hotel", $("#hotel").value); load(); };
   if ($("#version").textContent.includes("__")) $("#version").textContent = "dev";  // lokaal, niet uitgerold
+  envSwitch();
   // Twee aparte pagina's: de monitor (index.html: reservaties, gasten) en de instellingen
   // (settings.html: workflow, robot). Elk met eigen tabbladen en eigen adres per tabblad (#...).
   document.querySelectorAll("nav button[data-tab]").forEach(b => b.onclick = () => showTab(b.dataset.tab));
@@ -1330,6 +1337,37 @@ async function resetSettings() {
   hsEdit = {}; hsDirty = false;
   $("#hs-state").textContent = "";
   renderSettings();
+}
+
+// ---------------------------------------------------------------- wisselen tussen TST en PRD
+// Link naar de andere omgeving (monitor-tst.hotellucca.be <-> monitor.hotellucca.be), zelfde pagina
+// en tabblad. Altijd eerst bevestigen; naar PRD met een duidelijke waarschuwing (echte gasten).
+function envSwitch() {
+  const env = ($(".brand .env")?.textContent || "").trim().toLowerCase();
+  document.body.classList.add("env-" + (env === "prd" || env === "tst" ? env : "dev"));
+  // Brede balk bovenaan en de omgeving in de titel van het tabblad: altijd zien waar je bent
+  if (env === "prd" || env === "tst") {
+    const bar = document.createElement("div");
+    bar.id = "env-bar";
+    bar.className = "env-bar env-bar-" + env;
+    bar.textContent = t("env_bar_" + env);
+    document.body.prepend(bar);
+    document.title = `[${env.toUpperCase()}] ${document.title}`;
+  }
+  const host = location.hostname;
+  const other = env === "tst" && host.startsWith("monitor-tst.") ? host.replace("monitor-tst.", "monitor.")
+    : env === "prd" && host.startsWith("monitor.") ? host.replace("monitor.", "monitor-tst.") : null;
+  const link = $("#env-switch");
+  if (!other || !link) return;
+  const target = env === "tst" ? "prd" : "tst";
+  link.hidden = false;
+  link.className = `env-switch to-${target}`;
+  link.textContent = t("env_to_" + target);
+  link.href = `${location.protocol}//${other}${location.pathname}${location.hash}`;
+  link.onclick = e => {
+    link.href = `${location.protocol}//${other}${location.pathname}${location.hash}`;  // zelfde tabblad als nu
+    if (!confirm(t("env_confirm_" + target))) e.preventDefault();
+  };
 }
 
 // Als laatste: alle functies en variabelen hierboven bestaan dan

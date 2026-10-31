@@ -188,3 +188,15 @@ a.brand:hover .name b { text-decoration: underline; }
 .hs-row.changed input[type=text], .hs-row.changed input[type=number] { border-color: #3E63DD; background: #F5F8FF; }
 .hs-row.free { grid-template-columns: 150px minmax(0, 1fr); }
 .small { font-size: 12px; }
+/* Omgeving: gekleurde rand bovenaan (TST oranje, PRD rood) en link naar de andere omgeving */
+body.env-tst header { border-top: 4px solid #E59A3C; }
+body.env-prd header { border-top: 4px solid #C8372D; }
+.env-switch { font-size: 12px; text-decoration: none; padding: 2px 8px; border-radius: 10px; border: 1px solid var(--line); color: #5C6478; }
+.env-switch:hover { border-color: currentColor; }
+.env-switch.to-prd { color: #C8372D; }
+.env-switch.to-tst { color: #A85C12; }
+.brand .env-prd { background: #FBE5E3; color: #A82A21; }
+.env-bar { text-align: center; font-size: 13px; font-weight: bold; letter-spacing: 0.04em; padding: 5px 16px; color: #fff; }
+.env-bar-tst { background: #E59A3C; }
+.env-bar-prd { background: #C8372D; }
+.brand .env { font-size: 13px; padding: 3px 10px; }
