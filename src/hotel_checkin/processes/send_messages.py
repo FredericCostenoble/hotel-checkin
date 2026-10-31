@@ -264,13 +264,15 @@ def deliver(hotel_id: str, step: workflow.Step, r: Reservation, cfg: dict,
         return channel not in muted and not done(channel, to) and tries(channel, to) < MAX_ATTEMPTS
 
     out: list[tuple[str, SendResult]] = []
-    for to in recipients(r, "email"):
+    # Met de hand (monitor): precies dat kanaal en adres, ook een adres dat niet bij de reservatie hoort
+    email_targets = [only[1]] if only and only[0] == "email" else ([] if only else recipients(r, "email"))
+    for to in email_targets:
         if wanted("email", to):
             result = send_mail(hotel_id, step, r, cfg, to=to)
             guests.log_message(hotel_id, r.reservation_id, step.step, result, note=note)
             out.append(("email", result))
-    phones = recipients(r, "phone")
-    if not phones or not phone_enabled(hotel_id) or (only and only[0] == "email"):
+    phones = [only[1]] if only and only[0] != "email" else ([] if only else recipients(r, "phone"))
+    if not phones or not phone_enabled(hotel_id):
         return out
     msg, data = _rendered(hotel_id, step, r, cfg)
     template = whatsapp_template(hotel_id, step.step, r.guest.language)
@@ -307,8 +309,17 @@ def resend(hotel_id: str, reservation_id: str, step_name: str, channel: str, to:
     r = guests.get_reservation(hotel_id, reservation_id)
     if r is None:
         return {"ok": False, "error": "Reservatie niet gevonden"}
-    if not any(_same(to, a) for a in recipients(r, "email" if channel == "email" else "phone")):
-        return {"ok": False, "error": "Onbekend adres voor deze reservatie"}
+    # Elk geldig adres mag (ook een ander dan dat van de reservatie); het wordt niet bewaard.
+    from hotel_checkin.checkin.service import EMAIL_RE, normalize_phone
+
+    if channel == "email":
+        to = (to or "").strip().lower()
+        if not EMAIL_RE.match(to):
+            return {"ok": False, "error": "Ongeldig e-mailadres"}
+    else:
+        to = normalize_phone(to or "") or ""
+        if not to:
+            return {"ok": False, "error": "Ongeldig gsm-nummer (met landcode, bv. +32...)"}
     if channel != "email" and not phone_enabled(hotel_id):
         return {"ok": False, "error": "WhatsApp en sms zijn nog niet actief"}
     cfg = workflow.config(hotel_id)
@@ -319,7 +330,8 @@ def resend(hotel_id: str, reservation_id: str, step_name: str, channel: str, to:
         return {"ok": False, "error": "Nog geen pincode bij Salto"}
     results = deliver(hotel_id, step, r, cfg, only=(channel, to), note=f"opnieuw verstuurd door {user or 'monitor'}")
     if not results:
-        return {"ok": False, "error": "Niets verstuurd (geen sjabloon of sms-tekst voor dit kanaal)"}
+        reason = "geen goedgekeurd WhatsApp-sjabloon voor dit bericht" if channel == "whatsapp" else "geen sms-tekst voor dit bericht"
+        return {"ok": False, "error": f"Niets verstuurd: {reason}"}
     return {"ok": all(res.ok for _, res in results),
             "error": "; ".join(res.error or "" for _, res in results if not res.ok)}
 

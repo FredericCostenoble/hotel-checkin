@@ -22,11 +22,13 @@ def hotels() -> list[dict]:
     """Hotels voor de keuzelijst, met waar berichten in deze omgeving echt naartoe gaan: in PRD naar
     de gast, daarbuiten naar het testadres en testnummer (leeg = er wordt niets verstuurd)."""
     from hotel_checkin.core import safety
+    from hotel_checkin.processes import send_messages
 
     prd = safety.is_production()
     return [{"id": h, "name": load_hotel(h)["hotel"]["naam"], "production": prd,
              "test_email": "" if prd else (safety.test_address("email", h) or ""),
-             "test_phone": "" if prd else (safety.test_address("phone", h) or "")}
+             "test_phone": "" if prd else (safety.test_address("phone", h) or ""),
+             "phone_enabled": send_messages.phone_enabled(h)}
             for h in list_hotels()]
 
 

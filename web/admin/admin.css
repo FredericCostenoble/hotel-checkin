@@ -205,3 +205,7 @@ details.ct { margin: 10px 0 0; } details.ct summary { cursor: pointer; color: #3
 .ct-row input { min-width: 220px; }
 button.send-to { font-size: 12px; padding: 2px 10px; border: 1px solid #3E63DD; color: #3E63DD; background: #fff; border-radius: 4px; cursor: pointer; }
 button.send-to:hover { background: #EAF0FF; }
+.send-bar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 12px 0 4px; padding: 8px 10px; background: #F3F6FF; border: 1px solid #D6DFFA; border-radius: 6px; }
+.send-bar:empty { display: none; }
+.send-bar .lbl { color: #5C6478; font-size: 13px; }
+.send-bar #sb-to { min-width: 260px; }

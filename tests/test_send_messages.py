@@ -209,7 +209,10 @@ def test_backup_contacts_get_messages_and_resend(setup, monkeypatch):
     out = send_messages.resend("lucca", "b1", "confirmation", "email", "partner@example.com", "frederic")
     assert out["ok"] and len(setup) == 3
     assert any(m["note"] == "opnieuw verstuurd door frederic" for m in repo.messages_for("lucca", "b1"))
-    assert not send_messages.resend("lucca", "b1", "confirmation", "email", "other@example.com", "x")["ok"]
+    # ander adres mag (met de hand), wordt niet bij de reservatie bewaard; ongeldig adres niet
+    assert send_messages.resend("lucca", "b1", "confirmation", "email", "Other@Example.com", "x")["ok"]
+    assert repo.get_reservation("lucca", "b1").guest.backup_email == "partner@example.com"
+    assert not send_messages.resend("lucca", "b1", "confirmation", "email", "fout", "x")["ok"]
 
 
 def test_form_address_beats_relay_which_is_kept(setup):
