@@ -185,6 +185,10 @@ def admin_api(req: func.HttpRequest) -> func.HttpResponse:
             muted = [c for c in req.params.get("muted", "").split(",") if c]
             return _json(200, {"ok": admin.set_muted_channels(hotel, a, muted)})
         return _json(400, {"error": "action"})
+    if req.method == "POST" and what == "contact":
+        # Met de hand een e-mailadres of gsm-nummer toevoegen: ?id=<reservatie>&email=..&phone=..
+        p = req.params
+        return _json(200, admin.add_contact(hotel, p.get("id", ""), p.get("email", ""), p.get("phone", "")))
     if req.method == "POST" and what == "resend":
         # Eén bericht nu (opnieuw) versturen: ?id=<reservatie>&step=<stap>&channel=<kanaal>&to=<adres>
         p = req.params

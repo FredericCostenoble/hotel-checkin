@@ -138,6 +138,42 @@ def merge_guests(hotel_id: str, keep: str, other: str) -> bool:
     return hotel_id in list_hotels() and guest_profiles.merge(hotel_id, keep, other) is not None
 
 
+def add_contact(hotel_id: str, reservation_id: str, email: str, phone: str) -> dict:
+    """Met de hand een e-mailadres of gsm-nummer toevoegen aan een reservatie (monitor), bv. als
+    Lighthouse er geen heeft. Komt als hoofdadres als er nog geen is, anders als extra adres.
+    Daarna kunnen berichten (met de hand of automatisch) verstuurd worden."""
+    from hotel_checkin.checkin.service import EMAIL_RE, normalize_phone
+    from hotel_checkin.processes import guest_profiles
+
+    r = repo.get_reservation(hotel_id, reservation_id) if hotel_id in list_hotels() else None
+    if r is None:
+        return {"ok": False, "error": "Reservatie niet gevonden"}
+    email = (email or "").strip().lower()
+    if email and not EMAIL_RE.match(email):
+        return {"ok": False, "error": "Ongeldig e-mailadres"}
+    number = normalize_phone(phone) if (phone or "").strip() else None
+    if (phone or "").strip() and number is None:
+        return {"ok": False, "error": "Ongeldig gsm-nummer (met landcode, bv. +32...)"}
+    if not email and not number:
+        return {"ok": False, "error": "Geef een e-mailadres of gsm-nummer"}
+    if email:
+        if not r.guest.email:
+            r.guest.email = email
+        elif email != r.guest.email.lower():
+            r.guest.backup_email = email
+    if number:
+        if not r.guest.phone:
+            r.guest.phone = number
+        elif number != r.guest.phone:
+            r.guest.backup_phone = number
+    saved = repo.save_reservation(r)
+    try:
+        guest_profiles.link(saved)
+    except Exception:  # noqa: BLE001 - het adres is bewaard; het profiel volgt bij het synchroniseren
+        pass
+    return {"ok": True}
+
+
 def resend(hotel_id: str, reservation_id: str, step: str, channel: str, to: str, user: str) -> dict:
     from hotel_checkin.processes import send_messages
 

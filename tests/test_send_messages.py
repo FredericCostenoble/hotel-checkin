@@ -217,3 +217,15 @@ def test_returning_guest_own_address_beats_relay(setup):
     assert send_messages.recipients(r, "email") == ["jan@telenet.be"]
     r.guest_id = None
     assert send_messages.recipients(r, "email") == ["jp.999@guest.booking.com"]
+
+
+def test_add_contact_by_hand(setup):
+    from hotel_checkin.admin import service
+
+    _res("nc1", email=None)
+    assert not service.add_contact("lucca", "nc1", "fout", "")["ok"]
+    assert service.add_contact("lucca", "nc1", "Jan@Telenet.be", "0470 12 34 56")["ok"]
+    r = repo.get_reservation("lucca", "nc1")
+    assert r.guest.email == "jan@telenet.be" and r.guest.phone.startswith("+32")
+    service.add_contact("lucca", "nc1", "tweede@telenet.be", "")
+    assert repo.get_reservation("lucca", "nc1").guest.backup_email == "tweede@telenet.be"

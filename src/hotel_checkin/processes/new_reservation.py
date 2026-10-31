@@ -126,3 +126,6 @@ def _keep_known(reservation, existing) -> None:
     for field in ("email", "phone", "language", "country"):
         if not getattr(reservation.guest, field) or field == "language":
             setattr(reservation.guest, field, getattr(existing.guest, field))
+    # Extra adressen (met de hand in de monitor of uit het formulier) en het doorstuuradres bewaren
+    for field in ("backup_email", "backup_phone", "relay_email"):
+        setattr(reservation.guest, field, getattr(reservation.guest, field) or getattr(existing.guest, field))

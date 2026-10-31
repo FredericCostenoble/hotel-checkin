@@ -200,3 +200,6 @@ body.env-prd header { border-top: 4px solid #C8372D; }
 .env-bar-tst { background: #E59A3C; }
 .env-bar-prd { background: #C8372D; }
 .brand .env { font-size: 13px; padding: 3px 10px; }
+details.ct { margin: 10px 0 0; } details.ct summary { cursor: pointer; color: #3E63DD; font-size: 13px; }
+.ct-row { display: flex; gap: 8px; align-items: center; margin-top: 6px; flex-wrap: wrap; }
+.ct-row input { min-width: 220px; }
