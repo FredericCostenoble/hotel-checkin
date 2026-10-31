@@ -34,7 +34,7 @@ const T = {
     returning: n => `terugkerend (${n}×)`, mg_message: "Bericht", mg_time: "Tijdstip", short_confirmation: "Bevestiging", short_checkin_form: "Formulier ingevuld", ch_form: "formulier", short_reminder: "Herinnering", short_access_code: "Code-mail", mg_channel: "Kanaal", mg_to: "Naar",
     mg_title: (num, guest) => `Berichten voor ${guest} (${num})`, mg_click: "Klik voor alle details",
     mg_plan: "Tijdlijn", mg_attempts: "Alle pogingen", mg_next: "volgt",
-    pl_sent: "verstuurd op", pl_failed: "mislukt op", pl_planned: "gepland", pl_due: "wordt nu verstuurd", pl_will: "wordt verstuurd op", pl_wont: "wordt niet verstuurd", pl_was: "gepland", pl_skipped: "valt weg", pl_off: "niet actief", form_yes: "✓ formulier ingevuld", form_no: "formulier niet ingevuld", sb_open: "Versturen", sb_again: "Opnieuw versturen",
+    pl_sent: "verstuurd op", pl_failed: "mislukt op", pl_planned: "gepland", pl_due: "wordt nu verstuurd", pl_will: "wordt verstuurd op", pl_wont: "wordt niet verstuurd", pl_was: "gepland", pl_skipped: "valt weg", pl_off: "niet actief", pl_missed: "niet verstuurd, te laat", lg_sent: "verstuurd", lg_failed: "mislukt", lg_planned: "komt nog", lg_missed: "te laat, niet verstuurd", lg_cond: "voorwaarde niet voldaan", lg_off: "niet actief", pl_cond: "niet verstuurd, voorwaarde", form_yes: "✓ formulier ingevuld", form_no: "formulier niet ingevuld", sb_open: "Versturen", sb_again: "Opnieuw versturen",
     rss_before_start: "voor de startdatum", rss_booked_late: "te laat geboekt", rss_later_due: "latere mail al aan de beurt",
     rss_window_passed: "moment voorbij", rss_messaging_off: "berichten uit", rss_disabled: "stap uit", rss_not_ready: "nog niet gebouwd", sb_other: "Ander adres...", sb_bad_email: "Ongeldig e-mailadres", sb_bad_phone: "Ongeldig nummer (met landcode, bv. +32...)", src_test: "testadres", src_form: "check-in-formulier",
     src_form_extra: "extra, check-in-formulier", src_relay: "doorstuuradres", src_profile: "gastprofiel", src_used: "eerder gebruikt", src_earlier: "vroeger", sb_to: "naar", sb_go: "Versturen", sb_off: "(nog niet actief)", send_to: "Versturen naar...", send_to_ask: "Naar welk e-mailadres (of gsm-nummer met +32...) versturen? Het wordt bij de reservatie bewaard.", ct_add: "E-mailadres of gsm-nummer toevoegen", ct_email: "e-mailadres", ct_phone: "gsm-nummer met landcode (+32...)", env_to_prd: "Naar PRD", env_bar_tst: "TESTOMGEVING (TST): berichten gaan alleen naar het testadres, nooit naar gasten",
@@ -111,7 +111,7 @@ const T = {
     returning: n => `returning (${n}×)`, mg_message: "Message", mg_time: "Time", short_confirmation: "Confirmation", short_checkin_form: "Form filled in", ch_form: "form", short_reminder: "Reminder", short_access_code: "Code mail", mg_channel: "Channel", mg_to: "To",
     mg_title: (num, guest) => `Messages for ${guest} (${num})`, mg_click: "Click for all details",
     mg_plan: "Timeline", mg_attempts: "All attempts", mg_next: "next",
-    pl_sent: "sent on", pl_failed: "failed on", pl_planned: "planned", pl_due: "being sent now", pl_will: "will be sent on", pl_wont: "will not be sent", pl_was: "planned", pl_skipped: "skipped", pl_off: "not active", form_yes: "✓ form filled in", form_no: "form not filled in", sb_open: "Send", sb_again: "Send again",
+    pl_sent: "sent on", pl_failed: "failed on", pl_planned: "planned", pl_due: "being sent now", pl_will: "will be sent on", pl_wont: "will not be sent", pl_was: "planned", pl_skipped: "skipped", pl_off: "not active", pl_missed: "not sent, too late", lg_sent: "sent", lg_failed: "failed", lg_planned: "still to come", lg_missed: "too late, not sent", lg_cond: "condition not met", lg_off: "not active", pl_cond: "not sent, condition", form_yes: "✓ form filled in", form_no: "form not filled in", sb_open: "Send", sb_again: "Send again",
     rss_before_start: "before start date", rss_booked_late: "booked too late", rss_later_due: "later mail already due",
     rss_window_passed: "moment passed", rss_messaging_off: "messages off", rss_disabled: "step off", rss_not_ready: "not built yet", sb_other: "Other address...", sb_bad_email: "Invalid e-mail address", sb_bad_phone: "Invalid number (with country code, e.g. +32...)", src_test: "test address", src_form: "check-in form",
     src_form_extra: "extra, check-in form", src_relay: "relay address", src_profile: "guest profile", src_used: "used before", src_earlier: "earlier", sb_to: "to", sb_go: "Send", sb_off: "(not active yet)", send_to: "Send to...", send_to_ask: "Send to which e-mail address (or mobile number with +32...)? It is saved with the reservation.", ct_add: "Add e-mail address or mobile number", ct_email: "e-mail address", ct_phone: "mobile number with country code (+32...)", env_to_prd: "To PRD", env_bar_tst: "TEST ENVIRONMENT (TST): messages only go to the test address, never to guests",
@@ -319,6 +319,8 @@ function showMessages(id) {
   if (!r) return;
   $("#msgs-title").textContent = t("mg_title", r.booking_number, r.guest);
   document.getElementById("msgs-nocontact")?.remove();
+  $("#msgs-legend").innerHTML = ["sent", "failed", "planned", "missed", "cond", "off"]
+    .map(k => `<span class="k-${k}"><span class="dot"></span>${esc(t("lg_" + k))}</span>`).join("");
   $("#msgs-plan").innerHTML = (r.plan || []).map(p => {
     const mine = r.messages.filter(m => m.type === p.step);
     const sent = mine.filter(m => m.ok);
@@ -343,20 +345,23 @@ function showMessages(id) {
         cls = c.reason ? "off" : "todo";
       } else {
         // Niet automatisch (bv. reservatie van voor de start, voorwaarde niet voldaan): wel met de hand te versturen
-        txt = c.reason && c.reason !== "fallback" ? t("chr_" + c.reason) : t("pl_not_sent");
+        txt = c.reason && c.reason !== "fallback" ? t("chr_" + c.reason) : "";
         cls = "off";
       }
       const title = [c.to, last && stamp(last.at), last && last.error, last && last.note].filter(Boolean).join(" · ");
       // Alleen de toestand; (opnieuw) versturen gebeurt met de knop rechts van de stap
       // Kanaal en adres (het adres kort; volledig bij aanwijzen)
-      return `<span class="tag ch ${cls}" title="${esc(title)}">${esc(t(CH[ch] || ch))} <span class="addr">${esc(c.to || "")}</span>: ${esc(txt)}</span>`;
+      return `<span class="tag ch ${cls}" title="${esc(title)}">${esc(t(CH[ch] || ch))} <span class="addr">${esc(c.to || "")}</span>${txt ? `: ${esc(txt)}` : ""}</span>`;
     }).join("");
     // Kop van de stap op één lijn: naam, datum, toestand, korte reden (volledig bij aanwijzen), rechts de knop Versturen
     const sendable = READY.includes(p.step);
-    return `<li class="pl-${p.state}"><span class="dot"></span>
+    const k = planKind(p);
+    const showReason = p.reason && !["sent", "failed"].includes(k);
+    return `<li class="pl-${p.state} k-${k}"><span class="dot"></span>
       <div class="pl-head"><strong>${esc(stepShort(p.step))}</strong>
         <span class="tag pl">${esc(planText(p, when))}</span>
-        ${p.reason ? `<span class="muted reason" title="${esc(reasonText(p.reason))}">${esc(reasonShort(p.reason))}</span>` : ""}
+        ${showReason ? `<span class="reason" title="${esc(reasonText(p.reason))}">${esc(reasonShort(p.reason))}</span>` : ""}
+        ${["missed", "cond"].includes(k) && when ? `<span class="muted was">(${esc(t("pl_was"))} ${esc(when)})</span>` : ""}
         <span class="sp"></span>
         ${sendable ? `<button type="button" class="send-open" data-step="${esc(p.step)}">${esc(t(sent.length ? "sb_again" : "sb_open"))}</button>` : ""}</div>
       ${chips ? `<div class="chs">${chips}</div>` : ""}
@@ -489,13 +494,24 @@ function stickColumns(table, n) {
 }
 window.addEventListener("resize", () => { stickColumns($("#res")?.closest("table"), 4); stickColumns($("#guests")?.closest("table"), 1); });
 
-// Wordt het bericht verstuurd en wanneer: "verstuurd op ...", "wordt verstuurd op ...", "wordt niet verstuurd"
+// Soort toestand in de tijdlijn, elk met een eigen kleur:
+// sent (verstuurd), failed (mislukt), due (nu), planned (komt nog), missed (moment voorbij),
+// cond (voorwaarde niet voldaan of geen adres), off (stap of berichten niet actief)
+function planKind(p) {
+  if (["sent", "failed", "due", "planned"].includes(p.state)) return p.state;
+  if (p.state === "off") return "off";
+  if (["window_passed", "booked_late", "later_due"].includes(p.reason)) return "missed";
+  return "cond";
+}
+
+// Wordt het bericht verstuurd en wanneer
 function planText(p, when) {
-  if (p.state === "sent") return `${t("pl_sent")} ${when}`;
-  if (p.state === "failed") return `${t("pl_failed")} ${when}`;
-  if (p.state === "planned") return `${t("pl_will")} ${when}`;
-  if (p.state === "due") return t("pl_due");
-  return `${t("pl_wont")}${when ? ` (${t("pl_was")} ${when})` : ""}`;
+  const k = planKind(p);
+  if (k === "sent") return `${t("pl_sent")} ${when}`;
+  if (k === "failed") return `${t("pl_failed")} ${when}`;
+  if (k === "planned") return `${t("pl_will")} ${when}`;
+  if (k === "due") return t("pl_due");
+  return t("pl_" + k);
 }
 
 // Korte reden in de tijdlijn (de volledige uitleg staat bij aanwijzen)

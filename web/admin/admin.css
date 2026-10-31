@@ -123,14 +123,40 @@ a.msgs { text-decoration: none; color: inherit; cursor: pointer; }
 ul.plan { list-style: none; margin: 0; padding: 0 0 0 18px; border-left: 2px solid #C9CFDB; }
 ul.plan li { position: relative; padding: 4px 0 6px 6px; }
 ul.plan li .dot { position: absolute; left: -26px; top: 8px; width: 12px; height: 12px; border-radius: 50%; background: #fff; border: 2px solid #9AA3B5; }
-ul.plan li.pl-sent .dot { background: #2E9E5B; border-color: #2E9E5B; }
-ul.plan li.pl-failed .dot { background: var(--err); border-color: var(--err); }
-ul.plan li.pl-planned .dot, ul.plan li.pl-due .dot { border-color: #3E63DD; }
-ul.plan li.pl-due .dot { background: #3E63DD; }
-ul.plan li.pl-skipped .pl-head > :not(.send-open), ul.plan li.pl-off .pl-head > :not(.send-open), ul.plan li.pl-skipped .dot, ul.plan li.pl-off .dot { opacity: 0.6; }
-.pl-sent .tag.pl { background: #E8F5EC; color: #1E6B3A; }
-.pl-failed .tag.pl { background: #F6E3E3; color: var(--err); }
-.pl-planned .tag.pl, .pl-due .tag.pl { background: #EAF0FF; color: #2B3F8C; }
+/* Toestanden: elk een eigen kleur en vorm van het bolletje */
+ul.plan li .dot { display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 700; line-height: 1; color: #fff; }
+ul.plan li.k-sent .dot { background: #2E9E5B; border-color: #2E9E5B; }
+ul.plan li.k-sent .dot::after { content: "\2713"; }
+ul.plan li.k-failed .dot { background: var(--err); border-color: var(--err); }
+ul.plan li.k-failed .dot::after { content: "!"; }
+ul.plan li.k-due .dot { background: #3E63DD; border-color: #3E63DD; }
+ul.plan li.k-planned .dot { border-color: #3E63DD; background: #EAF0FF; }
+ul.plan li.k-missed .dot { border-color: #C77A12; background: #FFF3E0; }
+ul.plan li.k-cond .dot { border-color: #8A5CC7; background: #F3ECFB; }
+ul.plan li.k-off .dot { border: 2px dashed #B5BCCB; background: #fff; }
+.k-sent .tag.pl { background: #E8F5EC; color: #1E6B3A; }
+.k-failed .tag.pl { background: #F6E3E3; color: var(--err); }
+.k-planned .tag.pl, .k-due .tag.pl { background: #EAF0FF; color: #2B3F8C; }
+.k-due .tag.pl { background: #3E63DD; color: #fff; }
+.k-missed .tag.pl { background: #FFF3E0; color: #8A5208; }
+.k-missed .reason { color: #8A5208; }
+.k-cond .tag.pl { background: #F3ECFB; color: #5B3A8A; }
+.k-cond .reason { color: #5B3A8A; }
+.k-off .tag.pl { background: #fff; color: #8A93A6; border: 1px dashed #B5BCCB; }
+.k-off .reason { color: #8A93A6; }
+ul.plan li.k-off .pl-head strong { color: #8A93A6; font-weight: 600; }
+ul.plan li.k-off .chs { display: none; }
+.legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 12px; color: #5C6478; margin: 0 0 8px; }
+.legend > span { display: inline-flex; align-items: center; gap: 5px; }
+.legend .dot { width: 12px; height: 12px; border-radius: 50%; border: 2px solid #9AA3B5; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center; font-size: 8px; font-weight: 700; color: #fff; }
+.legend .k-sent .dot { background: #2E9E5B; border-color: #2E9E5B; }
+.legend .k-sent .dot::after { content: "\2713"; }
+.legend .k-failed .dot { background: var(--err); border-color: var(--err); }
+.legend .k-failed .dot::after { content: "!"; }
+.legend .k-planned .dot { border-color: #3E63DD; background: #EAF0FF; }
+.legend .k-missed .dot { border-color: #C77A12; background: #FFF3E0; }
+.legend .k-cond .dot { border-color: #8A5CC7; background: #F3ECFB; }
+.legend .k-off .dot { border: 2px dashed #B5BCCB; background: #fff; }
 td.mute label { font-size: 12px; margin-right: 6px; }
 ul.plan .chs { margin: 3px 0 0; }
 .tag.ch.ok { background: #E8F5EC; color: #1E6B3A; }
