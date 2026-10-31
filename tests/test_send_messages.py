@@ -77,10 +77,25 @@ def test_format_date():
     assert templates.format_date(d, "de") == "Samstag, 14. November 2026"
 
 
-def test_late_booking_gets_only_code_mail(setup):
+def test_late_booking_gets_only_code_mail(setup, monkeypatch):
     _res("late", arrival_in=2)  # binnen het venster van access_code
-    assert send_messages.run("lucca") == 0  # geen bevestiging, geen herinnering (code-mail volgt met Salto)
+    # PRD zonder Salto: niets (geen bevestiging, geen herinnering; de code-mail volgt met Salto)
+    monkeypatch.setattr(send_messages, "test_mode", lambda h: False)
+    assert send_messages.run("lucca") == 0
     assert not repo.was_sent("lucca", "late", "confirmation")
+    # TST zonder Salto: meteen de code-mail, met XXXXXX en een opmerking
+    monkeypatch.setattr(send_messages, "test_mode", lambda h: True)
+    assert send_messages.run("lucca") == 1
+    assert repo.was_sent("lucca", "late", "access_code") and not repo.was_sent("lucca", "late", "confirmation")
+
+
+def test_code_mail_placeholder_in_test(setup):
+    from hotel_checkin.core import workflow
+
+    r = _res("ph1", arrival_in=2)
+    step = next(s for s in workflow.steps("lucca", "website_unpaid") if s.step == "access_code")
+    msg, data = send_messages._rendered("lucca", step, r, workflow.config("lucca"))
+    assert "XXXXXX" in msg.html and "Salto is nog niet actief" in msg.html and "Saferpay" in msg.html
 
 
 def test_booked_five_days_before_no_reminder(setup):
@@ -157,7 +172,7 @@ def test_plan_timeline(setup):
     assert states["confirmation"] == "sent" and states["reminder"] == "planned"
     assert states["thank_you"] == "planned"
     code = next(p for p in plan if p["step"] == "access_code")
-    assert code["state"] == "planned" and code["reason"] == "not_ready"  # Salto nog niet ingesteld
+    assert code["state"] == "planned"  # in TST ook zonder Salto (met XXXXXX)
     assert code["due"] == (r.arrival - timedelta(days=2)).isoformat()
     pay = next(p for p in plan if p["step"] == "payment_request")
     assert pay["state"] == "skipped" and pay["reason"].startswith("condition:")  # betaalstatus onbekend

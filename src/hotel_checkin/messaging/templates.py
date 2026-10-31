@@ -160,7 +160,7 @@ def render(hotel_id: str, message: str, language: str, data: dict[str, str],
 
 
 def _render_text(t: dict, common: dict, f: dict) -> str:
-    lines = [_fill(t["aanhef"], f), ""]
+    lines = ([f["_test_note"], ""] if f.get("_test_note") else []) + [_fill(t["aanhef"], f), ""]
     for block in t["blokken"]:
         if block.get("titel"):
             lines.append(_fill(block["titel"], f).upper())
@@ -215,7 +215,11 @@ def _render_html(t: dict, common: dict, f: dict, config: dict, language: str) ->
         f"text-transform:uppercase;font-weight:bold;color:{c['accent_donker']};"
     )
 
-    parts: list[str] = [f'<p style="{p_style}">{_e(_fill(t["aanhef"], f))}</p>']
+    parts: list[str] = []
+    if f.get("_test_note"):  # alleen buiten PRD: wat in deze testmail nog niet echt is
+        parts.append(f'<p style="margin:0 0 16px 0;padding:10px 12px;background:#FDF0E1;border:1px solid #E59A3C;'
+                     f'font-family:{FONT};font-size:13px;color:#7A4510;">{_e(f["_test_note"])}</p>')
+    parts.append(f'<p style="{p_style}">{_e(_fill(t["aanhef"], f))}</p>')
     for block in t["blokken"]:
         if block.get("titel") and block["type"] != "highlight":
             parts.append(f'<p style="{h_style}">{_e(_fill(block["titel"], f))}</p>')

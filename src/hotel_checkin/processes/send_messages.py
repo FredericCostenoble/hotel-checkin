@@ -35,11 +35,27 @@ TASK = "berichten"
 READY_STEPS = ("confirmation", "reminder", "thank_you")  # stappen die alleen een bericht zijn
 
 
-def ready_steps(hotel_id: str) -> tuple[str, ...]:
-    """access_code pas als Salto ingesteld is (eerst een pincode maken, dan versturen)."""
+PLACEHOLDER_PIN = "XXXXXX"  # buiten PRD zolang Salto niet ingesteld is
+
+
+def salto_ready(hotel_id: str) -> bool:
     from hotel_checkin.access import salto
 
-    steps = READY_STEPS + (("access_code",) if salto.configured(hotel_id) else ())
+    return salto.configured(hotel_id)
+
+
+def test_mode(hotel_id: str) -> bool:
+    """Buiten PRD (TST, codespace): ook de code-mail en het betaalverzoek versturen als Salto of
+    Saferpay nog niet ingesteld zijn, met XXXXXX als code en een opmerking in de mail. In PRD
+    blijven die stappen en de betaalknop weg tot alles ingesteld is."""
+    return environment() != "prd"
+
+
+def ready_steps(hotel_id: str) -> tuple[str, ...]:
+    """access_code pas als Salto ingesteld is (eerst een pincode maken, dan versturen)."""
+    if test_mode(hotel_id):
+        return READY_STEPS + ("access_code", "payment_request")
+    steps = READY_STEPS + (("access_code",) if salto_ready(hotel_id) else ())
     # betaalverzoek pas met een betaalknop (Saferpay) en het openstaande bedrag uit Lighthouse
     return steps + (("payment_request",) if payments_ready(hotel_id) else ())
 
@@ -153,8 +169,26 @@ def status_url(hotel_id: str, reservation_id: str, message_id: str) -> str | Non
 
 
 def _rendered(hotel_id: str, step: workflow.Step, r: Reservation, cfg: dict):
-    pay = step.pay if payments_ready(hotel_id) else "none"
+    test = test_mode(hotel_id)
+    pay = step.pay if payments_ready(hotel_id) or test else "none"
     data = {**message_data(hotel_id, r), **pay_data(hotel_id, r, cfg)}
+    notes = []
+    if test and step.mail_content().get("code") and not salto_ready(hotel_id):
+        data.setdefault("pincode", PLACEHOLDER_PIN)
+        if not r.access_valid_from:
+            from hotel_checkin.processes import grant_access
+
+            start, end = grant_access.period(hotel_id, r)
+            data["code_geldig_van"] = templates.format_moment(start, r.guest.language)
+            data["code_geldig_tot"] = templates.format_moment(end, r.guest.language)
+        notes.append("Salto is nog niet actief: XXXXXX is geen echte pincode.")
+    if test and pay != "none" and not payments_ready(hotel_id):
+        data["betaal_link"] = "#saferpay-nog-niet-actief"
+        if not data.get("openstaand_bedrag"):
+            data["openstaand_bedrag"] = "€ XXX"
+        notes.append("Saferpay is nog niet actief: de betaalknop werkt nog niet.")
+    if notes:
+        data["_test_note"] = "TEST: " + " ".join(notes)
     return templates.render(hotel_id, step.step, r.guest.language, data, mail_content(step, r), pay), data
 
 
@@ -398,6 +432,8 @@ def code_ready(hotel_id: str, r: Reservation, failed: list[str]) -> bool:
 
     if r.access_pin:
         return True
+    if test_mode(hotel_id) and not salto_ready(hotel_id):
+        return True  # testomgeving zonder Salto: mail met XXXXXX (zie _rendered)
     if not r.rooms:
         return False
     tries = sum(1 for m in guests.messages_for(hotel_id, r.reservation_id)
