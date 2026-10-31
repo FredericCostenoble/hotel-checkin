@@ -104,6 +104,18 @@ def _env_override(hotel_id: str, section: str, key: str, names: set[str]) -> boo
     return f"{hotel_id.upper().replace('-', '_')}_{section.upper()}_{key.upper()}" in names
 
 
+def _fallback(section: str, key: str) -> str:
+    """Waarde die geldt als het veld leeg is: voor het testadres dat van de omgeving."""
+    if section == "test" and key in ("email", "phone"):
+        from hotel_checkin.core.config import get_setting
+
+        try:
+            return get_setting(f"TEST_{key.upper()}", required=False) or ""
+        except Exception:  # noqa: BLE001
+            return ""
+    return ""
+
+
 def view(hotel_id: str) -> dict:
     """Alle instellingen met type, standaard, huidige waarde en uitleg, per sectie."""
     from hotel_checkin.guests import repository
@@ -123,6 +135,7 @@ def view(hotel_id: str) -> dict:
                 "key": k, "type": _kind(values.get(k, now.get(k, ""))), "default": values.get(k),
                 "value": now.get(k, values.get(k)), "help": field_help.get((name, k), ""),
                 "env": _env_override(hotel_id, name, k, names),
+                "fallback": _fallback(name, k),
             } for k in keys],
         })
     doc = repository.get_config_doc(hotel_id, hotels.SETTINGS_DOC)

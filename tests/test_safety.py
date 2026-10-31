@@ -57,3 +57,22 @@ def test_production_sends_to_guest(monkeypatch):
     send_email("gast@example.com", "x", "x", sender="checkin@hotellucca.be", client=_client(captured))
     msg = json.loads(captured["body"])["message"]
     assert msg["toRecipients"][0]["emailAddress"]["address"] == "gast@example.com"
+
+
+def test_test_address_from_hotel_settings(monkeypatch):
+    from hotel_checkin.core import hotel_settings, hotels, safety
+    from hotel_checkin.guests import repository as repo
+
+    repo.use_memory_store()
+    hotels.forget_overrides()
+    monkeypatch.setenv("APP_ENV", "tst")
+    monkeypatch.delenv("TEST_EMAIL", raising=False)
+    assert safety.route("email", "gast@example.com", "lucca")[0] is None  # nergens een testadres: niets
+    monkeypatch.setenv("TEST_EMAIL", "omgeving@example.com")
+    assert safety.route("email", "gast@example.com", "lucca")[0] == "omgeving@example.com"
+    hotel_settings.save("lucca", {"test": {"email": "fred@example.com"}}, "x")
+    real, prefix = safety.route("email", "gast@example.com", "lucca")
+    assert real == "fred@example.com" and "gast@example.com" in prefix
+    monkeypatch.setenv("APP_ENV", "prd")
+    assert safety.route("email", "gast@example.com", "lucca")[0] == "gast@example.com"
+    hotels.forget_overrides()

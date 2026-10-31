@@ -38,7 +38,7 @@ const T = {
     hs_default: "standaard", hs_env: "In deze omgeving vastgelegd in Key Vault of de Function App: die waarde gaat voor.",
     hs_add: "Toevoegen", hs_key: "naam", hs_value: "waarde", hs_reset_confirm: "Alle instellingen terug naar het hotelbestand? Alle wijzigingen gaan verloren.",
     hs_list: "komma's ertussen",
-    sec_hotel: "Hotel", sec_verzending: "Afzender van de mails", sec_receptie: "Receptie", sec_checkout: "Check-out", sec_ontbijt: "Ontbijt",
+    sec_hotel: "Hotel", sec_test: "Testomgeving", sec_verzending: "Afzender van de mails", sec_receptie: "Receptie", sec_checkout: "Check-out", sec_ontbijt: "Ontbijt",
     sec_wifi: "Wifi", sec_parking: "Parking", sec_nood: "Noodnummer", sec_twilio: "Twilio (sms en WhatsApp)", sec_robot: "Robot",
     sec_messaging: "Berichten", sec_whatsapp: "WhatsApp-sjablonen", sec_retention: "Bewaartermijnen", sec_salto: "Salto",
     sec_salto_rooms: "Salto: kamers en deuren", sec_lighthouse: "Lighthouse", sec_checkin: "Check-in-formulier",
@@ -107,7 +107,7 @@ const T = {
     hs_default: "default", hs_env: "Set for this environment in Key Vault or the Function App: that value takes precedence.",
     hs_add: "Add", hs_key: "name", hs_value: "value", hs_reset_confirm: "Reset all settings to the hotel file? All changes will be lost.",
     hs_list: "comma separated",
-    sec_hotel: "Hotel", sec_verzending: "Mail sender", sec_receptie: "Reception", sec_checkout: "Check-out", sec_ontbijt: "Breakfast",
+    sec_hotel: "Hotel", sec_test: "Test environment", sec_verzending: "Mail sender", sec_receptie: "Reception", sec_checkout: "Check-out", sec_ontbijt: "Breakfast",
     sec_wifi: "Wi-Fi", sec_parking: "Parking", sec_nood: "Emergency number", sec_twilio: "Twilio (SMS and WhatsApp)", sec_robot: "Robot",
     sec_messaging: "Messages", sec_whatsapp: "WhatsApp templates", sec_retention: "Retention", sec_salto: "Salto",
     sec_salto_rooms: "Salto: rooms and doors", sec_lighthouse: "Lighthouse", sec_checkin: "Check-in form",
@@ -766,7 +766,15 @@ async function resetWorkflow() {
 const HS_TEXT = {
  "nl": {
   "fields": {
-   "hotel.naam": [
+   "test.email": [
+  "Testadres e-mail",
+  "In TST en de codespace gaat elke mail hierheen, nooit naar de gast. Leeg = het testadres van de omgeving (grijs getoond). Nergens een adres = geen mails."
+ ],
+ "test.phone": [
+  "Testnummer sms en WhatsApp",
+  "In TST en de codespace gaat elke sms en WhatsApp hierheen. Leeg = het testnummer van de omgeving (grijs getoond). Nergens een nummer = niets versturen."
+ ],
+ "hotel.naam": [
     "Naam",
     ""
    ],
@@ -971,7 +979,15 @@ const HS_TEXT = {
  },
  "en": {
   "fields": {
-   "hotel.naam": [
+   "test.email": [
+  "Test e-mail address",
+  "In TST and the codespace every mail goes here, never to the guest. Empty = the environment's test address (shown in grey). No address anywhere = no mails."
+ ],
+ "test.phone": [
+  "Test number SMS and WhatsApp",
+  "In TST and the codespace every SMS and WhatsApp goes here. Empty = the environment's test number (shown in grey). No number anywhere = nothing sent."
+ ],
+ "hotel.naam": [
     "Name",
     ""
    ],
@@ -1204,7 +1220,7 @@ function hsInput(sec, f, i) {
   if (f.type === "int" || f.type === "float") return `<input type="number" ${attrs} step="${f.type === "int" ? 1 : "any"}" value="${esc(v)}">`;
   if (f.type === "color") return `<input type="color" ${attrs} value="${esc(v)}"> <code>${esc(v)}</code>`;
   if (f.type === "list") return `<input type="text" ${attrs} value="${esc((v || []).join(", "))}" placeholder="${esc(t("hs_list"))}">`;
-  return `<input type="text" ${attrs} value="${esc(v ?? "")}">`;
+  return `<input type="text" ${attrs} value="${esc(v ?? "")}"${f.fallback ? ` placeholder="${esc(f.fallback)}"` : ""}>`;
 }
 
 function renderSettings() {

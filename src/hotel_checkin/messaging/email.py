@@ -42,6 +42,7 @@ def send_email(
     sender: str | None = None,
     client: httpx.Client | None = None,
     reply_to: str | None = None,
+    hotel_id: str | None = None,
 ) -> SendResult:
     """Stuur een mail. Geeft altijd een SendResult terug, gooit geen fout bij een mislukte verzending.
 
@@ -49,11 +50,12 @@ def send_email(
     sender: standaard de instelling MAIL_SENDER (checkin@hotellucca.be, puur technisch).
     reply_to: waar antwoorden van de gast naartoe gaan, normaal het contactadres van het hotel
               (config/hotels/<hotel_id>.toml, [hotel] email).
-    Buiten productie gaat de mail naar TEST_EMAIL (core/safety.py).
+    Buiten productie gaat de mail naar het testadres (core/safety.py): dat van het hotel als
+    hotel_id gegeven is (instellingen, sectie [test]), anders TEST_EMAIL van de omgeving.
     client: alleen voor tests, om de HTTP-aanroep te vervangen.
     """
     sender = sender or get_setting("MAIL_SENDER")
-    real_to, prefix = route("email", to)
+    real_to, prefix = route("email", to, hotel_id)
     if real_to is None:
         return SendResult(channel=Channel.EMAIL, to=to, ok=False, error=prefix)
     message: dict = {

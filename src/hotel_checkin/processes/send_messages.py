@@ -160,7 +160,7 @@ def send_mail(hotel_id: str, step: workflow.Step, r: Reservation, cfg: dict, to:
     msg, _ = _rendered(hotel_id, step, r, cfg)
     reply_to = templates.load_hotel_config(hotel_id).get("hotel", {}).get("email")
     sender = hotel_setting(hotel_id, "VERZENDING_MAIL_AFZENDER", shared=False)
-    return email.send_email(to=to or r.guest.email, subject=msg.subject, html_body=msg.html, sender=sender,
+    return email.send_email(to=to or r.guest.email, subject=msg.subject, html_body=msg.html, sender=sender, hotel_id=hotel_id,
                             reply_to=reply_to)
 
 

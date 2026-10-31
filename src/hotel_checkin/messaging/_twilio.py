@@ -35,7 +35,7 @@ def send_message(
         raise ValueError("Geef ofwel body, ofwel content_sid op")
 
     whatsapp = to.startswith("whatsapp:")
-    real_to, prefix = route("phone", to.removeprefix("whatsapp:"))
+    real_to, prefix = route("phone", to.removeprefix("whatsapp:"), hotel_id)
     if real_to is None:
         return SendResult(channel=channel, to=to, ok=False, error=prefix)
     to = f"whatsapp:{real_to}" if whatsapp else real_to
