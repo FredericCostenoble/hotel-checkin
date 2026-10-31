@@ -40,6 +40,7 @@ class Guest:
     country: str | None = None  # land van de gast (woonland, uit de reservatiegegevens), ISO-code: BE, FR, DE
     backup_email: str | None = None
     backup_phone: str | None = None  # E.164
+    relay_email: str | None = None  # doorstuuradres van Booking.com, Expedia, ... (bewaard als de gast een eigen adres gaf)
     channels: list[str] | None = None  # gekozen in het check-in-formulier: email (altijd), sms, whatsapp; None = nog niet gekozen
 
 

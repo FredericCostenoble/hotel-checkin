@@ -33,7 +33,7 @@ const T = {
     returning: n => `terugkerend (${n}×)`, mg_message: "Bericht", mg_time: "Tijdstip", short_confirmation: "Bevestiging", short_reminder: "Herinnering", short_access_code: "Code-mail", mg_channel: "Kanaal", mg_to: "Naar",
     mg_title: (num, guest) => `Berichten voor ${guest} (${num})`, mg_click: "Klik voor alle details",
     mg_plan: "Tijdlijn", mg_attempts: "Alle pogingen", mg_next: "volgt",
-    pl_sent: "verstuurd", pl_failed: "mislukt", pl_planned: "gepland", pl_due: "volgende run", pl_skipped: "valt weg", pl_off: "niet actief", mg_test_addr: "testadres", mg_for: "bedoeld voor", tab_hotel: "Hotel",
+    pl_sent: "verstuurd", pl_failed: "mislukt", pl_planned: "gepland", pl_due: "volgende run", pl_skipped: "valt weg", pl_off: "niet actief", relay_hint: "Doorstuuradres van het boekingsplatform, geen eigen adres van de gast.", relay_kept: "Doorstuuradres van het boekingsplatform. Bewaard, maar het eigen adres uit het check-in-formulier gaat voor.", mg_test_addr: "testadres", mg_for: "bedoeld voor", tab_hotel: "Hotel",
     hs_intro: "Gegevens en instellingen van het hotel. Standaard uit het hotelbestand; wat u hier wijzigt, gaat voor (alleen in deze omgeving).",
     hs_default: "standaard", hs_env: "In deze omgeving vastgelegd in Key Vault of de Function App: die waarde gaat voor.",
     hs_add: "Toevoegen", hs_key: "naam", hs_value: "waarde", hs_reset_confirm: "Alle instellingen terug naar het hotelbestand? Alle wijzigingen gaan verloren.",
@@ -104,7 +104,7 @@ const T = {
     returning: n => `returning (${n}×)`, mg_message: "Message", mg_time: "Time", short_confirmation: "Confirmation", short_reminder: "Reminder", short_access_code: "Code mail", mg_channel: "Channel", mg_to: "To",
     mg_title: (num, guest) => `Messages for ${guest} (${num})`, mg_click: "Click for all details",
     mg_plan: "Timeline", mg_attempts: "All attempts", mg_next: "next",
-    pl_sent: "sent", pl_failed: "failed", pl_planned: "planned", pl_due: "next run", pl_skipped: "skipped", pl_off: "not active", mg_test_addr: "test address", mg_for: "meant for", tab_hotel: "Hotel",
+    pl_sent: "sent", pl_failed: "failed", pl_planned: "planned", pl_due: "next run", pl_skipped: "skipped", pl_off: "not active", relay_hint: "Relay address of the booking platform, not the guest's own address.", relay_kept: "Relay address of the booking platform. Kept, but the guest's own address from the check-in form takes precedence.", mg_test_addr: "test address", mg_for: "meant for", tab_hotel: "Hotel",
     hs_intro: "Hotel details and settings. Default from the hotel file; what you change here takes precedence (in this environment only).",
     hs_default: "default", hs_env: "Set for this environment in Key Vault or the Function App: that value takes precedence.",
     hs_add: "Add", hs_key: "name", hs_value: "value", hs_reset_confirm: "Reset all settings to the hotel file? All changes will be lost.",
@@ -409,8 +409,12 @@ function contactCell(g) {
 // Hoofdadres en nummer, plus het extra adres en nummer uit het check-in-formulier
 function contactLines(x) {
   const extra = v => `<span class="muted" title="${esc(t("backup"))}">${esc(v)} (2)</span>`;
-  return [x.email && esc(x.email), x.backup_email && extra(x.backup_email), x.phone && esc(x.phone), x.backup_phone && extra(x.backup_phone)]
-    .filter(Boolean).join("<br>");
+  // Doorstuuradres van Booking.com, Expedia, ...: label met het platform; bewaard maar niet gebruikt
+  // zodra de gast een eigen adres gaf (dat gaat voor)
+  const platform = p => p ? ` <span class="tag" title="${esc(t("relay_hint"))}">${esc(p)}</span>` : "";
+  const relay = x.relay_email ? `<span class="muted" title="${esc(t("relay_kept"))}"><s>${esc(x.relay_email)}</s></span>${platform(x.relay_platform)}` : "";
+  return [x.email && esc(x.email) + platform(x.email_platform), x.backup_email && extra(x.backup_email), relay,
+    x.phone && esc(x.phone), x.backup_phone && extra(x.backup_phone)].filter(Boolean).join("<br>");
 }
 
 function renderGuests() {

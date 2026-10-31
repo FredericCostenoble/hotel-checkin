@@ -108,6 +108,7 @@ def _to_entity(r: Reservation) -> dict:
         "language": normalize_language(r.guest.language),
         "country": (r.guest.country or "").upper(),
         "backup_email": (r.guest.backup_email or "").lower(),
+        "relay_email": (r.guest.relay_email or "").lower(),
         "backup_phone": r.guest.backup_phone or "",
         "channels": json.dumps(r.guest.channels) if r.guest.channels is not None else "",
         "arrival": r.arrival.isoformat(),
@@ -153,6 +154,7 @@ def _from_entity(e: dict) -> Reservation:
             language=normalize_language(e["language"]),
             country=e.get("country") or None,
             backup_email=e.get("backup_email") or None,
+            relay_email=e.get("relay_email") or None,
             backup_phone=e.get("backup_phone") or None,
             channels=json.loads(e["channels"]) if e.get("channels") else None,
         ),
@@ -258,6 +260,11 @@ def mark_checkin_completed(
     if r is None:
         return None
     if email:
+        from hotel_checkin.core.addresses import is_own_email
+
+        # Doorstuuradres van het boekingsplatform bewaren als reserve, het eigen adres gaat voor
+        if r.guest.email and not is_own_email(r.guest.email) and r.guest.email.lower() != email.lower():
+            r.guest.relay_email = r.guest.email
         r.guest.email = email
     if phone:
         r.guest.phone = phone

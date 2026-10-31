@@ -83,7 +83,7 @@ def form_data(token: str, today: date | None = None) -> dict | None:
         state = "closed"
     else:
         state = "open"
-    from hotel_checkin.processes.guest_profiles import is_own_email
+    from hotel_checkin.core.addresses import is_own_email
 
     email = r.guest.email or ""
     # Doorstuuradres van Booking.com, Expedia, ... niet voorstellen: de gast vult zijn eigen adres in

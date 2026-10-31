@@ -195,3 +195,11 @@ def test_backup_contacts_get_messages_and_resend(setup, monkeypatch):
     assert out["ok"] and len(setup) == 3
     assert any(m["note"] == "opnieuw verstuurd door frederic" for m in repo.messages_for("lucca", "b1"))
     assert not send_messages.resend("lucca", "b1", "confirmation", "email", "other@example.com", "x")["ok"]
+
+
+def test_form_address_beats_relay_which_is_kept(setup):
+    r = _res("ota1", email="jp.123@guest.booking.com")
+    assert send_messages.recipients(r, "email") == ["jp.123@guest.booking.com"]
+    saved = repo.mark_checkin_completed("lucca", "ota1", "jan@telenet.be", None, "nl")
+    assert saved.guest.email == "jan@telenet.be" and saved.guest.relay_email == "jp.123@guest.booking.com"
+    assert send_messages.recipients(saved, "email") == ["jan@telenet.be"]

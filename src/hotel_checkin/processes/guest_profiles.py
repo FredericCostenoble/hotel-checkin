@@ -27,15 +27,7 @@ from hotel_checkin.guests import profiles
 from hotel_checkin.guests import repository as guests
 
 # Doorstuuradressen van boekingsplatformen: per boeking anders en niet bruikbaar voor marketing
-RELAY_DOMAINS = ("guest.booking.com", "expediapartnercentral.com", "m.expediapartnercentral.com",
-                 "agoda-messaging.com", "guest.airbnb.com", "messaging.trip.com", "hotels.com")
-
-
-def is_own_email(email: str | None) -> bool:
-    if not email or "@" not in email:
-        return False
-    domain = email.rsplit("@", 1)[1].lower()
-    return not any(domain == d or domain.endswith("." + d) for d in RELAY_DOMAINS)
+from hotel_checkin.core.addresses import RELAY_DOMAINS, is_own_email  # noqa: F401 - ook hier gebruikt
 
 
 def name_key(first: str, last: str) -> str:

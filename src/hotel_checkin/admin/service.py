@@ -10,6 +10,7 @@ import json
 import threading
 from datetime import date, datetime, timedelta, timezone
 
+from hotel_checkin.core.addresses import relay_platform
 from hotel_checkin.core.hotels import list_hotels, load_hotel
 from hotel_checkin.guests import repository as repo
 
@@ -62,6 +63,9 @@ def reservations(hotel_id: str) -> list[dict]:
             "phone": r.guest.phone or "",
             "backup_email": r.guest.backup_email or "",
             "backup_phone": r.guest.backup_phone or "",
+            "relay_email": r.guest.relay_email or "",
+            "email_platform": relay_platform(r.guest.email) or "",
+            "relay_platform": relay_platform(r.guest.relay_email) or "",
             "language": r.guest.language,
             "guests": r.guest_count,
             "room_type": r.room_type or "",

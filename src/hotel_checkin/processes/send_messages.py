@@ -24,6 +24,7 @@ from datetime import date, datetime, timezone
 from urllib.parse import urlencode
 
 from hotel_checkin.core import workflow
+from hotel_checkin.core.addresses import is_own_email
 from hotel_checkin.core.config import hotel_setting
 from hotel_checkin.core.models import Reservation, SendResult, normalize_language
 from hotel_checkin.core.safety import environment
@@ -166,9 +167,12 @@ def send_mail(hotel_id: str, step: workflow.Step, r: Reservation, cfg: dict, to:
 
 
 def recipients(r: Reservation, kind: str) -> list[str]:
-    """Adressen van de gast: het hoofdadres en het extra adres uit het check-in-formulier.
+    """Adressen van de gast: het hoofdadres en het extra adres uit het check-in-formulier. Het
+    doorstuuradres van Booking.com, Expedia, ... alleen als er geen eigen adres is.
     kind: "email" of "phone". Dubbels vallen weg."""
     values = [r.guest.email, r.guest.backup_email] if kind == "email" else [r.guest.phone, r.guest.backup_phone]
+    if kind == "email" and not any(is_own_email(v) for v in values) and r.guest.relay_email:
+        values.append(r.guest.relay_email)  # alleen als er geen eigen adres is (normaal staat het dan al in email)
     out: list[str] = []
     for v in values:
         if v and v.strip().lower() not in [o.lower() for o in out]:
