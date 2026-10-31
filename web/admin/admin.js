@@ -33,7 +33,7 @@ const T = {
     returning: n => `terugkerend (${n}×)`, mg_message: "Bericht", mg_time: "Tijdstip", short_confirmation: "Bevestiging", short_reminder: "Herinnering", short_access_code: "Code-mail", mg_channel: "Kanaal", mg_to: "Naar",
     mg_title: (num, guest) => `Berichten voor ${guest} (${num})`, mg_click: "Klik voor alle details",
     mg_plan: "Tijdlijn", mg_attempts: "Alle pogingen", mg_next: "volgt",
-    pl_sent: "verstuurd", pl_failed: "mislukt", pl_planned: "gepland", pl_due: "volgende run", pl_skipped: "valt weg", pl_off: "niet actief", ct_add: "E-mailadres of gsm-nummer toevoegen", ct_email: "e-mailadres", ct_phone: "gsm-nummer met landcode (+32...)", env_to_prd: "Naar PRD", env_bar_tst: "TESTOMGEVING (TST): berichten gaan alleen naar het testadres, nooit naar gasten",
+    pl_sent: "verstuurd", pl_failed: "mislukt", pl_planned: "gepland", pl_due: "volgende run", pl_skipped: "valt weg", pl_off: "niet actief", send_to: "Versturen naar...", send_to_ask: "Naar welk e-mailadres (of gsm-nummer met +32...) versturen? Het wordt bij de reservatie bewaard.", ct_add: "E-mailadres of gsm-nummer toevoegen", ct_email: "e-mailadres", ct_phone: "gsm-nummer met landcode (+32...)", env_to_prd: "Naar PRD", env_bar_tst: "TESTOMGEVING (TST): berichten gaan alleen naar het testadres, nooit naar gasten",
     env_bar_prd: "PRODUCTIE (PRD): berichten gaan naar echte gasten", env_to_tst: "Naar TST",
     env_confirm_prd: "Overschakelen naar PRODUCTIE? Daar gaan berichten naar echte gasten.", env_confirm_tst: "Overschakelen naar de testomgeving (TST)?", pl_not_sent: "niet verstuurd", relay_hint: "Doorstuuradres van het boekingsplatform, geen eigen adres van de gast.", relay_kept: "Doorstuuradres van het boekingsplatform. Bewaard, maar het eigen adres uit het check-in-formulier gaat voor.", mg_test_addr: "testadres", mg_for: "bedoeld voor", tab_hotel: "Hotel",
     hs_intro: "Gegevens en instellingen van het hotel. Standaard uit het hotelbestand; wat u hier wijzigt, gaat voor (alleen in deze omgeving).",
@@ -106,7 +106,7 @@ const T = {
     returning: n => `returning (${n}×)`, mg_message: "Message", mg_time: "Time", short_confirmation: "Confirmation", short_reminder: "Reminder", short_access_code: "Code mail", mg_channel: "Channel", mg_to: "To",
     mg_title: (num, guest) => `Messages for ${guest} (${num})`, mg_click: "Click for all details",
     mg_plan: "Timeline", mg_attempts: "All attempts", mg_next: "next",
-    pl_sent: "sent", pl_failed: "failed", pl_planned: "planned", pl_due: "next run", pl_skipped: "skipped", pl_off: "not active", ct_add: "Add e-mail address or mobile number", ct_email: "e-mail address", ct_phone: "mobile number with country code (+32...)", env_to_prd: "To PRD", env_bar_tst: "TEST ENVIRONMENT (TST): messages only go to the test address, never to guests",
+    pl_sent: "sent", pl_failed: "failed", pl_planned: "planned", pl_due: "next run", pl_skipped: "skipped", pl_off: "not active", send_to: "Send to...", send_to_ask: "Send to which e-mail address (or mobile number with +32...)? It is saved with the reservation.", ct_add: "Add e-mail address or mobile number", ct_email: "e-mail address", ct_phone: "mobile number with country code (+32...)", env_to_prd: "To PRD", env_bar_tst: "TEST ENVIRONMENT (TST): messages only go to the test address, never to guests",
     env_bar_prd: "PRODUCTION (PRD): messages go to real guests", env_to_tst: "To TST",
     env_confirm_prd: "Switch to PRODUCTION? Messages there go to real guests.", env_confirm_tst: "Switch to the test environment (TST)?", pl_not_sent: "not sent", relay_hint: "Relay address of the booking platform, not the guest's own address.", relay_kept: "Relay address of the booking platform. Kept, but the guest's own address from the check-in form takes precedence.", mg_test_addr: "test address", mg_for: "meant for", tab_hotel: "Hotel",
     hs_intro: "Hotel details and settings. Default from the hotel file; what you change here takes precedence (in this environment only).",
@@ -329,7 +329,8 @@ function showMessages(id) {
     return `<li class="pl-${p.state}"><span class="dot"></span><strong>${esc(stepShort(p.step))}</strong>
       <span class="muted">${esc(when)}</span> <span class="tag pl">${esc(t("pl_" + p.state))}</span>
       ${p.reason ? `<span class="muted">${esc(reasonText(p.reason))}</span>` : ""}
-      ${chips ? `<div class="chs">${chips}</div>` : ""}</li>`;
+      ${chips ? `<div class="chs">${chips}</div>` : READY.includes(p.step)
+        ? `<div class="chs"><button type="button" class="send-to" data-step="${esc(p.step)}">${esc(t("send_to"))}</button></div>` : ""}</li>`;
   }).join("");
   $("#msgs-attempts").hidden = !r.messages.length;
   // Adres of nummer met de hand toevoegen (bv. als Lighthouse er geen heeft); daarna verschijnen de knoppen
@@ -347,6 +348,21 @@ function showMessages(id) {
     await load();
     showMessages(r.id);
   };
+  // Geen adres: versturen vraagt eerst een adres, bewaart het bij de reservatie en verstuurt dan
+  document.querySelectorAll("#msgs-plan button.send-to").forEach(b => b.onclick = async () => {
+    const to = (prompt(t("send_to_ask")) || "").trim();
+    if (!to) return;
+    const isMail = to.includes("@");
+    const q = new URLSearchParams({ id: r.id, email: isMail ? to : "", phone: isMail ? "" : to });
+    let d = await get(`/api/monitor/${$("#hotel").value}/contact?${q}`, { method: "POST" }).catch(e => ({ ok: false, error: String(e) }));
+    if (d.ok) {
+      const send = new URLSearchParams({ id: r.id, step: b.dataset.step, channel: isMail ? "email" : "sms", to });
+      d = await get(`/api/monitor/${$("#hotel").value}/resend?${send}`, { method: "POST" }).catch(e => ({ ok: false, error: String(e) }));
+    }
+    if (!d.ok) alert(d.error || t("load_error"));
+    await load();
+    showMessages(r.id);
+  });
   document.querySelectorAll("#msgs-plan button.resend").forEach(b => b.onclick = async () => {
     const ch = b.dataset.ch, step = stepShort(b.dataset.step), guestTo = b.dataset.to;
     const question = isPrd() ? t("rs_confirm", step, t(CH[ch]), guestTo)

@@ -203,3 +203,5 @@ body.env-prd header { border-top: 4px solid #C8372D; }
 details.ct { margin: 10px 0 0; } details.ct summary { cursor: pointer; color: #3E63DD; font-size: 13px; }
 .ct-row { display: flex; gap: 8px; align-items: center; margin-top: 6px; flex-wrap: wrap; }
 .ct-row input { min-width: 220px; }
+button.send-to { font-size: 12px; padding: 2px 10px; border: 1px solid #3E63DD; color: #3E63DD; background: #fff; border-radius: 4px; cursor: pointer; }
+button.send-to:hover { background: #EAF0FF; }
