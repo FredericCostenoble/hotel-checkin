@@ -42,6 +42,10 @@ def reservations(hotel_id: str) -> list[dict]:
     periods = {g.guest_id: g.stay_periods for g in all_profiles}
     muted = {g.guest_id: set(g.muted_channels) for g in all_profiles}
     own_email = {g.guest_id: g.email for g in all_profiles if g.email_own and g.email}
+    # Adressen en nummers uit het gastprofiel (ook van vroegere verblijven), voor de keuzelijst bij versturen
+    profile_contacts = {g.guest_id: {"emails": list(dict.fromkeys(e for e in [g.email, g.backup_email, *g.known_emails] if e)),
+                                     "phones": list(dict.fromkeys(p for p in [g.phone, g.backup_phone, *g.known_phones] if p))}
+                        for g in all_profiles}
     phone = send_messages.phone_enabled(hotel_id)
     from hotel_checkin.pms.lighthouse_browser import base_url
     lighthouse = base_url(hotel_id) + "/Customer/Reservations/Detail/"
@@ -69,6 +73,8 @@ def reservations(hotel_id: str) -> list[dict]:
             "relay_email": r.guest.relay_email or "",
             "email_platform": relay_platform(r.guest.email) or "",
             "relay_platform": relay_platform(r.guest.relay_email) or "",
+            "profile_emails": profile_contacts.get(r.guest_id or "", {}).get("emails", []),
+            "profile_phones": profile_contacts.get(r.guest_id or "", {}).get("phones", []),
             "language": r.guest.language,
             "guests": r.guest_count,
             "room_type": r.room_type or "",

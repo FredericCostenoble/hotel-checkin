@@ -209,5 +209,7 @@ button.send-to:hover { background: #EAF0FF; }
 .send-bar:empty { display: none; }
 .send-bar .lbl { color: #5C6478; font-size: 13px; }
 .send-bar .sb-to { min-width: 260px; }
+.send-bar .sb-pick { max-width: 420px; }
+.send-bar .sb-to[hidden] { display: none; }
 .send-bar[hidden] { display: none; }
 ul.plan .send-open { font-size: 12px; margin-left: 2px; }

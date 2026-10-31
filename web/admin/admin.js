@@ -33,7 +33,8 @@ const T = {
     returning: n => `terugkerend (${n}×)`, mg_message: "Bericht", mg_time: "Tijdstip", short_confirmation: "Bevestiging", short_reminder: "Herinnering", short_access_code: "Code-mail", mg_channel: "Kanaal", mg_to: "Naar",
     mg_title: (num, guest) => `Berichten voor ${guest} (${num})`, mg_click: "Klik voor alle details",
     mg_plan: "Tijdlijn", mg_attempts: "Alle pogingen", mg_next: "volgt",
-    pl_sent: "verstuurd", pl_failed: "mislukt", pl_planned: "gepland", pl_due: "volgende run", pl_skipped: "valt weg", pl_off: "niet actief", sb_open: "Versturen...", sb_to: "naar", sb_go: "Versturen", sb_off: "(nog niet actief)", send_to: "Versturen naar...", send_to_ask: "Naar welk e-mailadres (of gsm-nummer met +32...) versturen? Het wordt bij de reservatie bewaard.", ct_add: "E-mailadres of gsm-nummer toevoegen", ct_email: "e-mailadres", ct_phone: "gsm-nummer met landcode (+32...)", env_to_prd: "Naar PRD", env_bar_tst: "TESTOMGEVING (TST): berichten gaan alleen naar het testadres, nooit naar gasten",
+    pl_sent: "verstuurd", pl_failed: "mislukt", pl_planned: "gepland", pl_due: "volgende run", pl_skipped: "valt weg", pl_off: "niet actief", sb_open: "Versturen...", sb_other: "Ander adres...", src_test: "testadres", src_form: "check-in-formulier",
+    src_form_extra: "extra, check-in-formulier", src_relay: "doorstuuradres", src_profile: "gastprofiel", src_used: "eerder gebruikt", sb_to: "naar", sb_go: "Versturen", sb_off: "(nog niet actief)", send_to: "Versturen naar...", send_to_ask: "Naar welk e-mailadres (of gsm-nummer met +32...) versturen? Het wordt bij de reservatie bewaard.", ct_add: "E-mailadres of gsm-nummer toevoegen", ct_email: "e-mailadres", ct_phone: "gsm-nummer met landcode (+32...)", env_to_prd: "Naar PRD", env_bar_tst: "TESTOMGEVING (TST): berichten gaan alleen naar het testadres, nooit naar gasten",
     env_bar_prd: "PRODUCTIE (PRD): berichten gaan naar echte gasten", env_to_tst: "Naar TST",
     env_confirm_prd: "Overschakelen naar PRODUCTIE? Daar gaan berichten naar echte gasten.", env_confirm_tst: "Overschakelen naar de testomgeving (TST)?", pl_not_sent: "niet verstuurd", relay_hint: "Doorstuuradres van het boekingsplatform, geen eigen adres van de gast.", relay_kept: "Doorstuuradres van het boekingsplatform. Bewaard, maar het eigen adres uit het check-in-formulier gaat voor.", mg_test_addr: "testadres", mg_for: "bedoeld voor", tab_hotel: "Hotel",
     hs_intro: "Gegevens en instellingen van het hotel. Standaard uit het hotelbestand; wat u hier wijzigt, gaat voor (alleen in deze omgeving).",
@@ -106,7 +107,8 @@ const T = {
     returning: n => `returning (${n}×)`, mg_message: "Message", mg_time: "Time", short_confirmation: "Confirmation", short_reminder: "Reminder", short_access_code: "Code mail", mg_channel: "Channel", mg_to: "To",
     mg_title: (num, guest) => `Messages for ${guest} (${num})`, mg_click: "Click for all details",
     mg_plan: "Timeline", mg_attempts: "All attempts", mg_next: "next",
-    pl_sent: "sent", pl_failed: "failed", pl_planned: "planned", pl_due: "next run", pl_skipped: "skipped", pl_off: "not active", sb_open: "Send...", sb_to: "to", sb_go: "Send", sb_off: "(not active yet)", send_to: "Send to...", send_to_ask: "Send to which e-mail address (or mobile number with +32...)? It is saved with the reservation.", ct_add: "Add e-mail address or mobile number", ct_email: "e-mail address", ct_phone: "mobile number with country code (+32...)", env_to_prd: "To PRD", env_bar_tst: "TEST ENVIRONMENT (TST): messages only go to the test address, never to guests",
+    pl_sent: "sent", pl_failed: "failed", pl_planned: "planned", pl_due: "next run", pl_skipped: "skipped", pl_off: "not active", sb_open: "Send...", sb_other: "Other address...", src_test: "test address", src_form: "check-in form",
+    src_form_extra: "extra, check-in form", src_relay: "relay address", src_profile: "guest profile", src_used: "used before", sb_to: "to", sb_go: "Send", sb_off: "(not active yet)", send_to: "Send to...", send_to_ask: "Send to which e-mail address (or mobile number with +32...)? It is saved with the reservation.", ct_add: "Add e-mail address or mobile number", ct_email: "e-mail address", ct_phone: "mobile number with country code (+32...)", env_to_prd: "To PRD", env_bar_tst: "TEST ENVIRONMENT (TST): messages only go to the test address, never to guests",
     env_bar_prd: "PRODUCTION (PRD): messages go to real guests", env_to_tst: "To TST",
     env_confirm_prd: "Switch to PRODUCTION? Messages there go to real guests.", env_confirm_tst: "Switch to the test environment (TST)?", pl_not_sent: "not sent", relay_hint: "Relay address of the booking platform, not the guest's own address.", relay_kept: "Relay address of the booking platform. Kept, but the guest's own address from the check-in form takes precedence.", mg_test_addr: "test address", mg_for: "meant for", tab_hotel: "Hotel",
     hs_intro: "Hotel details and settings. Default from the hotel file; what you change here takes precedence (in this environment only).",
@@ -375,32 +377,56 @@ function toCell(m) {
 
 // Versturen met de hand: bericht, kanaal en adres kiezen. Het adres komt uit een lijst (hoofdadres,
 // extra adres, doorstuuradres, adressen van vroegere berichten) of wordt vrij getypt; het wordt niet bewaard.
+// Keuzelijst van adressen (of nummers) voor versturen, met de bron erbij. Standaard: in de testomgeving
+// het testadres, anders het adres uit het check-in-formulier (of het hoofdadres). Laatste keuze: ander adres.
+function addressOptions(r, ch) {
+  const out = [], seen = new Set();
+  const add = (v, src) => {
+    const k = (v || "").trim().toLowerCase();
+    if (k && !seen.has(k)) { seen.add(k); out.push({ value: v.trim(), src }); }
+  };
+  const form = !!r.checkin_completed_at;
+  if (ch === "email") {
+    if (!isPrd() && testTo("email")) add(testTo("email"), t("src_test"));
+    add(r.email, r.email_platform || (form ? t("src_form") : "Lighthouse"));
+    add(r.backup_email, t("src_form_extra"));
+    add(r.relay_email, r.relay_platform || t("src_relay"));
+    (r.profile_emails || []).forEach(v => add(v, t("src_profile")));
+    r.messages.filter(m => m.channel === "email").forEach(m => add(m.to, t("src_used")));
+  } else {
+    if (!isPrd() && testTo("phone")) add(testTo("phone"), t("src_test"));
+    add(r.phone, form ? t("src_form") : "Lighthouse");
+    add(r.backup_phone, t("src_form_extra"));
+    (r.profile_phones || []).forEach(v => add(v, t("src_profile")));
+    r.messages.filter(m => m.channel !== "email" && m.channel !== "salto").forEach(m => add(m.to, t("src_used")));
+  }
+  return out;
+}
+
 function sendBar(r, step, bar) {
   const phoneOn = !!hotelNow().phone_enabled;
-  const opts = ch => {
-    const base = ch === "email" ? [r.email, r.backup_email, r.relay_email] : [r.phone, r.backup_phone];
-    const used = r.messages.filter(m => (ch === "email") === (m.channel === "email")).map(m => m.to);
-    return [...new Set([...base, ...used].filter(Boolean))];
-  };
-  const id = "sb-" + step;
   bar.innerHTML = `<select class="sb-ch"><option value="email">${esc(t("ch_email"))}</option>
       <option value="whatsapp" ${phoneOn ? "" : "disabled"}>${esc(t("ch_whatsapp"))}${phoneOn ? "" : " " + esc(t("sb_off"))}</option>
       <option value="sms" ${phoneOn ? "" : "disabled"}>${esc(t("ch_sms"))}${phoneOn ? "" : " " + esc(t("sb_off"))}</option></select>
-    <span class="lbl">${esc(t("sb_to"))}</span><input class="sb-to" list="${id}-list" autocomplete="off"><datalist id="${id}-list"></datalist>
+    <span class="lbl">${esc(t("sb_to"))}</span><select class="sb-pick"></select>
+    <input class="sb-to" autocomplete="off" hidden>
     <button type="button" class="primary sb-go">${esc(t("sb_go"))}</button>`;
-  const ch = bar.querySelector(".sb-ch"), to = bar.querySelector(".sb-to"), go = bar.querySelector(".sb-go");
+  const ch = bar.querySelector(".sb-ch"), pick = bar.querySelector(".sb-pick"), to = bar.querySelector(".sb-to"), go = bar.querySelector(".sb-go");
   const fill = () => {
-    const list = opts(ch.value);
-    bar.querySelector("datalist").innerHTML = list.map(v => `<option value="${esc(v)}">`).join("");
-    to.value = list[0] || "";
+    const list = addressOptions(r, ch.value);
+    pick.innerHTML = list.map(o => `<option value="${esc(o.value)}">${esc(o.value)} (${esc(o.src)})</option>`).join("")
+      + `<option value="">${esc(t("sb_other"))}</option>`;
     to.placeholder = ch.value === "email" ? t("ct_email") : t("ct_phone");
+    to.value = "";
+    to.hidden = !!list.length;
+    if (!list.length) pick.value = "";
   };
   fill();
   ch.onchange = fill;
-  to.onfocus = () => to.select();
+  pick.onchange = () => { to.hidden = pick.value !== ""; if (!to.hidden) to.focus(); };
   go.onclick = async () => {
-    const address = to.value.trim();
-    if (!address) { to.focus(); return; }
+    const address = (pick.value || to.value).trim();
+    if (!address) { to.hidden = false; to.focus(); return; }
     const question = isPrd() ? t("rs_confirm", stepShort(step), t(CH[ch.value]), address)
       : testTo(ch.value) ? t("rs_confirm_test", stepShort(step), t(CH[ch.value]), testTo(ch.value), address) : t("rs_no_test");
     if (!isPrd() && !testTo(ch.value)) { alert(question); return; }
