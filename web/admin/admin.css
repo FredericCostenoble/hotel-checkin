@@ -232,3 +232,5 @@ ul.plan .send-open:hover { background: #EAF0FF; }
 .ct-line { white-space: nowrap; line-height: 1.6; }
 .ct-line .tag.src { font-size: 11px; padding: 0 5px; color: #5C6478; }
 .tag.ch .addr { display: inline-block; max-width: 170px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: bottom; opacity: 0.8; }
+.tag.form-yes { background: #E8F5EC; color: #1E6B3A; font-size: 11px; }
+.tag.form-no { background: #F4F5F8; color: #8A90A0; font-size: 11px; }
