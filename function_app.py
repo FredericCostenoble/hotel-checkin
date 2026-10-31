@@ -140,6 +140,19 @@ def admin_api(req: func.HttpRequest) -> func.HttpResponse:
             return _json(200, admin.workflow_preview(hotel, req.get_json()))
         except ValueError:
             return _json(400, {"error": "json"})
+    if what == "settings":
+        # Tabblad Hotel (instellingenpagina): lezen, wijzigen of terug naar het hotelbestand
+        if req.method == "GET":
+            return _json(200, admin.settings_view(hotel))
+        if req.method == "POST" and req.params.get("action") == "reset":
+            return _json(200, admin.settings_reset(hotel))
+        if req.method == "POST":
+            try:
+                body = req.get_json()
+            except ValueError:
+                return _json(400, {"error": "json"})
+            ok, data = admin.settings_save(hotel, body, _admin_user(req) or "")
+            return _json(200 if ok else 400, data)
     if what == "workflow":
         # Tabblad Workflow: lezen, wijzigen (met wie en wanneer) of terug naar de standaard
         if req.method == "GET":

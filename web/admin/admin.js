@@ -33,7 +33,16 @@ const T = {
     returning: n => `terugkerend (${n}×)`, mg_message: "Bericht", mg_time: "Tijdstip", short_confirmation: "Bevestiging", short_reminder: "Herinnering", short_access_code: "Code-mail", mg_channel: "Kanaal", mg_to: "Naar",
     mg_title: (num, guest) => `Berichten voor ${guest} (${num})`, mg_click: "Klik voor alle details",
     mg_plan: "Tijdlijn", mg_attempts: "Alle pogingen", mg_next: "volgt",
-    pl_sent: "verstuurd", pl_failed: "mislukt", pl_planned: "gepland", pl_due: "volgende run", pl_skipped: "valt weg", pl_off: "niet actief", settings: "Instellingen", back: "Monitor", open_lh: "Openen in Lighthouse", pl_not_tried: "niet geprobeerd", backup: "extra adres uit het check-in-formulier",
+    pl_sent: "verstuurd", pl_failed: "mislukt", pl_planned: "gepland", pl_due: "volgende run", pl_skipped: "valt weg", pl_off: "niet actief", tab_hotel: "Hotel",
+    hs_intro: "Gegevens en instellingen van het hotel. Standaard uit het hotelbestand; wat u hier wijzigt, gaat voor (alleen in deze omgeving).",
+    hs_default: "standaard", hs_env: "In deze omgeving vastgelegd in Key Vault of de Function App: die waarde gaat voor.",
+    hs_add: "Toevoegen", hs_key: "naam", hs_value: "waarde", hs_reset_confirm: "Alle instellingen terug naar het hotelbestand? Alle wijzigingen gaan verloren.",
+    hs_list: "komma's ertussen",
+    sec_hotel: "Hotel", sec_verzending: "Afzender van de mails", sec_receptie: "Receptie", sec_checkout: "Check-out", sec_ontbijt: "Ontbijt",
+    sec_wifi: "Wifi", sec_parking: "Parking", sec_nood: "Noodnummer", sec_twilio: "Twilio (sms en WhatsApp)", sec_robot: "Robot",
+    sec_messaging: "Berichten", sec_whatsapp: "WhatsApp-sjablonen", sec_retention: "Bewaartermijnen", sec_salto: "Salto",
+    sec_salto_rooms: "Salto: kamers en deuren", sec_lighthouse: "Lighthouse", sec_checkin: "Check-in-formulier",
+    sec_privacy: "Privacyverklaring", sec_kleuren: "Kleuren", settings: "Instellingen", back: "Monitor", open_lh: "Openen in Lighthouse", pl_not_tried: "niet geprobeerd", backup: "extra adres uit het check-in-formulier",
     rs_now: "Nu versturen", rs_again: "Opnieuw versturen", rs_confirm: (step, ch, to) => `${step} nu versturen per ${ch} naar ${to}?`,
     chr_muted: "uitgezet voor deze gast", chr_phone_off: "nog niet actief (Twilio)", chr_fallback: "alleen als WhatsApp niet lukt",
     rs_disabled: "stap staat uit", rs_messaging_off: "berichten staan uit in deze omgeving", rs_before_start: "reservatie van voor de start",
@@ -93,7 +102,16 @@ const T = {
     returning: n => `returning (${n}×)`, mg_message: "Message", mg_time: "Time", short_confirmation: "Confirmation", short_reminder: "Reminder", short_access_code: "Code mail", mg_channel: "Channel", mg_to: "To",
     mg_title: (num, guest) => `Messages for ${guest} (${num})`, mg_click: "Click for all details",
     mg_plan: "Timeline", mg_attempts: "All attempts", mg_next: "next",
-    pl_sent: "sent", pl_failed: "failed", pl_planned: "planned", pl_due: "next run", pl_skipped: "skipped", pl_off: "not active", settings: "Settings", back: "Monitor", open_lh: "Open in Lighthouse", pl_not_tried: "not tried", backup: "extra address from the check-in form",
+    pl_sent: "sent", pl_failed: "failed", pl_planned: "planned", pl_due: "next run", pl_skipped: "skipped", pl_off: "not active", tab_hotel: "Hotel",
+    hs_intro: "Hotel details and settings. Default from the hotel file; what you change here takes precedence (in this environment only).",
+    hs_default: "default", hs_env: "Set for this environment in Key Vault or the Function App: that value takes precedence.",
+    hs_add: "Add", hs_key: "name", hs_value: "value", hs_reset_confirm: "Reset all settings to the hotel file? All changes will be lost.",
+    hs_list: "comma separated",
+    sec_hotel: "Hotel", sec_verzending: "Mail sender", sec_receptie: "Reception", sec_checkout: "Check-out", sec_ontbijt: "Breakfast",
+    sec_wifi: "Wi-Fi", sec_parking: "Parking", sec_nood: "Emergency number", sec_twilio: "Twilio (SMS and WhatsApp)", sec_robot: "Robot",
+    sec_messaging: "Messages", sec_whatsapp: "WhatsApp templates", sec_retention: "Retention", sec_salto: "Salto",
+    sec_salto_rooms: "Salto: rooms and doors", sec_lighthouse: "Lighthouse", sec_checkin: "Check-in form",
+    sec_privacy: "Privacy statement", sec_kleuren: "Colours", settings: "Settings", back: "Monitor", open_lh: "Open in Lighthouse", pl_not_tried: "not tried", backup: "extra address from the check-in form",
     rs_now: "Send now", rs_again: "Send again", rs_confirm: (step, ch, to) => `Send ${step} now by ${ch} to ${to}?`,
     chr_muted: "switched off for this guest", chr_phone_off: "not active yet (Twilio)", chr_fallback: "only if WhatsApp fails",
     rs_disabled: "step is off", rs_messaging_off: "messages are off in this environment", rs_before_start: "reservation from before the start",
@@ -156,7 +174,7 @@ function setLang(l) {
   document.querySelectorAll("[data-tp]").forEach(e => { e.placeholder = t(e.dataset.tp); });
   document.querySelectorAll("[data-tt]").forEach(e => { e.title = t(e.dataset.tt); });
   document.querySelectorAll(".langs button").forEach(b => b.classList.toggle("active", b.dataset.lang === lang));
-  if (PAGE === "main") { render(); renderGuests(); } else { renderWorkflow(); if (runsData) renderRuns(runsData); }
+  if (PAGE === "main") { render(); renderGuests(); } else { renderWorkflow(); renderSettings(); if (runsData) renderRuns(runsData); }
 }
 
 async function init() {
@@ -192,6 +210,8 @@ async function init() {
     $("#bin-all").innerHTML = BIN;
     $("#bin-all").onclick = deleteAllRuns;
     $("#wf-save").onclick = saveWorkflow;
+    $("#hs-save").onclick = saveSettings;
+    $("#hs-reset").onclick = resetSettings;
     $("#wf-reset").onclick = resetWorkflow;
     $("#pv-close").onclick = () => { $("#preview").hidden = true; };
     $("#preview").onclick = e => { if (e.target.id === "preview") $("#preview").hidden = true; };
@@ -202,16 +222,16 @@ async function init() {
     };
     $("#run").onclick = runRobot;
     // Niet bewaarde wijzigingen in de workflow: waarschuwen bij het verlaten van de pagina
-    window.addEventListener("beforeunload", e => { if (wfDirty) { e.preventDefault(); e.returnValue = ""; } });
+    window.addEventListener("beforeunload", e => { if (wfDirty || hsDirty) { e.preventDefault(); e.returnValue = ""; } });
   }
   load();
 }
 
 const PAGE = document.body.dataset.page || "main";
-const TABS = PAGE === "settings" ? ["workflow", "robot"] : ["res", "guests"];
+const TABS = PAGE === "settings" ? ["workflow", "hotel", "robot"] : ["res", "guests"];
 let current = TABS[0];
 function showTab(name, initial = false) {
-  if (wfDirty && name !== "workflow" && current === "workflow" && !confirm(t("wf_leave"))) {
+  if (((wfDirty && current === "workflow") || (hsDirty && current === "hotel")) && name !== current && !confirm(t("wf_leave"))) {
     if (location.hash.slice(1) !== current) history.replaceState(null, "", "#" + current);
     return;
   }
@@ -224,6 +244,7 @@ function showTab(name, initial = false) {
 async function load() {
   if (PAGE === "settings") {
     loadWorkflow();
+    loadSettings();
     loadRuns();
     return;
   }
@@ -738,4 +759,112 @@ async function resetWorkflow() {
   renderWorkflow();
 }
 
+
+// ---------------------------------------------------------------- instellingen van het hotel (tabblad Hotel)
+// Alle instellingen uit het hotelbestand, per sectie. Wat hier gewijzigd wordt, gaat voor op het bestand
+// (database, per omgeving). Vrije secties (kamers en deuren, WhatsApp-sjablonen): naam = waarde.
+let hs = null, hsEdit = {}, hsDirty = false;
+
+async function loadSettings() {
+  try { hs = await get(`/api/monitor/${$("#hotel").value}/settings`); } catch (e) { return; }
+  hsEdit = {}; hsDirty = false;
+  renderSettings();
+}
+
+function hsValue(sec, f) {
+  const e = hsEdit[sec.section];
+  return e && f.key in e ? e[f.key] : f.value;
+}
+
+function hsInput(sec, f, i) {
+  const v = hsValue(sec, f), id = `hs-${i}`, attrs = `id="${id}" data-sec="${esc(sec.section)}" data-key="${esc(f.key)}"`;
+  if (f.type === "bool") return `<input type="checkbox" ${attrs} ${v ? "checked" : ""}>`;
+  if (f.type === "int" || f.type === "float") return `<input type="number" ${attrs} step="${f.type === "int" ? 1 : "any"}" value="${esc(v)}">`;
+  if (f.type === "color") return `<input type="color" ${attrs} value="${esc(v)}"> <code>${esc(v)}</code>`;
+  if (f.type === "list") return `<input type="text" ${attrs} value="${esc((v || []).join(", "))}" placeholder="${esc(t("hs_list"))}">`;
+  return `<input type="text" ${attrs} value="${esc(v ?? "")}">`;
+}
+
+function renderSettings() {
+  if (!hs || !$("#hs-sections")) return;
+  $("#hs-meta").textContent = hs.meta.source === "monitor" ? t("wf_changed", hs.meta.updated_by || "?", stamp(hs.meta.updated_at)) : t("wf_from_file");
+  $("#hs-save").disabled = !hsDirty;
+  let i = 0;
+  $("#hs-sections").innerHTML = hs.sections.map(sec => {
+    const title = t("sec_" + sec.section.replace(".", "_")) || sec.section;
+    let rows;
+    if (sec.free) {
+      const pairs = hsEdit[sec.section] ? Object.entries(hsEdit[sec.section]) : sec.fields.map(f => [f.key, f.value]);
+      rows = pairs.map(([k, v]) => `<div class="hs-row free"><input type="text" class="hs-k" data-free="${esc(sec.section)}" value="${esc(k)}" placeholder="${esc(t("hs_key"))}">
+          <input type="text" class="hs-v" data-free="${esc(sec.section)}" value="${esc(v)}" placeholder="${esc(t("hs_value"))}"></div>`).join("")
+        + `<button type="button" class="link" data-add="${esc(sec.section)}">+ ${esc(t("hs_add"))}</button>`;
+    } else {
+      rows = sec.fields.map(f => {
+        const id = i++;
+        const changed = JSON.stringify(hsValue(sec, f)) !== JSON.stringify(f.default);
+        return `<div class="hs-row ${changed ? "changed" : ""}">
+          <label for="hs-${id}">${esc(f.key)}</label>
+          <div>${hsInput(sec, f, id)}${f.env ? ` <span class="tag warn" title="${esc(t("hs_env"))}">Key Vault</span>` : ""}
+            ${changed ? `<span class="muted small">${esc(t("hs_default"))}: ${esc(Array.isArray(f.default) ? f.default.join(", ") : String(f.default ?? ""))}</span>` : ""}
+            ${f.help ? `<div class="muted small">${esc(f.help)}</div>` : ""}</div></div>`;
+      }).join("");
+    }
+    return `<div class="hs-card"><h3>${esc(title)}</h3>${sec.help ? `<p class="muted small">${esc(sec.help)}</p>` : ""}${rows}</div>`;
+  }).join("");
+  document.querySelectorAll("#hs-sections [data-key]").forEach(el => el.onchange = () => {
+    const sec = hs.sections.find(x => x.section === el.dataset.sec), f = sec.fields.find(x => x.key === el.dataset.key);
+    let v = el.type === "checkbox" ? el.checked : el.value;
+    if (f.type === "int" || f.type === "float") v = v === "" ? f.default : Number(v);
+    if (f.type === "list") v = v.split(",").map(x => x.trim()).filter(Boolean);
+    (hsEdit[sec.section] = hsEdit[sec.section] || {})[f.key] = v;
+    hsTouched();
+  });
+  const readFree = section => {
+    const ks = [...document.querySelectorAll(`#hs-sections .hs-k[data-free="${section}"]`)];
+    const vs = [...document.querySelectorAll(`#hs-sections .hs-v[data-free="${section}"]`)];
+    hsEdit[section] = Object.fromEntries(ks.map((k, j) => [k.value.trim(), vs[j].value.trim()]).filter(([k]) => k));
+  };
+  document.querySelectorAll("#hs-sections [data-free]").forEach(el => el.onchange = () => { readFree(el.dataset.free); hsTouched(); });
+  document.querySelectorAll("#hs-sections [data-add]").forEach(b => b.onclick = () => {
+    readFree(b.dataset.add);
+    hsEdit[b.dataset.add][""] = "";
+    renderSettings();
+  });
+}
+
+function hsTouched() {
+  hsDirty = true;
+  $("#hs-save").disabled = false;
+  $("#hs-state").className = "muted";
+  $("#hs-state").textContent = t("wf_dirty");
+  renderSettings();
+}
+
+async function saveSettings() {
+  // Alles wat op het scherm staat (ook ongewijzigd): de server bewaart alleen wat verschilt van het bestand
+  const body = {};
+  hs.sections.forEach(sec => {
+    if (sec.free) body[sec.section] = hsEdit[sec.section] || Object.fromEntries(sec.fields.map(f => [f.key, f.value]));
+    else body[sec.section] = Object.fromEntries(sec.fields.map(f => [f.key, hsValue(sec, f)]));
+  });
+  const r = await fetch(API + `/api/monitor/${$("#hotel").value}/settings`, {
+    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
+  });
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok) { $("#hs-state").textContent = d.error || `${t("load_error")} ${r.status}`; $("#hs-state").className = "err"; return; }
+  hs = d; hsEdit = {}; hsDirty = false;
+  $("#hs-state").className = "muted";
+  $("#hs-state").textContent = t("wf_saved");
+  renderSettings();
+}
+
+async function resetSettings() {
+  if (!confirm(t("hs_reset_confirm"))) return;
+  hs = await get(`/api/monitor/${$("#hotel").value}/settings?action=reset`, { method: "POST" });
+  hsEdit = {}; hsDirty = false;
+  $("#hs-state").textContent = "";
+  renderSettings();
+}
+
+// Als laatste: alle functies en variabelen hierboven bestaan dan
 init().catch(e => { document.body.insertAdjacentHTML("beforeend", `<p class="err">${t("load_error")}: ${esc(e.message)}</p>`); });

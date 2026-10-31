@@ -24,6 +24,7 @@
 
 <nav>
   <button data-tab="workflow" class="active"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="5" r="2.5"/><circle cx="6" cy="19" r="2.5"/><circle cx="18" cy="12" r="2.5"/><path d="M6 7.5v9M8.3 6.2l7.4 4.6M8.3 17.8l7.4-4.6"/></svg><span data-t="tab_workflow"></span></button>
+  <button data-tab="hotel"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V7l7-4 7 4v14"/><path d="M9 9h1M14 9h1M9 13h1M14 13h1M10 21v-4h4v4"/></svg><span data-t="tab_hotel"></span></button>
   <button data-tab="robot"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="8" width="16" height="12" rx="3"/><path d="M12 8V4M9 13v1M15 13v1M9 17h6M2 13v3M22 13v3"/><circle cx="12" cy="3.5" r="1"/></svg><span data-t="tab_robot"></span></button>
 </nav>
 
@@ -42,6 +43,19 @@
       <div id="wf-timeline"></div>
       <aside id="wf-side"></aside>
     </div>
+  </section>
+
+  <section id="tab-hotel" hidden>
+    <div class="tools">
+      <p class="muted" data-t="hs_intro"></p>
+      <div class="right">
+        <span id="hs-meta" class="muted"></span>
+        <button id="hs-reset" type="button" data-t="wf_reset"></button>
+        <button id="hs-save" type="button" class="primary" data-t="wf_save" disabled></button>
+      </div>
+    </div>
+    <p id="hs-state" class="muted"></p>
+    <div id="hs-sections" class="hs-grid"></div>
   </section>
 
   <section id="tab-robot" hidden>

@@ -176,3 +176,15 @@ a.settings-btn { text-decoration: none; }
 .tl-step .info.top { margin: 0 0 8px; }
 a.brand { text-decoration: none; }
 a.brand:hover .name b { text-decoration: underline; }
+/* Tabblad Hotel: instellingen per sectie */
+.hs-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(420px, 1fr)); gap: 14px; align-items: start; }
+@media (max-width: 600px) { .hs-grid { grid-template-columns: 1fr; } }
+.hs-card { border: 1px solid var(--line); border-radius: 8px; padding: 10px 14px; background: #fff; }
+.hs-card h3 { margin: 0 0 6px; font-size: 14px; color: #2B3F8C; }
+.hs-row { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 8px; align-items: start; padding: 5px 0; border-top: 1px solid #F0F1F5; }
+.hs-row label { color: #5C6478; font-size: 13px; padding-top: 5px; word-break: break-word; }
+.hs-row input[type=text], .hs-row input[type=number] { width: 100%; }
+.hs-row.changed label { color: #2B3F8C; font-weight: bold; }
+.hs-row.changed input[type=text], .hs-row.changed input[type=number] { border-color: #3E63DD; background: #F5F8FF; }
+.hs-row.free { grid-template-columns: 150px minmax(0, 1fr); }
+.small { font-size: 12px; }

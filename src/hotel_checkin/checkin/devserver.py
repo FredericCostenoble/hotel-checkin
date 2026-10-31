@@ -69,6 +69,15 @@ class Handler(BaseHTTPRequestHandler):
         elif method == "POST" and len(parts) == 4 and parts[3] == "preview":
             body = json.loads(self.rfile.read(int(self.headers.get("Content-Length", 0))) or b"{}")
             self._json(200, admin.workflow_preview(parts[2], body))
+        elif len(parts) == 4 and parts[3] == "settings":
+            if method == "GET":
+                self._json(200, admin.settings_view(parts[2]))
+            elif "action=reset" in self.path:
+                self._json(200, admin.settings_reset(parts[2]))
+            else:
+                body = json.loads(self.rfile.read(int(self.headers.get("Content-Length", 0))) or b"{}")
+                ok, data = admin.settings_save(parts[2], body, "dev")
+                self._json(200 if ok else 400, data)
         elif len(parts) == 4 and parts[3] == "workflow":
             if method == "GET":
                 self._json(200, admin.workflow_view(parts[2]))

@@ -11,7 +11,11 @@ adres = "Naaldenstraat 30, 8000 Brugge"
 telefoon = "+32 471 18 15 74"
 email = "info@hotellucca.be"   # contactadres voor gasten (mails versturen gebeurt technisch via MAIL_SENDER)
 website = "https://www.hotellucca.be"
-# website_fr = "https://www.hotellucca.be/fr/"   # optioneel: website per taal in de mails (TODO: adressen nakijken)
+# Website per taal (logo en link onderaan de mails). Leeg = website hierboven.
+website_nl = "https://hotellucca.be/nl/hotel-brugge-centrum/"
+website_fr = "https://hotellucca.be/fr/hotel-bruges-centre/"
+website_en = "https://hotellucca.be/en/hotel-bruges-city-centre/"
+website_de = "https://hotellucca.be/de/hotel-bruegge-zentrum/"
 logo_url = "https://hotellucca.be/wp-content/uploads/2025/06/Logo-website-hotel-lucca.png"
 
 [verzending]

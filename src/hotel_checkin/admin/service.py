@@ -200,6 +200,28 @@ def workflow_view(hotel_id: str) -> dict:
     }}
 
 
+def settings_view(hotel_id: str) -> dict:
+    """Instellingen van het hotel (tabblad Hotel op de instellingenpagina)."""
+    from hotel_checkin.core import hotel_settings
+
+    return hotel_settings.view(hotel_id)
+
+
+def settings_save(hotel_id: str, changes: dict, user: str) -> tuple[bool, dict]:
+    from hotel_checkin.core import hotel_settings
+
+    try:
+        return True, hotel_settings.save(hotel_id, changes, user)
+    except ValueError as exc:
+        return False, {"error": str(exc)}
+
+
+def settings_reset(hotel_id: str) -> dict:
+    from hotel_checkin.core import hotel_settings
+
+    return hotel_settings.reset(hotel_id)
+
+
 def workflow_save(hotel_id: str, cfg: dict, user: str) -> tuple[bool, dict]:
     """(True, nieuwe workflow) of (False, {"error": uitleg})."""
     from hotel_checkin.core import workflow
