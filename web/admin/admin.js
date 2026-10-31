@@ -33,7 +33,7 @@ const T = {
     returning: n => `terugkerend (${n}×)`, mg_message: "Bericht", mg_time: "Tijdstip", short_confirmation: "Bevestiging", short_reminder: "Herinnering", short_access_code: "Code-mail", mg_channel: "Kanaal", mg_to: "Naar",
     mg_title: (num, guest) => `Berichten voor ${guest} (${num})`, mg_click: "Klik voor alle details",
     mg_plan: "Tijdlijn", mg_attempts: "Alle pogingen", mg_next: "volgt",
-    pl_sent: "verstuurd", pl_failed: "mislukt", pl_planned: "gepland", pl_due: "volgende run", pl_skipped: "valt weg", pl_off: "niet actief", sb_send: "Versturen:", sb_to: "naar", sb_go: "Versturen", sb_off: "(nog niet actief)", send_to: "Versturen naar...", send_to_ask: "Naar welk e-mailadres (of gsm-nummer met +32...) versturen? Het wordt bij de reservatie bewaard.", ct_add: "E-mailadres of gsm-nummer toevoegen", ct_email: "e-mailadres", ct_phone: "gsm-nummer met landcode (+32...)", env_to_prd: "Naar PRD", env_bar_tst: "TESTOMGEVING (TST): berichten gaan alleen naar het testadres, nooit naar gasten",
+    pl_sent: "verstuurd", pl_failed: "mislukt", pl_planned: "gepland", pl_due: "volgende run", pl_skipped: "valt weg", pl_off: "niet actief", sb_open: "Versturen...", sb_to: "naar", sb_go: "Versturen", sb_off: "(nog niet actief)", send_to: "Versturen naar...", send_to_ask: "Naar welk e-mailadres (of gsm-nummer met +32...) versturen? Het wordt bij de reservatie bewaard.", ct_add: "E-mailadres of gsm-nummer toevoegen", ct_email: "e-mailadres", ct_phone: "gsm-nummer met landcode (+32...)", env_to_prd: "Naar PRD", env_bar_tst: "TESTOMGEVING (TST): berichten gaan alleen naar het testadres, nooit naar gasten",
     env_bar_prd: "PRODUCTIE (PRD): berichten gaan naar echte gasten", env_to_tst: "Naar TST",
     env_confirm_prd: "Overschakelen naar PRODUCTIE? Daar gaan berichten naar echte gasten.", env_confirm_tst: "Overschakelen naar de testomgeving (TST)?", pl_not_sent: "niet verstuurd", relay_hint: "Doorstuuradres van het boekingsplatform, geen eigen adres van de gast.", relay_kept: "Doorstuuradres van het boekingsplatform. Bewaard, maar het eigen adres uit het check-in-formulier gaat voor.", mg_test_addr: "testadres", mg_for: "bedoeld voor", tab_hotel: "Hotel",
     hs_intro: "Gegevens en instellingen van het hotel. Standaard uit het hotelbestand; wat u hier wijzigt, gaat voor (alleen in deze omgeving).",
@@ -51,7 +51,7 @@ const T = {
     chr_muted: "uitgezet voor deze gast", chr_phone_off: "nog niet actief (Twilio)", chr_fallback: "alleen als WhatsApp niet lukt",
     rs_disabled: "stap staat uit", rs_messaging_off: "berichten staan uit in deze omgeving", rs_before_start: "niet automatisch: reservatie kwam binnen vóór de startdatum van de berichten (Instellingen > Hotel > Berichten > Vanaf)",
     rs_booked_late: "boeking kwam te laat", rs_later_due: "een latere mail is al aan de beurt", rs_not_ready: "nog niet gebouwd",
-    rs_no_contact: "Geen e-mailadres of gsm-nummer in Lighthouse. Versturen kan wel: typ hieronder een adres.", rs_window_passed: "moment voorbij", rs_condition: "voorwaarde niet voldaan",
+    rs_no_contact: "Geen e-mailadres of gsm-nummer in Lighthouse. Versturen kan wel: klik bij een bericht op Versturen... en typ een adres.", rs_window_passed: "moment voorbij", rs_condition: "voorwaarde niet voldaan",
     g_msgs: "Berichten", g_mute_hint: "Vinkje weg: dit kanaal nooit gebruiken voor deze gast",
     st_sent: "verstuurd", st_failed: "mislukt", st_delivered: "afgeleverd", st_read: "gelezen", st_undelivered: "niet afgeleverd", show_guest: "Gastgegevens tonen", show_res: "Reservaties van deze gast tonen",
     g_update: "Synchroniseren", g_busy: "Bezig...", g_done: d => `${d.linked} gekoppeld, ${d.counted} verblijven en ${d.cancellations} annuleringen meegeteld, ${d.reservations_deleted} oude reservaties en ${d.guests_deleted} gasten verwijderd`,
@@ -106,7 +106,7 @@ const T = {
     returning: n => `returning (${n}×)`, mg_message: "Message", mg_time: "Time", short_confirmation: "Confirmation", short_reminder: "Reminder", short_access_code: "Code mail", mg_channel: "Channel", mg_to: "To",
     mg_title: (num, guest) => `Messages for ${guest} (${num})`, mg_click: "Click for all details",
     mg_plan: "Timeline", mg_attempts: "All attempts", mg_next: "next",
-    pl_sent: "sent", pl_failed: "failed", pl_planned: "planned", pl_due: "next run", pl_skipped: "skipped", pl_off: "not active", sb_send: "Send:", sb_to: "to", sb_go: "Send", sb_off: "(not active yet)", send_to: "Send to...", send_to_ask: "Send to which e-mail address (or mobile number with +32...)? It is saved with the reservation.", ct_add: "Add e-mail address or mobile number", ct_email: "e-mail address", ct_phone: "mobile number with country code (+32...)", env_to_prd: "To PRD", env_bar_tst: "TEST ENVIRONMENT (TST): messages only go to the test address, never to guests",
+    pl_sent: "sent", pl_failed: "failed", pl_planned: "planned", pl_due: "next run", pl_skipped: "skipped", pl_off: "not active", sb_open: "Send...", sb_to: "to", sb_go: "Send", sb_off: "(not active yet)", send_to: "Send to...", send_to_ask: "Send to which e-mail address (or mobile number with +32...)? It is saved with the reservation.", ct_add: "Add e-mail address or mobile number", ct_email: "e-mail address", ct_phone: "mobile number with country code (+32...)", env_to_prd: "To PRD", env_bar_tst: "TEST ENVIRONMENT (TST): messages only go to the test address, never to guests",
     env_bar_prd: "PRODUCTION (PRD): messages go to real guests", env_to_tst: "To TST",
     env_confirm_prd: "Switch to PRODUCTION? Messages there go to real guests.", env_confirm_tst: "Switch to the test environment (TST)?", pl_not_sent: "not sent", relay_hint: "Relay address of the booking platform, not the guest's own address.", relay_kept: "Relay address of the booking platform. Kept, but the guest's own address from the check-in form takes precedence.", mg_test_addr: "test address", mg_for: "meant for", tab_hotel: "Hotel",
     hs_intro: "Hotel details and settings. Default from the hotel file; what you change here takes precedence (in this environment only).",
@@ -124,7 +124,7 @@ const T = {
     chr_muted: "switched off for this guest", chr_phone_off: "not active yet (Twilio)", chr_fallback: "only if WhatsApp fails",
     rs_disabled: "step is off", rs_messaging_off: "messages are off in this environment", rs_before_start: "not automatic: reservation came in before the messages start date (Settings > Hotel > Messages > From)",
     rs_booked_late: "booked too late", rs_later_due: "a later mail is already due", rs_not_ready: "not built yet",
-    rs_no_contact: "No e-mail address or mobile number in Lighthouse. You can still send: type an address below.", rs_window_passed: "moment passed", rs_condition: "condition not met",
+    rs_no_contact: "No e-mail address or mobile number in Lighthouse. You can still send: click Send... at a message and type an address.", rs_window_passed: "moment passed", rs_condition: "condition not met",
     g_msgs: "Messages", g_mute_hint: "Unchecked: never use this channel for this guest",
     st_sent: "sent", st_failed: "failed", st_delivered: "delivered", st_read: "read", st_undelivered: "not delivered", show_guest: "Show guest data", show_res: "Show this guest's reservations",
     g_update: "Synchronize", g_busy: "Working...", g_done: d => `${d.linked} linked, ${d.counted} stays and ${d.cancellations} cancellations counted, ${d.reservations_deleted} old reservations and ${d.guests_deleted} guests deleted`,
@@ -329,12 +329,18 @@ function showMessages(id) {
     return `<li class="pl-${p.state}"><span class="dot"></span><strong>${esc(stepShort(p.step))}</strong>
       <span class="muted">${esc(when)}</span> <span class="tag pl">${esc(t("pl_" + p.state))}</span>
       ${p.reason ? `<span class="muted">${esc(reasonText(p.reason))}</span>` : ""}
-      ${chips ? `<div class="chs">${chips}</div>` : ""}</li>`;
+      ${chips ? `<div class="chs">${chips}</div>` : ""}
+      ${READY.includes(p.step) ? `<button type="button" class="link send-open" data-step="${esc(p.step)}">${esc(t("sb_open"))}</button>
+        <div class="send-bar" data-bar="${esc(p.step)}" hidden></div>` : ""}</li>`;
   }).join("");
   $("#msgs-attempts").hidden = !r.messages.length;
   // Geen adres: één keer melden (niet bij elke stap); versturen kan wel via de balk hieronder
   if (!(r.email || r.phone)) $("#msgs-plan").insertAdjacentHTML("beforebegin", `<p class="info" id="msgs-nocontact">${esc(t("rs_no_contact"))}</p>`);
-  sendBar(r);
+  document.querySelectorAll("#msgs-plan .send-open").forEach(b => b.onclick = () => {
+    const bar = document.querySelector(`#msgs-plan [data-bar="${b.dataset.step}"]`);
+    bar.hidden = !bar.hidden;
+    if (!bar.hidden) sendBar(r, b.dataset.step, bar);
+  });
   document.querySelectorAll("#msgs-plan button.resend").forEach(b => b.onclick = async () => {
     const ch = b.dataset.ch, step = stepShort(b.dataset.step), guestTo = b.dataset.to;
     const question = isPrd() ? t("rs_confirm", step, t(CH[ch]), guestTo)
@@ -369,40 +375,38 @@ function toCell(m) {
 
 // Versturen met de hand: bericht, kanaal en adres kiezen. Het adres komt uit een lijst (hoofdadres,
 // extra adres, doorstuuradres, adressen van vroegere berichten) of wordt vrij getypt; het wordt niet bewaard.
-function sendBar(r) {
-  const steps = (r.plan || []).map(p => p.step).filter(s => READY.includes(s));
+function sendBar(r, step, bar) {
   const phoneOn = !!hotelNow().phone_enabled;
   const opts = ch => {
     const base = ch === "email" ? [r.email, r.backup_email, r.relay_email] : [r.phone, r.backup_phone];
     const used = r.messages.filter(m => (ch === "email") === (m.channel === "email")).map(m => m.to);
     return [...new Set([...base, ...used].filter(Boolean))];
   };
-  $("#msgs-send").innerHTML = steps.length ? `<span class="lbl">${esc(t("sb_send"))}</span>
-    <select id="sb-step">${steps.map(s => `<option value="${esc(s)}">${esc(stepShort(s))}</option>`).join("")}</select>
-    <select id="sb-ch"><option value="email">${esc(t("ch_email"))}</option>
+  const id = "sb-" + step;
+  bar.innerHTML = `<select class="sb-ch"><option value="email">${esc(t("ch_email"))}</option>
       <option value="whatsapp" ${phoneOn ? "" : "disabled"}>${esc(t("ch_whatsapp"))}${phoneOn ? "" : " " + esc(t("sb_off"))}</option>
       <option value="sms" ${phoneOn ? "" : "disabled"}>${esc(t("ch_sms"))}${phoneOn ? "" : " " + esc(t("sb_off"))}</option></select>
-    <span class="lbl">${esc(t("sb_to"))}</span><input id="sb-to" list="sb-list" autocomplete="off"><datalist id="sb-list"></datalist>
-    <button type="button" id="sb-go" class="primary">${esc(t("sb_go"))}</button>` : "";
-  if (!steps.length) return;
+    <span class="lbl">${esc(t("sb_to"))}</span><input class="sb-to" list="${id}-list" autocomplete="off"><datalist id="${id}-list"></datalist>
+    <button type="button" class="primary sb-go">${esc(t("sb_go"))}</button>`;
+  const ch = bar.querySelector(".sb-ch"), to = bar.querySelector(".sb-to"), go = bar.querySelector(".sb-go");
   const fill = () => {
-    const list = opts($("#sb-ch").value);
-    $("#sb-list").innerHTML = list.map(v => `<option value="${esc(v)}">`).join("");
-    $("#sb-to").value = list[0] || "";
-    $("#sb-to").placeholder = $("#sb-ch").value === "email" ? t("ct_email") : t("ct_phone");
+    const list = opts(ch.value);
+    bar.querySelector("datalist").innerHTML = list.map(v => `<option value="${esc(v)}">`).join("");
+    to.value = list[0] || "";
+    to.placeholder = ch.value === "email" ? t("ct_email") : t("ct_phone");
   };
   fill();
-  $("#sb-ch").onchange = fill;
-  $("#sb-to").onfocus = () => { $("#sb-to").select(); };
-  $("#sb-go").onclick = async () => {
-    const ch = $("#sb-ch").value, to = $("#sb-to").value.trim(), step = $("#sb-step").value;
-    if (!to) { $("#sb-to").focus(); return; }
-    const question = isPrd() ? t("rs_confirm", stepShort(step), t(CH[ch]), to)
-      : testTo(ch) ? t("rs_confirm_test", stepShort(step), t(CH[ch]), testTo(ch), to) : t("rs_no_test");
-    if (!isPrd() && !testTo(ch)) { alert(question); return; }
+  ch.onchange = fill;
+  to.onfocus = () => to.select();
+  go.onclick = async () => {
+    const address = to.value.trim();
+    if (!address) { to.focus(); return; }
+    const question = isPrd() ? t("rs_confirm", stepShort(step), t(CH[ch.value]), address)
+      : testTo(ch.value) ? t("rs_confirm_test", stepShort(step), t(CH[ch.value]), testTo(ch.value), address) : t("rs_no_test");
+    if (!isPrd() && !testTo(ch.value)) { alert(question); return; }
     if (!confirm(question)) return;
-    $("#sb-go").disabled = true;
-    const q = new URLSearchParams({ id: r.id, step, channel: ch, to });
+    go.disabled = true;
+    const q = new URLSearchParams({ id: r.id, step, channel: ch.value, to: address });
     const d = await get(`/api/monitor/${$("#hotel").value}/resend?${q}`, { method: "POST" }).catch(e => ({ ok: false, error: String(e) }));
     if (!d.ok) alert(d.error || t("load_error"));
     await load();
