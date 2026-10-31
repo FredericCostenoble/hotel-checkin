@@ -14,7 +14,7 @@ const I18N = {
     language: "Taal voor onze berichten",
     no_marketing: "Ik wil geen aanbiedingen of nieuws van Hotel Lucca ontvangen.",
     privacy_before: "Hoe we met uw gegevens omgaan, leest u in onze", privacy_link: "privacyverklaring",
-    submit: "Gegevens bevestigen", saving: "Bezig met bewaren...",
+    submit: "Gegevens bevestigen", saving: "Gegevens bewaren...",
     err_email: "Vul een geldig e-mailadres in.", err_phone: "Dit nummer lijkt niet te kloppen. Kies het land en typ het nummer, bv. 476123456.",
     err_general: "Er ging iets mis. Probeer het later opnieuw of neem contact op met het hotel.",
     thanks_title: "Bedankt, {voornaam}!",
