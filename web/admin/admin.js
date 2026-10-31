@@ -26,14 +26,17 @@ const T = {
     pay_none: "geen", pay_open_amount: "openstaand bedrag", pay_city_tax: "toeristenbelasting",
     c_not_cancelled: "niet geannuleerd", c_form_completed: "formulier ingevuld", c_form_not_completed: "formulier niet ingevuld",
     c_paid: "betaald", c_checked_in: "ingecheckt", c_has_email: "e-mailadres gekend", c_has_phone: "telefoon gekend",
-    wf_rules: "Herkennen", wf_sources: "Kanaal bevat (komma's tussen)", wf_other: "Alle andere kanalen",
+    wf_rules: "Herkennen", wf_sources: "Via (Lighthouse) bevat (komma's tussen)", wf_other: "Alle andere waarden van Via",
     wf_paid_yes: "en volledig betaald", wf_paid_no: "en nog niet (volledig) betaald",
-    wf_params: "Parameters (alle flows)", wf_params_moved: "Toeristenbelasting en munt staan bij Instellingen > Hotel.", p_city_tax: "Toeristenbelasting", p_unit: "Per", unit_person_night: "persoon per nacht",
+    wf_params: "Parameters (alle flows)", wf_params_moved: "Toeristenbelasting en munt staan bij Instellingen > Hotel.",
+    wf_seen: "Waarden van Via (Lighthouse) die nu bij deze flow horen:", wf_seen_none: "Nog geen reservaties in deze flow.", p_city_tax: "Toeristenbelasting", p_unit: "Per", unit_person_night: "persoon per nacht",
     unit_person_stay: "persoon per verblijf", p_currency: "Munt", wf_not_ready: "nog niet gebouwd (Salto)", wf_off: "uit",
     returning: n => `terugkerend (${n}×)`, mg_message: "Bericht", mg_time: "Tijdstip", short_confirmation: "Bevestiging", short_reminder: "Herinnering", short_access_code: "Code-mail", mg_channel: "Kanaal", mg_to: "Naar",
     mg_title: (num, guest) => `Berichten voor ${guest} (${num})`, mg_click: "Klik voor alle details",
     mg_plan: "Tijdlijn", mg_attempts: "Alle pogingen", mg_next: "volgt",
-    pl_sent: "verstuurd", pl_failed: "mislukt", pl_planned: "gepland", pl_due: "volgende run", pl_skipped: "valt weg", pl_off: "niet actief", sb_open: "Versturen...", sb_other: "Ander adres...", sb_bad_email: "Ongeldig e-mailadres", sb_bad_phone: "Ongeldig nummer (met landcode, bv. +32...)", src_test: "testadres", src_form: "check-in-formulier",
+    pl_sent: "verstuurd", pl_failed: "mislukt", pl_planned: "gepland", pl_due: "volgende run", pl_skipped: "valt weg", pl_off: "niet actief", sb_open: "Versturen", sb_again: "Opnieuw versturen",
+    rss_before_start: "voor de startdatum", rss_booked_late: "te laat geboekt", rss_later_due: "latere mail al aan de beurt",
+    rss_window_passed: "moment voorbij", rss_messaging_off: "berichten uit", rss_disabled: "stap uit", rss_not_ready: "nog niet gebouwd", sb_other: "Ander adres...", sb_bad_email: "Ongeldig e-mailadres", sb_bad_phone: "Ongeldig nummer (met landcode, bv. +32...)", src_test: "testadres", src_form: "check-in-formulier",
     src_form_extra: "extra, check-in-formulier", src_relay: "doorstuuradres", src_profile: "gastprofiel", src_used: "eerder gebruikt", sb_to: "naar", sb_go: "Versturen", sb_off: "(nog niet actief)", send_to: "Versturen naar...", send_to_ask: "Naar welk e-mailadres (of gsm-nummer met +32...) versturen? Het wordt bij de reservatie bewaard.", ct_add: "E-mailadres of gsm-nummer toevoegen", ct_email: "e-mailadres", ct_phone: "gsm-nummer met landcode (+32...)", env_to_prd: "Naar PRD", env_bar_tst: "TESTOMGEVING (TST): berichten gaan alleen naar het testadres, nooit naar gasten",
     env_bar_prd: "PRODUCTIE (PRD): berichten gaan naar echte gasten", env_to_tst: "Naar TST",
     env_confirm_prd: "Overschakelen naar PRODUCTIE? Daar gaan berichten naar echte gasten.", env_confirm_tst: "Overschakelen naar de testomgeving (TST)?", pl_not_sent: "niet verstuurd", relay_hint: "Doorstuuradres van het boekingsplatform, geen eigen adres van de gast.", relay_kept: "Doorstuuradres van het boekingsplatform. Bewaard, maar het eigen adres uit het check-in-formulier gaat voor.", mg_test_addr: "testadres", mg_for: "bedoeld voor", tab_hotel: "Hotel",
@@ -52,7 +55,7 @@ const T = {
     chr_muted: "uitgezet voor deze gast", chr_phone_off: "nog niet actief (Twilio)", chr_fallback: "alleen als WhatsApp niet lukt",
     rs_disabled: "stap staat uit", rs_messaging_off: "berichten staan uit in deze omgeving", rs_before_start: "niet automatisch: reservatie kwam binnen vóór de startdatum van de berichten (Instellingen > Hotel > Berichten > Vanaf)",
     rs_booked_late: "boeking kwam te laat", rs_later_due: "een latere mail is al aan de beurt", rs_not_ready: "nog niet gebouwd",
-    rs_no_contact: "Geen e-mailadres of gsm-nummer in Lighthouse. Versturen kan wel: klik bij een bericht op Versturen... en typ een adres.", rs_window_passed: "moment voorbij", rs_condition: "voorwaarde niet voldaan",
+    rs_no_contact: "Geen e-mailadres of gsm-nummer in Lighthouse. Versturen kan wel: klik bij een bericht op Versturen en kies of typ een adres.", rs_window_passed: "moment voorbij", rs_condition: "voorwaarde niet voldaan",
     g_msgs: "Berichten", g_mute_hint: "Vinkje weg: dit kanaal nooit gebruiken voor deze gast",
     st_sent: "verstuurd", st_failed: "mislukt", st_delivered: "afgeleverd", st_read: "gelezen", st_undelivered: "niet afgeleverd", show_guest: "Gastgegevens tonen", show_res: "Reservaties van deze gast tonen",
     g_update: "Synchroniseren", g_busy: "Bezig...", g_done: d => `${d.linked} gekoppeld, ${d.counted} verblijven en ${d.cancellations} annuleringen meegeteld, ${d.reservations_deleted} oude reservaties en ${d.guests_deleted} gasten verwijderd`,
@@ -65,7 +68,7 @@ const T = {
     m_confirm: "Deze twee gasten samenvoegen tot één?", reset: "Filter wissen",
     search: "Zoek op naam, nummer, e-mail", stay_from: "Verblijf van", stay_to: "tot", from_today: "Vanaf vandaag",
     c_arrival: "Aankomst", c_departure: "Vertrek", c_number: "Nummer", c_guest: "Gast", c_pers: "Pers.",
-    c_room: "Kamer", c_via: "Via", c_booked: "Geboekt", c_added: "Toegevoegd", c_updated: "Bijgewerkt", c_form: "Formulier", c_contact: "Contact", c_messages: "Berichten",
+    c_room: "Kamer", c_via: "Via", c_flow: "Workflow", c_booked: "Geboekt", c_added: "Toegevoegd", c_updated: "Bijgewerkt", c_form: "Formulier", c_contact: "Contact", c_messages: "Berichten",
     yes: "ja", no: "nee", none: "geen", count: n => `${n} reservaties`, no_res: "Geen reservaties",
     hours_a: "Nieuwe reservaties van de laatste", hours_b: "uur", run: "Robot nu draaien",
     r_start: "Start", r_duration: "Duur", r_task: "Taak", r_result: "Resultaat", r_found: "Gevonden", r_new: "Nieuw", r_error: "Opmerking",
@@ -100,14 +103,17 @@ const T = {
     pay_none: "none", pay_open_amount: "open amount", pay_city_tax: "city tax",
     c_not_cancelled: "not cancelled", c_form_completed: "form filled in", c_form_not_completed: "form not filled in",
     c_paid: "paid", c_checked_in: "checked in", c_has_email: "e-mail known", c_has_phone: "phone known",
-    wf_rules: "Recognised by", wf_sources: "Channel contains (comma separated)", wf_other: "All other channels",
+    wf_rules: "Recognised by", wf_sources: "Via (Lighthouse) contains (comma separated)", wf_other: "All other values of Via",
     wf_paid_yes: "and fully paid", wf_paid_no: "and not (fully) paid",
-    wf_params: "Parameters (all flows)", wf_params_moved: "City tax and currency are under Settings > Hotel.", p_city_tax: "City tax", p_unit: "Per", unit_person_night: "person per night",
+    wf_params: "Parameters (all flows)", wf_params_moved: "City tax and currency are under Settings > Hotel.",
+    wf_seen: "Values of Via (Lighthouse) that now fall in this flow:", wf_seen_none: "No reservations in this flow yet.", p_city_tax: "City tax", p_unit: "Per", unit_person_night: "person per night",
     unit_person_stay: "person per stay", p_currency: "Currency", wf_not_ready: "not built yet (Salto)", wf_off: "off",
     returning: n => `returning (${n}×)`, mg_message: "Message", mg_time: "Time", short_confirmation: "Confirmation", short_reminder: "Reminder", short_access_code: "Code mail", mg_channel: "Channel", mg_to: "To",
     mg_title: (num, guest) => `Messages for ${guest} (${num})`, mg_click: "Click for all details",
     mg_plan: "Timeline", mg_attempts: "All attempts", mg_next: "next",
-    pl_sent: "sent", pl_failed: "failed", pl_planned: "planned", pl_due: "next run", pl_skipped: "skipped", pl_off: "not active", sb_open: "Send...", sb_other: "Other address...", sb_bad_email: "Invalid e-mail address", sb_bad_phone: "Invalid number (with country code, e.g. +32...)", src_test: "test address", src_form: "check-in form",
+    pl_sent: "sent", pl_failed: "failed", pl_planned: "planned", pl_due: "next run", pl_skipped: "skipped", pl_off: "not active", sb_open: "Send", sb_again: "Send again",
+    rss_before_start: "before start date", rss_booked_late: "booked too late", rss_later_due: "later mail already due",
+    rss_window_passed: "moment passed", rss_messaging_off: "messages off", rss_disabled: "step off", rss_not_ready: "not built yet", sb_other: "Other address...", sb_bad_email: "Invalid e-mail address", sb_bad_phone: "Invalid number (with country code, e.g. +32...)", src_test: "test address", src_form: "check-in form",
     src_form_extra: "extra, check-in form", src_relay: "relay address", src_profile: "guest profile", src_used: "used before", sb_to: "to", sb_go: "Send", sb_off: "(not active yet)", send_to: "Send to...", send_to_ask: "Send to which e-mail address (or mobile number with +32...)? It is saved with the reservation.", ct_add: "Add e-mail address or mobile number", ct_email: "e-mail address", ct_phone: "mobile number with country code (+32...)", env_to_prd: "To PRD", env_bar_tst: "TEST ENVIRONMENT (TST): messages only go to the test address, never to guests",
     env_bar_prd: "PRODUCTION (PRD): messages go to real guests", env_to_tst: "To TST",
     env_confirm_prd: "Switch to PRODUCTION? Messages there go to real guests.", env_confirm_tst: "Switch to the test environment (TST)?", pl_not_sent: "not sent", relay_hint: "Relay address of the booking platform, not the guest's own address.", relay_kept: "Relay address of the booking platform. Kept, but the guest's own address from the check-in form takes precedence.", mg_test_addr: "test address", mg_for: "meant for", tab_hotel: "Hotel",
@@ -126,7 +132,7 @@ const T = {
     chr_muted: "switched off for this guest", chr_phone_off: "not active yet (Twilio)", chr_fallback: "only if WhatsApp fails",
     rs_disabled: "step is off", rs_messaging_off: "messages are off in this environment", rs_before_start: "not automatic: reservation came in before the messages start date (Settings > Hotel > Messages > From)",
     rs_booked_late: "booked too late", rs_later_due: "a later mail is already due", rs_not_ready: "not built yet",
-    rs_no_contact: "No e-mail address or mobile number in Lighthouse. You can still send: click Send... at a message and type an address.", rs_window_passed: "moment passed", rs_condition: "condition not met",
+    rs_no_contact: "No e-mail address or mobile number in Lighthouse. You can still send: click Send at a message and pick or type an address.", rs_window_passed: "moment passed", rs_condition: "condition not met",
     g_msgs: "Messages", g_mute_hint: "Unchecked: never use this channel for this guest",
     st_sent: "sent", st_failed: "failed", st_delivered: "delivered", st_read: "read", st_undelivered: "not delivered", show_guest: "Show guest data", show_res: "Show this guest's reservations",
     g_update: "Synchronize", g_busy: "Working...", g_done: d => `${d.linked} linked, ${d.counted} stays and ${d.cancellations} cancellations counted, ${d.reservations_deleted} old reservations and ${d.guests_deleted} guests deleted`,
@@ -139,7 +145,7 @@ const T = {
     m_confirm: "Merge these two guests into one?", reset: "Clear filter",
     search: "Search name, number, e-mail", stay_from: "Stay from", stay_to: "to", from_today: "From today",
     c_arrival: "Arrival", c_departure: "Departure", c_number: "Number", c_guest: "Guest", c_pers: "Pers.",
-    c_room: "Room", c_via: "Via", c_booked: "Booked", c_added: "Added", c_updated: "Updated", c_form: "Form", c_contact: "Contact", c_messages: "Messages",
+    c_room: "Room", c_via: "Via", c_flow: "Workflow", c_booked: "Booked", c_added: "Added", c_updated: "Updated", c_form: "Form", c_contact: "Contact", c_messages: "Messages",
     yes: "yes", no: "no", none: "none", count: n => `${n} reservations`, no_res: "No reservations",
     hours_a: "New reservations of the last", hours_b: "hours", run: "Run robot now",
     r_start: "Start", r_duration: "Duration", r_task: "Task", r_result: "Result", r_found: "Found", r_new: "New", r_error: "Note",
@@ -324,16 +330,19 @@ function showMessages(id) {
         cls = "off";
       }
       const title = [c.to, last && stamp(last.at), last && last.error, last && last.note].filter(Boolean).join(" · ");
-      const canSend = READY.includes(p.step) && c.reason !== "phone_off" && c.to;
-      const btn = canSend ? `<button type="button" class="resend" title="${esc(last ? t("rs_again") : t("rs_now"))}" data-step="${esc(p.step)}" data-ch="${esc(ch)}" data-to="${esc(c.to)}">&#8635;</button>` : "";
-      return `<span class="tag ch ${cls}" title="${esc(title)}">${esc(t(CH[ch] || ch))}${nr > 1 ? " 2" : ""}: ${esc(txt)}${btn}</span>`;
+      // Alleen de toestand; (opnieuw) versturen gebeurt met de knop rechts van de stap
+      return `<span class="tag ch ${cls}" title="${esc(title)}">${esc(t(CH[ch] || ch))}${nr > 1 ? " 2" : ""}: ${esc(txt)}</span>`;
     }).join("");
-    return `<li class="pl-${p.state}"><span class="dot"></span><strong>${esc(stepShort(p.step))}</strong>
-      <span class="muted">${esc(when)}</span> <span class="tag pl">${esc(t("pl_" + p.state))}</span>
-      ${p.reason ? `<span class="muted">${esc(reasonText(p.reason))}</span>` : ""}
+    // Kop van de stap op één lijn: naam, datum, toestand, korte reden (volledig bij aanwijzen), rechts de knop Versturen
+    const sendable = READY.includes(p.step);
+    return `<li class="pl-${p.state}"><span class="dot"></span>
+      <div class="pl-head"><strong>${esc(stepShort(p.step))}</strong>
+        <span class="muted">${esc(when)}</span> <span class="tag pl">${esc(t("pl_" + p.state))}</span>
+        ${p.reason ? `<span class="muted reason" title="${esc(reasonText(p.reason))}">${esc(reasonShort(p.reason))}</span>` : ""}
+        <span class="sp"></span>
+        ${sendable ? `<button type="button" class="send-open" data-step="${esc(p.step)}">${esc(t(sent.length ? "sb_again" : "sb_open"))}</button>` : ""}</div>
       ${chips ? `<div class="chs">${chips}</div>` : ""}
-      ${READY.includes(p.step) ? `<button type="button" class="link send-open" data-step="${esc(p.step)}">${esc(t("sb_open"))}</button>
-        <div class="send-bar" data-bar="${esc(p.step)}" hidden></div>` : ""}</li>`;
+      ${sendable ? `<div class="send-bar" data-bar="${esc(p.step)}" hidden></div>` : ""}</li>`;
   }).join("");
   $("#msgs-attempts").hidden = !r.messages.length;
   // Geen adres: één keer melden (niet bij elke stap); versturen kan wel via de balk hieronder
@@ -448,6 +457,25 @@ function sendBar(r, step, bar) {
   };
 }
 
+// Eerste kolommen vast bij horizontaal scrollen (aankomst, vertrek, nummer, gast)
+function stickColumns(table, n) {
+  if (!table) return;
+  const heads = [...table.querySelectorAll("thead th")].slice(0, n);
+  let left = 0;
+  heads.forEach((th, i) => {
+    const x = left;
+    table.querySelectorAll(`tr > :nth-child(${i + 1})`).forEach(c => { c.classList.add("stick"); c.style.left = x + "px"; c.classList.toggle("stick-last", i === n - 1); });
+    left += th.getBoundingClientRect().width;
+  });
+}
+window.addEventListener("resize", () => { stickColumns($("#res")?.closest("table"), 4); stickColumns($("#guests")?.closest("table"), 1); });
+
+// Korte reden in de tijdlijn (de volledige uitleg staat bij aanwijzen)
+function reasonShort(reason) {
+  if (reason.startsWith("condition:")) return t("rs_condition");
+  return t("rss_" + reason) || reasonText(reason);
+}
+
 function reasonText(reason) {
   if (reason.startsWith("condition:")) return `${t("rs_condition")}: ${reason.slice(10).split(",").map(c => t("c_" + c) || c).join(", ")}`;
   return t("rs_" + reason) || reason;
@@ -546,6 +574,7 @@ function renderGuests() {
     await get(`/api/monitor/${$("#hotel").value}/guests?action=channels&a=${encodeURIComponent(id)}&muted=${muted.join(",")}`, { method: "POST" });
   });
   renderMatches();
+  stickColumns($("#guests").closest("table"), 1);
 }
 
 function renderMatches() {
@@ -598,14 +627,15 @@ function render() {
     <tr class="${r.status === "cancelled" ? "cancelled" : ""}">
       <td>${day(r.arrival)}</td><td>${day(r.departure)}</td>
       <td class="nowrap">${esc(r.booking_number)}${r.lighthouse_url ? ` <a class="lh" href="${esc(r.lighthouse_url)}" target="_blank" rel="noopener" title="${esc(t("open_lh"))}">${ICON_LH}</a>` : ""}</td><td>${r.guest_id && guestById(r.guest_id) ? `<a href="#" class="jump" data-guest="${esc(r.guest_id)}" title="${esc(t("show_guest"))}">${ICON_GUEST} ${esc(r.guest)}</a>` : esc(r.guest)}${r.guest_stays ? ` <span class="tag back">${esc(t("returning", r.guest_stays))}</span>` : ""}</td><td>${esc(r.guests ?? "")}</td>
-      <td>${esc(r.rooms.join(", ") || r.room_type)}</td><td>${esc(r.source)}</td><td>${esc(r.pms_status)}</td>
+      <td>${esc(r.rooms.join(", ") || r.room_type)}</td><td>${esc(r.source)}</td><td><span class="tag flow">${esc(t("flow_" + r.flow) || r.flow)}</span></td><td>${esc(r.pms_status)}</td>
       <td>${stamp(r.booked_at)}</td><td>${stamp(r.added_at)}</td><td>${stamp(r.updated_at)}</td>
       <td>${r.checkin_completed_at ? `<span class="ok">${t("yes")}</span> ${stamp(r.checkin_completed_at)}` : `<span class="muted">${t("no")}</span>`}</td>
       <td class="wrap">${contactLines(r)}</td>
       <td class="wrap">${msgSummary(r)}</td>
-    </tr>`).join("") || `<tr><td colspan="14" class="muted">${t("no_res")}</td></tr>`;
+    </tr>`).join("") || `<tr><td colspan="15" class="muted">${t("no_res")}</td></tr>`;
   document.querySelectorAll("#res a[data-guest]").forEach(a => a.onclick = e => { e.preventDefault(); openGuest(a.dataset.guest); });
   document.querySelectorAll("#res a[data-msgs]").forEach(a => a.onclick = e => { e.preventDefault(); showMessages(a.dataset.msgs); });
+  stickColumns($("#res").closest("table"), 4);
 }
 
 async function loadRuns() {
@@ -847,6 +877,7 @@ function renderSide(flow, c) {
     : `<p>${esc(t("wf_other"))} ${esc(t(flow.paid ? "wf_paid_yes" : "wf_paid_no"))}</p>`;
   $("#wf-side").innerHTML = `
     <h3>${esc(t("wf_rules"))}</h3>${rule}
+    ${(wf.seen_sources?.[wfFlow] || []).length ? `<p class="small"><span class="lbl">${esc(t("wf_seen"))}</span><br>${wf.seen_sources[wfFlow].map(([v, n]) => `<span class="tag">${esc(v)} (${n})</span>`).join(" ")}</p>` : `<p class="muted small">${esc(t("wf_seen_none"))}</p>`}
     <p class="muted small">${esc(t("wf_params_moved"))}</p>`;
   const src = $("#wf-sources");
   if (src) src.onchange = () => { flow.sources = src.value.split(",").map(x => x.trim()).filter(Boolean); setDirty(); };

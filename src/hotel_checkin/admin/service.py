@@ -80,6 +80,7 @@ def reservations(hotel_id: str) -> list[dict]:
             "room_type": r.room_type or "",
             "rooms": r.rooms,
             "source": r.source or "",
+            "flow": workflow.flow_for(hotel_id, r, cfg),  # welke workflow: volgens "Via" (en betaalstatus)
             "pms_status": r.pms_status or "",
             "status": r.status.value,
             "booked_at": r.booked_at.isoformat() if r.booked_at else "",
@@ -250,7 +251,14 @@ def workflow_view(hotel_id: str) -> dict:
     from hotel_checkin.core import workflow
     from hotel_checkin.processes import send_messages
 
-    return {**workflow.config(hotel_id), "ready": list(send_messages.ready_steps(hotel_id)), "choices": {
+    cfg = workflow.config(hotel_id)
+    # Welke waarden van "Via" (Lighthouse) bij welke flow terechtkomen, uit de bewaarde reservaties
+    seen: dict[str, dict[str, int]] = {f: {} for f in workflow.FLOWS}
+    for r in repo.list_reservations(hotel_id):
+        flow, via = workflow.flow_for(hotel_id, r, cfg), r.source or "?"
+        seen[flow][via] = seen[flow].get(via, 0) + 1
+    return {**cfg, "ready": list(send_messages.ready_steps(hotel_id)),
+            "seen_sources": {f: sorted(v.items(), key=lambda kv: -kv[1]) for f, v in seen.items()}, "choices": {
         "flows": list(workflow.FLOWS), "when": list(workflow.WHEN), "channels": list(workflow.CHANNELS),
         "pay": list(workflow.PAY), "conditions": list(workflow.CONDITIONS), "steps": list(workflow.STEP_TYPES),
         "city_tax_units": list(workflow.CITY_TAX_UNITS),

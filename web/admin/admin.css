@@ -127,7 +127,7 @@ ul.plan li.pl-sent .dot { background: #2E9E5B; border-color: #2E9E5B; }
 ul.plan li.pl-failed .dot { background: var(--err); border-color: var(--err); }
 ul.plan li.pl-planned .dot, ul.plan li.pl-due .dot { border-color: #3E63DD; }
 ul.plan li.pl-due .dot { background: #3E63DD; }
-ul.plan li.pl-skipped > :not(.chs):not(.send-open):not(.send-bar), ul.plan li.pl-off > :not(.chs):not(.send-open):not(.send-bar) { opacity: 0.6; }
+ul.plan li.pl-skipped .pl-head > :not(.send-open), ul.plan li.pl-off .pl-head > :not(.send-open), ul.plan li.pl-skipped .dot, ul.plan li.pl-off .dot { opacity: 0.6; }
 .pl-sent .tag.pl { background: #E8F5EC; color: #1E6B3A; }
 .pl-failed .tag.pl { background: #F6E3E3; color: var(--err); }
 .pl-planned .tag.pl, .pl-due .tag.pl { background: #EAF0FF; color: #2B3F8C; }
@@ -215,8 +215,17 @@ button.send-to:hover { background: #EAF0FF; }
 .send-bar .sb-pick { flex: 0 1 auto; min-width: 0; max-width: 340px; width: auto; }
 .send-bar .sb-to[hidden] { display: none; }
 .send-bar[hidden] { display: none; }
-ul.plan .send-open { font-size: 12px; margin-left: 2px; }
+ul.plan .pl-head { display: flex; align-items: center; gap: 6px; min-height: 26px; }
+ul.plan .pl-head .sp { flex: 1; }
+ul.plan .pl-head .reason { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: help; }
+ul.plan .send-open { font-size: 12px; padding: 3px 12px; border: 1px solid #3E63DD; color: #3E63DD; background: #fff; border-radius: 4px; cursor: pointer; white-space: nowrap; }
+ul.plan .send-open:hover { background: #EAF0FF; }
 /* Lange tabellen: eigen scrollvlak in het venster, zodat de horizontale schuifbalk altijd zichtbaar is;
    de kolomtitels blijven staan bij het scrollen */
 .table-wrap { overflow: auto; max-height: calc(100vh - 230px); border-top: 1px solid var(--line); }
 .table-wrap thead th { position: sticky; top: 0; background: #fff; z-index: 1; box-shadow: 0 1px 0 var(--line); }
+/* Vaste eerste kolommen */
+.table-wrap .stick { position: sticky; background: #fff; z-index: 1; }
+.table-wrap thead th.stick { z-index: 3; }
+.table-wrap .stick-last { box-shadow: 2px 0 0 var(--line); }
+.tag.flow { background: #EAF0FF; color: #2B3F8C; white-space: nowrap; }
