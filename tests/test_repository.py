@@ -163,3 +163,22 @@ def test_delete_robot_runs_all_or_per_task():
         repo.log_robot_run("lucca", task, now, True)
     assert repo.delete_robot_runs("lucca", "meldingen") == 1
     assert repo.delete_robot_runs("lucca") == 2 and repo.robot_runs("lucca") == []
+
+
+def test_form_data_not_overwritten_by_stale_copy():
+    from datetime import date, timedelta
+
+    from hotel_checkin.core.models import Guest, Reservation
+    from hotel_checkin.guests import repository as repo
+
+    repo.use_memory_store()
+    arr = date.today() + timedelta(days=8)
+    repo.save_reservation(Reservation("lucca", "race1", Guest("Caner", "Adnan", email="ac.1@guest.booking.com"), arr,
+                                      arr + timedelta(days=3)))
+    stale = repo.get_reservation("lucca", "race1")  # de robot leest...
+    repo.mark_checkin_completed("lucca", "race1", "caner@elbonet.be", None, "en")  # ...de gast vult in...
+    stale.rooms = ["12"]
+    repo.save_reservation(stale)  # ...de robot bewaart zijn oude kopie
+    r = repo.get_reservation("lucca", "race1")
+    assert r.guest.email == "caner@elbonet.be" and r.checkin_completed_at and r.rooms == ["12"]
+    assert r.guest.relay_email == "ac.1@guest.booking.com"

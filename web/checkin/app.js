@@ -131,6 +131,20 @@ const API = window.CHECKIN_API || "";
     })
   );
 
+  // Bewaren: bij een serverfout (5xx) of geen verbinding nog twee keer proberen, zodat de gast
+  // niet per ongeluk zonder bevestiging blijft zitten (de server is soms even traag bij het opstarten).
+  async function postWithRetry(url, opts, tries = 3) {
+    for (let i = 1; ; i++) {
+      try {
+        const res = await fetch(url, opts);
+        if (res.status < 500 || i >= tries) return res;
+      } catch (e) {
+        if (i >= tries) throw e;
+      }
+      await new Promise((r) => setTimeout(r, 1500 * i));
+    }
+  }
+
   $("form").addEventListener("submit", async (ev) => {
     ev.preventDefault();
     ["err-email", "err-phone", "err-backup_email", "err-backup_phone", "err-general"].forEach((id) => ($(id).hidden = true));
@@ -138,7 +152,7 @@ const API = window.CHECKIN_API || "";
     btn.disabled = true;
     btn.textContent = t("saving");
     try {
-      const res = await fetch(API + "/api/checkin/" + encodeURIComponent(token), {
+      const res = await postWithRetry(API + "/api/checkin/" + encodeURIComponent(token), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

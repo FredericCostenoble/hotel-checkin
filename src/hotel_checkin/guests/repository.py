@@ -201,12 +201,13 @@ def save_reservation(reservation: Reservation) -> Reservation:
     if not reservation.token:
         existing = get_reservation(reservation.hotel_id, reservation.reservation_id)
         reservation.token = existing.token if existing and existing.token else secrets.token_urlsafe(24)
-    entity = _to_entity(reservation)
     table = _table(T_RESERVATIONS)
     try:
-        old = dict(table.get_entity(entity["PartitionKey"], entity["RowKey"]))
+        old = dict(table.get_entity(_key(reservation.hotel_id), _key(reservation.reservation_id)))
     except Exception:  # noqa: BLE001 - bestaat nog niet
         old = None
+    _keep_form(reservation, old)
+    entity = _to_entity(reservation)
     entity["created_at"] = old["created_at"] if old and old.get("created_at") else entity["updated_at"]
     # updated_at alleen verzetten als er echt iets veranderde (de robot bewaart ook ongewijzigde rijen)
     if old and old.get("updated_at") and all(
@@ -217,6 +218,24 @@ def save_reservation(reservation: Reservation) -> Reservation:
     reservation.created_at = datetime.fromisoformat(entity["created_at"])
     reservation.updated_at = datetime.fromisoformat(entity["updated_at"])
     return reservation
+
+
+_FORM_FIELDS = ("email", "phone", "backup_email", "backup_phone", "relay_email", "language")
+
+
+def _keep_form(reservation: Reservation, old: dict | None) -> None:
+    """Wat de gast in het check-in-formulier invulde, gaat altijd voor. Een proces dat de reservatie
+    las vóór de gast het formulier indiende (bv. de robot, die minuten bezig is) mag het niet
+    overschrijven met oudere gegevens."""
+    if not old or not old.get("checkin_completed_at"):
+        return
+    stored = datetime.fromisoformat(old["checkin_completed_at"])
+    if reservation.checkin_completed_at and reservation.checkin_completed_at >= stored:
+        return  # dit is de nieuwste formulierversie (bv. net ingediend)
+    fresh = _from_entity(old)
+    reservation.checkin_completed_at = fresh.checkin_completed_at
+    for field in _FORM_FIELDS:
+        setattr(reservation.guest, field, getattr(fresh.guest, field))
 
 
 def delete_reservation(hotel_id: str, reservation_id: str) -> None:
