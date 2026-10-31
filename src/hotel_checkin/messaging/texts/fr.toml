@@ -187,6 +187,16 @@ link = "{checkin_link}"
 type = "text"
 alineas = ["Grâce à ces données, nous vous enverrons avant votre arrivée toutes les informations pratiques, dont un code PIN personnel pour la porte d'entrée et la porte de votre chambre pendant votre séjour. Vous pourrez ainsi entrer à tout moment, même en dehors des heures d'ouverture de la réception."]
 
+[[modules.checkin_form_done]]   # formulier al ingevuld: alleen een link om aan te passen
+type = "text"
+titel = "Enregistrement"
+alineas = ["Merci, nous avons bien reçu vos données d'enregistrement. Quelque chose a changé ? Vous pouvez toujours les modifier."]
+
+[[modules.checkin_form_done]]
+type = "button"
+tekst = "Modifier mes données"
+link = "{checkin_link}"
+
 [[modules.code]]
 type = "highlight"
 titel = "Votre code PIN personnel"

@@ -92,7 +92,7 @@ def checkin_link(hotel_id: str, token: str, language: str | None = None) -> str:
     return url
 
 
-MODULES = ("code", "reservation", "checkin_form", "pay", "practical_info")  # volgorde in de mail: pincode altijd bovenaan
+MODULES = ("code", "reservation", "checkin_form", "checkin_form_done", "pay", "practical_info")  # volgorde in de mail: pincode altijd bovenaan
 
 
 def compose_blocks(texts: dict, message: str, content: dict | None, pay: str = "none") -> list[dict]:

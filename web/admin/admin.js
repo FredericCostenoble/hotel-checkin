@@ -329,12 +329,11 @@ function showMessages(id) {
     const targets = new Map();
     (p.channels || []).forEach(c => targets.set(key(c.channel, c.to), c));
     mine.forEach(m => { if (!targets.has(key(m.channel, m.to))) targets.set(key(m.channel, m.to), { channel: m.channel, to: m.to, reason: "" }); });
-    const firstOf = {};
+
     const chips = [...targets.values()].map(c => {
       const ch = c.channel;
       const tries = mine.filter(m => key(m.channel, m.to) === key(ch, c.to));
       const last = tries[tries.length - 1];
-      const nr = (firstOf[ch] = (firstOf[ch] || 0) + 1);
       let cls = "", txt;
       if (last) {
         cls = last.ok ? "ok" : "fail";
@@ -349,7 +348,8 @@ function showMessages(id) {
       }
       const title = [c.to, last && stamp(last.at), last && last.error, last && last.note].filter(Boolean).join(" · ");
       // Alleen de toestand; (opnieuw) versturen gebeurt met de knop rechts van de stap
-      return `<span class="tag ch ${cls}" title="${esc(title)}">${esc(t(CH[ch] || ch))}${nr > 1 ? " 2" : ""}: ${esc(txt)}</span>`;
+      // Kanaal en adres (het adres kort; volledig bij aanwijzen)
+      return `<span class="tag ch ${cls}" title="${esc(title)}">${esc(t(CH[ch] || ch))} <span class="addr">${esc(c.to || "")}</span>: ${esc(txt)}</span>`;
     }).join("");
     // Kop van de stap op één lijn: naam, datum, toestand, korte reden (volledig bij aanwijzen), rechts de knop Versturen
     const sendable = READY.includes(p.step);

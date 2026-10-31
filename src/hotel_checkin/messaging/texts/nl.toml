@@ -189,6 +189,16 @@ link = "{checkin_link}"
 type = "text"
 alineas = ["Via deze gegevens sturen we u voor uw aankomst alle praktische informatie, waaronder een persoonlijke pincode voor de voordeur en uw kamerdeur tijdens uw verblijf. Zo kunt u op elk moment binnen, ook buiten de openingsuren van de receptie."]
 
+[[modules.checkin_form_done]]   # formulier al ingevuld: alleen een link om aan te passen
+type = "text"
+titel = "Check-in"
+alineas = ["Bedankt, we hebben uw check-in-gegevens goed ontvangen. Is er iets veranderd? U kunt ze altijd aanpassen."]
+
+[[modules.checkin_form_done]]
+type = "button"
+tekst = "Mijn gegevens aanpassen"
+link = "{checkin_link}"
+
 [[modules.code]]
 type = "highlight"
 titel = "Uw persoonlijke pincode"

@@ -112,10 +112,12 @@ def pay_data(hotel_id: str, r: Reservation, cfg: dict, open_amount: float | None
 
 
 def mail_content(step: workflow.Step, r: Reservation) -> dict[str, bool]:
-    """Inhoud van de mail voor deze gast: geen link naar het formulier als het al ingevuld is."""
+    """Inhoud van de mail voor deze gast. Formulier al ingevuld: in plaats van de vraag om het in te
+    vullen een korte bevestiging met een knop om de gegevens aan te passen."""
     content = step.mail_content()
-    if r.checkin_completed_at:
+    if r.checkin_completed_at and content.get("checkin_form"):
         content["checkin_form"] = False
+        content["checkin_form_done"] = True
     return content
 
 
