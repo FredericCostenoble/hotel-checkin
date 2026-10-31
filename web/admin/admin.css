@@ -127,7 +127,7 @@ ul.plan li.pl-sent .dot { background: #2E9E5B; border-color: #2E9E5B; }
 ul.plan li.pl-failed .dot { background: var(--err); border-color: var(--err); }
 ul.plan li.pl-planned .dot, ul.plan li.pl-due .dot { border-color: #3E63DD; }
 ul.plan li.pl-due .dot { background: #3E63DD; }
-ul.plan li.pl-skipped, ul.plan li.pl-off { opacity: 0.6; }
+ul.plan li.pl-skipped > :not(.chs), ul.plan li.pl-off > :not(.chs) { opacity: 0.6; }
 .pl-sent .tag.pl { background: #E8F5EC; color: #1E6B3A; }
 .pl-failed .tag.pl { background: #F6E3E3; color: var(--err); }
 .pl-planned .tag.pl, .pl-due .tag.pl { background: #EAF0FF; color: #2B3F8C; }

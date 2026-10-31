@@ -33,7 +33,7 @@ const T = {
     returning: n => `terugkerend (${n}×)`, mg_message: "Bericht", mg_time: "Tijdstip", short_confirmation: "Bevestiging", short_reminder: "Herinnering", short_access_code: "Code-mail", mg_channel: "Kanaal", mg_to: "Naar",
     mg_title: (num, guest) => `Berichten voor ${guest} (${num})`, mg_click: "Klik voor alle details",
     mg_plan: "Tijdlijn", mg_attempts: "Alle pogingen", mg_next: "volgt",
-    pl_sent: "verstuurd", pl_failed: "mislukt", pl_planned: "gepland", pl_due: "volgende run", pl_skipped: "valt weg", pl_off: "niet actief", relay_hint: "Doorstuuradres van het boekingsplatform, geen eigen adres van de gast.", relay_kept: "Doorstuuradres van het boekingsplatform. Bewaard, maar het eigen adres uit het check-in-formulier gaat voor.", mg_test_addr: "testadres", mg_for: "bedoeld voor", tab_hotel: "Hotel",
+    pl_sent: "verstuurd", pl_failed: "mislukt", pl_planned: "gepland", pl_due: "volgende run", pl_skipped: "valt weg", pl_off: "niet actief", pl_not_sent: "niet verstuurd", relay_hint: "Doorstuuradres van het boekingsplatform, geen eigen adres van de gast.", relay_kept: "Doorstuuradres van het boekingsplatform. Bewaard, maar het eigen adres uit het check-in-formulier gaat voor.", mg_test_addr: "testadres", mg_for: "bedoeld voor", tab_hotel: "Hotel",
     hs_intro: "Gegevens en instellingen van het hotel. Standaard uit het hotelbestand; wat u hier wijzigt, gaat voor (alleen in deze omgeving).",
     hs_default: "standaard", hs_env: "In deze omgeving vastgelegd in Key Vault of de Function App: die waarde gaat voor.",
     hs_add: "Toevoegen", hs_key: "naam", hs_value: "waarde", hs_reset_confirm: "Alle instellingen terug naar het hotelbestand? Alle wijzigingen gaan verloren.",
@@ -104,7 +104,7 @@ const T = {
     returning: n => `returning (${n}×)`, mg_message: "Message", mg_time: "Time", short_confirmation: "Confirmation", short_reminder: "Reminder", short_access_code: "Code mail", mg_channel: "Channel", mg_to: "To",
     mg_title: (num, guest) => `Messages for ${guest} (${num})`, mg_click: "Click for all details",
     mg_plan: "Timeline", mg_attempts: "All attempts", mg_next: "next",
-    pl_sent: "sent", pl_failed: "failed", pl_planned: "planned", pl_due: "next run", pl_skipped: "skipped", pl_off: "not active", relay_hint: "Relay address of the booking platform, not the guest's own address.", relay_kept: "Relay address of the booking platform. Kept, but the guest's own address from the check-in form takes precedence.", mg_test_addr: "test address", mg_for: "meant for", tab_hotel: "Hotel",
+    pl_sent: "sent", pl_failed: "failed", pl_planned: "planned", pl_due: "next run", pl_skipped: "skipped", pl_off: "not active", pl_not_sent: "not sent", relay_hint: "Relay address of the booking platform, not the guest's own address.", relay_kept: "Relay address of the booking platform. Kept, but the guest's own address from the check-in form takes precedence.", mg_test_addr: "test address", mg_for: "meant for", tab_hotel: "Hotel",
     hs_intro: "Hotel details and settings. Default from the hotel file; what you change here takes precedence (in this environment only).",
     hs_default: "default", hs_env: "Set for this environment in Key Vault or the Function App: that value takes precedence.",
     hs_add: "Add", hs_key: "name", hs_value: "value", hs_reset_confirm: "Reset all settings to the hotel file? All changes will be lost.",
@@ -308,7 +308,11 @@ function showMessages(id) {
       } else if (["sent", "failed", "planned", "due"].includes(p.state)) {
         txt = c.reason ? t("chr_" + c.reason) : t("pl_" + (p.state === "sent" || p.state === "failed" ? "not_tried" : p.state));
         cls = c.reason ? "off" : "todo";
-      } else return "";
+      } else {
+        // Niet automatisch (bv. reservatie van voor de start, voorwaarde niet voldaan): wel met de hand te versturen
+        txt = c.reason && c.reason !== "fallback" ? t("chr_" + c.reason) : t("pl_not_sent");
+        cls = "off";
+      }
       const title = [c.to, last && stamp(last.at), last && last.error, last && last.note].filter(Boolean).join(" · ");
       const canSend = READY.includes(p.step) && c.reason !== "phone_off" && c.to;
       const btn = canSend ? `<button type="button" class="resend" title="${esc(last ? t("rs_again") : t("rs_now"))}" data-step="${esc(p.step)}" data-ch="${esc(ch)}" data-to="${esc(c.to)}">&#8635;</button>` : "";
@@ -317,7 +321,7 @@ function showMessages(id) {
     return `<li class="pl-${p.state}"><span class="dot"></span><strong>${esc(stepShort(p.step))}</strong>
       <span class="muted">${esc(when)}</span> <span class="tag pl">${esc(t("pl_" + p.state))}</span>
       ${p.reason ? `<span class="muted">${esc(reasonText(p.reason))}</span>` : ""}
-      ${chips ? `<div class="chs">${chips}</div>` : ""}</li>`;
+      ${chips ? `<div class="chs">${chips}</div>` : (p.channels || []).length ? "" : `<div class="muted small">${esc(t("rs_no_contact"))}</div>`}</li>`;
   }).join("");
   $("#msgs-attempts").hidden = !r.messages.length;
   document.querySelectorAll("#msgs-plan button.resend").forEach(b => b.onclick = async () => {
