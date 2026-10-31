@@ -213,3 +213,7 @@ button.send-to:hover { background: #EAF0FF; }
 .send-bar .sb-to[hidden] { display: none; }
 .send-bar[hidden] { display: none; }
 ul.plan .send-open { font-size: 12px; margin-left: 2px; }
+/* Lange tabellen: eigen scrollvlak in het venster, zodat de horizontale schuifbalk altijd zichtbaar is;
+   de kolomtitels blijven staan bij het scrollen */
+.table-wrap { overflow: auto; max-height: calc(100vh - 230px); border-top: 1px solid var(--line); }
+.table-wrap thead th { position: sticky; top: 0; background: #fff; z-index: 1; box-shadow: 0 1px 0 var(--line); }

@@ -35,7 +35,7 @@
       <button id="today" type="button" data-t="from_today"></button>
       <span id="count" class="muted"></span>
     </div>
-    <table>
+    <div class="table-wrap"><table>
       <thead id="res-head"><tr>
         <th data-sort="arrival" data-t="c_arrival"></th><th data-sort="departure" data-t="c_departure"></th>
         <th data-sort="booking_number" data-t="c_number"></th><th data-sort="guest" data-t="c_guest"></th>
@@ -46,7 +46,7 @@
         <th data-sort="email" data-t="c_contact"></th><th data-sort="messages" data-t="c_messages"></th>
       </tr></thead>
       <tbody id="res"></tbody>
-    </table>
+    </table></div>
   </section>
 
   <section id="tab-guests" hidden>
@@ -61,7 +61,7 @@
       <p class="muted" data-t="m_help"></p>
       <table><tbody id="matches"></tbody></table>
     </details>
-    <table>
+    <div class="table-wrap"><table>
       <thead id="g-head"><tr>
         <th data-gsort="name" data-t="c_guest"></th><th data-gsort="email" data-t="c_contact"></th>
         <th data-gsort="country" data-t="g_country"></th><th data-gsort="stays" data-t="g_stays"></th><th data-gsort="cancellations" data-t="g_cancelled"></th>
@@ -71,7 +71,7 @@
         <th data-gsort="reservations" data-t="tab_res"></th><th data-t="g_msgs"></th>
       </tr></thead>
       <tbody id="guests"></tbody>
-    </table>
+    </table></div>
   </section>
 
 </main>
