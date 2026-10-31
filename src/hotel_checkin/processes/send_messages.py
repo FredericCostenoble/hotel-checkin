@@ -364,7 +364,7 @@ def plan(hotel_id: str, r: Reservation, rows: list[dict], cfg: dict, ready: tupl
         channels.append({"channel": "sms", "to": to, "reason": "muted" if "sms" in muted else off or "fallback"})
     flow = workflow.flow_for(hotel_id, r, cfg)
     steps = workflow._steps_from(cfg, flow)
-    active = [s for s in steps if s.enabled]
+    active = [s for s in steps if s.enabled and s.step in ready]  # alleen wat echt verstuurd kan worden vervangt iets
     out = []
     for step in steps:
         mine = [m for m in rows if m["message_type"] == step.step]
@@ -421,13 +421,20 @@ def run(hotel_id: str, today: date | None = None) -> int:
             continue
         flow = workflow.flow_for(hotel_id, r, cfg)  # kanaal en betaalstatus
         all_steps = [s for s in workflow._steps_from(cfg, flow) if s.enabled]
-        for step in [s for s in all_steps if s.step in ready]:
+        # Alleen stappen die nu echt verstuurd kunnen worden, vervangen een eerdere stap
+        sendable = [s for s in all_steps if s.step in ready]
+        for step in sendable:
             if not workflow.is_due(step, r, today) or not step.conditions_met(r):
                 continue
-            if workflow.is_replaced(step, r, today, all_steps):
+            if workflow.is_replaced(step, r, today, sendable):
                 continue
             if step.step == "access_code" and not code_ready(hotel_id, r, failed):
                 continue
+            # Vervangt deze stap eerdere (late boeking)? Dan ook hun inhoud, als die nog niet verstuurd zijn
+            earlier = workflow.replaced_steps(step, r, today, sendable)
+            if earlier:
+                done = {m["message_type"] for m in guests.messages_for(hotel_id, r.reservation_id) if m["ok"]}
+                step = workflow.with_content_of(step, [s for s in earlier if s.step not in done])
             for channel, result in deliver(hotel_id, step, r, cfg):
                 label = f"{step.step} {channel} {r.booking_number or r.reservation_id[:8]}"
                 (sent if result.ok else failed).append(label + ("" if result.ok else f" ({result.error})"))

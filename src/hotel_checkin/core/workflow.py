@@ -30,7 +30,7 @@ lezen hem en beslissen daarmee wat wanneer gebeurt, en welke gegevens ze daarvoo
 from __future__ import annotations
 
 import copy
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass, field, replace
 from datetime import date, timedelta
 
 from hotel_checkin.core.hotels import load_hotel
@@ -261,7 +261,8 @@ def is_due(step: Step, r: Reservation, today: date) -> bool:
     if step.when == "after_booking":
         return today < r.departure  # niet meer als de gast al vertrokken is (laat ingelezen)
     if step.when == "days_before_arrival":
-        return step.due_date(r) <= today < r.arrival
+        # tot en met de aankomstdag: wie vandaag boekt voor vandaag krijgt nog de code
+        return step.due_date(r) <= today <= r.arrival
     if step.when == "days_after_departure":
         return step.due_date(r) <= today < step.due_date(r) + timedelta(days=AFTER_DEPARTURE_WINDOW)
     return False
@@ -286,6 +287,29 @@ def is_replaced(step: Step, r: Reservation, today: date, all_steps: list[Step]) 
         if is_due(later, r, today) and later.conditions_met(r) and not _booked_late(later, r):
             return True
     return False
+
+
+def replaced_steps(step: Step, r: Reservation, today: date, steps: list[Step]) -> list[Step]:
+    """Eerdere stappen die nu ook aan de beurt zijn maar wegvallen omdat deze stap ze vervangt
+    (bv. bij een late boeking: bevestiging en herinnering vallen weg voor de code-mail).
+    steps: alleen de stappen die echt verstuurd kunnen worden."""
+    return [s for s in steps if s is not step and is_due(s, r, today) and s.conditions_met(r)
+            and not _booked_late(s, r) and is_replaced(s, r, today, steps)
+            and step.when == "days_before_arrival"
+            and (s.when == "after_booking" or (s.when == step.when and s.days > step.days))]
+
+
+def with_content_of(step: Step, others: list[Step]) -> Step:
+    """Deze stap met ook de inhoud van de stappen die hij vervangt: de gast krijgt één mail, maar
+    mist niets (reservatie, link naar het check-in-formulier, betaalknop)."""
+    if not others:
+        return step
+    content = step.mail_content()
+    for other in others:
+        for key, on in other.mail_content().items():
+            content[key] = bool(content.get(key)) or bool(on)
+    pay = step.pay if step.pay != "none" else next((o.pay for o in others if o.pay != "none"), "none")
+    return replace(step, content=content, pay=pay)
 
 
 def detail_window_days(hotel_id: str) -> int:

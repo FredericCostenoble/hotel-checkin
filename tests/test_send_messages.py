@@ -77,16 +77,34 @@ def test_format_date():
     assert templates.format_date(d, "de") == "Samstag, 14. November 2026"
 
 
-def test_late_booking_gets_only_code_mail(setup, monkeypatch):
+def test_late_booking_prd_without_salto_gets_confirmation(setup, monkeypatch):
     _res("late", arrival_in=2)  # binnen het venster van access_code
-    # PRD zonder Salto: niets (geen bevestiging, geen herinnering; de code-mail volgt met Salto)
+    # PRD zonder Salto: de code-mail kan nog niet weg, dus vervangt ze de bevestiging niet
     monkeypatch.setattr(send_messages, "test_mode", lambda h: False)
-    assert send_messages.run("lucca") == 0
-    assert not repo.was_sent("lucca", "late", "confirmation")
-    # TST zonder Salto: meteen de code-mail, met XXXXXX en een opmerking
-    monkeypatch.setattr(send_messages, "test_mode", lambda h: True)
     assert send_messages.run("lucca") == 1
-    assert repo.was_sent("lucca", "late", "access_code") and not repo.was_sent("lucca", "late", "confirmation")
+    assert repo.was_sent("lucca", "late", "confirmation") and not repo.was_sent("lucca", "late", "access_code")
+
+
+def test_late_booking_one_mail_with_confirmation_content(setup, monkeypatch):
+    from hotel_checkin.core import workflow
+
+    _res("late2", arrival_in=1)  # TST zonder Salto: meteen de code-mail (XXXXXX)
+    bodies = []
+    real = send_messages.send_mail
+    monkeypatch.setattr(send_messages, "send_mail",
+                        lambda h, step, r, cfg, to: bodies.append(step.mail_content()) or real(h, step, r, cfg, to=to))
+    assert send_messages.run("lucca") == 1
+    assert repo.was_sent("lucca", "late2", "access_code") and not repo.was_sent("lucca", "late2", "confirmation")
+    # de code-mail kreeg de inhoud van de weggevallen bevestiging erbij
+    assert bodies[0]["code"] and bodies[0]["reservation"] and bodies[0]["checkin_form"]
+    step = next(s for s in workflow.steps("lucca", "booking") if s.step == "access_code")
+    assert not step.mail_content().get("checkin_form")  # de instelling zelf blijft ongewijzigd
+
+
+def test_booking_on_arrival_day_gets_code(setup):
+    _res("today", arrival_in=0)
+    assert send_messages.run("lucca") == 1
+    assert repo.was_sent("lucca", "today", "access_code")
 
 
 def test_code_mail_placeholder_in_test(setup):
