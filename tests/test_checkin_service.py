@@ -107,3 +107,27 @@ def test_relay_address_not_prefilled():
     r = repo.save_reservation(Reservation("lucca", "relay1", Guest("Jan", "Peeters", email="jpeete.123@guest.booking.com"),
                                           arr, arr + timedelta(days=1)))
     assert service.form_data(r.token)["email"] == ""
+
+
+def test_form_submission_kept_and_reapplied():
+    from datetime import date, timedelta
+
+    from hotel_checkin.checkin import service
+    from hotel_checkin.core.models import Guest, Reservation
+    from hotel_checkin.guests import repository as repo
+
+    repo.use_memory_store()
+    arr = date.today() + timedelta(days=8)
+    r = repo.save_reservation(Reservation("lucca", "fs1", Guest("Caner", "Adnan", email="ac.2@guest.booking.com"), arr,
+                                          arr + timedelta(days=3)))
+    ok, _ = service.submit(r.token, {"email": "caner@elbonet.be", "language": "en"})
+    assert ok and repo.form_submissions("lucca", "fs1")[0]["email"] == "caner@elbonet.be"
+    assert any(m["message_type"] == "checkin_form" for m in repo.messages_for("lucca", "fs1"))
+    # iets wist het adres en de bevestiging (bv. een fout): het vangnet zet het terug
+    broken = repo.get_reservation("lucca", "fs1")
+    entity = repo._to_entity(broken)
+    entity["email"], entity["checkin_completed_at"] = "ac.2@guest.booking.com", ""
+    repo._table(repo.T_RESERVATIONS).upsert_entity(entity)
+    assert service.reapply_forms("lucca") == 1
+    assert repo.get_reservation("lucca", "fs1").guest.email == "caner@elbonet.be"
+    assert service.reapply_forms("lucca") == 0

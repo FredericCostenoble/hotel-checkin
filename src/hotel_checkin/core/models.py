@@ -28,6 +28,7 @@ class Channel(str, Enum):
     SMS = "sms"
     WHATSAPP = "whatsapp"
     SALTO = "salto"  # pincode maken (logboek van de code-mail)
+    FORM = "form"  # de gast vulde het check-in-formulier in (logboek)
 
 
 @dataclass

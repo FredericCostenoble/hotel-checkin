@@ -148,12 +148,21 @@ def submit(token: str, form: dict) -> tuple[bool, dict]:
         return True, {}
 
     r = repo.get_by_token(token)
+    # Eerst de indiening zelf bewaren (vangnet): wat de gast invulde, gaat nooit verloren
+    repo.save_form_submission(r.hotel_id, r.reservation_id, {
+        "email": email, "phone": phones["phone"], "backup_email": backup_email or None,
+        "backup_phone": phones["backup_phone"], "language": language, "no_marketing": bool(form.get("no_marketing"))})
     if form.get("no_marketing"):
         repo.add_opt_out(r.hotel_id, email, "checkin_form")
     saved = repo.mark_checkin_completed(
         r.hotel_id, r.reservation_id, email, phones["phone"], language,
         backup_email=backup_email or None, backup_phone=phones["backup_phone"],
     )
+    # In het berichtenlog van de reservatie, zodat het in de monitor zichtbaar is
+    from hotel_checkin.core.models import Channel, SendResult
+
+    repo.log_message(r.hotel_id, r.reservation_id, "checkin_form",
+                     SendResult(Channel.FORM, email, True), note="check-in-formulier ingevuld door de gast")
     # De gast gaf zelf zijn gegevens: die gaan voor in het gastprofiel (en kunnen profielen samenbrengen)
     try:
         from hotel_checkin.processes import guest_profiles
@@ -165,3 +174,22 @@ def submit(token: str, form: dict) -> tuple[bool, dict]:
 
         logging.exception("gastprofiel niet bijgewerkt")
     return True, {}
+
+
+def reapply_forms(hotel_id: str) -> int:
+    """Vangnet: elke indiening van het formulier moet in de reservatie staan. Staat ze er niet (meer)
+    in, bv. door een fout bij het bijwerken, dan opnieuw toepassen. Geeft het aantal herstelde terug."""
+    from datetime import datetime
+
+    fixed = 0
+    for f in repo.all_form_submissions(hotel_id):
+        r = repo.get_reservation(hotel_id, f["reservation_id"]) if "reservation_id" in f else None
+        if r is None:
+            continue
+        submitted = datetime.fromisoformat(f["submitted_at"])
+        if r.checkin_completed_at and r.checkin_completed_at >= submitted and (r.guest.email or "") == (f.get("email") or ""):
+            continue
+        repo.mark_checkin_completed(hotel_id, r.reservation_id, f.get("email"), f.get("phone"), f.get("language"),
+                                    backup_email=f.get("backup_email"), backup_phone=f.get("backup_phone"))
+        fixed += 1
+    return fixed

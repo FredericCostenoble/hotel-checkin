@@ -43,6 +43,7 @@ T_OPTOUT = "MarketingOptOut"
 T_ROBOT = "RobotRuns"
 T_CONFIG = "HotelConfig"  # instellingen die in de monitor gewijzigd werden (bv. de workflow)
 T_STATE = "RobotState"  # kleine toestand per hotel, bv. tot waar de mailbox gelezen is
+T_FORMS = "CheckinForms"  # elke indiening van het check-in-formulier, nooit overschreven (vangnet)
 
 _client_factory = None  # alleen voor tests: functie die een tabelnaam krijgt en een tabel teruggeeft
 
@@ -218,6 +219,34 @@ def save_reservation(reservation: Reservation) -> Reservation:
     reservation.created_at = datetime.fromisoformat(entity["created_at"])
     reservation.updated_at = datetime.fromisoformat(entity["updated_at"])
     return reservation
+
+
+def save_form_submission(hotel_id: str, reservation_id: str, values: dict) -> str:
+    """Elke indiening van het formulier apart bewaren, vóór de reservatie bijgewerkt wordt.
+    Zo gaat wat de gast invulde nooit verloren, ook niet als het bijwerken mislukt."""
+    row = new_message_id()
+    _table(T_FORMS).upsert_entity({"PartitionKey": _msg_pk(hotel_id, reservation_id), "RowKey": row,
+                                   "hotel_id": hotel_id, "reservation_id": reservation_id,
+                                   "submitted_at": _now().isoformat(), "values": json.dumps(values)})
+    return row
+
+
+def form_submissions(hotel_id: str, reservation_id: str) -> list[dict]:
+    """Alle indieningen van het formulier voor deze reservatie, oudste eerst."""
+    pk = _msg_pk(hotel_id, reservation_id)
+    rows = list(_table(T_FORMS).query_entities(f"PartitionKey eq '{_q(pk)}'"))
+    rows.sort(key=lambda e: e["RowKey"])
+    return [{"submitted_at": e["submitted_at"], **json.loads(e["values"])} for e in rows]
+
+
+def all_form_submissions(hotel_id: str) -> list[dict]:
+    """Laatste indiening per reservatie van dit hotel (om na te kijken of alles verwerkt is)."""
+    latest: dict[str, dict] = {}
+    for e in _table(T_FORMS).query_entities(f"hotel_id eq '{_q(hotel_id)}'"):
+        if e["reservation_id"] not in latest or e["RowKey"] > latest[e["reservation_id"]]["_row"]:
+            latest[e["reservation_id"]] = {"_row": e["RowKey"], "reservation_id": e["reservation_id"],
+                                           "submitted_at": e["submitted_at"], **json.loads(e["values"])}
+    return list(latest.values())
 
 
 _FORM_FIELDS = ("email", "phone", "backup_email", "backup_phone", "relay_email", "language")

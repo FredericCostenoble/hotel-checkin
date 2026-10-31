@@ -31,7 +31,7 @@ const T = {
     wf_params: "Parameters (alle flows)", wf_params_moved: "Toeristenbelasting en munt staan bij Instellingen > Hotel.",
     wf_seen: "Waarden van Via (Lighthouse) die nu bij deze flow horen:", wf_seen_none: "Nog geen reservaties in deze flow.", p_city_tax: "Toeristenbelasting", p_unit: "Per", unit_person_night: "persoon per nacht",
     unit_person_stay: "persoon per verblijf", p_currency: "Munt", wf_not_ready: "nog niet gebouwd (Salto)", wf_off: "uit",
-    returning: n => `terugkerend (${n}×)`, mg_message: "Bericht", mg_time: "Tijdstip", short_confirmation: "Bevestiging", short_reminder: "Herinnering", short_access_code: "Code-mail", mg_channel: "Kanaal", mg_to: "Naar",
+    returning: n => `terugkerend (${n}×)`, mg_message: "Bericht", mg_time: "Tijdstip", short_confirmation: "Bevestiging", short_checkin_form: "Formulier ingevuld", ch_form: "formulier", short_reminder: "Herinnering", short_access_code: "Code-mail", mg_channel: "Kanaal", mg_to: "Naar",
     mg_title: (num, guest) => `Berichten voor ${guest} (${num})`, mg_click: "Klik voor alle details",
     mg_plan: "Tijdlijn", mg_attempts: "Alle pogingen", mg_next: "volgt",
     pl_sent: "verstuurd", pl_failed: "mislukt", pl_planned: "gepland", pl_due: "volgende run", pl_skipped: "valt weg", pl_off: "niet actief", sb_open: "Versturen", sb_again: "Opnieuw versturen",
@@ -108,7 +108,7 @@ const T = {
     wf_params: "Parameters (all flows)", wf_params_moved: "City tax and currency are under Settings > Hotel.",
     wf_seen: "Values of Via (Lighthouse) that now fall in this flow:", wf_seen_none: "No reservations in this flow yet.", p_city_tax: "City tax", p_unit: "Per", unit_person_night: "person per night",
     unit_person_stay: "person per stay", p_currency: "Currency", wf_not_ready: "not built yet (Salto)", wf_off: "off",
-    returning: n => `returning (${n}×)`, mg_message: "Message", mg_time: "Time", short_confirmation: "Confirmation", short_reminder: "Reminder", short_access_code: "Code mail", mg_channel: "Channel", mg_to: "To",
+    returning: n => `returning (${n}×)`, mg_message: "Message", mg_time: "Time", short_confirmation: "Confirmation", short_checkin_form: "Form filled in", ch_form: "form", short_reminder: "Reminder", short_access_code: "Code mail", mg_channel: "Channel", mg_to: "To",
     mg_title: (num, guest) => `Messages for ${guest} (${num})`, mg_click: "Click for all details",
     mg_plan: "Timeline", mg_attempts: "All attempts", mg_next: "next",
     pl_sent: "sent", pl_failed: "failed", pl_planned: "planned", pl_due: "next run", pl_skipped: "skipped", pl_off: "not active", sb_open: "Send", sb_again: "Send again",
@@ -277,7 +277,7 @@ async function load() {
 // ---------------------------------------------------------------- berichten per reservatie
 // In de lijst kort: per bericht één label (groen als het per alle kanalen lukte, rood als iets
 // mislukte). Klik: alle pogingen met kanaal, ontvanger, status en fout.
-const CH = { email: "ch_email", whatsapp: "ch_whatsapp", sms: "ch_sms" };
+const CH = { email: "ch_email", whatsapp: "ch_whatsapp", sms: "ch_sms", form: "ch_form" };
 function msgSummary(r) {
   if (!r.messages.length) {
     const next = (r.plan || []).find(p => p.state === "planned" || p.state === "due");
@@ -379,6 +379,7 @@ const isPrd = () => hotelNow().production === true;
 // Testadres of -nummer van deze omgeving voor een kanaal (leeg = niets versturen)
 const testTo = ch => ch === "email" ? hotelNow().test_email : hotelNow().test_phone;
 function toCell(m) {
+  if (m.channel === "form") return esc(m.to);  // ingevuld door de gast, niets verstuurd
   if (isPrd() && (!m.delivered_to || m.delivered_to === m.to)) return esc(m.to);
   const test = m.delivered_to && m.delivered_to !== m.to ? m.delivered_to : (testTo(m.channel) || t("mg_test_addr"));
   return `<span class="tag warn">TEST</span> ${esc(test)}<div class="muted small">${esc(t("mg_for"))} ${esc(m.to)}</div>`;
@@ -407,7 +408,7 @@ function addressOptions(r, ch) {
     add(r.phone, form ? t("src_form") : "Lighthouse");
     add(r.backup_phone, t("src_form_extra"));
     (r.profile_phones || []).forEach(v => add(v, t("src_profile")));
-    r.messages.filter(m => m.channel !== "email" && m.channel !== "salto").forEach(m => add(m.to, t("src_used")));
+    r.messages.filter(m => ["whatsapp", "sms"].includes(m.channel)).forEach(m => add(m.to, t("src_used")));
   }
   return out;
 }
