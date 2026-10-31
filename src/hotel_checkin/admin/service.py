@@ -39,6 +39,7 @@ def reservations(hotel_id: str) -> list[dict]:
     all_profiles = profiles.list_profiles(hotel_id)
     periods = {g.guest_id: g.stay_periods for g in all_profiles}
     muted = {g.guest_id: set(g.muted_channels) for g in all_profiles}
+    own_email = {g.guest_id: g.email for g in all_profiles if g.email_own and g.email}
     phone = send_messages.phone_enabled(hotel_id)
     from hotel_checkin.pms.lighthouse_browser import base_url
     lighthouse = base_url(hotel_id) + "/Customer/Reservations/Detail/"
@@ -80,7 +81,7 @@ def reservations(hotel_id: str) -> list[dict]:
             "added_at": r.created_at.isoformat() if r.created_at else "",
             "updated_at": r.updated_at.isoformat() if r.updated_at else "",
             "plan": send_messages.plan(hotel_id, r, msgs, cfg, ready, today, begin, on, phone,
-                                       muted.get(r.guest_id or "", set())),
+                                       muted.get(r.guest_id or "", set()), own_email.get(r.guest_id or "")),
             "messages": [
                 {"type": m["message_type"], "channel": m["channel"], "ok": m["ok"], "at": m["sent_at"],
                  "to": m.get("recipient", ""), "delivered_to": m.get("delivered_to", ""), "status": m.get("status") or ("sent" if m["ok"] else "failed"),

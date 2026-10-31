@@ -166,13 +166,32 @@ def send_mail(hotel_id: str, step: workflow.Step, r: Reservation, cfg: dict, to:
                             reply_to=reply_to)
 
 
-def recipients(r: Reservation, kind: str) -> list[str]:
-    """Adressen van de gast: het hoofdadres en het extra adres uit het check-in-formulier. Het
-    doorstuuradres van Booking.com, Expedia, ... alleen als er geen eigen adres is.
-    kind: "email" of "phone". Dubbels vallen weg."""
-    values = [r.guest.email, r.guest.backup_email] if kind == "email" else [r.guest.phone, r.guest.backup_phone]
-    if kind == "email" and not any(is_own_email(v) for v in values) and r.guest.relay_email:
-        values.append(r.guest.relay_email)  # alleen als er geen eigen adres is (normaal staat het dan al in email)
+_LOOKUP = object()
+
+
+def profile_email(r: Reservation) -> str | None:
+    """Eigen e-mailadres uit het gastprofiel (bv. van een vorig verblijf of check-in-formulier)."""
+    from hotel_checkin.guests import profiles
+
+    g = profiles.get_profile(r.hotel_id, r.guest_id) if r.guest_id else None
+    return g.email if g and g.email_own and is_own_email(g.email) else None
+
+
+def recipients(r: Reservation, kind: str, own_from_profile=_LOOKUP) -> list[str]:
+    """Adressen van de gast. kind: "email" of "phone". Dubbels vallen weg.
+
+    E-mail: de eigen adressen van de reservatie (hoofdadres en extra adres, het check-in-formulier
+    gaat voor). Is er geen eigen adres, dan het eigen adres uit het gastprofiel (terugkerende gast).
+    Pas als er nergens een eigen adres is: het doorstuuradres van Booking.com, Expedia, ... Dat is per
+    reservatie verschillend en wordt dus nooit bij een andere reservatie gebruikt.
+    """
+    if kind == "phone":
+        values = [r.guest.phone, r.guest.backup_phone]
+    else:
+        values = [v for v in (r.guest.email, r.guest.backup_email) if is_own_email(v)]
+        if not values:
+            own = profile_email(r) if own_from_profile is _LOOKUP else own_from_profile
+            values = [own] if own else [v for v in (r.guest.email, r.guest.relay_email) if v]
     out: list[str] = []
     for v in values:
         if v and v.strip().lower() not in [o.lower() for o in out]:
@@ -283,13 +302,13 @@ def muted_channels(hotel_id: str, r: Reservation) -> set[str]:
 
 def plan(hotel_id: str, r: Reservation, rows: list[dict], cfg: dict, ready: tuple[str, ...],
          today: date, begin: datetime | None, on: bool, phone: bool = False,
-         muted: set[str] | frozenset = frozenset()) -> list[dict]:
+         muted: set[str] | frozenset = frozenset(), own_email=_LOOKUP) -> list[dict]:
     """De tijdlijn van één reservatie voor de monitor: per stap van haar flow wat er gebeurde of
     nog gaat gebeuren. state: sent, failed, planned, due, skipped, off. reason bij skipped/off.
     channels: per kanaal wat er gebeurt (mail altijd; WhatsApp met gsm-nummer, sms als terugval).
     Het scherm toont per kanaal de pogingen uit het berichtenlog."""
     channels = []
-    for to in recipients(r, "email"):
+    for to in recipients(r, "email", own_email):
         channels.append({"channel": "email", "to": to, "reason": "muted" if "email" in muted else ""})
     off = "" if phone else "phone_off"
     for to in recipients(r, "phone"):
@@ -324,7 +343,7 @@ def plan(hotel_id: str, r: Reservation, rows: list[dict], cfg: dict, ready: tupl
                 item.update(state="skipped", reason="later_due")
             elif step.step not in ready:
                 item.update(state="planned", reason="not_ready", due=today.isoformat())  # zodra dit gebouwd is
-            elif not (recipients(r, "email") or recipients(r, "phone")):
+            elif not (recipients(r, "email", own_email) or recipients(r, "phone")):
                 item.update(state="skipped", reason="no_contact")
             else:
                 item["state"] = "due"

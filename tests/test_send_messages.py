@@ -203,3 +203,17 @@ def test_form_address_beats_relay_which_is_kept(setup):
     saved = repo.mark_checkin_completed("lucca", "ota1", "jan@telenet.be", None, "nl")
     assert saved.guest.email == "jan@telenet.be" and saved.guest.relay_email == "jp.123@guest.booking.com"
     assert send_messages.recipients(saved, "email") == ["jan@telenet.be"]
+
+
+def test_returning_guest_own_address_beats_relay(setup):
+    from hotel_checkin.guests import profiles
+
+    g = profiles.new_profile("lucca")
+    g.email, g.email_own = "jan@telenet.be", True
+    profiles.save_profile(g)
+    r = _res("ota2", email="jp.999@guest.booking.com")
+    r.guest_id = g.guest_id
+    repo.save_reservation(r)
+    assert send_messages.recipients(r, "email") == ["jan@telenet.be"]
+    r.guest_id = None
+    assert send_messages.recipients(r, "email") == ["jp.999@guest.booking.com"]
