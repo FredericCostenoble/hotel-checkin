@@ -71,7 +71,7 @@ def reservations(hotel_id: str) -> list[dict]:
                                        muted.get(r.guest_id or "", set())),
             "messages": [
                 {"type": m["message_type"], "channel": m["channel"], "ok": m["ok"], "at": m["sent_at"],
-                 "to": m.get("recipient", ""), "status": m.get("status") or ("sent" if m["ok"] else "failed"),
+                 "to": m.get("recipient", ""), "delivered_to": m.get("delivered_to", ""), "status": m.get("status") or ("sent" if m["ok"] else "failed"),
                  "error": m.get("error", ""), "note": m.get("note", ""), "status_at": m.get("status_at", "")}
                 for m in msgs
             ],

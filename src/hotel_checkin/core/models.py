@@ -131,3 +131,4 @@ class SendResult:
     ok: bool
     provider_id: str | None = None  # id bij Graph/Twilio, voor opvolging
     error: str | None = None
+    delivered_to: str | None = None  # waar het echt naartoe ging (buiten PRD het testadres)

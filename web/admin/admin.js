@@ -33,7 +33,7 @@ const T = {
     returning: n => `terugkerend (${n}×)`, mg_message: "Bericht", mg_time: "Tijdstip", short_confirmation: "Bevestiging", short_reminder: "Herinnering", short_access_code: "Code-mail", mg_channel: "Kanaal", mg_to: "Naar",
     mg_title: (num, guest) => `Berichten voor ${guest} (${num})`, mg_click: "Klik voor alle details",
     mg_plan: "Tijdlijn", mg_attempts: "Alle pogingen", mg_next: "volgt",
-    pl_sent: "verstuurd", pl_failed: "mislukt", pl_planned: "gepland", pl_due: "volgende run", pl_skipped: "valt weg", pl_off: "niet actief", mg_test: "Testomgeving: elk bericht ging naar het testadres, niet naar de gast. Naar = de gast voor wie het bedoeld was.", tab_hotel: "Hotel",
+    pl_sent: "verstuurd", pl_failed: "mislukt", pl_planned: "gepland", pl_due: "volgende run", pl_skipped: "valt weg", pl_off: "niet actief", mg_test_addr: "testadres", mg_for: "bedoeld voor", tab_hotel: "Hotel",
     hs_intro: "Gegevens en instellingen van het hotel. Standaard uit het hotelbestand; wat u hier wijzigt, gaat voor (alleen in deze omgeving).",
     hs_default: "standaard", hs_env: "In deze omgeving vastgelegd in Key Vault of de Function App: die waarde gaat voor.",
     hs_add: "Toevoegen", hs_key: "naam", hs_value: "waarde", hs_reset_confirm: "Alle instellingen terug naar het hotelbestand? Alle wijzigingen gaan verloren.",
@@ -102,7 +102,7 @@ const T = {
     returning: n => `returning (${n}×)`, mg_message: "Message", mg_time: "Time", short_confirmation: "Confirmation", short_reminder: "Reminder", short_access_code: "Code mail", mg_channel: "Channel", mg_to: "To",
     mg_title: (num, guest) => `Messages for ${guest} (${num})`, mg_click: "Click for all details",
     mg_plan: "Timeline", mg_attempts: "All attempts", mg_next: "next",
-    pl_sent: "sent", pl_failed: "failed", pl_planned: "planned", pl_due: "next run", pl_skipped: "skipped", pl_off: "not active", mg_test: "Test environment: every message went to the test address, not to the guest. To = the guest it was meant for.", tab_hotel: "Hotel",
+    pl_sent: "sent", pl_failed: "failed", pl_planned: "planned", pl_due: "next run", pl_skipped: "skipped", pl_off: "not active", mg_test_addr: "test address", mg_for: "meant for", tab_hotel: "Hotel",
     hs_intro: "Hotel details and settings. Default from the hotel file; what you change here takes precedence (in this environment only).",
     hs_default: "default", hs_env: "Set for this environment in Key Vault or the Function App: that value takes precedence.",
     hs_add: "Add", hs_key: "name", hs_value: "value", hs_reset_confirm: "Reset all settings to the hotel file? All changes will be lost.",
@@ -315,8 +315,6 @@ function showMessages(id) {
       ${chips ? `<div class="chs">${chips}</div>` : ""}</li>`;
   }).join("");
   $("#msgs-attempts").hidden = !r.messages.length;
-  // Buiten PRD gaat alles naar het testadres; "Naar" is de gast voor wie het bedoeld was
-  $("#msgs-test").hidden = (document.querySelector(".brand .env")?.textContent || "").trim().toLowerCase() === "prd";
   document.querySelectorAll("#msgs-plan button.resend").forEach(b => b.onclick = async () => {
     if (!confirm(t("rs_confirm", stepShort(b.dataset.step), t(CH[b.dataset.ch]), b.dataset.to))) return;
     b.disabled = true;
@@ -328,9 +326,17 @@ function showMessages(id) {
   });
   $("#msgs-rows").innerHTML = [...r.messages].reverse().map(m => `<tr>
     <td>${stamp(m.at)}</td><td>${esc(stepShort(m.type))}</td><td>${esc(t(CH[m.channel] || m.channel))}</td>
-    <td>${esc(m.to)}</td><td class="${m.ok ? "ok" : "err"}">${esc(t("st_" + m.status) || m.status)}${m.status_at ? ` <span class="muted">${esc(stamp(m.status_at))}</span>` : ""}</td>
+    <td>${toCell(m)}</td><td class="${m.ok ? "ok" : "err"}">${esc(t("st_" + m.status) || m.status)}${m.status_at ? ` <span class="muted">${esc(stamp(m.status_at))}</span>` : ""}</td>
     <td class="wrap">${esc([m.error, m.note].filter(Boolean).join(". "))}</td></tr>`).join("");
   $("#msgs").hidden = false;
+}
+
+// Ontvanger: buiten PRD ging het bericht naar het testadres, niet naar de gast
+const isPrd = () => (document.querySelector(".brand .env")?.textContent || "").trim().toLowerCase() === "prd";
+function toCell(m) {
+  if (isPrd() && (!m.delivered_to || m.delivered_to === m.to)) return esc(m.to);
+  const test = m.delivered_to && m.delivered_to !== m.to ? m.delivered_to : t("mg_test_addr");
+  return `<span class="tag warn">TEST</span> ${esc(test)}<div class="muted small">${esc(t("mg_for"))} ${esc(m.to)}</div>`;
 }
 
 function reasonText(reason) {

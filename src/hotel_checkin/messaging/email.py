@@ -83,18 +83,20 @@ def send_email(
             json={"message": message, "saveToSentItems": True},
         )
     except Exception as exc:  # noqa: BLE001 - netwerk- of aanmeldfout
-        return SendResult(channel=Channel.EMAIL, to=to, ok=False, error=str(exc))
+        return SendResult(channel=Channel.EMAIL, to=to, ok=False, error=str(exc), delivered_to=real_to)
 
     if response.status_code == 202:
         return SendResult(
             channel=Channel.EMAIL,
             to=to,
+            delivered_to=real_to,
             ok=True,
             provider_id=response.headers.get("request-id"),
         )
     return SendResult(
         channel=Channel.EMAIL,
         to=to,
+            delivered_to=real_to,
         ok=False,
         error=f"Graph {response.status_code}: {response.text[:500]}",
     )

@@ -35,9 +35,10 @@ def send_message(
         raise ValueError("Geef ofwel body, ofwel content_sid op")
 
     whatsapp = to.startswith("whatsapp:")
-    real_to, prefix = route("phone", to.removeprefix("whatsapp:"), hotel_id)
+    guest = to.removeprefix("whatsapp:")  # in het log: het nummer van de gast (zo weet deliver() wat al lukte)
+    real_to, prefix = route("phone", guest, hotel_id)
     if real_to is None:
-        return SendResult(channel=channel, to=to, ok=False, error=prefix)
+        return SendResult(channel=channel, to=guest, ok=False, error=prefix)
     to = f"whatsapp:{real_to}" if whatsapp else real_to
     if prefix and body is not None:
         body = prefix + body
@@ -63,16 +64,16 @@ def send_message(
             auth=(account_sid, auth_token),
         )
     except Exception as exc:  # noqa: BLE001 - netwerkfout
-        return SendResult(channel=channel, to=to, ok=False, error=str(exc))
+        return SendResult(channel=channel, to=guest, ok=False, error=str(exc), delivered_to=real_to)
 
     if response.status_code in (200, 201):
-        return SendResult(channel=channel, to=to, ok=True, provider_id=response.json().get("sid"))
+        return SendResult(channel=channel, to=guest, ok=True, provider_id=response.json().get("sid"), delivered_to=real_to)
     try:
         detail = response.json()
         error = f"Twilio {response.status_code}, code {detail.get('code')}: {detail.get('message')}"
     except ValueError:
         error = f"Twilio {response.status_code}: {response.text[:500]}"
-    return SendResult(channel=channel, to=to, ok=False, error=error)
+    return SendResult(channel=channel, to=guest, ok=False, error=error, delivered_to=real_to)
 
 
 def valid_signature(hotel_id: str, url: str, params: dict[str, str], signature: str) -> bool:

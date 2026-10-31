@@ -294,6 +294,7 @@ def log_message(hotel_id: str, reservation_id: str, message_type: str, result: S
             "message_type": message_type,
             "channel": result.channel.value,
             "recipient": result.to,
+            "delivered_to": result.delivered_to or "",
             "ok": result.ok,
             "provider_id": result.provider_id or "",
             "error": (result.error or "")[:1000],
