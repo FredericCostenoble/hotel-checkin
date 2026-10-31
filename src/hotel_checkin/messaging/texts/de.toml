@@ -1,6 +1,7 @@
 # Texte der Nachrichten an Gäste, Deutsch. Gleiche Struktur wie nl.toml.
 
 [algemeen]
+meerdere_kamers = "{aantal} Zimmer: {kamers}"   # kamer in de reservatiegegevens bij meer dan één kamer
 team = "Ihr Team vom {hotel_naam}"
 voettekst = "Sie erhalten diese E-Mail, weil Sie eine Reservierung im {hotel_naam} haben."
 

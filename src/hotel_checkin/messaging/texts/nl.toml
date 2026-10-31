@@ -3,6 +3,7 @@
 # Bloktypes: text (alinea's), details (tabel), highlight (opvallend vak), list (opsomming), button.
 
 [algemeen]
+meerdere_kamers = "{aantal} kamers: {kamers}"   # kamer in de reservatiegegevens bij meer dan één kamer
 team = "Het team van {hotel_naam}"
 voettekst = "U ontvangt deze mail omdat u een reservatie hebt bij {hotel_naam}."
 

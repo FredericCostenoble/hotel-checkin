@@ -50,8 +50,11 @@ const API = window.CHECKIN_API || "";
     $("r-name").textContent = data.first_name + " " + data.last_name;
     $("r-arrival").textContent = fmtDate(data.arrival);
     $("r-departure").textContent = fmtDate(data.departure);
-    $("r-room").textContent = data.room_type;
-    document.querySelectorAll(".room-row").forEach((el) => (el.hidden = !data.room_type));
+    // Meer dan één kamer: aantal en nummers (het kamertype is dat van de eerste kamer)
+    const rooms = data.rooms || [];
+    const roomsText = I18N[lang].rooms || I18N.en.rooms;
+    $("r-room").textContent = rooms.length > 1 ? `${roomsText(rooms.length)}: ${rooms.join(", ")}` : data.room_type;
+    document.querySelectorAll(".room-row").forEach((el) => (el.hidden = !(data.room_type || rooms.length)));
     const h = data.hotel;
     $("privacy-link").href = (h.privacy_urls && h.privacy_urls[lang]) || h.privacy_url;
   }

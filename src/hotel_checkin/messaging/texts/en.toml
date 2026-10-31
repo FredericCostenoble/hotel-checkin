@@ -1,6 +1,7 @@
 # Guest message texts, English. Same structure as nl.toml.
 
 [algemeen]
+meerdere_kamers = "{aantal} rooms: {kamers}"   # kamer in de reservatiegegevens bij meer dan één kamer
 team = "The {hotel_naam} team"
 voettekst = "You are receiving this email because you have a reservation at {hotel_naam}."
 

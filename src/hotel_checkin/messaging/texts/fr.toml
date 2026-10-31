@@ -1,6 +1,7 @@
 # Textes des messages aux clients, français. Même structure que nl.toml.
 
 [algemeen]
+meerdere_kamers = "{aantal} chambres : {kamers}"   # kamer in de reservatiegegevens bij meer dan één kamer
 team = "L'équipe de l'{hotel_naam}"
 voettekst = "Vous recevez cet e-mail parce que vous avez une réservation à l'{hotel_naam}."
 

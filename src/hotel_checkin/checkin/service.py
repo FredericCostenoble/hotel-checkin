@@ -91,6 +91,7 @@ def form_data(token: str, today: date | None = None) -> dict | None:
         "arrival": r.arrival.isoformat(),
         "departure": r.departure.isoformat(),
         "room_type": r.room_type or "",
+        "rooms": list(r.rooms),
         "email": email,
         "phone": r.guest.phone or "",
         "country": r.guest.country or "",

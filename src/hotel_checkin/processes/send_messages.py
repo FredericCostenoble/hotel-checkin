@@ -119,6 +119,7 @@ def message_data(hotel_id: str, r: Reservation) -> dict[str, str]:
         "reservatienummer": r.booking_number or "", "kamertype": r.room_type or "",
         "kamernummer": ", ".join(r.rooms), "aankomst": templates.format_date(r.arrival, lang),
         "vertrek": templates.format_date(r.departure, lang), "token": r.token or "",
+        "_rooms": list(r.rooms),  # meer dan één kamer: "6 kamers: 31, 14, ..." in plaats van het kamertype
     }
 
 

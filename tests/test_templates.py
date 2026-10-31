@@ -83,3 +83,13 @@ def test_checkin_link_in_language_of_message(monkeypatch):
     msg = templates.render("lucca", "confirmation", "fr", {**templates.sample_data("fr"), "token": "abc"})
     assert "?r=abc&amp;lang=fr" in msg.html and "?r=abc&lang=fr" in msg.sms
     assert templates.checkin_link("lucca", "abc").endswith("?r=abc")
+
+
+def test_several_rooms_in_reservation_details():
+    from hotel_checkin.messaging import templates
+
+    data = {**templates.sample_data("en"), "kamertype": "Small double room", "_rooms": ["31", "14", "30"]}
+    msg = templates.render("lucca", "confirmation", "en", data)
+    assert "3 rooms: 31, 14, 30" in msg.html and "Small double room" not in msg.html
+    one = templates.render("lucca", "confirmation", "en", {**data, "_rooms": ["31"]})
+    assert "Small double room" in one.html

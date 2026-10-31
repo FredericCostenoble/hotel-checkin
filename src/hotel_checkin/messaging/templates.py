@@ -134,6 +134,9 @@ def render(hotel_id: str, message: str, language: str, data: dict[str, str],
     config = load_hotel_config(hotel_id)
     texts = load_texts(hotel_id, language)
     fields = _Fields({**_config_fields(config), **data})
+    rooms = data.get("_rooms") or []
+    if len(rooms) > 1:  # het kamertype is dat van de eerste kamer: bij meer kamers het aantal en de nummers
+        fields["kamertype"] = texts["algemeen"]["meerdere_kamers"].format(aantal=len(rooms), kamers=", ".join(rooms))
     if "token" in data and "checkin_link" not in data:
         fields["checkin_link"] = checkin_link(hotel_id, data["token"], language)
     # Website in de taal van het bericht als het hotelbestand die kent ([hotel] website_fr = ...)
