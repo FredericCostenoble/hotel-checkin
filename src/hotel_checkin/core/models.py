@@ -109,6 +109,8 @@ class GuestProfile:
     from_checkin_form: bool = False  # contactgegevens bevestigd door de gast zelf
     message_channels: list[str] = field(default_factory=list)  # gekozen kanalen voor berichten (check-in-formulier)
     muted_channels: list[str] = field(default_factory=list)  # door het hotel uitgezet: email, whatsapp, sms
+    known_emails: list[str] = field(default_factory=list)  # alle eigen adressen ooit gezien (om te herkennen)
+    known_phones: list[str] = field(default_factory=list)  # alle nummers ooit gezien (om te herkennen)
     backup_email: str | None = None  # extra adres uit het check-in-formulier
     backup_phone: str | None = None  # extra gsm-nummer uit het check-in-formulier (E.164)
     created_at: datetime | None = None

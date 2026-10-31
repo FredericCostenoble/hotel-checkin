@@ -153,3 +153,37 @@ def test_extra_contact_is_proposed_not_merged():
     profiles.save_profile(b)
     m = guest_profiles.possible_matches("lucca")
     assert {"a": min(a.guest_id, b.guest_id), "b": max(a.guest_id, b.guest_id), "reason": "extra_contact"} in m
+
+
+def _rsv(rid, first, last, email=None, phone=None):
+    from datetime import date, timedelta
+
+    from hotel_checkin.core.models import Guest, Reservation
+
+    arr = date.today() + timedelta(days=20)
+    return repo.save_reservation(Reservation("lucca", rid, Guest(first, last, email=email, phone=phone), arr,
+                                             arr + timedelta(days=1)))
+
+
+def test_old_address_still_recognises_guest_after_form_change():
+    from hotel_checkin.processes import guest_profiles
+
+    g = guest_profiles.link(_rsv("m1", "Jan", "Peeters", email="jan@telenet.be"))
+    saved = repo.mark_checkin_completed("lucca", "m1", "jan.peeters@gmail.com", "+32470111222", "nl")
+    guest_profiles.link(saved)
+    # nieuwe boeking via Booking.com met het oude adres: zelfde gast
+    again = guest_profiles.link(_rsv("m2", "Jan", "Peeters", email="jan@telenet.be"))
+    assert again.guest_id == g.guest_id
+    # zelfde gsm-nummer, andere naam (partner): niet samengevoegd, wel voorgesteld
+    partner = guest_profiles.link(_rsv("m3", "Els", "Maes", phone="+32470111222"))
+    assert partner.guest_id != g.guest_id
+    reasons = {m["reason"] for m in guest_profiles.possible_matches("lucca")}
+    assert "same_contact" in reasons
+
+
+def test_relay_address_never_matches():
+    from hotel_checkin.processes import guest_profiles
+
+    a = guest_profiles.link(_rsv("b1", "Ann", "Dewit", email="ann.1@guest.booking.com"))
+    b = guest_profiles.link(_rsv("b2", "Ann", "Dewit", email="ann.1@guest.booking.com"))
+    assert a.guest_id != b.guest_id  # alleen voorgesteld als zelfde naam, nooit automatisch

@@ -43,14 +43,39 @@ def channel_of(r: Reservation) -> str:
 # ---------------------------------------------------------------- koppelen
 
 
+def own_emails(g: GuestProfile) -> set[str]:
+    """Alle eigen adressen van een profiel (huidig en vroeger), geen doorstuuradressen."""
+    return {e.lower() for e in [g.email, *g.known_emails] if e and is_own_email(e)}
+
+
+def phones(g: GuestProfile) -> set[str]:
+    return {p for p in [g.phone, *g.known_phones] if p}
+
+
+def names_fit(first: str, last: str, g: GuestProfile) -> bool:
+    """Passen de namen? Minstens een deel van de naam gemeen (of een van beide zonder naam).
+    Zo wordt een partner of familielid met hetzelfde adres of nummer niet samengevoegd."""
+    a, b = set(name_key(first, last).split()), set(name_key(g.first_name, g.last_name).split())
+    return not a or not b or bool(a & b)
+
+
 def _strong_match(r: Reservation, candidates: list[GuestProfile]) -> GuestProfile | None:
-    email = (r.guest.email or "").lower()
+    """Zeker dezelfde gast: hetzelfde eigen e-mailadres of gsm-nummer (huidig of vroeger), en de
+    naam past. Doorstuuradressen van Booking.com/Expedia tellen nooit (ze zijn per reservatie)."""
+    mine_e = {e.lower() for e in (r.guest.email,) if e and is_own_email(e)}
+    mine_p = {p for p in (r.guest.phone,) if p}
     for g in candidates:
-        if is_own_email(email) and g.email and g.email.lower() == email:
-            return g
-        if r.guest.phone and g.phone and g.phone == r.guest.phone:
+        if ((mine_e & own_emails(g)) or (mine_p & phones(g))) and names_fit(r.guest.first_name, r.guest.last_name, g):
             return g
     return None
+
+
+def _remember(g: GuestProfile, email: str | None, phone: str | None) -> None:
+    """Eigen adres en nummer onthouden, ook als ze later vervangen worden (herkennen bij een volgende boeking)."""
+    if email and is_own_email(email) and email.lower() not in {e.lower() for e in g.known_emails}:
+        g.known_emails.append(email.lower())
+    if phone and phone not in g.known_phones:
+        g.known_phones.append(phone)
 
 
 def _update_contact(g: GuestProfile, r: Reservation) -> None:
@@ -64,6 +89,8 @@ def _update_contact(g: GuestProfile, r: Reservation) -> None:
         g.email, g.email_own = email, is_own_email(email)
     if r.guest.phone and (from_form or not g.phone):
         g.phone = r.guest.phone
+    _remember(g, r.guest.email, r.guest.phone)
+    _remember(g, g.email, g.phone)
     if from_form:  # extra adres en nummer uit het formulier (leeg = door de gast weggehaald)
         g.backup_email = (r.guest.backup_email or "").lower() or None
         g.backup_phone = r.guest.backup_phone or None
@@ -226,6 +253,10 @@ def merge(hotel_id: str, keep_id: str, other_id: str, keep: GuestProfile | None 
     keep.backup_email = keep.backup_email or other.backup_email
     keep.backup_phone = keep.backup_phone or other.backup_phone
     keep.muted_channels = sorted(set(keep.muted_channels) | set(other.muted_channels))
+    for e in [other.email, *other.known_emails]:
+        _remember(keep, e, None)
+    for ph in [other.phone, *other.known_phones]:
+        _remember(keep, None, ph)
     keep.phone = keep.phone or other.phone
     keep.country = keep.country or other.country
     keep.from_checkin_form = keep.from_checkin_form or other.from_checkin_form
@@ -252,19 +283,22 @@ def possible_matches(hotel_id: str, limit: int = 50) -> list[dict]:
     seen, out = set(), []
     # extra adres of nummer uit het formulier van de ene gast = adres of nummer van de andere:
     # misschien dezelfde persoon, misschien een partner. Daarom alleen voorstellen.
+    # Zelfde eigen adres of nummer maar een andere naam (partner, familie?): ook alleen voorstellen.
     by_contact: dict[str, list[GuestProfile]] = {}
     for g in profiles.list_profiles(hotel_id):
-        for v in {(g.email or "").lower(), (g.backup_email or "").lower(), g.phone or "", g.backup_phone or ""}:
+        extra = {(g.backup_email or "").lower(), g.backup_phone or ""}
+        for v in own_emails(g) | phones(g) | extra:
             if v and (("@" not in v) or is_own_email(v)):
                 by_contact.setdefault(v, []).append(g)
-    for group in by_contact.values():
+    for value, group in by_contact.items():
         for i, a in enumerate(group):
             for b in group[i + 1:]:
                 pair = tuple(sorted((a.guest_id, b.guest_id)))
                 if a.guest_id == b.guest_id or pair in seen or profiles.is_marked_different(different, *pair):
                     continue
                 seen.add(pair)
-                out.append({"a": pair[0], "b": pair[1], "reason": "extra_contact"})
+                both_own = all(value in (own_emails(x) | phones(x)) for x in (a, b))
+                out.append({"a": pair[0], "b": pair[1], "reason": "same_contact" if both_own else "extra_contact"})
     for group in by_token.values():
         for i, a in enumerate(group):
             for b in group[i + 1:]:

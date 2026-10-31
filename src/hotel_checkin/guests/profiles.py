@@ -16,7 +16,8 @@ from hotel_checkin.guests.repository import _key, _now, _q, _table
 T_GUESTS = "Guests"
 T_PAIRS = "GuestPairs"
 
-_JSON = ("rooms", "room_types", "channels", "reservation_ids", "stay_periods", "message_channels", "muted_channels")
+_JSON = ("rooms", "room_types", "channels", "reservation_ids", "stay_periods", "message_channels", "muted_channels",
+         "known_emails", "known_phones")
 _DATES = ("first_stay", "last_stay", "last_cancelled")
 _TIMES = ("created_at", "updated_at")
 
@@ -42,7 +43,7 @@ def _from_entity(e: dict) -> GuestProfile:
             continue
         v = e[k]
         if k in _JSON:
-            setattr(g, k, json.loads(v or ("[]" if k in ("reservation_ids", "stay_periods", "message_channels", "muted_channels") else "{}")))
+            setattr(g, k, json.loads(v or ("[]" if k in ("reservation_ids", "stay_periods", "message_channels", "muted_channels", "known_emails", "known_phones") else "{}")))
         elif k in _DATES:
             setattr(g, k, date.fromisoformat(v) if v else None)
         elif k in _TIMES:
