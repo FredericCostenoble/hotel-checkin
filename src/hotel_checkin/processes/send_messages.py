@@ -25,7 +25,7 @@ from urllib.parse import urlencode
 
 from hotel_checkin.core import workflow
 from hotel_checkin.core.config import hotel_setting
-from hotel_checkin.core.models import Reservation, SendResult
+from hotel_checkin.core.models import Reservation, SendResult, normalize_language
 from hotel_checkin.core.safety import environment
 from hotel_checkin.guests import repository as guests
 from hotel_checkin.messaging import email, sms, templates, whatsapp
@@ -216,7 +216,7 @@ def deliver(hotel_id: str, step: workflow.Step, r: Reservation, cfg: dict,
         return out
     msg, data = _rendered(hotel_id, step, r, cfg)
     template = whatsapp_template(hotel_id, step.step, r.guest.language)
-    values = {**data, "checkin_link": templates.checkin_link(hotel_id, r.token or "")}
+    values = {**data, "checkin_link": templates.checkin_link(hotel_id, r.token or "", normalize_language(r.guest.language))}
     variables = {str(i): str(values.get(k, "")) for i, k in enumerate(WHATSAPP_VARIABLES.get(step.step, ()), 1)}
     for to in phones:
         if not only and (done("whatsapp", to) or done("sms", to)):

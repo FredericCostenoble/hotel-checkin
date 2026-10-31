@@ -74,3 +74,12 @@ def test_compose_content_and_pay():
     assert kinds[0] == "text" and blocks[-1].get("alineas", [""])[0].startswith("Hebt u een vraag")
     # zonder keuzes: de tekst zoals ze is
     assert compose_blocks(texts, "confirmation", None) == texts["confirmation"]["blokken"]
+
+
+def test_checkin_link_in_language_of_message(monkeypatch):
+    from hotel_checkin.messaging import templates
+
+    monkeypatch.delenv("CHECKIN_FORM_URL", raising=False)
+    msg = templates.render("lucca", "confirmation", "fr", {**templates.sample_data("fr"), "token": "abc"})
+    assert "?r=abc&amp;lang=fr" in msg.html and "?r=abc&lang=fr" in msg.sms
+    assert templates.checkin_link("lucca", "abc").endswith("?r=abc")

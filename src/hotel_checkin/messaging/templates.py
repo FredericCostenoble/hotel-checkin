@@ -81,11 +81,15 @@ def _fill(text: str, fields: dict) -> str:
     return text.format_map(fields)
 
 
-def checkin_link(hotel_id: str, token: str) -> str:
+def checkin_link(hotel_id: str, token: str, language: str | None = None) -> str:
     """Link naar het check-in-formulier. In TST naar het testformulier (instelling CHECKIN_FORM_URL),
-    anders naar het formulier van het hotel uit config/hotels/<hotel_id>.toml."""
+    anders naar het formulier van het hotel uit config/hotels/<hotel_id>.toml.
+    Met language opent het formulier in de taal van het bericht (&lang=fr)."""
     url = os.environ.get("CHECKIN_FORM_URL") or load_hotel_config(hotel_id)["checkin"]["formulier_url"]
-    return url.replace("{token}", token)
+    url = url.replace("{token}", token)
+    if language:
+        url += ("&" if "?" in url else "?") + "lang=" + language
+    return url
 
 
 MODULES = ("code", "reservation", "checkin_form", "pay", "practical_info")  # volgorde in de mail: pincode altijd bovenaan
@@ -131,7 +135,9 @@ def render(hotel_id: str, message: str, language: str, data: dict[str, str],
     texts = load_texts(hotel_id, language)
     fields = _Fields({**_config_fields(config), **data})
     if "token" in data and "checkin_link" not in data:
-        fields["checkin_link"] = checkin_link(hotel_id, data["token"])
+        fields["checkin_link"] = checkin_link(hotel_id, data["token"], language)
+    # Website in de taal van het bericht als het hotelbestand die kent ([hotel] website_fr = ...)
+    fields["hotel_website"] = config.get("hotel", {}).get(f"website_{language}") or fields.get("hotel_website", "")
 
     t = {**texts[message], "blokken": compose_blocks(texts, message, content, pay)}
     sms = _fill(t["sms"], fields)
