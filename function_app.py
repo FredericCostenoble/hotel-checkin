@@ -236,16 +236,7 @@ def send_messages(timer: func.TimerRequest) -> None:
 
     from hotel_checkin.processes import send_messages as process
 
-    from hotel_checkin.checkin import service as checkin_service
-
     for hotel_id in list_hotels():
-        try:
-            # Vangnet: ingevulde formulieren die (nog) niet in de reservatie staan, eerst toepassen
-            fixed = checkin_service.reapply_forms(hotel_id)
-            if fixed:
-                logging.warning("%s: %d formulier(en) opnieuw toegepast", hotel_id, fixed)
-        except Exception:  # noqa: BLE001
-            logging.exception("%s: formulieren nakijken mislukt", hotel_id)
         try:
             process.run(hotel_id)
         except Exception:  # noqa: BLE001

@@ -88,6 +88,16 @@ def main() -> int:
 
     failed = False
     for hotel_id in [args.hotel] if args.hotel else list_hotels():
+        # Vangnet: ingevulde check-in-formulieren die niet in de reservatie staan, opnieuw toepassen.
+        # Normaal gebeurt dat meteen bij het indienen; hier alleen nakijken (bij elke run, ook als vangnet-uur).
+        try:
+            from hotel_checkin.checkin import service as checkin_service
+
+            fixed = checkin_service.reapply_forms(hotel_id)
+            if fixed:
+                logging.warning("%s: %d check-in-formulier(en) opnieuw toegepast", hotel_id, fixed)
+        except Exception:  # noqa: BLE001
+            logging.exception("%s: formulieren nakijken mislukt", hotel_id)
         if not args.hours and not _check_due(hotel_id):
             logging.info("%s: interval nog niet om, overgeslagen", hotel_id)
             continue
