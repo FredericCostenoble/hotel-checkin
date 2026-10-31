@@ -760,6 +760,420 @@ async function resetWorkflow() {
 }
 
 
+// Labels en uitleg van de instellingen (tabblad Hotel), per taal: sectie.sleutel -> [label, uitleg]
+const HS_TEXT = {
+ "nl": {
+  "fields": {
+   "hotel.naam": [
+    "Naam",
+    ""
+   ],
+   "hotel.adres": [
+    "Adres",
+    "Staat in de mails en onderaan het formulier."
+   ],
+   "hotel.telefoon": [
+    "Telefoon",
+    "Contactnummer voor gasten."
+   ],
+   "hotel.email": [
+    "E-mail",
+    "Contactadres voor gasten. Antwoorden op de mails komen hier aan."
+   ],
+   "hotel.website": [
+    "Website",
+    "Algemeen adres, gebruikt als er geen adres voor de taal is."
+   ],
+   "hotel.website_nl": [
+    "Website (Nederlands)",
+    "Logo en link onderaan de Nederlandstalige mails."
+   ],
+   "hotel.website_fr": [
+    "Website (Frans)",
+    "Logo en link onderaan de Franstalige mails."
+   ],
+   "hotel.website_en": [
+    "Website (Engels)",
+    "Logo en link onderaan de Engelstalige mails."
+   ],
+   "hotel.website_de": [
+    "Website (Duits)",
+    "Logo en link onderaan de Duitstalige mails."
+   ],
+   "hotel.logo_url": [
+    "Logo",
+    "Adres van de afbeelding bovenaan de mails en het formulier."
+   ],
+   "verzending.mail_afzender": [
+    "Afzender",
+    "Mailbox waarmee de mails technisch verstuurd worden. Gasten antwoorden naar het contactadres van het hotel."
+   ],
+   "receptie.van": [
+    "Open vanaf",
+    "Ook het uur vanaf wanneer de pincode werkt."
+   ],
+   "receptie.tot": [
+    "Open tot",
+    ""
+   ],
+   "checkout.tot": [
+    "Uitchecken tot",
+    "Ook het uur tot wanneer de pincode werkt op de dag van vertrek."
+   ],
+   "ontbijt.van": [
+    "Van",
+    ""
+   ],
+   "ontbijt.tot": [
+    "Tot",
+    ""
+   ],
+   "wifi.naam": [
+    "Netwerk",
+    "Naam van het wifinetwerk voor gasten."
+   ],
+   "wifi.wachtwoord": [
+    "Wachtwoord",
+    "Staat in de mail met de praktische info."
+   ],
+   "parking.naam": [
+    "Parking",
+    "Aanbevolen parking."
+   ],
+   "parking.minuten": [
+    "Minuten te voet",
+    ""
+   ],
+   "nood.nummer": [
+    "Noodnummer",
+    "Voor 's avonds en 's nachts, als de receptie dicht is."
+   ],
+   "twilio.sms_from": [
+    "Afzender sms",
+    "Nummer waarmee de sms'en verstuurd worden."
+   ],
+   "twilio.whatsapp_from": [
+    "Afzender WhatsApp",
+    "WhatsApp Business-nummer van het hotel."
+   ],
+   "robot.check_minutes": [
+    "Vangnet: om de hoeveel minuten",
+    "Normaal start de meldingsmail van Lighthouse de robot. Dit is hoe vaak hij daarnaast zelf kijkt."
+   ],
+   "robot.contact_refresh_hours": [
+    "Reservaties bijwerken: om de hoeveel uur",
+    "Contactgegevens, kamer, data en betaling opnieuw lezen voor reservaties die binnenkort aankomen."
+   ],
+   "robot.mail_trigger": [
+    "Starten bij meldingsmail",
+    "De robot start meteen als Lighthouse een mail stuurt over een nieuwe of gewijzigde boeking."
+   ],
+   "messaging.enabled_tst": [
+    "Berichten aan in TST",
+    "In TST gaat alles naar het testadres, nooit naar gasten."
+   ],
+   "messaging.enabled_prd": [
+    "Berichten aan in PRD",
+    "Echte berichten naar gasten. Pas aanzetten als alles getest is."
+   ],
+   "messaging.start": [
+    "Vanaf",
+    "Alleen reservaties die vanaf dit moment binnenkomen krijgen berichten."
+   ],
+   "messaging.phone": [
+    "WhatsApp en sms",
+    "Naast de mail ook WhatsApp (met sms als terugval). Aan zodra Twilio betaald is."
+   ],
+   "retention.reservation_days": [
+    "Reservaties bewaren (dagen na vertrek)",
+    "Daarna worden de reservatie en haar berichten gewist. Gastprofielen blijven."
+   ],
+   "retention.guest_days": [
+    "Gasten bewaren (dagen na laatste verblijf)",
+    "Daarna wordt het gastprofiel gewist."
+   ],
+   "salto.identity_url": [
+    "Aanmeldserver",
+    "Test of productie van Salto."
+   ],
+   "salto.api_url": [
+    "API-adres",
+    ""
+   ],
+   "salto.site_id": [
+    "Site",
+    "Id van het hotel bij Salto. Leeg = Salto staat uit."
+   ],
+   "salto.guest_role_id": [
+    "Gastenrol",
+    "Leeg = de rol met 'guest' of 'gast' in de naam."
+   ],
+   "salto.common_lock_ids": [
+    "Gemeenschappelijke deuren",
+    "Ids van de voordeur en andere deuren voor alle gasten, met komma's ertussen."
+   ],
+   "lighthouse.base_url": [
+    "Adres",
+    "Adres van Reservation Manager."
+   ],
+   "checkin.formulier_url": [
+    "Adres van het formulier",
+    "{token} wordt per gast ingevuld. In TST gaat de link naar het testformulier."
+   ],
+   "privacy.url_nl": [
+    "Nederlands",
+    ""
+   ],
+   "privacy.url_fr": [
+    "Frans",
+    ""
+   ],
+   "privacy.url_en": [
+    "Engels",
+    ""
+   ],
+   "privacy.url_de": [
+    "Duits",
+    ""
+   ],
+   "kleuren.accent": [
+    "Accent",
+    "Kader rond de pincode en lijnen."
+   ],
+   "kleuren.accent_donker": [
+    "Accent donker",
+    "Knoppen en titels."
+   ],
+   "kleuren.tekst": [
+    "Tekst",
+    ""
+   ],
+   "kleuren.achtergrond": [
+    "Achtergrond",
+    ""
+   ]
+  },
+  "sections": {
+   "hotel": "Gegevens die gasten zien in de mails en op het formulier.",
+   "twilio": "Het Twilio-account zelf staat in Key Vault.",
+   "robot": "De robot leest Lighthouse (alleen lezen).",
+   "messaging": "Berichten uit de workflow.",
+   "whatsapp": "Door Meta goedgekeurde sjablonen per bericht en taal, bv. template_confirmation_nl = HX... Zonder sjabloon gaat het bericht per sms.",
+   "retention": "Opruimen gebeurt bij Synchroniseren op het tabblad Gasten.",
+   "salto": "Aanmeldgegevens staan in Key Vault.",
+   "salto.rooms": "Per kamer de deur bij Salto: kamernummer = id van de deur.",
+   "lighthouse": "De robotgebruiker staat in Key Vault.",
+   "privacy": "Link naar de privacyverklaring per taal.",
+   "kleuren": "Kleuren van de mails en het formulier."
+  }
+ },
+ "en": {
+  "fields": {
+   "hotel.naam": [
+    "Name",
+    ""
+   ],
+   "hotel.adres": [
+    "Address",
+    "Shown in the mails and at the bottom of the form."
+   ],
+   "hotel.telefoon": [
+    "Phone",
+    "Contact number for guests."
+   ],
+   "hotel.email": [
+    "E-mail",
+    "Contact address for guests. Replies to the mails arrive here."
+   ],
+   "hotel.website": [
+    "Website",
+    "General address, used when there is no address for the language."
+   ],
+   "hotel.website_nl": [
+    "Website (Dutch)",
+    "Logo and link at the bottom of Dutch mails."
+   ],
+   "hotel.website_fr": [
+    "Website (French)",
+    "Logo and link at the bottom of French mails."
+   ],
+   "hotel.website_en": [
+    "Website (English)",
+    "Logo and link at the bottom of English mails."
+   ],
+   "hotel.website_de": [
+    "Website (German)",
+    "Logo and link at the bottom of German mails."
+   ],
+   "hotel.logo_url": [
+    "Logo",
+    "Address of the image at the top of the mails and the form."
+   ],
+   "verzending.mail_afzender": [
+    "Sender",
+    "Mailbox used to send the mails. Guests reply to the hotel's contact address."
+   ],
+   "receptie.van": [
+    "Open from",
+    "Also the time from which the PIN code works."
+   ],
+   "receptie.tot": [
+    "Open until",
+    ""
+   ],
+   "checkout.tot": [
+    "Check out until",
+    "Also the time until which the PIN code works on the day of departure."
+   ],
+   "ontbijt.van": [
+    "From",
+    ""
+   ],
+   "ontbijt.tot": [
+    "Until",
+    ""
+   ],
+   "wifi.naam": [
+    "Network",
+    "Name of the guest Wi-Fi network."
+   ],
+   "wifi.wachtwoord": [
+    "Password",
+    "Shown in the mail with practical info."
+   ],
+   "parking.naam": [
+    "Car park",
+    "Recommended car park."
+   ],
+   "parking.minuten": [
+    "Minutes on foot",
+    ""
+   ],
+   "nood.nummer": [
+    "Emergency number",
+    "For evenings and nights, when reception is closed."
+   ],
+   "twilio.sms_from": [
+    "SMS sender",
+    "Number used to send text messages."
+   ],
+   "twilio.whatsapp_from": [
+    "WhatsApp sender",
+    "The hotel's WhatsApp Business number."
+   ],
+   "robot.check_minutes": [
+    "Safety net: every how many minutes",
+    "Normally the Lighthouse notification mail starts the robot. This is how often it also checks on its own."
+   ],
+   "robot.contact_refresh_hours": [
+    "Update reservations: every how many hours",
+    "Re-read contact details, room, dates and payment for upcoming reservations."
+   ],
+   "robot.mail_trigger": [
+    "Start on notification mail",
+    "The robot starts as soon as Lighthouse sends a mail about a new or changed booking."
+   ],
+   "messaging.enabled_tst": [
+    "Messages on in TST",
+    "In TST everything goes to the test address, never to guests."
+   ],
+   "messaging.enabled_prd": [
+    "Messages on in PRD",
+    "Real messages to guests. Only switch on when everything is tested."
+   ],
+   "messaging.start": [
+    "From",
+    "Only reservations that come in from this moment on get messages."
+   ],
+   "messaging.phone": [
+    "WhatsApp and SMS",
+    "WhatsApp (with SMS as fallback) next to the mail. On once Twilio is paid."
+   ],
+   "retention.reservation_days": [
+    "Keep reservations (days after departure)",
+    "After that the reservation and its messages are deleted. Guest profiles stay."
+   ],
+   "retention.guest_days": [
+    "Keep guests (days after last stay)",
+    "After that the guest profile is deleted."
+   ],
+   "salto.identity_url": [
+    "Login server",
+    "Salto test or production."
+   ],
+   "salto.api_url": [
+    "API address",
+    ""
+   ],
+   "salto.site_id": [
+    "Site",
+    "The hotel's id at Salto. Empty = Salto is off."
+   ],
+   "salto.guest_role_id": [
+    "Guest role",
+    "Empty = the role with 'guest' in its name."
+   ],
+   "salto.common_lock_ids": [
+    "Shared doors",
+    "Ids of the front door and other doors for all guests, comma separated."
+   ],
+   "lighthouse.base_url": [
+    "Address",
+    "Reservation Manager address."
+   ],
+   "checkin.formulier_url": [
+    "Form address",
+    "{token} is filled in per guest. In TST the link goes to the test form."
+   ],
+   "privacy.url_nl": [
+    "Dutch",
+    ""
+   ],
+   "privacy.url_fr": [
+    "French",
+    ""
+   ],
+   "privacy.url_en": [
+    "English",
+    ""
+   ],
+   "privacy.url_de": [
+    "German",
+    ""
+   ],
+   "kleuren.accent": [
+    "Accent",
+    "Frame around the PIN code and lines."
+   ],
+   "kleuren.accent_donker": [
+    "Dark accent",
+    "Buttons and titles."
+   ],
+   "kleuren.tekst": [
+    "Text",
+    ""
+   ],
+   "kleuren.achtergrond": [
+    "Background",
+    ""
+   ]
+  },
+  "sections": {
+   "hotel": "Details guests see in the mails and on the form.",
+   "twilio": "The Twilio account itself is in Key Vault.",
+   "robot": "The robot reads Lighthouse (read only).",
+   "messaging": "Messages from the workflow.",
+   "whatsapp": "Templates approved by Meta per message and language, e.g. template_confirmation_nl = HX... Without a template the message goes by SMS.",
+   "retention": "Clean-up happens with Synchronize on the Guests tab.",
+   "salto": "Login details are in Key Vault.",
+   "salto.rooms": "Per room the door at Salto: room number = door id.",
+   "lighthouse": "The robot user is in Key Vault.",
+   "privacy": "Link to the privacy statement per language.",
+   "kleuren": "Colours of the mails and the form."
+  }
+ }
+};
+
 // ---------------------------------------------------------------- instellingen van het hotel (tabblad Hotel)
 // Alle instellingen uit het hotelbestand, per sectie. Wat hier gewijzigd wordt, gaat voor op het bestand
 // (database, per omgeving). Vrije secties (kamers en deuren, WhatsApp-sjablonen): naam = waarde.
@@ -769,6 +1183,12 @@ async function loadSettings() {
   try { hs = await get(`/api/monitor/${$("#hotel").value}/settings`); } catch (e) { return; }
   hsEdit = {}; hsDirty = false;
   renderSettings();
+}
+
+// Label en uitleg in de taal van het scherm; onbekende instelling: de technische naam, geen uitleg
+function hsText(section, key) {
+  const x = ((HS_TEXT[lang] || HS_TEXT.en).fields)[`${section}.${key}`];
+  return x || [key, ""];
 }
 
 function hsValue(sec, f) {
@@ -803,13 +1223,14 @@ function renderSettings() {
         const id = i++;
         const changed = JSON.stringify(hsValue(sec, f)) !== JSON.stringify(f.default);
         return `<div class="hs-row ${changed ? "changed" : ""}">
-          <label for="hs-${id}">${esc(f.key)}</label>
+          <label for="hs-${id}">${esc(hsText(sec.section, f.key)[0])}</label>
           <div>${hsInput(sec, f, id)}${f.env ? ` <span class="tag warn" title="${esc(t("hs_env"))}">Key Vault</span>` : ""}
             ${changed ? `<span class="muted small">${esc(t("hs_default"))}: ${esc(Array.isArray(f.default) ? f.default.join(", ") : String(f.default ?? ""))}</span>` : ""}
-            ${f.help ? `<div class="muted small">${esc(f.help)}</div>` : ""}</div></div>`;
+            ${hsText(sec.section, f.key)[1] ? `<div class="muted small">${esc(hsText(sec.section, f.key)[1])}</div>` : ""}</div></div>`;
       }).join("");
     }
-    return `<div class="hs-card"><h3>${esc(title)}</h3>${sec.help ? `<p class="muted small">${esc(sec.help)}</p>` : ""}${rows}</div>`;
+    const help = (HS_TEXT[lang] || HS_TEXT.en).sections[sec.section] || "";
+    return `<div class="hs-card"><h3>${esc(title)}</h3>${help ? `<p class="muted small">${esc(help)}</p>` : ""}${rows}</div>`;
   }).join("");
   document.querySelectorAll("#hs-sections [data-key]").forEach(el => el.onchange = () => {
     const sec = hs.sections.find(x => x.section === el.dataset.sec), f = sec.fields.find(x => x.key === el.dataset.key);
