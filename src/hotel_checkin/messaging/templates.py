@@ -142,7 +142,10 @@ def render(hotel_id: str, message: str, language: str, data: dict[str, str],
     # Website in de taal van het bericht als het hotelbestand die kent ([hotel] website_fr = ...)
     fields["hotel_website"] = config.get("hotel", {}).get(f"website_{language}") or fields.get("hotel_website", "")
 
-    t = {**texts[message], "blokken": compose_blocks(texts, message, content, pay)}
+    blocks = compose_blocks(texts, message, content, pay)
+    # Blok met alleen_als = "veld": weglaten als dat veld leeg is (bv. geen review-link ingevuld)
+    blocks = [b for b in blocks if not b.get("alleen_als") or str(fields.get(b["alleen_als"]) or "").strip()]
+    t = {**texts[message], "blokken": blocks}
     sms = _fill(t["sms"], fields)
     if message not in EMAIL_MESSAGES:
         return RenderedMessage(subject=None, html=None, text=None, sms=sms)

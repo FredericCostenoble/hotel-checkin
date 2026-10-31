@@ -34,7 +34,7 @@ const T = {
     returning: n => `terugkerend (${n}×)`, mg_message: "Bericht", mg_time: "Tijdstip", short_confirmation: "Bevestiging", short_checkin_form: "Formulier ingevuld", ch_form: "formulier", short_reminder: "Herinnering", short_access_code: "Code-mail", mg_channel: "Kanaal", mg_to: "Naar",
     mg_title: (num, guest) => `Berichten voor ${guest} (${num})`, mg_click: "Klik voor alle details",
     mg_plan: "Tijdlijn", mg_attempts: "Alle pogingen", mg_next: "volgt",
-    pl_sent: "verstuurd", pl_failed: "mislukt", pl_planned: "gepland", pl_due: "volgende run", pl_skipped: "valt weg", pl_off: "niet actief", form_yes: "✓ formulier ingevuld", form_no: "formulier niet ingevuld", sb_open: "Versturen", sb_again: "Opnieuw versturen",
+    pl_sent: "verstuurd op", pl_failed: "mislukt op", pl_planned: "gepland", pl_due: "wordt nu verstuurd", pl_will: "wordt verstuurd op", pl_wont: "wordt niet verstuurd", pl_was: "gepland", pl_skipped: "valt weg", pl_off: "niet actief", form_yes: "✓ formulier ingevuld", form_no: "formulier niet ingevuld", sb_open: "Versturen", sb_again: "Opnieuw versturen",
     rss_before_start: "voor de startdatum", rss_booked_late: "te laat geboekt", rss_later_due: "latere mail al aan de beurt",
     rss_window_passed: "moment voorbij", rss_messaging_off: "berichten uit", rss_disabled: "stap uit", rss_not_ready: "nog niet gebouwd", sb_other: "Ander adres...", sb_bad_email: "Ongeldig e-mailadres", sb_bad_phone: "Ongeldig nummer (met landcode, bv. +32...)", src_test: "testadres", src_form: "check-in-formulier",
     src_form_extra: "extra, check-in-formulier", src_relay: "doorstuuradres", src_profile: "gastprofiel", src_used: "eerder gebruikt", src_earlier: "vroeger", sb_to: "naar", sb_go: "Versturen", sb_off: "(nog niet actief)", send_to: "Versturen naar...", send_to_ask: "Naar welk e-mailadres (of gsm-nummer met +32...) versturen? Het wordt bij de reservatie bewaard.", ct_add: "E-mailadres of gsm-nummer toevoegen", ct_email: "e-mailadres", ct_phone: "gsm-nummer met landcode (+32...)", env_to_prd: "Naar PRD", env_bar_tst: "TESTOMGEVING (TST): berichten gaan alleen naar het testadres, nooit naar gasten",
@@ -44,7 +44,7 @@ const T = {
     hs_default: "standaard", hs_env: "In deze omgeving vastgelegd in Key Vault of de Function App: die waarde gaat voor.",
     hs_add: "Toevoegen", hs_key: "naam", hs_value: "waarde", hs_reset_confirm: "Alle instellingen terug naar het hotelbestand? Alle wijzigingen gaan verloren.",
     hs_list: "komma's ertussen",
-    sec_hotel: "Hotel", sec_test: "Testomgeving", sec_workflow_parameters: "Toeristenbelasting en munt", sec_verzending: "Afzender van de mails", sec_receptie: "Receptie", sec_checkout: "Check-out", sec_ontbijt: "Ontbijt",
+    sec_hotel: "Hotel", sec_test: "Testomgeving", sec_workflow_parameters: "Toeristenbelasting en munt", sec_reviews: "Reviews", sec_verzending: "Afzender van de mails", sec_receptie: "Receptie", sec_checkout: "Check-out", sec_ontbijt: "Ontbijt",
     sec_wifi: "Wifi", sec_parking: "Parking", sec_nood: "Noodnummer", sec_twilio: "Twilio (sms en WhatsApp)", sec_robot: "Robot",
     sec_messaging: "Berichten", sec_whatsapp: "WhatsApp-sjablonen", sec_retention: "Bewaartermijnen", sec_salto: "Salto",
     sec_salto_rooms: "Salto: kamers en deuren", sec_lighthouse: "Lighthouse", sec_checkin: "Check-in-formulier",
@@ -111,7 +111,7 @@ const T = {
     returning: n => `returning (${n}×)`, mg_message: "Message", mg_time: "Time", short_confirmation: "Confirmation", short_checkin_form: "Form filled in", ch_form: "form", short_reminder: "Reminder", short_access_code: "Code mail", mg_channel: "Channel", mg_to: "To",
     mg_title: (num, guest) => `Messages for ${guest} (${num})`, mg_click: "Click for all details",
     mg_plan: "Timeline", mg_attempts: "All attempts", mg_next: "next",
-    pl_sent: "sent", pl_failed: "failed", pl_planned: "planned", pl_due: "next run", pl_skipped: "skipped", pl_off: "not active", form_yes: "✓ form filled in", form_no: "form not filled in", sb_open: "Send", sb_again: "Send again",
+    pl_sent: "sent on", pl_failed: "failed on", pl_planned: "planned", pl_due: "being sent now", pl_will: "will be sent on", pl_wont: "will not be sent", pl_was: "planned", pl_skipped: "skipped", pl_off: "not active", form_yes: "✓ form filled in", form_no: "form not filled in", sb_open: "Send", sb_again: "Send again",
     rss_before_start: "before start date", rss_booked_late: "booked too late", rss_later_due: "later mail already due",
     rss_window_passed: "moment passed", rss_messaging_off: "messages off", rss_disabled: "step off", rss_not_ready: "not built yet", sb_other: "Other address...", sb_bad_email: "Invalid e-mail address", sb_bad_phone: "Invalid number (with country code, e.g. +32...)", src_test: "test address", src_form: "check-in form",
     src_form_extra: "extra, check-in form", src_relay: "relay address", src_profile: "guest profile", src_used: "used before", src_earlier: "earlier", sb_to: "to", sb_go: "Send", sb_off: "(not active yet)", send_to: "Send to...", send_to_ask: "Send to which e-mail address (or mobile number with +32...)? It is saved with the reservation.", ct_add: "Add e-mail address or mobile number", ct_email: "e-mail address", ct_phone: "mobile number with country code (+32...)", env_to_prd: "To PRD", env_bar_tst: "TEST ENVIRONMENT (TST): messages only go to the test address, never to guests",
@@ -121,7 +121,7 @@ const T = {
     hs_default: "default", hs_env: "Set for this environment in Key Vault or the Function App: that value takes precedence.",
     hs_add: "Add", hs_key: "name", hs_value: "value", hs_reset_confirm: "Reset all settings to the hotel file? All changes will be lost.",
     hs_list: "comma separated",
-    sec_hotel: "Hotel", sec_test: "Test environment", sec_workflow_parameters: "City tax and currency", sec_verzending: "Mail sender", sec_receptie: "Reception", sec_checkout: "Check-out", sec_ontbijt: "Breakfast",
+    sec_hotel: "Hotel", sec_test: "Test environment", sec_workflow_parameters: "City tax and currency", sec_reviews: "Reviews", sec_verzending: "Mail sender", sec_receptie: "Reception", sec_checkout: "Check-out", sec_ontbijt: "Breakfast",
     sec_wifi: "Wi-Fi", sec_parking: "Parking", sec_nood: "Emergency number", sec_twilio: "Twilio (SMS and WhatsApp)", sec_robot: "Robot",
     sec_messaging: "Messages", sec_whatsapp: "WhatsApp templates", sec_retention: "Retention", sec_salto: "Salto",
     sec_salto_rooms: "Salto: rooms and doors", sec_lighthouse: "Lighthouse", sec_checkin: "Check-in form",
@@ -355,7 +355,7 @@ function showMessages(id) {
     const sendable = READY.includes(p.step);
     return `<li class="pl-${p.state}"><span class="dot"></span>
       <div class="pl-head"><strong>${esc(stepShort(p.step))}</strong>
-        <span class="muted">${esc(when)}</span> <span class="tag pl">${esc(t("pl_" + p.state))}</span>
+        <span class="tag pl">${esc(planText(p, when))}</span>
         ${p.reason ? `<span class="muted reason" title="${esc(reasonText(p.reason))}">${esc(reasonShort(p.reason))}</span>` : ""}
         <span class="sp"></span>
         ${sendable ? `<button type="button" class="send-open" data-step="${esc(p.step)}">${esc(t(sent.length ? "sb_again" : "sb_open"))}</button>` : ""}</div>
@@ -488,6 +488,15 @@ function stickColumns(table, n) {
   });
 }
 window.addEventListener("resize", () => { stickColumns($("#res")?.closest("table"), 4); stickColumns($("#guests")?.closest("table"), 1); });
+
+// Wordt het bericht verstuurd en wanneer: "verstuurd op ...", "wordt verstuurd op ...", "wordt niet verstuurd"
+function planText(p, when) {
+  if (p.state === "sent") return `${t("pl_sent")} ${when}`;
+  if (p.state === "failed") return `${t("pl_failed")} ${when}`;
+  if (p.state === "planned") return `${t("pl_will")} ${when}`;
+  if (p.state === "due") return t("pl_due");
+  return `${t("pl_wont")}${when ? ` (${t("pl_was")} ${when})` : ""}`;
+}
 
 // Korte reden in de tijdlijn (de volledige uitleg staat bij aanwijzen)
 function reasonShort(reason) {
@@ -946,6 +955,8 @@ async function resetWorkflow() {
 const HS_TEXT = {
  "nl": {
   "fields": {
+   "reviews.google_url": ["Google", "Link om een review te schrijven op Google, als knop in de bedankmail. Leeg = geen knop."],
+   "reviews.other_url": ["Andere site", "Bv. Tripadvisor. Leeg = geen knop."],
    "workflow_parameters.city_tax_amount": ["Toeristenbelasting", "Bedrag per persoon (per nacht of per verblijf, zie hieronder). Komt in de mails met een betaalknop."],
    "workflow_parameters.city_tax_unit": ["Per", ""],
    "workflow_parameters.currency": ["Munt", "Bv. EUR."],
@@ -1162,6 +1173,8 @@ const HS_TEXT = {
  },
  "en": {
   "fields": {
+   "reviews.google_url": ["Google", "Link to write a review on Google, as a button in the thank-you mail. Empty = no button."],
+   "reviews.other_url": ["Other site", "E.g. Tripadvisor. Empty = no button."],
    "workflow_parameters.city_tax_amount": ["City tax", "Amount per person (per night or per stay, see below). Used in mails with a pay button."],
    "workflow_parameters.city_tax_unit": ["Per", ""],
    "workflow_parameters.currency": ["Currency", "E.g. EUR."],

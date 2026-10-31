@@ -24,6 +24,11 @@ logo_url = "https://hotellucca.be/wp-content/uploads/2025/06/Logo-website-hotel-
 email = ""
 phone = ""
 
+[reviews]
+# Link om een review te schrijven, in de bedankmail na het verblijf. Leeg = geen knop.
+google_url = "https://search.google.com/local/writereview?placeid=ChIJk9bCqtFQw0cR-x4oBzgi52s"
+other_url = ""   # bv. Tripadvisor
+
 [verzending]
 # Technische afzender van mails (gedeelde mailbox met RBAC for Applications). Gasten zien hem niet als contact.
 mail_afzender = "checkin@hotellucca.be"

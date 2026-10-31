@@ -138,6 +138,24 @@ sms = "{hotel_naam}: dear {voornaam}, thank you for your stay. We hope to see yo
 type = "text"
 alineas = ["Thank you very much for staying at {hotel_naam}. We hope you enjoyed Bruges and your room.", "We would be happy to welcome you again. Book directly on our website and you are sure of the best price."]
 
+[[thank_you.blokken]]   # review vragen; alleen als het adres ingevuld is (Instellingen > Hotel > Reviews)
+type = "text"
+titel = "Your opinion"
+alineas = ["Did you enjoy your stay? A short review helps us a lot and helps other travellers choose. It only takes a minute."]
+alleen_als = "reviews_google_url"
+
+[[thank_you.blokken]]
+type = "button"
+tekst = "Write a review on Google"
+link = "{reviews_google_url}"
+alleen_als = "reviews_google_url"
+
+[[thank_you.blokken]]
+type = "button"
+tekst = "Or on another site"
+link = "{reviews_other_url}"
+alleen_als = "reviews_other_url"
+
 [payment_request]
 onderwerp = "Outstanding amount for your stay at {hotel_naam}"
 voorvertoning = "An amount is still open for your stay."
