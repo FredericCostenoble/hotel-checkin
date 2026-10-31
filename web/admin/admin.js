@@ -44,6 +44,8 @@ const T = {
     sec_salto_rooms: "Salto: kamers en deuren", sec_lighthouse: "Lighthouse", sec_checkin: "Check-in-formulier",
     sec_privacy: "Privacyverklaring", sec_kleuren: "Kleuren", settings: "Instellingen", back: "Monitor", open_lh: "Openen in Lighthouse", pl_not_tried: "niet geprobeerd", backup: "extra adres uit het check-in-formulier",
     rs_now: "Nu versturen", rs_again: "Opnieuw versturen", rs_confirm: (step, ch, to) => `${step} nu versturen per ${ch} naar ${to}?`,
+    rs_confirm_test: (step, ch, test, to) => `${step} nu versturen per ${ch} naar het testadres ${test}? (bedoeld voor ${to}; in de testomgeving gaat niets naar de gast)`,
+    rs_no_test: "Er is geen testadres ingesteld voor deze omgeving, dus er wordt niets verstuurd. Vul het in op Instellingen > Hotel > Testomgeving.",
     chr_muted: "uitgezet voor deze gast", chr_phone_off: "nog niet actief (Twilio)", chr_fallback: "alleen als WhatsApp niet lukt",
     rs_disabled: "stap staat uit", rs_messaging_off: "berichten staan uit in deze omgeving", rs_before_start: "reservatie van voor de start",
     rs_booked_late: "boeking kwam te laat", rs_later_due: "een latere mail is al aan de beurt", rs_not_ready: "nog niet gebouwd",
@@ -113,6 +115,8 @@ const T = {
     sec_salto_rooms: "Salto: rooms and doors", sec_lighthouse: "Lighthouse", sec_checkin: "Check-in form",
     sec_privacy: "Privacy statement", sec_kleuren: "Colours", settings: "Settings", back: "Monitor", open_lh: "Open in Lighthouse", pl_not_tried: "not tried", backup: "extra address from the check-in form",
     rs_now: "Send now", rs_again: "Send again", rs_confirm: (step, ch, to) => `Send ${step} now by ${ch} to ${to}?`,
+    rs_confirm_test: (step, ch, test, to) => `Send ${step} now by ${ch} to the test address ${test}? (meant for ${to}; in the test environment nothing goes to the guest)`,
+    rs_no_test: "No test address is set for this environment, so nothing will be sent. Fill it in under Settings > Hotel > Test environment.",
     chr_muted: "switched off for this guest", chr_phone_off: "not active yet (Twilio)", chr_fallback: "only if WhatsApp fails",
     rs_disabled: "step is off", rs_messaging_off: "messages are off in this environment", rs_before_start: "reservation from before the start",
     rs_booked_late: "booked too late", rs_later_due: "a later mail is already due", rs_not_ready: "not built yet",
@@ -181,6 +185,7 @@ async function init() {
   document.querySelectorAll(".langs button").forEach(b => b.onclick = () => setLang(b.dataset.lang));
   setLang(store("lang") || (navigator.language || "nl").slice(0, 2));
   const hotels = await get("/api/monitor/hotels");
+  hotelList = hotels;
   $("#hotel").innerHTML = hotels.map(h => `<option value="${esc(h.id)}">${esc(h.name)}</option>`).join("");
   const saved = store("hotel");
   if (saved && hotels.some(h => h.id === saved)) $("#hotel").value = saved;
@@ -316,7 +321,11 @@ function showMessages(id) {
   }).join("");
   $("#msgs-attempts").hidden = !r.messages.length;
   document.querySelectorAll("#msgs-plan button.resend").forEach(b => b.onclick = async () => {
-    if (!confirm(t("rs_confirm", stepShort(b.dataset.step), t(CH[b.dataset.ch]), b.dataset.to))) return;
+    const ch = b.dataset.ch, step = stepShort(b.dataset.step), guestTo = b.dataset.to;
+    const question = isPrd() ? t("rs_confirm", step, t(CH[ch]), guestTo)
+      : testTo(ch) ? t("rs_confirm_test", step, t(CH[ch]), testTo(ch), guestTo) : t("rs_no_test");
+    if (!isPrd() && !testTo(ch)) { alert(question); return; }
+    if (!confirm(question)) return;
     b.disabled = true;
     const q = new URLSearchParams({ id: r.id, step: b.dataset.step, channel: b.dataset.ch, to: b.dataset.to });
     const d = await get(`/api/monitor/${$("#hotel").value}/resend?${q}`, { method: "POST" }).catch(e => ({ ok: false, error: String(e) }));
@@ -332,10 +341,14 @@ function showMessages(id) {
 }
 
 // Ontvanger: buiten PRD ging het bericht naar het testadres, niet naar de gast
-const isPrd = () => (document.querySelector(".brand .env")?.textContent || "").trim().toLowerCase() === "prd";
+let hotelList = [];
+const hotelNow = () => hotelList.find(h => h.id === $("#hotel").value) || {};
+const isPrd = () => hotelNow().production === true;
+// Testadres of -nummer van deze omgeving voor een kanaal (leeg = niets versturen)
+const testTo = ch => ch === "email" ? hotelNow().test_email : hotelNow().test_phone;
 function toCell(m) {
   if (isPrd() && (!m.delivered_to || m.delivered_to === m.to)) return esc(m.to);
-  const test = m.delivered_to && m.delivered_to !== m.to ? m.delivered_to : t("mg_test_addr");
+  const test = m.delivered_to && m.delivered_to !== m.to ? m.delivered_to : (testTo(m.channel) || t("mg_test_addr"));
   return `<span class="tag warn">TEST</span> ${esc(test)}<div class="muted small">${esc(t("mg_for"))} ${esc(m.to)}</div>`;
 }
 

@@ -18,7 +18,15 @@ _robot_state: dict[str, str] = {}  # hotel_id -> "bezig" / laatste fout
 
 
 def hotels() -> list[dict]:
-    return [{"id": h, "name": load_hotel(h)["hotel"]["naam"]} for h in list_hotels()]
+    """Hotels voor de keuzelijst, met waar berichten in deze omgeving echt naartoe gaan: in PRD naar
+    de gast, daarbuiten naar het testadres en testnummer (leeg = er wordt niets verstuurd)."""
+    from hotel_checkin.core import safety
+
+    prd = safety.is_production()
+    return [{"id": h, "name": load_hotel(h)["hotel"]["naam"], "production": prd,
+             "test_email": "" if prd else (safety.test_address("email", h) or ""),
+             "test_phone": "" if prd else (safety.test_address("phone", h) or "")}
+            for h in list_hotels()]
 
 
 def reservations(hotel_id: str) -> list[dict]:
