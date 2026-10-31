@@ -261,7 +261,25 @@ function showTab(name, initial = false) {
   if (location.hash.slice(1) !== name) history[initial ? "replaceState" : "pushState"](null, "", "#" + name);
 }
 
+// Monitor actueel houden zonder de pagina te herladen: bij terugkeren naar het venster en elke minuut
+// (niet terwijl de berichtenpopup open is, zodat een geopende verzendrij niet verdwijnt)
+let lastLoad = 0;
+async function refreshNow() {
+  lastLoad = Date.now();
+  rows = await get(`/api/monitor/${$("#hotel").value}/reservations`);
+  render();
+  await loadGuests();
+}
+function refreshSoon() {
+  if (PAGE !== "main" || document.hidden || !$("#msgs").hidden || Date.now() - lastLoad < 15000) return;
+  refreshNow().catch(() => {});
+}
+window.addEventListener("focus", refreshSoon);
+document.addEventListener("visibilitychange", refreshSoon);
+setInterval(refreshSoon, 60000);
+
 async function load() {
+  lastLoad = Date.now();
   if (PAGE === "settings") {
     loadWorkflow();
     loadSettings();
@@ -646,7 +664,13 @@ function render() {
       <td class="wrap">${msgSummary(r)}</td>
     </tr>`).join("") || `<tr><td colspan="15" class="muted">${t("no_res")}</td></tr>`;
   document.querySelectorAll("#res a[data-guest]").forEach(a => a.onclick = e => { e.preventDefault(); openGuest(a.dataset.guest); });
-  document.querySelectorAll("#res a[data-msgs]").forEach(a => a.onclick = e => { e.preventDefault(); showMessages(a.dataset.msgs); });
+  // Popup altijd met verse gegevens (bv. net ingevuld formulier, nieuw bericht)
+  document.querySelectorAll("#res a[data-msgs]").forEach(a => a.onclick = async e => {
+    e.preventDefault();
+    showMessages(a.dataset.msgs);
+    await refreshNow();
+    if (!$("#msgs").hidden) showMessages(a.dataset.msgs);
+  });
   stickColumns($("#res").closest("table"), 4);
 }
 
