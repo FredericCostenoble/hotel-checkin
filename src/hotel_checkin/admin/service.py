@@ -115,6 +115,10 @@ def guests(hotel_id: str) -> dict:
     from hotel_checkin.processes import guest_profiles
 
     opted_out = {e for e in repo.opted_out_emails(hotel_id)}
+    res_by_guest: dict[str, list] = {}
+    for r in repo.list_reservations(hotel_id):
+        if r.guest_id:
+            res_by_guest.setdefault(r.guest_id, []).append(r)
     out = []
     for g in profiles.list_profiles(hotel_id):
         channels = sorted(g.channels.items(), key=lambda kv: -kv[1])
@@ -123,6 +127,9 @@ def guests(hotel_id: str) -> dict:
             "id": g.guest_id, "name": f"{g.first_name} {g.last_name}".strip(),
             "email": g.email or "", "email_own": g.email_own, "phone": g.phone or "",
             "backup_email": g.backup_email or "", "backup_phone": g.backup_phone or "",
+            "known_emails": g.known_emails, "known_phones": g.known_phones,
+            "relay_emails": sorted({r.guest.relay_email or r.guest.email for r in res_by_guest.get(g.guest_id, [])
+                                    if relay_platform(r.guest.relay_email or r.guest.email)}),
             "language": g.language, "country": g.country or "", "form": g.from_checkin_form,
             "opt_out": bool(g.email and g.email.lower() in opted_out),
             "first_stay": g.first_stay.isoformat() if g.first_stay else "",

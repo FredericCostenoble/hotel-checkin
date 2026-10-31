@@ -229,3 +229,5 @@ ul.plan .send-open:hover { background: #EAF0FF; }
 .table-wrap thead th.stick { z-index: 3; }
 .table-wrap .stick-last { box-shadow: 2px 0 0 var(--line); }
 .tag.flow { background: #EAF0FF; color: #2B3F8C; white-space: nowrap; }
+.ct-line { white-space: nowrap; line-height: 1.6; }
+.ct-line .tag.src { font-size: 11px; padding: 0 5px; color: #5C6478; }
