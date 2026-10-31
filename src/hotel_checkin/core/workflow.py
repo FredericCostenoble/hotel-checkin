@@ -119,7 +119,9 @@ def config(hotel_id: str) -> dict:
     if doc is None:
         cfg = validate(hotel_id, file_config(hotel_id))
         return {**cfg, "meta": {"source": "file", "updated_by": "", "updated_at": ""}}
-    cfg = validate(hotel_id, _with_new_steps(doc["value"], file_config(hotel_id)))
+    # Parameters (toeristenbelasting, munt) staan bij de instellingen van het hotel (tabblad Hotel), niet hier
+    value = {**_with_new_steps(doc["value"], file_config(hotel_id)), "parameters": file_config(hotel_id)["parameters"]}
+    cfg = validate(hotel_id, value)
     return {**cfg, "meta": {"source": "monitor", "updated_by": doc["updated_by"], "updated_at": doc["updated_at"]}}
 
 

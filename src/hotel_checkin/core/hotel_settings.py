@@ -17,7 +17,9 @@ import re
 
 from hotel_checkin.core import hotels
 
-EXCLUDED = ("flows", "workflow_parameters")  # tabblad Workflow
+EXCLUDED = ("flows",)  # tabblad Workflow
+# Instellingen met een vaste keuzelijst
+CHOICES = {("workflow_parameters", "city_tax_unit"): ("person_night", "person_stay")}
 
 
 def _comments(hotel_id: str) -> tuple[dict[str, str], dict[tuple[str, str], str]]:
@@ -132,7 +134,8 @@ def view(hotel_id: str) -> dict:
         sections.append({
             "section": name, "free": free, "help": section_help.get(name, ""),
             "fields": [{
-                "key": k, "type": _kind(values.get(k, now.get(k, ""))), "default": values.get(k),
+                "key": k, "type": "choice" if (name, k) in CHOICES else _kind(values.get(k, now.get(k, ""))),
+                "choices": list(CHOICES.get((name, k), ())), "default": values.get(k),
                 "value": now.get(k, values.get(k)), "help": field_help.get((name, k), ""),
                 "env": _env_override(hotel_id, name, k, names),
                 "fallback": _fallback(name, k),
@@ -185,6 +188,8 @@ def validate(hotel_id: str, changes: dict) -> dict:
             if k not in base:
                 raise ValueError(f"{section}: onbekende instelling {k}")
             value = _coerce(_kind(base[k]), v, f"{section}.{k}")
+            if (section, k) in CHOICES and value not in CHOICES[(section, k)]:
+                raise ValueError(f"{section}.{k}: kies uit {', '.join(CHOICES[(section, k)])}")
             if value != base[k]:
                 diff[k] = value
         if diff:

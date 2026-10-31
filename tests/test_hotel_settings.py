@@ -43,3 +43,12 @@ def test_free_sections_and_validation():
         hotel_settings.save("lucca", {"kleuren": {"accent": "blauw"}}, "x")
     with pytest.raises(ValueError):
         hotel_settings.save("lucca", {"onbekend": {"a": 1}}, "x")
+
+
+def test_city_tax_from_hotel_settings():
+    from hotel_checkin.core import workflow
+
+    hotel_settings.save("lucca", {"workflow_parameters": {"city_tax_amount": "4.5", "city_tax_unit": "person_stay"}}, "x")
+    assert workflow.config("lucca")["parameters"]["city_tax_amount"] == 4.5
+    with pytest.raises(ValueError):
+        hotel_settings.save("lucca", {"workflow_parameters": {"city_tax_unit": "per_kamer"}}, "x")

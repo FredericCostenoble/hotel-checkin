@@ -28,7 +28,7 @@ const T = {
     c_paid: "betaald", c_checked_in: "ingecheckt", c_has_email: "e-mailadres gekend", c_has_phone: "telefoon gekend",
     wf_rules: "Herkennen", wf_sources: "Kanaal bevat (komma's tussen)", wf_other: "Alle andere kanalen",
     wf_paid_yes: "en volledig betaald", wf_paid_no: "en nog niet (volledig) betaald",
-    wf_params: "Parameters (alle flows)", p_city_tax: "Toeristenbelasting", p_unit: "Per", unit_person_night: "persoon per nacht",
+    wf_params: "Parameters (alle flows)", wf_params_moved: "Toeristenbelasting en munt staan bij Instellingen > Hotel.", p_city_tax: "Toeristenbelasting", p_unit: "Per", unit_person_night: "persoon per nacht",
     unit_person_stay: "persoon per verblijf", p_currency: "Munt", wf_not_ready: "nog niet gebouwd (Salto)", wf_off: "uit",
     returning: n => `terugkerend (${n}×)`, mg_message: "Bericht", mg_time: "Tijdstip", short_confirmation: "Bevestiging", short_reminder: "Herinnering", short_access_code: "Code-mail", mg_channel: "Kanaal", mg_to: "Naar",
     mg_title: (num, guest) => `Berichten voor ${guest} (${num})`, mg_click: "Klik voor alle details",
@@ -41,7 +41,7 @@ const T = {
     hs_default: "standaard", hs_env: "In deze omgeving vastgelegd in Key Vault of de Function App: die waarde gaat voor.",
     hs_add: "Toevoegen", hs_key: "naam", hs_value: "waarde", hs_reset_confirm: "Alle instellingen terug naar het hotelbestand? Alle wijzigingen gaan verloren.",
     hs_list: "komma's ertussen",
-    sec_hotel: "Hotel", sec_test: "Testomgeving", sec_verzending: "Afzender van de mails", sec_receptie: "Receptie", sec_checkout: "Check-out", sec_ontbijt: "Ontbijt",
+    sec_hotel: "Hotel", sec_test: "Testomgeving", sec_workflow_parameters: "Toeristenbelasting en munt", sec_verzending: "Afzender van de mails", sec_receptie: "Receptie", sec_checkout: "Check-out", sec_ontbijt: "Ontbijt",
     sec_wifi: "Wifi", sec_parking: "Parking", sec_nood: "Noodnummer", sec_twilio: "Twilio (sms en WhatsApp)", sec_robot: "Robot",
     sec_messaging: "Berichten", sec_whatsapp: "WhatsApp-sjablonen", sec_retention: "Bewaartermijnen", sec_salto: "Salto",
     sec_salto_rooms: "Salto: kamers en deuren", sec_lighthouse: "Lighthouse", sec_checkin: "Check-in-formulier",
@@ -102,7 +102,7 @@ const T = {
     c_paid: "paid", c_checked_in: "checked in", c_has_email: "e-mail known", c_has_phone: "phone known",
     wf_rules: "Recognised by", wf_sources: "Channel contains (comma separated)", wf_other: "All other channels",
     wf_paid_yes: "and fully paid", wf_paid_no: "and not (fully) paid",
-    wf_params: "Parameters (all flows)", p_city_tax: "City tax", p_unit: "Per", unit_person_night: "person per night",
+    wf_params: "Parameters (all flows)", wf_params_moved: "City tax and currency are under Settings > Hotel.", p_city_tax: "City tax", p_unit: "Per", unit_person_night: "person per night",
     unit_person_stay: "person per stay", p_currency: "Currency", wf_not_ready: "not built yet (Salto)", wf_off: "off",
     returning: n => `returning (${n}×)`, mg_message: "Message", mg_time: "Time", short_confirmation: "Confirmation", short_reminder: "Reminder", short_access_code: "Code mail", mg_channel: "Channel", mg_to: "To",
     mg_title: (num, guest) => `Messages for ${guest} (${num})`, mg_click: "Click for all details",
@@ -115,7 +115,7 @@ const T = {
     hs_default: "default", hs_env: "Set for this environment in Key Vault or the Function App: that value takes precedence.",
     hs_add: "Add", hs_key: "name", hs_value: "value", hs_reset_confirm: "Reset all settings to the hotel file? All changes will be lost.",
     hs_list: "comma separated",
-    sec_hotel: "Hotel", sec_test: "Test environment", sec_verzending: "Mail sender", sec_receptie: "Reception", sec_checkout: "Check-out", sec_ontbijt: "Breakfast",
+    sec_hotel: "Hotel", sec_test: "Test environment", sec_workflow_parameters: "City tax and currency", sec_verzending: "Mail sender", sec_receptie: "Reception", sec_checkout: "Check-out", sec_ontbijt: "Breakfast",
     sec_wifi: "Wi-Fi", sec_parking: "Parking", sec_nood: "Emergency number", sec_twilio: "Twilio (SMS and WhatsApp)", sec_robot: "Robot",
     sec_messaging: "Messages", sec_whatsapp: "WhatsApp templates", sec_retention: "Retention", sec_salto: "Salto",
     sec_salto_rooms: "Salto: rooms and doors", sec_lighthouse: "Lighthouse", sec_checkin: "Check-in form",
@@ -842,21 +842,14 @@ function bindSteps(flow) {
 }
 
 function renderSide(flow, c) {
-  const p = wf.parameters;
   const rule = flow.sources.length
     ? `<label>${esc(t("wf_sources"))}<input id="wf-sources" type="text" value="${esc(flow.sources.join(", "))}"></label>`
     : `<p>${esc(t("wf_other"))} ${esc(t(flow.paid ? "wf_paid_yes" : "wf_paid_no"))}</p>`;
   $("#wf-side").innerHTML = `
     <h3>${esc(t("wf_rules"))}</h3>${rule}
-    <h3>${esc(t("wf_params"))}</h3>
-    <label>${esc(t("p_city_tax"))} <input id="wf-tax" type="number" min="0" step="0.01" value="${p.city_tax_amount}"></label>
-    <label>${esc(t("p_unit"))} <select id="wf-unit">${c.city_tax_units.map(u => `<option value="${u}" ${u === p.city_tax_unit ? "selected" : ""}>${esc(t("unit_" + u))}</option>`).join("")}</select></label>
-    <label>${esc(t("p_currency"))} <input id="wf-cur" type="text" maxlength="3" value="${esc(p.currency)}"></label>`;
+    <p class="muted small">${esc(t("wf_params_moved"))}</p>`;
   const src = $("#wf-sources");
   if (src) src.onchange = () => { flow.sources = src.value.split(",").map(x => x.trim()).filter(Boolean); setDirty(); };
-  $("#wf-tax").onchange = () => { p.city_tax_amount = parseFloat($("#wf-tax").value || "0"); setDirty(); };
-  $("#wf-unit").onchange = () => { p.city_tax_unit = $("#wf-unit").value; setDirty(); };
-  $("#wf-cur").onchange = () => { p.currency = $("#wf-cur").value.toUpperCase(); setDirty(); };
 }
 
 async function saveWorkflow() {
@@ -885,6 +878,9 @@ async function resetWorkflow() {
 const HS_TEXT = {
  "nl": {
   "fields": {
+   "workflow_parameters.city_tax_amount": ["Toeristenbelasting", "Bedrag per persoon (per nacht of per verblijf, zie hieronder). Komt in de mails met een betaalknop."],
+   "workflow_parameters.city_tax_unit": ["Per", ""],
+   "workflow_parameters.currency": ["Munt", "Bv. EUR."],
    "test.email": [
   "Testadres e-mail",
   "In TST en de codespace gaat elke mail hierheen, nooit naar de gast. Leeg = het testadres van de omgeving (grijs getoond). Nergens een adres = geen mails."
@@ -1098,6 +1094,9 @@ const HS_TEXT = {
  },
  "en": {
   "fields": {
+   "workflow_parameters.city_tax_amount": ["City tax", "Amount per person (per night or per stay, see below). Used in mails with a pay button."],
+   "workflow_parameters.city_tax_unit": ["Per", ""],
+   "workflow_parameters.currency": ["Currency", "E.g. EUR."],
    "test.email": [
   "Test e-mail address",
   "In TST and the codespace every mail goes here, never to the guest. Empty = the environment's test address (shown in grey). No address anywhere = no mails."
@@ -1336,6 +1335,7 @@ function hsValue(sec, f) {
 function hsInput(sec, f, i) {
   const v = hsValue(sec, f), id = `hs-${i}`, attrs = `id="${id}" data-sec="${esc(sec.section)}" data-key="${esc(f.key)}"`;
   if (f.type === "bool") return `<input type="checkbox" ${attrs} ${v ? "checked" : ""}>`;
+  if (f.type === "choice") return `<select ${attrs}>${f.choices.map(c => `<option value="${esc(c)}" ${c === v ? "selected" : ""}>${esc(t("unit_" + c) || c)}</option>`).join("")}</select>`;
   if (f.type === "int" || f.type === "float") return `<input type="number" ${attrs} step="${f.type === "int" ? 1 : "any"}" value="${esc(v)}">`;
   if (f.type === "color") return `<input type="color" ${attrs} value="${esc(v)}"> <code>${esc(v)}</code>`;
   if (f.type === "list") return `<input type="text" ${attrs} value="${esc((v || []).join(", "))}" placeholder="${esc(t("hs_list"))}">`;
