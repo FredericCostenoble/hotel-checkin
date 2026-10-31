@@ -83,7 +83,11 @@ def form_data(token: str, today: date | None = None) -> dict | None:
         state = "closed"
     else:
         state = "open"
+    from hotel_checkin.processes.guest_profiles import is_own_email
+
     email = r.guest.email or ""
+    # Doorstuuradres van Booking.com, Expedia, ... niet voorstellen: de gast vult zijn eigen adres in
+    shown = email if is_own_email(email) else ""
     return {
         "state": state,
         "first_name": r.guest.first_name,
@@ -92,7 +96,7 @@ def form_data(token: str, today: date | None = None) -> dict | None:
         "departure": r.departure.isoformat(),
         "room_type": r.room_type or "",
         "rooms": list(r.rooms),
-        "email": email,
+        "email": shown,
         "phone": r.guest.phone or "",
         "country": r.guest.country or "",
         "backup_email": r.guest.backup_email or "",

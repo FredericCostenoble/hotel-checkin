@@ -93,3 +93,17 @@ def test_demo_link_from_example_mail_is_never_saved():
     ok, errors = service.submit("voorbeeld-lucca", {"email": "a@b.be", "language": "nl"})
     assert ok and not errors
     assert service.submit("voorbeeld-lucca", {"email": "fout"})[1] == {"email": "invalid"}
+
+
+def test_relay_address_not_prefilled():
+    from datetime import date, timedelta
+
+    from hotel_checkin.checkin import service
+    from hotel_checkin.core.models import Guest, Reservation
+    from hotel_checkin.guests import repository as repo
+
+    repo.use_memory_store()
+    arr = date.today() + timedelta(days=10)
+    r = repo.save_reservation(Reservation("lucca", "relay1", Guest("Jan", "Peeters", email="jpeete.123@guest.booking.com"),
+                                          arr, arr + timedelta(days=1)))
+    assert service.form_data(r.token)["email"] == ""
