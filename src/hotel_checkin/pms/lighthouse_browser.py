@@ -6,7 +6,10 @@ Aanmelden met een eigen robotgebruiker per hotel (zonder MFA):
     adres:          config/hotels/<hotel_id>.toml, [lighthouse] base_url
 
 Afspraken:
-- Pagina's altijd volledig laten laden (folio en transacties laden asynchroon).
+- Pagina's altijd volledig laten laden (folio en transacties laden asynchroon). Niet wachten op
+  "netwerk stil": Lighthouse blijft op de achtergrond verversen, dus dat wordt nooit stil en kost
+  telkens de volle wachttijd. Wel nagaan of wat we nodig hebben er staat (wachtwoordveld, aangemelde
+  pagina, rijen in de lijst, ingevulde transacties): goto(path, ready=<voorwaarde in JavaScript>).
 - Sessiecookies worden bewaard tussen runs, zodat niet elke keer opnieuw aangemeld wordt.
 - Dit bestand leest alleen. Schrijven in Lighthouse gebeurt enkel in PRD (zie lighthouse.py).
 """
@@ -58,10 +61,15 @@ class LighthouseSession:
         self.debug_dir = debug_dir
         self.state_file = state_file(hotel_id)
         self._pw = self._browser = self._context = self.page = None
+        # Gemeten duur (seconden) voor de monitor: browser starten, aanmelden, sessie hergebruikt (1) of niet (0)
+        self.timings: dict[str, float] = {}
 
     def __enter__(self) -> LighthouseSession:
+        import time
+
         from playwright.sync_api import sync_playwright
 
+        t0 = time.monotonic()
         self._pw = sync_playwright().start()
         self._browser = self._pw.chromium.launch(headless=self.headless)
         state = str(self.state_file) if self.state_file.exists() else None
@@ -70,7 +78,10 @@ class LighthouseSession:
         )
         self._context.set_default_timeout(TIMEOUT_MS)
         self.page = self._context.new_page()
+        self.timings["browser"] = round(time.monotonic() - t0, 1)
+        t0 = time.monotonic()
         self.login()
+        self.timings["login"] = round(time.monotonic() - t0, 1)
         return self
 
     def __exit__(self, *exc) -> None:
@@ -90,12 +101,19 @@ class LighthouseSession:
             self.debug_dir.mkdir(parents=True, exist_ok=True)
             self.page.screenshot(path=str(self.debug_dir / f"{name}.png"), full_page=True)
 
-    def _wait_loaded(self) -> None:
+    def _wait_loaded(self, ready: str | None = None, timeout: int = 20_000, arg=None) -> bool:
+        """Wacht tot de pagina geladen is. Met ready (JavaScript-voorwaarde): tot die waar is, dus tot wat
+        we nodig hebben er echt staat. Zonder: tot het netwerk stil is (max. timeout), als vangnet voor
+        pagina's zonder gekende voorwaarde. False als de voorwaarde niet binnen de tijd waar werd."""
         self.page.wait_for_load_state("load")
         try:
-            self.page.wait_for_load_state("networkidle", timeout=20_000)
-        except Exception:  # noqa: BLE001 - sommige pagina's blijven pollen
-            pass
+            if ready:
+                self.page.wait_for_function(ready, arg=arg, timeout=timeout)
+            else:
+                self.page.wait_for_load_state("networkidle", timeout=timeout)
+            return True
+        except Exception:  # noqa: BLE001 - dan verder met wat er is
+            return False
 
     def _on_login_page(self) -> bool:
         return self.page.locator("input[type=password]").count() > 0 or "/Customer/" not in self.page.url
@@ -103,10 +121,11 @@ class LighthouseSession:
     def login(self) -> None:
         """Meld aan als de bewaarde sessie niet meer geldig is."""
         page = self.page
-        page.goto(self.base + "/Customer/Dashboard")
-        self._wait_loaded()
+        page.goto(self.base + "/Customer/Dashboard")  # wacht tot "load": daarna is meteen duidelijk waar we zijn
         if not self._on_login_page():
+            self.timings["session"] = 1  # bewaarde sessie nog geldig
             return
+        self.timings["session"] = 0
         self._snap("01-login")
         try:
             self._fill_login()
@@ -124,7 +143,7 @@ class LighthouseSession:
         sso = page.locator("a.lighthouse-login-flow, a:has-text('Lighthouse account')").first
         if sso.count():
             sso.click()
-            self._wait_loaded()
+            page.wait_for_load_state("load")  # het veld hieronder wacht zelf tot het zichtbaar is
             self._snap("02-lighthouse-login")
 
         user_field = page.locator(
@@ -142,8 +161,7 @@ class LighthouseSession:
         password_field.fill(password)
         page.keyboard.press("Enter")
 
-        page.wait_for_url("**/Customer/**")
-        self._wait_loaded()
+        page.wait_for_url("**/Customer/**")  # aangemeld zodra Lighthouse de klantpagina geladen heeft
 
     def close_popups(self) -> None:
         """Sluit pop-ups die Lighthouse vanzelf opent (bv. de interne memo). Wijzigt niets."""
@@ -159,12 +177,11 @@ class LighthouseSession:
                 page.keyboard.press("Escape")
             page.wait_for_timeout(500)
 
-    def goto(self, path: str):
-        """Open een pagina en wacht tot ze volledig geladen is."""
+    def goto(self, path: str, ready: str | None = None, timeout: int = 20_000):
+        """Open een pagina en wacht tot ze geladen is (ready: zie _wait_loaded)."""
         self.page.goto(self.base + path)
-        self._wait_loaded()
         if self._on_login_page():
             self.login()
             self.page.goto(self.base + path)
-            self._wait_loaded()
+        self._wait_loaded(ready, timeout)
         return self.page

@@ -34,6 +34,7 @@ def run(hotel_id: str, since: datetime) -> int:
         t0 = time.monotonic()
         with lighthouse.connect(hotel_id) as lh:
             timings["login"] = round(time.monotonic() - t0, 1)
+            timings.update({f"lh_{k}": v for k, v in getattr(lh, "timings", {}).items()})
             t0 = time.monotonic()
             listed = lighthouse.get_new_reservations(hotel_id, since, lh, skipped)
             timings["list"] = round(time.monotonic() - t0, 1)

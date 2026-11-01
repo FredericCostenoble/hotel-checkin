@@ -107,6 +107,7 @@ def run(hotel_id: str) -> int:
             t0 = time.monotonic()
             with lighthouse.connect(hotel_id) as lh:
                 timings["login"] = round(time.monotonic() - t0, 1)
+                timings.update({f"lh_{k}": v for k, v in getattr(lh, "timings", {}).items()})
                 deadline = time.monotonic() + MAX_SECONDS
                 for reservation in todo:
                     if time.monotonic() > deadline:

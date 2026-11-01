@@ -26,12 +26,16 @@ from hotel_checkin.pms.lighthouse_browser import LighthouseSession
 from hotel_checkin.pms.lighthouse_parse import TZ, parse_contact, parse_detail, parse_list_row
 
 LIST_PATH = "/Customer/Reservations/List"  # standaard gesorteerd op boekdatum, nieuwste eerst
+_ROWS = "table.table-bordered > tbody > tr"
+# Lijst klaar zodra er rijen staan. De lijst toont alle reservaties (ook oude), dus ze is nooit leeg;
+# zou ze toch leeg zijn, dan na 20 s verder met wat er is.
+_LIST_READY = "() => document.querySelectorAll('table.table-bordered > tbody > tr').length > 0"
 MAX_PAGES = 30  # 15 per pagina; genoeg voor de eerste keer (30 dagen)
 
 
 def _rows_on_page(hotel_id: str, page, skipped: list[str]) -> list[Reservation]:
     out = []
-    for row in page.locator("table.table-bordered > tbody > tr").all():
+    for row in page.locator(_ROWS).all():
         cells = row.locator(":scope > td").all()
         if len(cells) < 4:
             continue
@@ -64,7 +68,7 @@ def get_new_reservations(
         with LighthouseSession(hotel_id) as lh:
             return get_new_reservations(hotel_id, since, lh, skipped)
 
-    page = session.goto(LIST_PATH)
+    page = session.goto(LIST_PATH, ready=_LIST_READY)
     found: list[Reservation] = []
     for _ in range(MAX_PAGES):
         rows = _rows_on_page(hotel_id, page, skipped)
@@ -75,8 +79,12 @@ def get_new_reservations(
         next_link = page.locator("ul.pagination a:has-text('›'), ul.pagination a[rel=next], .pagination li:last-child a").first
         if not rows or not next_link.count():
             break
+        # Volgende pagina: klaar zodra de eerste rij een andere is (niet wachten tot het netwerk stil is)
+        first = page.locator(_ROWS).first.inner_text()
         next_link.click()
-        session._wait_loaded()
+        session._wait_loaded(
+            "first => { const r = document.querySelector('table.table-bordered > tbody > tr');"
+            " return !!r && r.innerText !== first; }", arg=first)
     return found
 
 
@@ -121,11 +129,8 @@ _TRANSACTIONS_LOADED = r"""() => {
 
 
 def _read_detail(session: LighthouseSession, hotel_id: str, reservation_id: str) -> Reservation:
-    page = session.goto(DETAIL_PATH.format(id=reservation_id))
-    try:
-        page.wait_for_function(_TRANSACTIONS_LOADED, timeout=10_000)
-    except Exception:  # noqa: BLE001 - geen transactieblok: verder met wat er is
-        pass
+    # Klaar zodra de transacties ingevuld zijn (laden asynchroon); geen transactieblok: na 10 s verder
+    page = session.goto(DETAIL_PATH.format(id=reservation_id), ready=_TRANSACTIONS_LOADED, timeout=10_000)
     session.close_popups()
     toggle = page.locator(".js-masked-contact-toggle").first
     if toggle.count() and "*" in (page.locator('[data-field="email"]').first.inner_text() or "*"):
