@@ -49,8 +49,8 @@ def send_email(
     sender: standaard de instelling MAIL_SENDER (checkin@hotellucca.be, puur technisch).
     reply_to: waar antwoorden van de gast naartoe gaan, normaal het contactadres van het hotel
               (config/hotels/<hotel_id>.toml, [hotel] email).
-    Buiten productie gaat de mail naar het testadres (core/safety.py): dat van het hotel als
-    hotel_id gegeven is (instellingen, sectie [test]), anders TEST_EMAIL van de omgeving.
+    Buiten productie gaat de mail naar het testadres van het hotel (instellingen, sectie [test],
+    zie core/safety.py). Zonder hotel_id of zonder testadres wordt niets verstuurd.
     client: alleen voor tests, om de HTTP-aanroep te vervangen.
     """
     sender = sender or get_setting("MAIL_SENDER")

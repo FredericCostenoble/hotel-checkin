@@ -14,7 +14,7 @@ Testmails sturen in de codespace (alle mails, alle talen, met voorbeeldgegevens)
     python -m hotel_checkin.messaging.templates jouw@adres.be
     python -m hotel_checkin.messaging.templates jouw@adres.be nl,fr
     python -m hotel_checkin.messaging.templates jouw@adres.be nl --hotel lucca
-Buiten productie gaan de mails naar TEST_EMAIL (zie core/safety.py).
+Buiten productie gaan de mails naar het testadres van het hotel (zie core/safety.py).
 """
 
 from __future__ import annotations

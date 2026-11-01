@@ -1,19 +1,18 @@
 """Bescherming van gasten buiten productie.
 
 APP_ENV bepaalt de omgeving: "prd" (productie), "tst" (test in Azure) of "dev" (codespace, standaard).
-Buiten "prd" gaat geen enkel bericht naar een echte gast: alles wordt omgeleid naar TEST_EMAIL
-(mails) of TEST_PHONE (sms en WhatsApp). De oorspronkelijke ontvanger staat in het onderwerp of
-vooraan in de tekst. Is er geen testadres ingesteld, dan wordt er niets verstuurd.
+Buiten "prd" gaat geen enkel bericht naar een echte gast: alles wordt omgeleid naar het testadres
+(mails) of testnummer (sms en WhatsApp) van het hotel. De oorspronkelijke ontvanger staat in het
+onderwerp of vooraan in de tekst.
 
-Het testadres per hotel staat in de instellingen (monitor, tabblad Hotel, sectie [test]); leeg =
-het testadres van de omgeving (instelling TEST_EMAIL / TEST_PHONE van de Function App).
+Het testadres en testnummer staan alleen in de instellingen van het hotel (monitor, tabblad Hotel,
+sectie [test], standaard uit config/hotels/<hotel_id>.toml). Leeg = er wordt niets verstuurd.
+Er is geen testadres per omgeving meer.
 """
 
 from __future__ import annotations
 
 import os
-
-from hotel_checkin.core.config import get_setting
 
 
 def environment() -> str:
@@ -25,14 +24,13 @@ def is_production() -> bool:
 
 
 def test_address(kind: str, hotel_id: str | None = None) -> str | None:
-    """Testadres (kind "email") of testnummer ("phone"): eerst dat van het hotel (instellingen),
-    anders dat van de omgeving. None als er geen is."""
-    setting = "TEST_EMAIL" if kind == "email" else "TEST_PHONE"
-    if hotel_id:
-        from hotel_checkin.core.config import hotel_setting
+    """Testadres (kind "email") of testnummer ("phone") uit de instellingen van het hotel, of None."""
+    if not hotel_id:
+        return None
+    from hotel_checkin.core.hotels import load_hotel
 
-        return hotel_setting(hotel_id, setting, required=False) or None
-    return get_setting(setting, required=False) or None
+    value = str(load_hotel(hotel_id).get("test", {}).get("email" if kind == "email" else "phone") or "").strip()
+    return value or None
 
 
 def route(kind: str, to: str, hotel_id: str | None = None) -> tuple[str | None, str]:
@@ -42,8 +40,8 @@ def route(kind: str, to: str, hotel_id: str | None = None) -> tuple[str | None, 
     """
     if is_production():
         return to, ""
-    setting = "TEST_EMAIL" if kind == "email" else "TEST_PHONE"
     test = test_address(kind, hotel_id)
     if not test:
-        return None, f"Niet verstuurd: {setting} is niet ingesteld (omgeving {environment()})."
+        what = "testadres e-mail" if kind == "email" else "testnummer sms en WhatsApp"
+        return None, f"Niet verstuurd: geen {what} in de instellingen van het hotel (omgeving {environment()})."
     return test, f"[{environment().upper()} voor {to}] "

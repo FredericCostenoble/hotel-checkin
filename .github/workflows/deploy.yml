@@ -99,8 +99,6 @@ jobs:
                          budgetAmount="${{ vars.BUDGET_AMOUNT || '0' }}" \
                          robotSchedule="${{ vars.ROBOT_SCHEDULE || '0 * * * *' }}" \
                          alertEmail="${{ vars.ALERT_EMAIL }}" \
-                         testEmail="${{ vars.TEST_EMAIL }}" \
-                         testPhone="${{ vars.TEST_PHONE }}" \
                          kvAdminObjectId="${{ vars.KV_ADMIN_OBJECT_ID }}" \
             --query properties.outputs -o json)
           echo "func=$(jq -r .functionAppName.value <<<"$out")" >> "$GITHUB_OUTPUT"

@@ -37,7 +37,8 @@ resources in de resource group (de tabellen eerst overzetten).
 
 ## Verschil TST en PRD
 
-- TST: `APP_ENV=tst`. Elke mail gaat naar `TEST_EMAIL`, elke SMS of WhatsApp naar `TEST_PHONE`.
+- TST: `APP_ENV=tst`. Elke mail en SMS of WhatsApp gaat naar het testadres of testnummer van het hotel
+  (instellingen in de monitor, sectie `[test]`). Leeg = niets versturen.
   De links in de mails wijzen naar het testformulier (`CHECKIN_FORM_URL`).
   TST mag de productie van Lighthouse lezen, maar schrijft er nooit in.
 - PRD: `APP_ENV=prd`, berichten naar de echte gasten, formulier op `checkin.hotellucca.be`.

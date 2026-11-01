@@ -85,8 +85,6 @@ declare -A VARS=(
   [AZURE_SUBSCRIPTION_ID]="$SUB"
   [ALERT_EMAIL]="$ALERT_EMAIL"
   [KV_ADMIN_OBJECT_ID]="$ME"
-  [TEST_EMAIL]="${TEST_EMAIL:-}"
-  [TEST_PHONE]="${TEST_PHONE:-}"
 )
 FAILED=0
 for k in "${!VARS[@]}"; do

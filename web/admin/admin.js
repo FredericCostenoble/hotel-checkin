@@ -983,11 +983,11 @@ const HS_TEXT = {
    "workflow_parameters.currency": ["Munt", "Bv. EUR."],
    "test.email": [
   "Testadres e-mail",
-  "In TST en de codespace gaat elke mail hierheen, nooit naar de gast. Leeg = het testadres van de omgeving (grijs getoond). Nergens een adres = geen mails."
+  "In TST en de codespace gaat elke mail hierheen, nooit naar de gast. Leeg = geen mails."
  ],
  "test.phone": [
   "Testnummer sms en WhatsApp",
-  "In TST en de codespace gaat elke sms en WhatsApp hierheen. Leeg = het testnummer van de omgeving (grijs getoond). Nergens een nummer = niets versturen."
+  "In TST en de codespace gaat elke sms en WhatsApp hierheen. Leeg = niets versturen."
  ],
  "hotel.naam": [
     "Naam",
@@ -1201,11 +1201,11 @@ const HS_TEXT = {
    "workflow_parameters.currency": ["Currency", "E.g. EUR."],
    "test.email": [
   "Test e-mail address",
-  "In TST and the codespace every mail goes here, never to the guest. Empty = the environment's test address (shown in grey). No address anywhere = no mails."
+  "In TST and the codespace every mail goes here, never to the guest. Empty = no mails."
  ],
  "test.phone": [
   "Test number SMS and WhatsApp",
-  "In TST and the codespace every SMS and WhatsApp goes here. Empty = the environment's test number (shown in grey). No number anywhere = nothing sent."
+  "In TST and the codespace every SMS and WhatsApp goes here. Empty = nothing sent."
  ],
  "hotel.naam": [
     "Name",
@@ -1441,7 +1441,7 @@ function hsInput(sec, f, i) {
   if (f.type === "int" || f.type === "float") return `<input type="number" ${attrs} step="${f.type === "int" ? 1 : "any"}" value="${esc(v)}">`;
   if (f.type === "color") return `<input type="color" ${attrs} value="${esc(v)}"> <code>${esc(v)}</code>`;
   if (f.type === "list") return `<input type="text" ${attrs} value="${esc((v || []).join(", "))}" placeholder="${esc(t("hs_list"))}">`;
-  return `<input type="text" ${attrs} value="${esc(v ?? "")}"${f.fallback ? ` placeholder="${esc(f.fallback)}"` : ""}>`;
+  return `<input type="text" ${attrs} value="${esc(v ?? "")}">`;
 }
 
 function renderSettings() {

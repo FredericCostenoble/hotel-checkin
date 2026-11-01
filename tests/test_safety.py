@@ -4,6 +4,7 @@ import json
 from urllib.parse import parse_qs
 
 import httpx
+import pytest
 
 from hotel_checkin.messaging.email import send_email
 from hotel_checkin.messaging.sms import send_sms
@@ -17,30 +18,47 @@ def _client(captured):
     return httpx.Client(transport=httpx.MockTransport(handler))
 
 
+@pytest.fixture(autouse=True)
+def hotel_test_settings(monkeypatch):
+    """Testadres en testnummer van het hotel (sectie [test]), los van wat in lucca.toml staat."""
+    from hotel_checkin.core import hotels
+
+    values = {"email": "test@hotellucca.be", "phone": "+32476000000"}
+    real = hotels.load_hotel
+
+    def load(hotel_id):
+        cfg = real(hotel_id)
+        return {**cfg, "test": dict(values)}
+
+    monkeypatch.setattr(hotels, "load_hotel", load)
+    return values
+
+
 def test_email_redirected_in_tst(monkeypatch):
     monkeypatch.setenv("APP_ENV", "tst")
-    monkeypatch.setenv("TEST_EMAIL", "test@hotellucca.be")
     captured = {}
     r = send_email("gast@example.com", "Uw verblijf", "<p>x</p>", sender="checkin@hotellucca.be",
-                   client=_client(captured))
+                   client=_client(captured), hotel_id="lucca")
     msg = json.loads(captured["body"])["message"]
     assert r.ok
     assert msg["toRecipients"][0]["emailAddress"]["address"] == "test@hotellucca.be"
     assert msg["subject"] == "[TST voor gast@example.com] Uw verblijf"
 
 
-def test_nothing_sent_without_test_address(monkeypatch):
+def test_nothing_sent_without_test_address(monkeypatch, hotel_test_settings):
     monkeypatch.setenv("APP_ENV", "dev")
-    monkeypatch.delenv("TEST_EMAIL", raising=False)
-    monkeypatch.delenv("KEY_VAULT_URL", raising=False)
+    monkeypatch.setenv("TEST_EMAIL", "omgeving@example.com")  # bestaat niet meer: telt niet
+    hotel_test_settings["email"] = ""
     captured = {}
+    r = send_email("gast@example.com", "x", "x", sender="checkin@hotellucca.be", client=_client(captured),
+                   hotel_id="lucca")
+    assert not r.ok and "testadres" in r.error and not captured
     r = send_email("gast@example.com", "x", "x", sender="checkin@hotellucca.be", client=_client(captured))
-    assert not r.ok and "TEST_EMAIL" in r.error and not captured
+    assert not r.ok and not captured  # zonder hotel: nooit
 
 
 def test_sms_redirected_in_dev(monkeypatch):
     monkeypatch.setenv("APP_ENV", "dev")
-    monkeypatch.setenv("TEST_PHONE", "+32476000000")
     monkeypatch.setenv("TWILIO_ACCOUNT_SID", "ACtest")
     monkeypatch.setenv("TWILIO_AUTH_TOKEN", "t")
     monkeypatch.setenv("TWILIO_SMS_FROM", "+4915800000000")
@@ -60,19 +78,21 @@ def test_production_sends_to_guest(monkeypatch):
 
 
 def test_test_address_from_hotel_settings(monkeypatch):
+    """Alleen het adres uit de instellingen van het hotel (monitor of hotelbestand), niets anders."""
     from hotel_checkin.core import hotel_settings, hotels, safety
     from hotel_checkin.guests import repository as repo
 
+    monkeypatch.undo()  # echte load_hotel (met wijzigingen uit de monitor)
     repo.use_memory_store()
     hotels.forget_overrides()
     monkeypatch.setenv("APP_ENV", "tst")
-    monkeypatch.delenv("TEST_EMAIL", raising=False)
-    assert safety.route("email", "gast@example.com", "lucca")[0] is None  # nergens een testadres: niets
-    monkeypatch.setenv("TEST_EMAIL", "omgeving@example.com")
-    assert safety.route("email", "gast@example.com", "lucca")[0] == "omgeving@example.com"
+    assert safety.route("email", "gast@example.com", "lucca")[0] == "frederic@hotellucca.be"  # hotelbestand
     hotel_settings.save("lucca", {"test": {"email": "fred@example.com"}}, "x")
     real, prefix = safety.route("email", "gast@example.com", "lucca")
     assert real == "fred@example.com" and "gast@example.com" in prefix
+    hotel_settings.save("lucca", {"test": {"email": ""}}, "x")
+    monkeypatch.setenv("TEST_EMAIL", "omgeving@example.com")
+    assert safety.route("email", "gast@example.com", "lucca")[0] is None  # leeg = geen mails
     monkeypatch.setenv("APP_ENV", "prd")
     assert safety.route("email", "gast@example.com", "lucca")[0] == "gast@example.com"
     hotels.forget_overrides()

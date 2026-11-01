@@ -36,8 +36,9 @@ Gedeelde types staan in `core/models.py`, configuratie in `core/config.py`.
 ## Omgevingen en bescherming van gasten
 
 - `APP_ENV=prd` (productie), `tst` (test in Azure) of `dev` (codespace, standaard).
-- Buiten `prd` gaat elk bericht naar `TEST_EMAIL` of `TEST_PHONE`; de echte ontvanger staat in het
-  onderwerp of vooraan in de tekst. Zonder testadres wordt niets verstuurd (`core/safety.py`).
+- Buiten `prd` gaat elk bericht naar het testadres of testnummer van het hotel (instellingen, sectie
+  `[test]`); de echte ontvanger staat in het onderwerp of vooraan in de tekst. Leeg = niets versturen
+  (`core/safety.py`).
 
 ## Hosting (Azure)
 

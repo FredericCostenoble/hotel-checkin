@@ -44,12 +44,6 @@ param budgetStartDate string = '2026-10-01'
 @description('Maximaal aantal GB logging per dag (als tekst, bv. 0.1).')
 param logDailyCapGb string = '0.1'
 
-@description('Buiten PRD: alle mails gaan naar dit adres.')
-param testEmail string = ''
-
-@description('Buiten PRD: alle SMS en WhatsApp gaan naar dit nummer.')
-param testPhone string = ''
-
 @description('Object-id van de beheerder die secrets in Key Vault mag zetten (leeg = geen).')
 param kvAdminObjectId string = ''
 
@@ -226,8 +220,6 @@ var funcSettings = filter(
     ADMIN_AUTH: empty(adminClientId) ? '' : 'easyauth'
     ROBOT_JOB_ID: empty(robotImage) ? '' : robotJob.id
     ROBOT_IMAGE: robotImage
-    TEST_EMAIL: env == 'prd' ? '' : testEmail
-    TEST_PHONE: env == 'prd' ? '' : testPhone
     // In TST wijzen de links in de mails naar het testformulier
     CHECKIN_FORM_URL: env == 'prd' ? '' : 'https://${formHost}/?r={token}'
   }),
