@@ -1,6 +1,6 @@
 """Proces nieuwe reservatie: gegevens van de gast blijven behouden."""
 
-from datetime import date, datetime
+from datetime import UTC, date, datetime
 
 import pytest
 
@@ -52,11 +52,11 @@ def test_new_and_merge(monkeypatch):
 
 
 def test_robot_since_newest_stored_booking():
-    from datetime import timedelta, timezone
+    from datetime import timedelta
 
     from hotel_checkin import robot
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     assert now - robot._since("lucca", None) > timedelta(days=29)  # niets opgeslagen: 30 dagen
     r = _res()
     r.booked_at = now - timedelta(hours=5)
@@ -78,11 +78,11 @@ def test_robot_main_runs(monkeypatch):
 
 
 def test_robot_rereads_after_skipped_rows():
-    from datetime import timedelta, timezone
+    from datetime import timedelta
 
     from hotel_checkin import robot
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     r = _res()
     r.booked_at = now - timedelta(hours=2)
     repo.save_reservation(r)
@@ -145,13 +145,13 @@ def test_existing_without_email_not_read_in_quick_run(monkeypatch):
 
 
 def test_robot_refresh_every_two_hours(monkeypatch):
-    from datetime import timedelta, timezone
+    from datetime import timedelta
 
     from hotel_checkin import robot
     from hotel_checkin.processes import refresh_contacts
 
     assert robot._refresh_due("lucca")
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     repo.log_robot_run("lucca", refresh_contacts.TASK, now - timedelta(minutes=30), True)
     assert not robot._refresh_due("lucca")
     repo.log_robot_run("lucca", refresh_contacts.TASK, now - timedelta(hours=1, minutes=58), True)
@@ -160,13 +160,13 @@ def test_robot_refresh_every_two_hours(monkeypatch):
 
 
 def test_robot_check_interval_per_hotel(monkeypatch):
-    from datetime import timedelta, timezone
+    from datetime import timedelta
 
     from hotel_checkin import robot
 
     monkeypatch.delenv("ROBOT_MANUAL", raising=False)
     assert robot._check_due("lucca")
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     repo.log_robot_run("lucca", new_reservation.TASK, now - timedelta(minutes=5), True)
     assert not robot._check_due("lucca")  # check_minutes = 60
     monkeypatch.setenv("LUCCA_ROBOT_CHECK_MINUTES", "5")
@@ -174,3 +174,17 @@ def test_robot_check_interval_per_hotel(monkeypatch):
     monkeypatch.delenv("LUCCA_ROBOT_CHECK_MINUTES")
     monkeypatch.setenv("ROBOT_MANUAL", "1")
     assert robot._check_due("lucca")  # knop in de monitor
+
+
+def test_relisted_reservation_keeps_pin_salto_and_profile(monkeypatch):
+    """Review 01/11: een reservatie die opnieuw in de lijst staat, mag de pincode niet wissen."""
+    monkeypatch.setattr(new_reservation.lighthouse, "get_new_reservations", lambda *a, **k: [_res()])
+    new_reservation.run("lucca", datetime(2000, 1, 1))
+    r = repo.get_reservation("lucca", "u1")
+    r.access_pin, r.salto_user_id, r.salto_group_id, r.rooms = "123456", "su", "sg", ["14"]
+    r.open_amount, r.folio = 10.0, [{"label": "Citytax", "qty": 2, "amount": 10.0}]
+    repo.save_reservation(r)
+    new_reservation.run("lucca", datetime(2000, 1, 1))  # dezelfde rij, zonder kamer in de lijst
+    after = repo.get_reservation("lucca", "u1")
+    assert (after.access_pin, after.salto_user_id, after.salto_group_id) == ("123456", "su", "sg")
+    assert after.rooms == ["14"] and after.open_amount == 10.0 and after.guest_id

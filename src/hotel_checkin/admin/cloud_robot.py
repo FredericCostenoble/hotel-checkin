@@ -19,9 +19,9 @@ def available() -> bool:
 
 
 def _headers() -> dict:
-    from azure.identity import DefaultAzureCredential
+    from hotel_checkin.core.clients import azure_credential
 
-    token = DefaultAzureCredential().get_token(f"{ARM}/.default").token
+    token = azure_credential().get_token(f"{ARM}/.default").token
     return {"Authorization": f"Bearer {token}"}
 
 

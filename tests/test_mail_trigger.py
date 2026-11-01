@@ -1,6 +1,6 @@
 """Proces mail_trigger: een melding van Cubilis start de robot, gewone mails niet."""
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import pytest
 
@@ -19,7 +19,7 @@ def memory(monkeypatch):
 
 
 def _mail(sender, subject, minutes_ago=1):
-    return {"id": subject, "received_at": datetime.now(timezone.utc) - timedelta(minutes=minutes_ago),
+    return {"id": subject, "received_at": datetime.now(UTC) - timedelta(minutes=minutes_ago),
             "sender": sender, "subject": subject, "text": "Reserveringsnummer: 12345678"}
 
 

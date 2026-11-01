@@ -1,12 +1,11 @@
 """Tests voor bouwblok 5 (opslag) met een eenvoudige tabel in het geheugen, zonder Azure."""
 
-from datetime import date
+from datetime import UTC, date
 
 import pytest
 
 from hotel_checkin.core.models import Channel, Guest, Reservation, SendResult
 from hotel_checkin.guests import repository as repo
-
 
 FakeTable = repo.MemoryTable
 
@@ -110,9 +109,9 @@ def test_hotels_are_separated():
 
 
 def test_prune_robot_runs():
-    from datetime import datetime, timedelta, timezone
+    from datetime import datetime, timedelta
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     repo.log_robot_run("lucca", "t", now - timedelta(days=40), True)
     repo.log_robot_run("lucca", "t", now - timedelta(days=1), True)
     assert repo.prune_robot_runs("lucca", 30) == 1
@@ -120,13 +119,13 @@ def test_prune_robot_runs():
 
 
 def test_updated_at_only_when_something_changed(monkeypatch):
-    from datetime import date, datetime, timezone
+    from datetime import date, datetime
 
     from hotel_checkin.core.models import Guest, Reservation
     from hotel_checkin.guests import repository as repo
 
     repo.use_memory_store()
-    times = iter([datetime(2026, 10, 30, 9, m, tzinfo=timezone.utc) for m in range(0, 60)])
+    times = iter([datetime(2026, 10, 30, 9, m, tzinfo=UTC) for m in range(60)])
     monkeypatch.setattr(repo, "_now", lambda: next(times))
     r = Reservation("lucca", "u9", Guest("Jan", "Voorbeeld"), date(2099, 1, 1), date(2099, 1, 2))
     first = repo.save_reservation(r)
@@ -141,24 +140,24 @@ def test_updated_at_only_when_something_changed(monkeypatch):
 
 
 def test_delete_robot_run():
-    from datetime import datetime, timezone
+    from datetime import datetime
 
     from hotel_checkin.guests import repository as repo
 
     repo.use_memory_store()
-    repo.log_robot_run("lucca", "nieuwe_reservaties", datetime.now(timezone.utc), True)
+    repo.log_robot_run("lucca", "nieuwe_reservaties", datetime.now(UTC), True)
     run_id = repo.robot_runs("lucca")[0]["RowKey"]
     assert not repo.delete_robot_run("lucca", "x' or 1 eq 1")
     assert repo.delete_robot_run("lucca", run_id) and repo.robot_runs("lucca") == []
 
 
 def test_delete_robot_runs_all_or_per_task():
-    from datetime import datetime, timezone
+    from datetime import datetime
 
     from hotel_checkin.guests import repository as repo
 
     repo.use_memory_store()
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     for task in ("nieuwe_reservaties", "nieuwe_reservaties", "meldingen"):
         repo.log_robot_run("lucca", task, now, True)
     assert repo.delete_robot_runs("lucca", "meldingen") == 1
@@ -182,3 +181,66 @@ def test_form_data_not_overwritten_by_stale_copy():
     r = repo.get_reservation("lucca", "race1")
     assert r.guest.email == "caner@elbonet.be" and r.checkin_completed_at and r.rooms == ["12"]
     assert r.guest.relay_email == "ac.1@guest.booking.com"
+
+
+def test_partial_save_keeps_fields_of_other_writers():
+    """Een oude kopie (bv. robot) bewaart alleen zijn eigen velden: de pincode van Salto blijft."""
+    repo.save_reservation(_reservation("p1"))
+    stale = repo.get_reservation("lucca", "p1")
+    fresh = repo.get_reservation("lucca", "p1")
+    fresh.access_pin, fresh.salto_user_id = "654321", "user-1"
+    repo.save_reservation(fresh, fields=repo.SALTO_FIELDS)
+    stale.rooms = ["21"]
+    repo.save_reservation(stale, fields=repo.DETAIL_FIELDS)
+    r = repo.get_reservation("lucca", "p1")
+    assert r.rooms == ["21"] and r.access_pin == "654321" and r.salto_user_id == "user-1"
+
+
+def test_save_retries_on_etag_conflict(monkeypatch):
+    """Verandert de rij tussen lezen en schrijven, dan opnieuw lezen en samenvoegen."""
+    repo.save_reservation(_reservation("e1"))
+    table = repo._table(repo.T_RESERVATIONS)
+    real_update, calls = table.update_entity, []
+
+    def racing_update(entity, **kw):
+        if not calls:  # iemand anders schrijft net de pincode
+            calls.append(1)
+            other = dict(table.get_entity(entity["PartitionKey"], entity["RowKey"]))
+            other["access_pin"] = "111111"
+            table.upsert_entity(other)
+        return real_update(entity, **kw)
+
+    monkeypatch.setattr(table, "update_entity", racing_update)
+    r = repo.get_reservation("lucca", "e1")
+    r.rooms = ["3"]
+    repo.save_reservation(r, fields=repo.DETAIL_FIELDS)
+    after = repo.get_reservation("lucca", "e1")
+    assert after.rooms == ["3"] and after.access_pin == "111111"
+
+
+def test_token_index_and_cleanup():
+    r = repo.save_reservation(_reservation("t1"))
+    assert repo.get_by_token(r.token).reservation_id == "t1"
+    assert repo.get_by_token("bestaat-niet") is None
+    repo.save_form_submission("lucca", "t1", {"email": "a@example.com"})
+    repo.log_message("lucca", "t1", "confirmation", SendResult(Channel.EMAIL, "a@example.com", True))
+    repo.delete_reservation("lucca", "t1")
+    assert repo.get_by_token(r.token) is None
+    assert repo.form_submissions("lucca", "t1") == [] and repo.messages_for("lucca", "t1") == []
+
+
+def test_messages_for_hotel_does_not_mix_hotels():
+    repo.log_message("lucca", "a", "confirmation", SendResult(Channel.EMAIL, "x@example.com", True))
+    repo.log_message("lucca2", "b", "confirmation", SendResult(Channel.EMAIL, "y@example.com", True))
+    assert list(repo.messages_for_hotel("lucca")) == ["a"]
+
+
+def test_robot_runs_newest_first_with_task_filter():
+    from datetime import datetime, timedelta
+
+    now = datetime.now(UTC)
+    for i, task in enumerate(["a", "b", "a"]):
+        repo.log_robot_run("lucca", task, now - timedelta(minutes=10 - i), True)
+    runs = repo.robot_runs("lucca", task="a")
+    assert [r["task"] for r in runs] == ["a", "a"] and runs[0]["started_at"] > runs[1]["started_at"]
+    assert len(repo.robot_runs("lucca", limit=1)) == 1

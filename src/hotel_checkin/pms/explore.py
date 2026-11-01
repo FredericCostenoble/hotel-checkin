@@ -88,7 +88,7 @@ def _mask(text: str, names: list[str]) -> str:
         line = re.sub(r"\+?\d[\d ./()-]{6,}\d", "<tel>", line)
         for n in names:
             if len(n) > 1:
-                line = re.sub(re.escape(n), "<naam>", line, flags=re.I)
+                line = re.sub(re.escape(n), "<naam>", line, flags=re.IGNORECASE)
         if len(line) > 80:
             line = f"<tekst {len(line)} tekens>"
         out.append(line)

@@ -437,7 +437,7 @@ def format_moment(dt, language: str) -> str:
         return f"{dt.day} {month}, {dt.hour}h{dt.minute:02d}"
     if lang == "en":
         h = dt.hour % 12 or 12
-        return f"{dt.day} {month}, {h}{':%02d' % dt.minute if dt.minute else ''} {'am' if dt.hour < 12 else 'pm'}"
+        return f"{dt.day} {month}, {h}{f':{dt.minute:02d}' if dt.minute else ''} {'am' if dt.hour < 12 else 'pm'}"
     if lang == "de":
         return f"{dt.day}. {month}, {dt.hour:02d}:{dt.minute:02d} Uhr"
     return f"{dt.day} {month}, {dt.hour:02d}:{dt.minute:02d}"

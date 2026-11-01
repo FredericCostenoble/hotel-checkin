@@ -7,6 +7,7 @@
 
 [hotel]
 naam = "Hotel Lucca"
+tijdzone = "Europe/Brussels"   # kalender van de workflow (herinnering, code-mail, opruimen)
 adres = "Naaldenstraat 30, 8000 Brugge"
 telefoon = "+32 471 18 15 74"
 email = "info@hotellucca.be"   # contactadres voor gasten (mails versturen gebeurt technisch via MAIL_SENDER)

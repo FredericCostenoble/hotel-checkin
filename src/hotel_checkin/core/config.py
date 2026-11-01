@@ -14,7 +14,9 @@ Zo kan een hotel een eigen waarde krijgen (bv. een eigen Twilio-account) zonder 
 
 from __future__ import annotations
 
+import logging
 import os
+import time
 from functools import lru_cache
 
 
@@ -23,21 +25,41 @@ def _key_vault_client():
     url = os.environ.get("KEY_VAULT_URL")
     if not url:
         return None
-    from azure.identity import DefaultAzureCredential
     from azure.keyvault.secrets import SecretClient
 
-    return SecretClient(vault_url=url, credential=DefaultAzureCredential())
+    from hotel_checkin.core.clients import azure_credential
+
+    return SecretClient(vault_url=url, credential=azure_credential())
 
 
-@lru_cache(maxsize=256)
+# Waarden uit Key Vault even onthouden: niet bij elke oproep naar Key Vault, maar een gewijzigd of
+# nieuw geheim (bv. berichten aan of uit) werkt binnen enkele minuten, zonder herstart.
+CACHE_SECONDS = 300
+_cache: dict[str, tuple[str | None, float]] = {}
+
+
+def clear_cache() -> None:
+    _cache.clear()
+
+
 def _from_key_vault(name: str) -> str | None:
     client = _key_vault_client()
     if client is None:
         return None
+    hit = _cache.get(name)
+    if hit and hit[1] > time.monotonic():
+        return hit[0]
+    from azure.core.exceptions import ResourceNotFoundError
+
     try:
-        return client.get_secret(name.replace("_", "-").lower()).value
-    except Exception:  # noqa: BLE001 - secret bestaat niet
+        value = client.get_secret(name.replace("_", "-").lower()).value
+    except ResourceNotFoundError:
+        value = None  # bestaat niet: ook onthouden (de meeste namen bestaan niet, bv. per hotel)
+    except Exception:
+        logging.warning("Key Vault: %s niet gelezen", name, exc_info=True)
         return None
+    _cache[name] = (value, time.monotonic() + CACHE_SECONDS)
+    return value
 
 
 def _lookup(name: str) -> str | None:

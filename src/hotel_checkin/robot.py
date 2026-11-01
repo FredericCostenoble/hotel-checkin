@@ -27,11 +27,11 @@ import argparse
 import logging
 import os
 import sys
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
+from hotel_checkin.core.config import hotel_setting
 from hotel_checkin.core.hotels import list_hotels
 from hotel_checkin.guests import repository as guests
-from hotel_checkin.core.config import hotel_setting
 from hotel_checkin.processes import maintenance, new_reservation, refresh_contacts
 
 
@@ -43,10 +43,10 @@ def _since(hotel_id: str, hours: int | None) -> datetime:
       rijen nog eens geprobeerd worden (bestaande reservaties worden gewoon bijgewerkt).
     - Anders: de nieuwste opgeslagen boeking (min 1 uur marge), of 30 dagen als er nog niets is.
     """
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     if hours:
         return now - timedelta(hours=hours)
-    runs = [r for r in guests.robot_runs(hotel_id) if r.get("task") == new_reservation.TASK]
+    runs = guests.robot_runs(hotel_id, limit=1, task=new_reservation.TASK)
     if runs and runs[0].get("since") and (not runs[0].get("ok") or int(runs[0].get("skipped") or 0)):
         return datetime.fromisoformat(runs[0]["since"])
     booked = [r.booked_at for r in guests.list_reservations(hotel_id) if r.booked_at]
@@ -55,28 +55,69 @@ def _since(hotel_id: str, hours: int | None) -> datetime:
     return now - timedelta(days=30)
 
 
+SESSION_KEY = "lighthouse_session"
+MAX_SESSION_CHARS = 30_000  # een tekstveld in Table Storage mag max. 32K tekens bevatten
+
+
+def _restore_session(hotel_id: str) -> None:
+    """De container begint altijd leeg: de sessiecookies van Lighthouse van de vorige run terugzetten,
+    zodat de robot niet bij elke run opnieuw aanmeldt (ongeveer 25 seconden per run). Is de sessie
+    verlopen, dan meldt de robot gewoon opnieuw aan. Bewaard in RobotState, met dezelfde toegang als de
+    gastgegevens (alleen de beheerde identiteiten van de omgeving)."""
+    from hotel_checkin.pms.lighthouse_browser import state_file
+
+    try:
+        data = guests.get_state(hotel_id, SESSION_KEY)
+        path = state_file(hotel_id)
+        if data and not path.exists():
+            path.write_text(data)
+    except Exception:
+        logging.warning("%s: sessie van Lighthouse niet teruggezet", hotel_id, exc_info=True)
+
+
+def _store_session(hotel_id: str) -> None:
+    """Alleen de cookies bewaren (geen localStorage), zodat het in één tabelveld past."""
+    import json
+
+    from hotel_checkin.pms.lighthouse_browser import state_file
+
+    try:
+        path = state_file(hotel_id)
+        if not path.exists():
+            return
+        data = json.dumps({"cookies": json.loads(path.read_text()).get("cookies", []), "origins": []})
+        if len(data) <= MAX_SESSION_CHARS and data != guests.get_state(hotel_id, SESSION_KEY):
+            guests.set_state(hotel_id, SESSION_KEY, data)
+    except Exception:
+        logging.warning("%s: sessie van Lighthouse niet bewaard", hotel_id, exc_info=True)
+
+
 def _check_due(hotel_id: str) -> bool:
     """Is het tijd om opnieuw naar nieuwe reservaties te kijken voor dit hotel?"""
     if os.environ.get("ROBOT_MANUAL"):
         return True
     minutes = float(hotel_setting(hotel_id, "ROBOT_CHECK_MINUTES", default="60", shared=False))
-    runs = [r for r in guests.robot_runs(hotel_id) if r.get("task") == new_reservation.TASK and r.get("ok")]
+    runs = [r for r in guests.robot_runs(hotel_id, task=new_reservation.TASK) if r.get("ok")]
     if not runs:
         return True
     last = datetime.fromisoformat(runs[0]["started_at"])
     # 2 minuten marge: een run op schema start nooit precies op dezelfde seconde
-    return datetime.now(timezone.utc) - last >= timedelta(minutes=minutes) - timedelta(minutes=2)
+    return datetime.now(UTC) - last >= timedelta(minutes=minutes) - timedelta(minutes=2)
 
 
 def _refresh_due(hotel_id: str) -> bool:
-    """Is het tijd om de contactgegevens opnieuw na te lezen?"""
+    """Is het tijd om de contactgegevens opnieuw na te lezen? Altijd als een melding erom vroeg."""
+    from hotel_checkin.processes import refresh_requests
+
+    if refresh_requests.requested(hotel_id):
+        return True
     hours = float(hotel_setting(hotel_id, "ROBOT_CONTACT_REFRESH_HOURS", default="2", shared=False))
-    runs = [r for r in guests.robot_runs(hotel_id) if r.get("task") == refresh_contacts.TASK and r.get("ok")]
+    runs = [r for r in guests.robot_runs(hotel_id, task=refresh_contacts.TASK) if r.get("ok")]
     if not runs:
         return True
     last = datetime.fromisoformat(runs[0]["started_at"])
     # 5 minuten marge, zodat een run op schema net na het uur niet een beurt overslaat
-    return datetime.now(timezone.utc) - last >= timedelta(hours=hours) - timedelta(minutes=5)
+    return datetime.now(UTC) - last >= timedelta(hours=hours) - timedelta(minutes=5)
 
 
 def main() -> int:
@@ -96,12 +137,13 @@ def main() -> int:
             fixed = checkin_service.reapply_forms(hotel_id)
             if fixed:
                 logging.warning("%s: %d check-in-formulier(en) opnieuw toegepast", hotel_id, fixed)
-        except Exception:  # noqa: BLE001
+        except Exception:
             logging.exception("%s: formulieren nakijken mislukt", hotel_id)
         if not args.hours and not _check_due(hotel_id):
             logging.info("%s: interval nog niet om, overgeslagen", hotel_id)
             continue
         since = _since(hotel_id, args.hours)
+        _restore_session(hotel_id)
         try:
             new = new_reservation.run(hotel_id, since)
             logging.info("%s: %s nieuwe reservaties", hotel_id, new)
@@ -113,9 +155,11 @@ def main() -> int:
                 logging.info("%s: %s e-mailadressen gevonden bij nalezen", hotel_id, found)
             # Log van de robot opruimen (standaard 30 dagen, instelling ROBOT_LOG_DAYS)
             guests.prune_robot_runs(hotel_id, int(os.environ.get("ROBOT_LOG_DAYS") or 30))
-        except Exception:  # noqa: BLE001 - staat ook in het robotlog (opvolgpagina)
+        except Exception:
             logging.exception("%s: robot mislukt", hotel_id)
             failed = True
+        finally:
+            _store_session(hotel_id)
     return 1 if failed else 0
 
 

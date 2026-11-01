@@ -11,13 +11,17 @@ een run van de robot die toch al draait. Telt nooit iets dubbel (stay_counted_at
 4. Gastprofielen verwijderen als het laatste verblijf langer dan [retention] guest_days geleden
    of de laatste annulering langer dan [retention] guest_days geleden is (Lucca: 730), en
    profielen zonder verblijf, annulering of reservatie.
+5. Indieningen van het check-in-formulier van reservaties die er niet meer zijn, verwijderen
+   (bewaartermijn: zelfde als de reservatie).
+6. Eenmalig: de tokens van bestaande reservaties in de index zetten (TokenIndex).
 De blokkeerlijst voor marketing (MarketingOptOut) blijft altijd staan.
 """
 
 from __future__ import annotations
 
-from datetime import date, datetime, timedelta, timezone
+from datetime import UTC, date, datetime, timedelta
 
+from hotel_checkin.core import clock
 from hotel_checkin.core.config import hotel_setting
 from hotel_checkin.core.models import ReservationStatus
 from hotel_checkin.guests import profiles
@@ -30,7 +34,7 @@ STATE_KEY = "maintenance_last_day"
 
 def due(hotel_id: str, today: date | None = None) -> bool:
     """Vandaag nog niet gesynchroniseerd?"""
-    return guests.get_state(hotel_id, STATE_KEY) != (today or date.today()).isoformat()
+    return guests.get_state(hotel_id, STATE_KEY) != (today or clock.today(hotel_id)).isoformat()
 
 
 def _days(hotel_id: str, name: str, default: int) -> int:
@@ -38,12 +42,12 @@ def _days(hotel_id: str, name: str, default: int) -> int:
 
 
 def run(hotel_id: str, today: date | None = None) -> dict:
-    started = datetime.now(timezone.utc)
-    today = today or date.today()
+    started = datetime.now(UTC)
+    today = today or clock.today(hotel_id)
     keep_res = _days(hotel_id, "RETENTION_RESERVATION_DAYS", 30)
     keep_guest = _days(hotel_id, "RETENTION_GUEST_DAYS", 730)
     done = {"linked": 0, "counted": 0, "cancellations": 0, "reservations_deleted": 0, "guests_deleted": 0,
-            "access_revoked": 0}
+            "access_revoked": 0, "forms_deleted": 0}
     try:
         pool = profiles.list_profiles(hotel_id)
         # Eenmalig: profielen geteld voor verblijven als periodes geteld werden, opnieuw tellen
@@ -76,6 +80,10 @@ def run(hotel_id: str, today: date | None = None) -> dict:
                 done["reservations_deleted"] += 1
             else:
                 remaining.add(r.reservation_id)
+        for f in guests.all_form_submissions(hotel_id):
+            if f["reservation_id"] not in remaining:
+                done["forms_deleted"] += guests.delete_form_submissions(hotel_id, f["reservation_id"])
+        guests.build_token_index()
         for g in profiles.list_profiles(hotel_id):
             g.reservation_ids = [x for x in g.reservation_ids if x in remaining]
             # Laatste contact: laatste verblijf of laatste annulering

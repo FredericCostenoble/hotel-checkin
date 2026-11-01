@@ -20,14 +20,18 @@ import difflib
 import re
 import unicodedata
 from collections import Counter
-from datetime import date, datetime, timezone
+from datetime import UTC, date, datetime
 
+from hotel_checkin.core import clock
+
+# Doorstuuradressen van boekingsplatformen: per boeking anders en niet bruikbaar voor marketing
+from hotel_checkin.core.addresses import (  # noqa: F401 - ook hier gebruikt
+    RELAY_DOMAINS,
+    is_own_email,
+)
 from hotel_checkin.core.models import GuestProfile, Reservation, ReservationStatus
 from hotel_checkin.guests import profiles
 from hotel_checkin.guests import repository as guests
-
-# Doorstuuradressen van boekingsplatformen: per boeking anders en niet bruikbaar voor marketing
-from hotel_checkin.core.addresses import RELAY_DOMAINS, is_own_email  # noqa: F401 - ook hier gebruikt
 
 
 def name_key(first: str, last: str) -> str:
@@ -125,7 +129,7 @@ def link(r: Reservation, all_profiles: list[GuestProfile] | None = None) -> Gues
         profiles.save_profile(g)
     if r.guest_id != g.guest_id:
         r.guest_id = g.guest_id
-        guests.save_reservation(r)
+        guests.save_reservation(r, fields=("guest_id",))
     if count_cancellation(r):
         g = profiles.get_profile(r.hotel_id, g.guest_id) or g
     if all_profiles is not None:
@@ -166,7 +170,7 @@ def count_stay(r: Reservation, today: date | None = None) -> bool:
     Overlapt het met een verblijf dat al meetelt (bv. tweede kamer voor dezelfde nachten), dan
     komt er geen verblijf bij: alleen de kamer en de personen worden toegevoegd.
     """
-    today = today or date.today()
+    today = today or clock.today(r.hotel_id)
     if r.stay_counted_at or not r.guest_id or r.status == ReservationStatus.CANCELLED or r.departure >= today:
         return False
     g = profiles.get_profile(r.hotel_id, r.guest_id)
@@ -186,8 +190,8 @@ def count_stay(r: Reservation, today: date | None = None) -> bool:
     if not same_stay:
         g.channels[channel_of(r)] = g.channels.get(channel_of(r), 0) + 1
     profiles.save_profile(g)
-    r.stay_counted_at = datetime.now(timezone.utc)
-    guests.save_reservation(r)
+    r.stay_counted_at = datetime.now(UTC)
+    guests.save_reservation(r, fields=("stay_counted_at",))
     return True
 
 
@@ -199,10 +203,10 @@ def count_cancellation(r: Reservation, today: date | None = None) -> bool:
     if g is None:
         return False
     g.cancellations += 1
-    g.last_cancelled = today or date.today()
+    g.last_cancelled = today or clock.today(r.hotel_id)
     profiles.save_profile(g)
-    r.cancel_counted_at = datetime.now(timezone.utc)
-    guests.save_reservation(r)
+    r.cancel_counted_at = datetime.now(UTC)
+    guests.save_reservation(r, fields=("cancel_counted_at",))
     return True
 
 
@@ -220,7 +224,7 @@ def reset_counts(hotel_id: str) -> int:
     for r in guests.list_reservations(hotel_id):
         if r.stay_counted_at or r.cancel_counted_at:
             r.stay_counted_at = r.cancel_counted_at = None
-            guests.save_reservation(r)
+            guests.save_reservation(r, fields=("stay_counted_at", "cancel_counted_at"))
             n += 1
     return n
 
@@ -265,57 +269,85 @@ def merge(hotel_id: str, keep_id: str, other_id: str, keep: GuestProfile | None 
         r = guests.get_reservation(hotel_id, rid)
         if r is not None and r.guest_id != keep.guest_id:
             r.guest_id = keep.guest_id
-            guests.save_reservation(r)
+            guests.save_reservation(r, fields=("guest_id",))
     profiles.save_profile(keep)
     profiles.delete_profile(hotel_id, other.guest_id)
     return keep
 
 
+# Naamdelen die niets zeggen over wie iemand is (Van, De, Der, ...): niet gebruikt om te vergelijken
+_PARTICLES = {"van", "von", "der", "den", "del", "della", "des", "het", "ter", "ten", "dos", "das", "les", "mac"}
+# Gelijkaardige namen (tikfouten) alleen zoeken binnen groepen tot zoveel profielen met hetzelfde
+# naamdeel; anders groeit het kwadratisch (2 jaar gasten). Exact dezelfde naam wordt altijd gevonden.
+MAX_GROUP = 200
+
+
 def possible_matches(hotel_id: str, limit: int = 50) -> list[dict]:
-    """Paren die misschien dezelfde gast zijn, voor de monitor. Nooit automatisch samengevoegd."""
-    pool = [g for g in profiles.list_profiles(hotel_id) if g.first_name or g.last_name]
+    """Paren die misschien dezelfde gast zijn, voor de monitor. Nooit automatisch samengevoegd.
+
+    Volgorde: zelfde (of extra) adres of nummer, dan exact dezelfde naam, dan een gelijkaardige naam.
+    """
+    all_profiles = profiles.list_profiles(hotel_id)
     different = profiles.different_pairs(hotel_id)
-    by_token: dict[str, list[GuestProfile]] = {}
-    for g in pool:
-        for token in set(name_key(g.first_name, g.last_name).split()):
-            if len(token) > 2:
-                by_token.setdefault(token, []).append(g)
-    seen, out = set(), []
+    seen: set[tuple[str, str]] = set()
+    out: list[dict] = []
+
+    def add(a: GuestProfile, b: GuestProfile, reason: str) -> bool:
+        """Voeg het paar toe als het nieuw is. True = de limiet is bereikt."""
+        pair = tuple(sorted((a.guest_id, b.guest_id)))
+        if a.guest_id == b.guest_id or pair in seen or profiles.is_marked_different(different, *pair):
+            return False
+        seen.add(pair)
+        out.append({"a": pair[0], "b": pair[1], "reason": reason})
+        return len(out) >= limit
+
     # extra adres of nummer uit het formulier van de ene gast = adres of nummer van de andere:
     # misschien dezelfde persoon, misschien een partner. Daarom alleen voorstellen.
     # Zelfde eigen adres of nummer maar een andere naam (partner, familie?): ook alleen voorstellen.
+    contacts = {g.guest_id: own_emails(g) | phones(g) for g in all_profiles}
     by_contact: dict[str, list[GuestProfile]] = {}
-    for g in profiles.list_profiles(hotel_id):
+    for g in all_profiles:
         extra = {(g.backup_email or "").lower(), g.backup_phone or ""}
-        for v in own_emails(g) | phones(g) | extra:
+        for v in contacts[g.guest_id] | extra:
             if v and (("@" not in v) or is_own_email(v)):
                 by_contact.setdefault(v, []).append(g)
     for value, group in by_contact.items():
         for i, a in enumerate(group):
             for b in group[i + 1:]:
-                pair = tuple(sorted((a.guest_id, b.guest_id)))
-                if a.guest_id == b.guest_id or pair in seen or profiles.is_marked_different(different, *pair):
-                    continue
-                seen.add(pair)
-                both_own = all(value in (own_emails(x) | phones(x)) for x in (a, b))
-                out.append({"a": pair[0], "b": pair[1], "reason": "same_contact" if both_own else "extra_contact"})
-    for group in by_token.values():
+                both_own = value in contacts[a.guest_id] and value in contacts[b.guest_id]
+                if add(a, b, "same_contact" if both_own else "extra_contact"):
+                    return out
+
+    pool = [g for g in all_profiles if g.first_name or g.last_name]
+    keys = {g.guest_id: name_key(g.first_name, g.last_name) for g in pool}
+
+    def other_country(a: GuestProfile, b: GuestProfile) -> bool:
+        return bool(a.country and b.country and a.country != b.country)
+
+    by_key: dict[str, list[GuestProfile]] = {}
+    for g in pool:
+        by_key.setdefault(keys[g.guest_id], []).append(g)
+    for group in by_key.values():
         for i, a in enumerate(group):
             for b in group[i + 1:]:
-                pair = tuple(sorted((a.guest_id, b.guest_id)))
-                if pair in seen or profiles.is_marked_different(different, *pair):
+                if not other_country(a, b) and add(a, b, "same_name"):
+                    return out
+
+    by_token: dict[str, list[GuestProfile]] = {}
+    for g in pool:
+        for token in set(keys[g.guest_id].split()):
+            if len(token) > 2 and token not in _PARTICLES:
+                by_token.setdefault(token, []).append(g)
+    for group in by_token.values():
+        if len(group) > MAX_GROUP:
+            continue
+        for i, a in enumerate(group):
+            ka = keys[a.guest_id]
+            for b in group[i + 1:]:
+                kb = keys[b.guest_id]
+                if ka == kb or other_country(a, b) or abs(len(ka) - len(kb)) > max(len(ka), len(kb)) // 5 + 1:
                     continue
-                seen.add(pair)
-                if a.country and b.country and a.country != b.country:
-                    continue
-                ka, kb = name_key(a.first_name, a.last_name), name_key(b.first_name, b.last_name)
-                if ka == kb:
-                    reason = "same_name"
-                elif difflib.SequenceMatcher(None, ka, kb).ratio() >= 0.9:
-                    reason = "similar_name"
-                else:
-                    continue
-                out.append({"a": a.guest_id, "b": b.guest_id, "reason": reason})
-                if len(out) >= limit:
+                m = difflib.SequenceMatcher(None, ka, kb)
+                if m.quick_ratio() >= 0.9 and m.ratio() >= 0.9 and add(a, b, "similar_name"):
                     return out
     return out

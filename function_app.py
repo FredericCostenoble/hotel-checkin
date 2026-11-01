@@ -129,6 +129,9 @@ def admin_hotels(req: func.HttpRequest) -> func.HttpResponse:
 def admin_api(req: func.HttpRequest) -> func.HttpResponse:
     if not _admin_user(req):
         return _json(401, {"error": "login"})
+    if req.method != "GET" and req.headers.get("x-monitor") != "1":
+        # Bescherming tegen CSRF: alleen de monitor zelf stuurt deze kop mee (zie web/admin/admin.js)
+        return _json(403, {"error": "csrf"})
     hotel, what = req.route_params["hotel"], req.route_params["what"]
     if hotel not in list_hotels():
         return _json(404, {"error": "hotel"})
@@ -224,7 +227,7 @@ def mail_trigger(timer: func.TimerRequest) -> None:
         try:
             if process.enabled(hotel_id):
                 process.run(hotel_id)
-        except Exception:  # noqa: BLE001 - het volgende hotel mag niet tegengehouden worden
+        except Exception:
             logging.exception("%s: mail_trigger mislukt", hotel_id)
 
 
@@ -239,5 +242,5 @@ def send_messages(timer: func.TimerRequest) -> None:
     for hotel_id in list_hotels():
         try:
             process.run(hotel_id)
-        except Exception:  # noqa: BLE001
+        except Exception:
             logging.exception("%s: berichten versturen mislukt", hotel_id)

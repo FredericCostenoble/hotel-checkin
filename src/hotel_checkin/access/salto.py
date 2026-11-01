@@ -24,6 +24,7 @@ from datetime import datetime
 
 import httpx
 
+from hotel_checkin.core import clients
 from hotel_checkin.core.config import hotel_setting
 from hotel_checkin.core.hotels import load_hotel
 
@@ -66,7 +67,7 @@ def _token(hotel_id: str, client: httpx.Client) -> str:
 def _call(hotel_id: str, method: str, path: str, json: dict | None = None,
           client: httpx.Client | None = None):
     """Oproep naar de API van de site. path zonder site, bv. "/v1.2/sites/{site}/users"."""
-    http = client or httpx.Client(timeout=30)
+    http = client or clients.http()
     base = _setting(hotel_id, "SALTO_API_URL", DEFAULT_API_URL).rstrip("/")
     url = base + path.replace("{site}", _setting(hotel_id, "SALTO_SITE_ID"))
     r = http.request(method, url, json=json, headers={"Authorization": f"Bearer {_token(hotel_id, http)}"})

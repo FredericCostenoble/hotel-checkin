@@ -20,6 +20,7 @@ import sys
 
 import httpx
 
+from hotel_checkin.core import clients
 from hotel_checkin.core.config import get_setting
 from hotel_checkin.core.models import Channel, SendResult
 from hotel_checkin.core.safety import route
@@ -29,9 +30,7 @@ GRAPH_SCOPE = "https://graph.microsoft.com/.default"
 
 
 def _get_token() -> str:
-    from azure.identity import DefaultAzureCredential
-
-    return DefaultAzureCredential().get_token(GRAPH_SCOPE).token
+    return clients.azure_credential().get_token(GRAPH_SCOPE).token
 
 
 def send_email(
@@ -76,7 +75,7 @@ def send_email(
         ]
 
     try:
-        http = client or httpx.Client(timeout=30)
+        http = client or clients.http()
         response = http.post(
             f"{GRAPH_URL}/users/{sender}/sendMail",
             headers={"Authorization": f"Bearer {_get_token() if client is None else 'test'}"},

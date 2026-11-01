@@ -41,18 +41,18 @@ class ReservationNotice:
 
 
 def _strip_forward(subject: str) -> str:
-    return re.sub(r"^\s*((fw|fwd|tr|wg|re)\s*:\s*)+", "", subject, flags=re.I).strip()
+    return re.sub(r"^\s*((fw|fwd|tr|wg|re)\s*:\s*)+", "", subject, flags=re.IGNORECASE).strip()
 
 
 def is_from_cubilis(sender: str, text: str = "") -> bool:
     """Rechtstreeks van Cubilis, of met de hand doorgestuurd (dan staat Cubilis in de tekst)."""
     if any(sender.lower().endswith("@" + d) for d in SENDER_DOMAINS):
         return True
-    return bool(re.search(r"^\s*(From|Van|De|Von):\s*Cubilis", text, re.I | re.M))
+    return bool(re.search(r"^\s*(From|Van|De|Von):\s*Cubilis", text, re.IGNORECASE | re.MULTILINE))
 
 
 def _date_after(label: str, text: str) -> date | None:
-    m = re.search(rf"{label}\s*:?\s*\n?\s*\n?\s*([^\n]+)", text, re.I)
+    m = re.search(rf"{label}\s*:?\s*\n?\s*\n?\s*([^\n]+)", text, re.IGNORECASE)
     if not m:
         return None
     try:
@@ -66,12 +66,12 @@ def parse_notice(sender: str, subject: str, text: str) -> ReservationNotice | No
     if not is_from_cubilis(sender, text):
         return None
     subj = _strip_forward(subject)
-    kind = next((k for k, pattern in _KINDS if re.search(pattern, subj, re.I)), None)
-    if kind is None or not re.search(r"reserv|booking", subj, re.I):
+    kind = next((k for k, pattern in _KINDS if re.search(pattern, subj, re.IGNORECASE)), None)
+    if kind is None or not re.search(r"reserv|booking", subj, re.IGNORECASE):
         return None
     number = re.search(r"\((\d{5,})\)", subj) or re.search(
-        r"(?:Reserveringsnummer|Reservation number|Numéro de réservation)\s*:?\s*(\d{5,})", text, re.I)
-    channel = re.search(r"\bvia\s+(.+?)(?:\s*\(|\s+-\s+|$)", subj, re.I)
+        r"(?:Reserveringsnummer|Reservation number|Numéro de réservation)\s*:?\s*(\d{5,})", text, re.IGNORECASE)
+    channel = re.search(r"\bvia\s+(.+?)(?:\s*\(|\s+-\s+|$)", subj, re.IGNORECASE)
     # In een doorgestuurde mail staat de originele tekst na de doorstuurkop
     body = text.split("Subject:", 1)[-1] if "Subject:" in text else text
     return ReservationNotice(

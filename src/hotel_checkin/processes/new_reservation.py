@@ -7,7 +7,7 @@ technische details van Lighthouse, Salto of Twilio; die zitten in de bouwblokken
 from __future__ import annotations
 
 import time
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from hotel_checkin.core import workflow
 from hotel_checkin.guests import repository as guests
@@ -25,7 +25,7 @@ def run(hotel_id: str, since: datetime) -> int:
     Elke run wordt gelogd (monitor). De stappen zelf (confirmation, reminder, access_code)
     komen in aparte processen.
     """
-    started = datetime.now(timezone.utc)
+    started = datetime.now(UTC)
     found = new = 0
     stats = _ContactStats()
     skipped: list[str] = []
@@ -59,7 +59,11 @@ def run(hotel_id: str, since: datetime) -> int:
                     _keep_known(reservation, existing)
                 if contact is not None:
                     _apply_contact(reservation, contact)
-                guests.save_reservation(reservation)
+                # Bestaande reservatie: alleen wat de lijst (en eventueel het contact) weet. Pincode,
+                # Salto, gastprofiel en folio blijven zoals ze bewaard zijn.
+                fields = None if existing is None else (
+                    guests.LIST_FIELDS + (guests.CONTACT_FIELDS if contact is not None else ()))
+                guests.save_reservation(reservation, fields=fields)
                 if contact is not None or existing is None:
                     guest_profiles.link(reservation, pool)
     except Exception as exc:
@@ -102,7 +106,7 @@ class _ContactStats:
 def _apply_contact(reservation, contact) -> None:
     """Contactgegevens uit Lighthouse; naam en verblijf komen uit de lijst. Status, betaling en
     kamers leest de stap die ze nodig heeft (bv. access_code) zelf, vlak ervoor."""
-    reservation.contact_checked_at = datetime.now(timezone.utc)
+    reservation.contact_checked_at = datetime.now(UTC)
     if reservation.checkin_completed_at:
         return  # wat de gast zelf invulde, gaat voor
     reservation.guest.email = contact.email or reservation.guest.email
@@ -119,6 +123,12 @@ def _keep_known(reservation, existing) -> None:
     reservation.checkin_completed_at = existing.checkin_completed_at
     reservation.contact_checked_at = existing.contact_checked_at
     reservation.paid = existing.paid if reservation.paid is None else reservation.paid
+    reservation.rooms = reservation.rooms or existing.rooms  # kamer uit de detailpagina niet wissen
+    # Velden die de lijst niet kent (pincode, Salto, gastprofiel, folio): de bewaarde waarden
+    for name in ("guest_id", "access_pin", "access_valid_from", "access_valid_until", "salto_user_id",
+                 "salto_group_id", "salto_schedule_id", "access_rooms", "open_amount", "folio", "folio_total",
+                 "stay_counted_at", "cancel_counted_at", "created_at"):
+        setattr(reservation, name, getattr(existing, name))
     if existing.checkin_completed_at:
         reservation.guest = existing.guest
         return

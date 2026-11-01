@@ -29,7 +29,7 @@ COUNTRY_LANGUAGE = {
     "DE": "de", "AT": "de", "LI": "de", "CH": "de",
 }
 
-_UUID = re.compile(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}", re.I)
+_UUID = re.compile(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}", re.IGNORECASE)
 
 
 def parse_date(text: str) -> date:
@@ -204,7 +204,7 @@ def parse_folio(text: str) -> dict:
     Bedrag en omschrijving mogen op dezelfde regel (tabel) of op opeenvolgende regels staan.
     Geeft {"lines": [{"label", "qty", "amount"}], "total": float|None, "open": float|None}.
     """
-    before, _, after = text.partition("Transacties")
+    before, _, _after = text.partition("Transacties")
     out: dict = {"lines": [], "total": None, "open": None}
     opened = re.search(r"Openstaand saldo van\s*€\s*(-?[\d.]+,\d{2})", text)
     if opened:

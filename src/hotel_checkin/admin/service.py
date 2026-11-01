@@ -6,10 +6,10 @@ Bevat gastgegevens: in de cloud alleen achter een Microsoft-login.
 from __future__ import annotations
 
 import json
-
 import threading
-from datetime import date, datetime, timedelta, timezone
+from datetime import UTC, date, datetime, timedelta
 
+from hotel_checkin.core import clock
 from hotel_checkin.core.addresses import relay_platform
 from hotel_checkin.core.hotels import list_hotels, load_hotel
 from hotel_checkin.guests import repository as repo
@@ -33,9 +33,8 @@ def hotels() -> list[dict]:
 
 
 def reservations(hotel_id: str) -> list[dict]:
-    from hotel_checkin.guests import profiles
-
     from hotel_checkin.core import workflow
+    from hotel_checkin.guests import profiles
     from hotel_checkin.processes import send_messages
 
     all_profiles = profiles.list_profiles(hotel_id)
@@ -50,15 +49,16 @@ def reservations(hotel_id: str) -> list[dict]:
     from hotel_checkin.pms.lighthouse_browser import base_url
     lighthouse = base_url(hotel_id) + "/Customer/Reservations/Detail/"
     cfg, ready = workflow.config(hotel_id), send_messages.ready_steps(hotel_id)
-    begin, on, today = send_messages.start(hotel_id), send_messages.enabled(hotel_id), date.today()
+    begin, on, today = send_messages.start(hotel_id), send_messages.enabled(hotel_id), clock.today(hotel_id)
 
     def earlier_stays(r) -> int:
         """Verblijven van de gast buiten de periode van deze reservatie (terugkerende gast)."""
         a, d = r.arrival.isoformat(), r.departure.isoformat()
         return sum(1 for pa, pd in periods.get(r.guest_id, []) if not (a < pd and d > pa))
     out = []
+    all_msgs = repo.messages_for_hotel(hotel_id)  # één query voor alle berichten, niet één per reservatie
     for r in repo.list_reservations(hotel_id):
-        msgs = repo.messages_for(hotel_id, r.reservation_id)
+        msgs = all_msgs.get(r.reservation_id, [])
         out.append({
             "id": r.reservation_id,
             "booking_number": r.booking_number or "",
@@ -182,7 +182,7 @@ def add_contact(hotel_id: str, reservation_id: str, email: str, phone: str) -> d
             r.guest.phone = number
         elif number != r.guest.phone:
             r.guest.backup_phone = number
-    saved = repo.save_reservation(r)
+    saved = repo.save_reservation(r, fields=("email", "phone", "backup_email", "backup_phone"))
     try:
         guest_profiles.link(saved)
     except Exception:  # noqa: BLE001 - het adres is bewaard; het profiel volgt bij het synchroniseren
@@ -239,7 +239,7 @@ def start_robot(hotel_id: str, hours: int = 48) -> bool:
 
     def work():
         try:
-            new_reservation.run(hotel_id, datetime.now(timezone.utc) - timedelta(hours=hours))
+            new_reservation.run(hotel_id, datetime.now(UTC) - timedelta(hours=hours))
             _robot_state[hotel_id] = ""
         except Exception as exc:  # noqa: BLE001 - staat ook in het robotlog
             _robot_state[hotel_id] = str(exc)
@@ -315,7 +315,7 @@ def workflow_reset(hotel_id: str) -> dict:
 def workflow_preview(hotel_id: str, body: dict) -> dict:
     """Voorbeeldmail voor een stap zoals ze nu op het scherm staat (ook niet bewaard), met
     voorbeeldgegevens. body: {"step": {...}, "flow": "booking", "language": "nl"}."""
-    from datetime import date, timedelta
+    from datetime import timedelta
 
     from hotel_checkin.core import workflow
     from hotel_checkin.core.models import Guest, Reservation

@@ -10,7 +10,7 @@ Aan per hotel met [robot] mail_trigger = true. Tot waar gelezen werd, staat in R
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from hotel_checkin.admin import cloud_robot
 from hotel_checkin.core.config import hotel_setting
@@ -29,7 +29,7 @@ def enabled(hotel_id: str) -> bool:
 
 def run(hotel_id: str) -> int:
     """Geeft het aantal gevonden meldingen terug. Logt alleen als er meldingen waren (of een fout)."""
-    started = datetime.now(timezone.utc)
+    started = datetime.now(UTC)
     since_text = guests.get_state(hotel_id, STATE_KEY)
     since = datetime.fromisoformat(since_text) if since_text else started - timedelta(minutes=10)
     try:
@@ -39,6 +39,12 @@ def run(hotel_id: str) -> int:
         return 0
     notices = [n for m in messages if (n := parse_notice(m["sender"], m["subject"], m["text"]))]
     newest = max((m["received_at"] for m in messages), default=None)
+    # Gewijzigd of geannuleerd: de lijst van nieuwe boekingen toont dat niet; de robot leest de
+    # reservaties van die dagen opnieuw (ook als hij nu al bezig is: bij de volgende run)
+    from hotel_checkin.processes import refresh_requests
+
+    refresh_requests.request(hotel_id, [d for n in notices if n.kind in ("modified", "cancelled")
+                                        for d in (n.arrival, n.departure)])
     if not notices:
         if newest:
             guests.set_state(hotel_id, STATE_KEY, (newest + timedelta(seconds=1)).isoformat())
@@ -58,7 +64,7 @@ def run(hotel_id: str) -> int:
 
 def _log_error(hotel_id: str, started: datetime, error: str) -> None:
     logging.warning("%s: %s", hotel_id, error)
-    last = [r for r in guests.robot_runs(hotel_id, limit=50) if r.get("task") == TASK and not r.get("ok")]
+    last = [r for r in guests.robot_runs(hotel_id, limit=50, task=TASK) if not r.get("ok")]
     if last and started - datetime.fromisoformat(last[0]["started_at"]) < timedelta(minutes=ERROR_LOG_MINUTES):
         return
     guests.log_robot_run(hotel_id, TASK, started, False, 0, 0, error)

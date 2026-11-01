@@ -28,6 +28,11 @@ def _state_dir() -> Path:
     return d
 
 
+def state_file(hotel_id: str) -> Path:
+    """Bestand met de sessiecookies van dit hotel (Playwright storage_state)."""
+    return _state_dir() / f"lighthouse-{hotel_id}.json"
+
+
 def credentials(hotel_id: str) -> tuple[str, str]:
     """Altijd de eigen robotgebruiker van het hotel, nooit een gedeelde waarde."""
     return (
@@ -51,10 +56,10 @@ class LighthouseSession:
         self.base = base_url(hotel_id)
         self.headless = headless
         self.debug_dir = debug_dir
-        self.state_file = _state_dir() / f"lighthouse-{hotel_id}.json"
+        self.state_file = state_file(hotel_id)
         self._pw = self._browser = self._context = self.page = None
 
-    def __enter__(self) -> "LighthouseSession":
+    def __enter__(self) -> LighthouseSession:
         from playwright.sync_api import sync_playwright
 
         self._pw = sync_playwright().start()
@@ -70,6 +75,10 @@ class LighthouseSession:
 
     def __exit__(self, *exc) -> None:
         if self._context:
+            try:  # vernieuwde cookies bewaren voor de volgende run
+                self._context.storage_state(path=str(self.state_file))
+            except Exception:  # noqa: BLE001 - dan meldt de volgende run opnieuw aan
+                pass
             self._context.close()
         if self._browser:
             self._browser.close()

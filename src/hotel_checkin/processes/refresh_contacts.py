@@ -1,21 +1,26 @@
-"""Proces: contactgegevens opnieuw nalezen in Lighthouse.
+"""Proces: contactgegevens en reservaties opnieuw nalezen in Lighthouse.
 
 Voor reservaties met aankomst binnenkort die nog geen e-mailadres hebben: het adres kan later
 nog in Lighthouse komen. Voor aankomsten van de komende dagen (code-mail) ook kamer, betaling en
-status, want kamers worden vaak pas later toegewezen. Draait minder vaak dan het zoeken naar nieuwe reservaties (de robot
+status, want kamers worden vaak pas later toegewezen.
+
+De lijst van nieuwe boekingen toont geen wijzigingen of annuleringen van oudere boekingen. Daarom
+ook opnieuw lezen: reservaties met een bericht dat vandaag of morgen moet (bv. de herinnering, zodat
+een geannuleerde gast ze niet krijgt), en reservaties met een aankomst- of vertrekdag uit een melding
+"gewijzigd" of "geannuleerd" (processes/refresh_requests.py). Draait minder vaak dan het zoeken naar nieuwe reservaties (de robot
 beslist wanneer, instelling [robot] contact_refresh_hours in het hotelbestand).
 """
 
 from __future__ import annotations
 
 import time
-from datetime import date, datetime, timedelta, timezone
+from datetime import UTC, date, datetime, timedelta
 
-from hotel_checkin.core import workflow
+from hotel_checkin.core import clock, workflow
 from hotel_checkin.core.models import ReservationStatus
 from hotel_checkin.guests import repository as guests
 from hotel_checkin.pms import lighthouse
-from hotel_checkin.processes import grant_access, guest_profiles
+from hotel_checkin.processes import grant_access, guest_profiles, refresh_requests
 from hotel_checkin.processes.new_reservation import _apply_contact, _ContactStats
 
 TASK = "contactgegevens_nalezen"
@@ -27,7 +32,7 @@ MAX_SECONDS = 10 * 60
 def due(hotel_id: str) -> list:
     """Niet geannuleerde reservaties met aankomst binnen het venster van de workflow, zonder
     e-mailadres en nog niet door de gast aangevuld. Eerst wie het eerst aankomt."""
-    today = date.today()
+    today = clock.today(hotel_id)
     horizon = today + timedelta(days=workflow.detail_window_days(hotel_id))
     todo = [r for r in guests.list_reservations(hotel_id)
             if not r.guest.email and not r.checkin_completed_at
@@ -35,18 +40,39 @@ def due(hotel_id: str) -> list:
     return sorted(todo, key=lambda r: r.arrival)
 
 
-def arrivals_due(hotel_id: str) -> list:
-    """Reservaties die binnenkort de code-mail krijgen en nog geen pincode hebben: kamer, betaling
-    en status opnieuw lezen (kamers worden vaak pas later toegewezen)."""
-    today = date.today()
+def message_due_soon(hotel_id: str, r, cfg: dict, sent: set[str], today: date) -> bool:
+    """Moet er vandaag of morgen een bericht voor aankomst weg dat nog niet verstuurd is? Dan eerst
+    nakijken of de reservatie intussen niet geannuleerd of gewijzigd is."""
+    if r.status == ReservationStatus.CANCELLED:
+        return False
+    for step in workflow._steps_from(cfg, workflow.flow_for(hotel_id, r, cfg)):
+        if (step.enabled and step.when == "days_before_arrival" and step.step not in sent
+                and today <= step.due_date(r) <= today + timedelta(days=1)):
+            return True
+    return False
+
+
+def arrivals_due(hotel_id: str, requested: set[str] | None = None) -> list:
+    """Reservaties waarvan kamer, betaling en status opnieuw gelezen moeten worden:
+    - binnenkort de code-mail en nog geen pincode (kamers worden vaak pas later toegewezen);
+    - met pincode en nog niet vertrokken (kamer, data of status veranderd?);
+    - net vertrokken (betaalstatus voor een betaalverzoek na vertrek);
+    - vandaag of morgen een bericht voor aankomst (geannuleerd of verzet?);
+    - aankomst- of vertrekdag uit een melding "gewijzigd" of "geannuleerd" (requested, ISO-dagen)."""
+    today = clock.today(hotel_id)
+    requested = requested or set()
+    cfg = workflow.config(hotel_id)
     days = max([s.days for s in workflow.steps(hotel_id) if s.step == "access_code"] or [0]) + 1
+    sent = {rid: {m["message_type"] for m in rows if m.get("ok")}
+            for rid, rows in guests.messages_for_hotel(hotel_id).items()}
     todo = [r for r in guests.list_reservations(hotel_id)
             if (not r.access_pin and r.status != ReservationStatus.CANCELLED
                 and today <= r.arrival <= today + timedelta(days=days))
-            # met pincode (nog niet vertrokken): volgen of kamer, data of status veranderen
             or (r.salto_group_id and r.departure >= today)
-            # net vertrokken: betaalstatus voor een betaalverzoek na vertrek
-            or (r.status != ReservationStatus.CANCELLED and today - timedelta(days=2) <= r.departure <= today)]
+            or (r.status != ReservationStatus.CANCELLED and today - timedelta(days=2) <= r.departure <= today)
+            or message_due_soon(hotel_id, r, cfg, sent.get(r.reservation_id, set()), today)
+            or (r.status != ReservationStatus.CANCELLED and r.departure >= today
+                and (r.arrival.isoformat() in requested or r.departure.isoformat() in requested))]
     return sorted(todo, key=lambda r: r.arrival)
 
 
@@ -66,9 +92,11 @@ def _apply_detail(r, d) -> None:
 
 def run(hotel_id: str) -> int:
     """Lees de contactgegevens van die reservaties opnieuw. Geeft het aantal gevonden e-mailadressen terug."""
-    started = datetime.now(timezone.utc)
+    started = datetime.now(UTC)
+    requested = refresh_requests.requested(hotel_id)
     todo = due(hotel_id)
-    arrivals = [r for r in arrivals_due(hotel_id) if r.reservation_id not in {x.reservation_id for x in todo}]
+    arrivals = [r for r in arrivals_due(hotel_id, requested) if r.reservation_id not in {x.reservation_id for x in todo}]
+    finished = True  # alles gelezen binnen de tijd (dan zijn de gevraagde dagen klaar)
     details_read = 0
     access_changes: list[str] = []
     stats = _ContactStats()
@@ -82,6 +110,7 @@ def run(hotel_id: str) -> int:
                 deadline = time.monotonic() + MAX_SECONDS
                 for reservation in todo:
                     if time.monotonic() > deadline:
+                        finished = False
                         break
                     try:
                         t0 = time.monotonic()
@@ -91,12 +120,13 @@ def run(hotel_id: str) -> int:
                         skipped.append(f"{reservation.booking_number or 'reservatie'}: {type(exc).__name__}")
                         continue
                     _apply_contact(reservation, contact)
-                    guests.save_reservation(reservation)
+                    guests.save_reservation(reservation, fields=guests.CONTACT_FIELDS)
                     if contact.email or contact.phone:
                         guest_profiles.link(reservation)
                 # Aankomsten van de komende dagen: kamer en betaling voor de code-mail
                 for reservation in arrivals:
                     if time.monotonic() > deadline:
+                        finished = False
                         break
                     try:
                         detail = lighthouse.get_reservation(hotel_id, reservation.reservation_id, lh)
@@ -104,7 +134,7 @@ def run(hotel_id: str) -> int:
                         skipped.append(f"{reservation.booking_number or 'reservatie'}: {type(exc).__name__}")
                         continue
                     _apply_detail(reservation, detail)
-                    guests.save_reservation(reservation)
+                    guests.save_reservation(reservation, fields=guests.DETAIL_FIELDS)
                     details_read += 1
                     if reservation.salto_group_id:
                         try:
@@ -117,7 +147,11 @@ def run(hotel_id: str) -> int:
     except Exception as exc:
         guests.log_robot_run(hotel_id, TASK, started, False, len(todo), 0, f"{type(exc).__name__}: {exc}", timings=timings)
         raise
+    if finished and not skipped:
+        refresh_requests.done(hotel_id, requested)
     parts = [stats.note()] if stats.read else []
+    if requested:
+        parts.append("nagelezen na melding: " + ", ".join(sorted(requested)))
     if details_read:
         parts.append(f"{details_read} aankomsten en verblijven nagekeken (kamer, data, betaling)")
     if access_changes:

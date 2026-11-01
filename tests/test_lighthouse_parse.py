@@ -3,7 +3,13 @@
 from datetime import date, datetime
 
 from hotel_checkin.core.models import ReservationStatus
-from hotel_checkin.pms.lighthouse_parse import TZ, parse_date, parse_list_row, rooms_from, split_name
+from hotel_checkin.pms.lighthouse_parse import (
+    TZ,
+    parse_date,
+    parse_list_row,
+    rooms_from,
+    split_name,
+)
 
 GENERAL = """ID CPB-4276-009999
 Status Nieuw

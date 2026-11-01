@@ -20,10 +20,10 @@ from __future__ import annotations
 
 import logging
 import os
-from datetime import date, datetime, timezone
+from datetime import UTC, date, datetime
 from urllib.parse import urlencode
 
-from hotel_checkin.core import workflow
+from hotel_checkin.core import clock, workflow
 from hotel_checkin.core.addresses import is_own_email
 from hotel_checkin.core.config import hotel_setting
 from hotel_checkin.core.models import Reservation, SendResult, normalize_language
@@ -70,7 +70,7 @@ def start(hotel_id: str) -> datetime | None:
     if not value:
         return None
     s = datetime.fromisoformat(str(value))
-    return s if s.tzinfo else s.replace(tzinfo=timezone.utc)
+    return s if s.tzinfo else s.replace(tzinfo=UTC)
 
 
 CITY_TAX_UNIT_TEXT = {
@@ -411,8 +411,8 @@ def run(hotel_id: str, today: date | None = None) -> int:
     if begin is None:
         logging.warning("%s: [messaging] start ontbreekt, niets verstuurd", hotel_id)
         return 0
-    today = today or date.today()
-    started = datetime.now(timezone.utc)
+    today = today or clock.today(hotel_id)
+    started = datetime.now(UTC)
     cfg = workflow.config(hotel_id)
     ready = ready_steps(hotel_id)
     sent, failed = [], []

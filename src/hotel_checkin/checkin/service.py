@@ -76,7 +76,9 @@ def form_data(token: str, today: date | None = None) -> dict | None:
     r = repo.get_by_token(token) if token else None
     if r is None:
         return None
-    today = today or date.today()
+    from hotel_checkin.core import clock
+
+    today = today or clock.today(r.hotel_id)
     if r.status == ReservationStatus.CANCELLED:
         state = "cancelled"
     elif r.departure < today:
@@ -169,7 +171,7 @@ def submit(token: str, form: dict) -> tuple[bool, dict]:
 
         if saved is not None:
             guest_profiles.link(saved)
-    except Exception:  # noqa: BLE001 - het formulier is bewaard; het profiel volgt bij het dagelijkse onderhoud
+    except Exception:
         import logging
 
         logging.exception("gastprofiel niet bijgewerkt")

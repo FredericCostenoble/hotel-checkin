@@ -1,6 +1,6 @@
 """Bouwblok mailbox: lezen via Graph (nagebootst) en maskeren van gastgegevens."""
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import httpx
 
@@ -21,7 +21,7 @@ def test_list_messages_reads_and_follows_paging():
         assert request.headers["Prefer"] == 'outlook.body-content-type="text"'
         return httpx.Response(200, json=pages["next" if "next" in str(request.url) else "first"])
 
-    msgs = mailbox.list_messages("lucca", datetime(2026, 10, 29, tzinfo=timezone.utc),
+    msgs = mailbox.list_messages("lucca", datetime(2026, 10, 29, tzinfo=UTC),
                                  client=httpx.Client(transport=httpx.MockTransport(handler)))
     assert [m["id"] for m in msgs] == ["1", "2"]
     assert msgs[0]["sender"] == "noreply@cubilis.com" and msgs[0]["text"] == "tekst"

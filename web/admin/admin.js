@@ -171,8 +171,13 @@ let taskFilter = "";
 try { taskFilter = localStorage.getItem("monitor-task") || ""; } catch (e) { /* geen opslag */ }
 
 function store(k, v) { try { v === undefined ? null : localStorage.setItem(k, v); return localStorage.getItem(k); } catch { return null; } }
+// Elke aanroep van de monitor-API draagt deze kop. Een andere website kan die niet meesturen zonder
+// toestemming (CORS), dus een wijziging (versturen, samenvoegen, robot starten) kan niet van elders komen.
+function apiFetch(url, opts = {}) {
+  return fetch(url, { ...opts, headers: { ...(opts.headers || {}), "X-Monitor": "1" } });
+}
 async function get(path, opts) {
-  const r = await fetch(API + path, opts);
+  const r = await apiFetch(API + path, opts);
   if (r.status === 401) { location.href = "/.auth/login/aad?post_login_redirect_uri=/monitor/"; throw new Error("login"); }
   if (!r.ok) throw new Error(r.status);
   return r.json();
@@ -899,7 +904,7 @@ async function showPreview(step) {
   $("#pv-title").textContent = `${t("wf_example")}: ${t("step_" + step.step)} (${t("flow_" + wfFlow)})`;
   $("#pv-langs").innerHTML = ["nl", "fr", "en", "de"].map(l => `<button type="button" data-l="${l}" class="${l === pvLang ? "active" : ""}">${l.toUpperCase()}</button>`).join("");
   document.querySelectorAll("#pv-langs button").forEach(b => b.onclick = () => { pvLang = b.dataset.l; showPreview(pvStep); });
-  const r = await fetch(API + `/api/monitor/${$("#hotel").value}/preview`, {
+  const r = await apiFetch(API + `/api/monitor/${$("#hotel").value}/preview`, {
     method: "POST", headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ step, flow: wfFlow, language: pvLang, parameters: wf.parameters }),
   });
@@ -946,7 +951,7 @@ function renderSide(flow, c) {
 }
 
 async function saveWorkflow() {
-  const r = await fetch(API + `/api/monitor/${$("#hotel").value}/workflow`, {
+  const r = await apiFetch(API + `/api/monitor/${$("#hotel").value}/workflow`, {
     method: "POST", headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ parameters: wf.parameters, flows: wf.flows }),
   });
@@ -1502,7 +1507,7 @@ async function saveSettings() {
     if (sec.free) body[sec.section] = hsEdit[sec.section] || Object.fromEntries(sec.fields.map(f => [f.key, f.value]));
     else body[sec.section] = Object.fromEntries(sec.fields.map(f => [f.key, hsValue(sec, f)]));
   });
-  const r = await fetch(API + `/api/monitor/${$("#hotel").value}/settings`, {
+  const r = await apiFetch(API + `/api/monitor/${$("#hotel").value}/settings`, {
     method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
   });
   const d = await r.json().catch(() => ({}));

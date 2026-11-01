@@ -7,8 +7,8 @@ import azure.functions as func
 import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-import function_app as fa  # noqa: E402
-from hotel_checkin.guests import repository as repo  # noqa: E402
+import function_app as fa
+from hotel_checkin.guests import repository as repo
 
 
 def _fn(builder):
@@ -53,3 +53,13 @@ def test_checkin_api_stays_open(monkeypatch):
     monkeypatch.setenv("ADMIN_AUTH", "easyauth")
     r = _fn(fa.get_checkin)(_req("/api/checkin/x", params={"token": "x"}))
     assert r.status_code == 404  # onbekend token, maar geen login gevraagd
+
+
+def test_admin_changes_need_monitor_header(monkeypatch):
+    """CSRF: een POST of DELETE zonder de kop van de monitor wordt geweigerd."""
+    monkeypatch.setenv("ADMIN_AUTH", "easyauth")
+    h = {"x-ms-client-principal-name": "frederic@hotellucca.be"}
+    p = {"hotel": "lucca", "what": "runs"}
+    assert _fn(fa.admin_api)(_req("/api/monitor/lucca/runs?id=x", h, p, method="DELETE")).status_code == 403
+    ok = _fn(fa.admin_api)(_req("/api/monitor/lucca/runs?id=x", h | {"x-monitor": "1"}, p, method="DELETE"))
+    assert ok.status_code == 200

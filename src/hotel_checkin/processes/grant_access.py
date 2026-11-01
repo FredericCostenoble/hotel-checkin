@@ -13,25 +13,23 @@ from __future__ import annotations
 
 import logging
 from datetime import datetime, time
-from zoneinfo import ZoneInfo
 
 from hotel_checkin.access import salto
+from hotel_checkin.core import clock
 from hotel_checkin.core.hotels import load_hotel
 from hotel_checkin.core.models import Reservation
 from hotel_checkin.guests import repository as guests
 
-TZ = ZoneInfo("Europe/Brussels")
 
-
-def _at(day, hhmm: str) -> datetime:
+def _at(day, hhmm: str, tz) -> datetime:
     h, m = (int(x) for x in hhmm.split(":"))
-    return datetime.combine(day, time(h, m), tzinfo=TZ)
+    return datetime.combine(day, time(h, m), tzinfo=tz)
 
 
 def period(hotel_id: str, r: Reservation) -> tuple[datetime, datetime]:
-    cfg = load_hotel(hotel_id)
-    return (_at(r.arrival, cfg.get("receptie", {}).get("van", "14:00")),
-            _at(r.departure, cfg.get("checkout", {}).get("tot", "11:00")))
+    cfg, tz = load_hotel(hotel_id), clock.tz(hotel_id)
+    return (_at(r.arrival, cfg.get("receptie", {}).get("van", "14:00"), tz),
+            _at(r.departure, cfg.get("checkout", {}).get("tot", "11:00"), tz))
 
 
 def grant(hotel_id: str, r: Reservation) -> str:
@@ -57,7 +55,7 @@ def grant(hotel_id: str, r: Reservation) -> str:
     r.access_pin, r.salto_user_id, r.salto_group_id = pin, user_id, group_id
     r.access_valid_from, r.access_valid_until = valid_from, valid_until
     r.salto_schedule_id, r.access_rooms = schedule_id, list(r.rooms)
-    guests.save_reservation(r)
+    guests.save_reservation(r, fields=guests.SALTO_FIELDS)
     return pin
 
 
@@ -88,7 +86,7 @@ def follow_changes(hotel_id: str, r: Reservation) -> list[str]:
         changes.append(f"periode {valid_from:%d/%m %H:%M} tot {valid_until:%d/%m %H:%M}")
         r.access_valid_from, r.access_valid_until = valid_from, valid_until
     if changes:
-        guests.save_reservation(r)
+        guests.save_reservation(r, fields=guests.SALTO_FIELDS)
     return changes
 
 
@@ -99,7 +97,7 @@ def revoke(hotel_id: str, r: Reservation) -> bool:
     _cleanup(hotel_id, r.salto_user_id, r.salto_group_id)
     r.salto_user_id = r.salto_group_id = r.salto_schedule_id = None
     r.access_pin, r.access_rooms = None, []
-    guests.save_reservation(r)
+    guests.save_reservation(r, fields=guests.SALTO_FIELDS)
     return True
 
 
@@ -108,5 +106,5 @@ def _cleanup(hotel_id: str, user_id: str | None, group_id: str | None) -> None:
         if ident:
             try:
                 fn(hotel_id, ident)
-            except Exception:  # noqa: BLE001 - verder opruimen; staat in het logboek
+            except Exception:
                 logging.exception("%s: Salto %s %s niet verwijderd", hotel_id, kind, ident)

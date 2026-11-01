@@ -21,12 +21,13 @@ Bewaartermijnen (zie privacyverklaring): opschonen gebeurt later in een apart pr
 from __future__ import annotations
 
 import json
-import re
 import os
+import re
 import secrets
 import uuid
-from datetime import date, datetime, timedelta, timezone
+from datetime import UTC, date, datetime, timedelta
 from functools import lru_cache
+from typing import ClassVar
 from urllib.parse import quote
 
 from hotel_checkin.core.models import (
@@ -49,7 +50,7 @@ _client_factory = None  # alleen voor tests: functie die een tabelnaam krijgt en
 
 
 def _now() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 @lru_cache
@@ -59,13 +60,10 @@ def _service():
     conn = os.environ.get("STORAGE_CONNECTION_STRING")
     if conn:
         return TableServiceClient.from_connection_string(conn)
-    from azure.identity import DefaultAzureCredential
-
+    from hotel_checkin.core.clients import azure_credential
     from hotel_checkin.core.config import get_setting
 
-    return TableServiceClient(
-        endpoint=get_setting("STORAGE_TABLE_ENDPOINT"), credential=DefaultAzureCredential()
-    )
+    return TableServiceClient(endpoint=get_setting("STORAGE_TABLE_ENDPOINT"), credential=azure_credential())
 
 
 _ready: set[str] = set()
@@ -196,29 +194,91 @@ def _from_entity(e: dict) -> Reservation:
 # Velden die niet meetellen voor "bijgewerkt": tijdstempels en technische velden van de tabel
 _NOT_DATA = {"created_at", "updated_at", "contact_checked_at", "stay_counted_at", "cancel_counted_at", "Timestamp", "etag", "odata.etag", "odata.metadata"}
 
+# Wie welke velden van een reservatie schrijft. Een proces dat maar een deel bezit, geeft dat deel mee
+# aan save_reservation(fields=...): de andere velden blijven zoals ze nu in de tabel staan. Zo wist de
+# robot (lijst uit Lighthouse) nooit de pincode van Salto of de koppeling met het gastprofiel.
+LIST_FIELDS = ("first_name", "last_name", "arrival", "departure", "rooms", "room_type", "status", "source", "paid",
+               "booking_number", "pms_status", "guest_count", "booked_at")
+CONTACT_FIELDS = ("email", "phone", "language", "country", "backup_email", "backup_phone", "relay_email",
+                  "contact_checked_at")
+DETAIL_FIELDS = ("rooms", "arrival", "departure", "paid", "open_amount", "folio", "folio_total", "status",
+                 "pms_status", "email", "phone")
+FORM_FIELDS = ("email", "phone", "language", "backup_email", "backup_phone", "relay_email", "channels",
+               "checkin_completed_at")
+SALTO_FIELDS = ("access_pin", "access_valid_from", "access_valid_until", "salto_user_id", "salto_group_id",
+                "salto_schedule_id", "access_rooms")
+PROFILE_FIELDS = ("guest_id", "stay_counted_at", "cancel_counted_at")
+_KEYS = {"PartitionKey", "RowKey", "hotel_id", "reservation_id", "created_at", "updated_at"}
+T_TOKENS = "TokenIndex"  # token van de formulierlink -> hotel en reservatie (geen tabelscan per aanvraag)
+_MAX_TRIES = 5
 
-def save_reservation(reservation: Reservation) -> Reservation:
-    """Bewaar of werk bij. Een nieuwe reservatie krijgt een token; een bestaand token blijft behouden."""
-    if not reservation.token:
-        existing = get_reservation(reservation.hotel_id, reservation.reservation_id)
-        reservation.token = existing.token if existing and existing.token else secrets.token_urlsafe(24)
+
+def _etag(entity) -> str | None:
+    meta = getattr(entity, "metadata", None) or {}
+    return meta.get("etag")
+
+
+def save_reservation(reservation: Reservation, fields: tuple[str, ...] | list[str] | None = None) -> Reservation:
+    """Bewaar of werk bij. Een nieuwe reservatie krijgt een token; een bestaand token blijft behouden.
+
+    fields: alleen deze velden (namen zoals in de tabel, zie LIST_FIELDS, SALTO_FIELDS, ...) schrijven;
+    de rest blijft zoals het nu bewaard is. None = alles (nieuwe reservatie, of het proces bezit alles).
+    Optimistische concurrentie (ETag): veranderde de rij tussen lezen en schrijven, dan opnieuw lezen en
+    samenvoegen.
+    """
     table = _table(T_RESERVATIONS)
-    try:
-        old = dict(table.get_entity(_key(reservation.hotel_id), _key(reservation.reservation_id)))
-    except Exception:  # noqa: BLE001 - bestaat nog niet
-        old = None
-    _keep_form(reservation, old)
-    entity = _to_entity(reservation)
-    entity["created_at"] = old["created_at"] if old and old.get("created_at") else entity["updated_at"]
-    # updated_at alleen verzetten als er echt iets veranderde (de robot bewaart ook ongewijzigde rijen)
-    if old and old.get("updated_at") and all(
-        str(old.get(k, "")) == str(v) for k, v in entity.items() if k not in _NOT_DATA
-    ):
-        entity["updated_at"] = old["updated_at"]
-    table.upsert_entity(entity)
+    pk, rk = _key(reservation.hotel_id), _key(reservation.reservation_id)
+    from azure.core import MatchConditions
+    from azure.core.exceptions import ResourceExistsError, ResourceModifiedError
+    from azure.data.tables import UpdateMode
+
+    for attempt in range(_MAX_TRIES):
+        try:
+            stored = table.get_entity(pk, rk)
+        except Exception:  # noqa: BLE001 - bestaat nog niet
+            stored = None
+        old = dict(stored) if stored is not None else None
+        new_token = False
+        if old and old.get("token"):
+            reservation.token = old["token"]  # een bestaand token verandert nooit
+        elif not reservation.token:
+            reservation.token, new_token = secrets.token_urlsafe(24), True
+        else:
+            new_token = True
+        _keep_form(reservation, old)
+        entity = _to_entity(reservation)
+        if old is not None and fields is not None:
+            own = set(fields)
+            for k in entity:
+                if k not in own and k not in _KEYS and k in old:
+                    entity[k] = old[k]
+        entity["created_at"] = old["created_at"] if old and old.get("created_at") else entity["updated_at"]
+        # updated_at alleen verzetten als er echt iets veranderde (de robot bewaart ook ongewijzigde rijen)
+        if old and old.get("updated_at") and all(
+            str(old.get(k, "")) == str(v) for k, v in entity.items() if k not in _NOT_DATA
+        ):
+            entity["updated_at"] = old["updated_at"]
+        try:
+            if stored is None:
+                table.create_entity(entity)
+            else:
+                table.update_entity(entity, mode=UpdateMode.REPLACE, etag=_etag(stored),
+                                    match_condition=MatchConditions.IfNotModified)
+            break
+        except (ResourceExistsError, ResourceModifiedError):
+            if attempt == _MAX_TRIES - 1:
+                raise
+    if new_token:
+        _index_token(reservation.hotel_id, reservation.reservation_id, entity["token"])
     reservation.created_at = datetime.fromisoformat(entity["created_at"])
     reservation.updated_at = datetime.fromisoformat(entity["updated_at"])
     return reservation
+
+
+def _index_token(hotel_id: str, reservation_id: str, token: str) -> None:
+    if token:
+        _table(T_TOKENS).upsert_entity({"PartitionKey": _key(token), "RowKey": "", "hotel_id": hotel_id,
+                                        "reservation_id": reservation_id})
 
 
 def save_form_submission(hotel_id: str, reservation_id: str, values: dict) -> str:
@@ -229,6 +289,12 @@ def save_form_submission(hotel_id: str, reservation_id: str, values: dict) -> st
                                    "hotel_id": hotel_id, "reservation_id": reservation_id,
                                    "submitted_at": _now().isoformat(), "values": json.dumps(values)})
     return row
+
+
+def _prefix_filter(hotel_id: str) -> str:
+    """Alle partities van één hotel in een tabel met PartitionKey <hotel>|<reservatie> (bereik, geen scan)."""
+    start = f"{_key(hotel_id)}|"
+    return f"PartitionKey ge '{_q(start)}' and PartitionKey lt '{_q(start[:-1] + chr(ord('|') + 1))}'"
 
 
 def form_submissions(hotel_id: str, reservation_id: str) -> list[dict]:
@@ -242,7 +308,7 @@ def form_submissions(hotel_id: str, reservation_id: str) -> list[dict]:
 def all_form_submissions(hotel_id: str) -> list[dict]:
     """Laatste indiening per reservatie van dit hotel (om na te kijken of alles verwerkt is)."""
     latest: dict[str, dict] = {}
-    for e in _table(T_FORMS).query_entities(f"hotel_id eq '{_q(hotel_id)}'"):
+    for e in _table(T_FORMS).query_entities(_prefix_filter(hotel_id)):
         if e["reservation_id"] not in latest or e["RowKey"] > latest[e["reservation_id"]]["_row"]:
             latest[e["reservation_id"]] = {"_row": e["RowKey"], "reservation_id": e["reservation_id"],
                                            "submitted_at": e["submitted_at"], **json.loads(e["values"])}
@@ -267,10 +333,23 @@ def _keep_form(reservation: Reservation, old: dict | None) -> None:
         setattr(reservation.guest, field, getattr(fresh.guest, field))
 
 
+def delete_form_submissions(hotel_id: str, reservation_id: str) -> int:
+    """Indieningen van het formulier voor deze reservatie verwijderen (bewaartermijn)."""
+    table = _table(T_FORMS)
+    rows = list(table.query_entities(f"PartitionKey eq '{_q(_msg_pk(hotel_id, reservation_id))}'"))
+    for e in rows:
+        table.delete_entity(e["PartitionKey"], e["RowKey"])
+    return len(rows)
+
+
 def delete_reservation(hotel_id: str, reservation_id: str) -> None:
-    """Reservatie en haar berichtenlog verwijderen (opruimen na het verblijf)."""
+    """Reservatie, haar berichtenlog, de formulierindieningen en het token verwijderen (opruimen na het verblijf)."""
+    r = get_reservation(hotel_id, reservation_id)
     for m in messages_for(hotel_id, reservation_id):
         _table(T_MESSAGES).delete_entity(m["PartitionKey"], m["RowKey"])
+    delete_form_submissions(hotel_id, reservation_id)
+    if r is not None and r.token:
+        _table(T_TOKENS).delete_entity(_key(r.token), "")
     _table(T_RESERVATIONS).delete_entity(_key(hotel_id), _key(reservation_id))
 
 
@@ -281,10 +360,42 @@ def get_reservation(hotel_id: str, reservation_id: str) -> Reservation | None:
         return None
 
 
+TOKEN_INDEX_READY = "token_index_ready"  # RobotState (hotel "_all"): alle bestaande tokens staan in de index
+
+
 def get_by_token(token: str) -> Reservation | None:
-    """Gebruikt door het check-in-formulier: de link bevat alleen het token (uniek over alle hotels)."""
+    """Gebruikt door het check-in-formulier: de link bevat alleen het token (uniek over alle hotels).
+    Via de tabel TokenIndex (één puntlezing). Zolang de index nog niet volledig is (net na de uitrol),
+    valt het terug op zoeken in Reservations en vult het de index aan."""
+    if not token:
+        return None
+    try:
+        e = _table(T_TOKENS).get_entity(_key(token), "")
+        r = get_reservation(e["hotel_id"], e["reservation_id"])
+        return r if r is not None and r.token == token else None
+    except Exception:  # noqa: BLE001 - niet in de index
+        pass
+    if get_state("_all", TOKEN_INDEX_READY):
+        return None
     rows = list(_table(T_RESERVATIONS).query_entities(f"token eq '{_q(token)}'"))
-    return _from_entity(rows[0]) if rows else None
+    if not rows:
+        return None
+    r = _from_entity(rows[0])
+    _index_token(r.hotel_id, r.reservation_id, token)
+    return r
+
+
+def build_token_index() -> int:
+    """Eenmalig (onderhoud): alle bestaande tokens in de index zetten. Geeft het aantal terug."""
+    if get_state("_all", TOKEN_INDEX_READY):
+        return 0
+    n = 0
+    for e in _table(T_RESERVATIONS).query_entities("token ne ''"):
+        if e.get("token"):
+            _index_token(e["hotel_id"], e["reservation_id"], e["token"])
+            n += 1
+    set_state("_all", TOKEN_INDEX_READY, "1")
+    return n
 
 
 def find_by_phone(hotel_id: str, phone: str) -> list[Reservation]:
@@ -323,7 +434,7 @@ def mark_checkin_completed(
     if channels is not None:
         r.guest.channels = channels
     r.checkin_completed_at = _now()
-    return save_reservation(r)
+    return save_reservation(r, fields=FORM_FIELDS)
 
 
 # ---------------------------------------------------------------- berichten
@@ -378,6 +489,16 @@ def update_message_status(hotel_id: str, reservation_id: str, message_id: str, s
     return e
 
 
+def messages_for_hotel(hotel_id: str) -> dict[str, list[dict]]:
+    """Alle berichten van een hotel in één query, per reservatie (oudste eerst). Voor de monitor."""
+    out: dict[str, list[dict]] = {}
+    for e in _table(T_MESSAGES).query_entities(_prefix_filter(hotel_id)):
+        out.setdefault(e["reservation_id"], []).append(e)
+    for rows in out.values():
+        rows.sort(key=lambda e: e["RowKey"])
+    return out
+
+
 def messages_for(hotel_id: str, reservation_id: str) -> list[dict]:
     rows = _table(T_MESSAGES).query_entities(f"PartitionKey eq '{_q(_msg_pk(hotel_id, reservation_id))}'")
     return sorted(rows, key=lambda e: e["RowKey"])
@@ -414,7 +535,7 @@ def log_robot_run(
     _table(T_ROBOT).upsert_entity({
         "PartitionKey": _key(hotel_id),
         # Omgekeerde tijd als sleutel: nieuwste run eerst
-        "RowKey": f"{9999999999 - int(started.timestamp()):010d}-{uuid.uuid4().hex[:6]}",
+        "RowKey": f"{_run_key(started)}-{uuid.uuid4().hex[:6]}",
         "hotel_id": hotel_id,
         "task": task,
         "started_at": started.isoformat(),
@@ -471,11 +592,19 @@ def delete_robot_run(hotel_id: str, run_id: str) -> bool:
     return True
 
 
+def _runs_filter(hotel_id: str, task: str | None = None) -> str:
+    flt = f"PartitionKey eq '{_q(_key(hotel_id))}'"
+    return flt + (f" and task eq '{_q(task)}'" if task else "")
+
+
+def _run_key(moment: datetime) -> str:
+    return f"{9999999999 - int(moment.timestamp()):010d}"
+
+
 def delete_robot_runs(hotel_id: str, task: str | None = None) -> int:
     """Verwijder alle runs van een hotel uit het logboek, of alleen die van één taak. Geeft het aantal terug."""
     table = _table(T_ROBOT)
-    rows = [e for e in table.query_entities(f"PartitionKey eq '{_q(_key(hotel_id))}'")
-            if not task or e.get("task") == task]
+    rows = list(table.query_entities(_runs_filter(hotel_id, task)))
     for e in rows:
         table.delete_entity(e["PartitionKey"], e["RowKey"])
     return len(rows)
@@ -483,18 +612,22 @@ def delete_robot_runs(hotel_id: str, task: str | None = None) -> int:
 
 def prune_robot_runs(hotel_id: str, keep_days: int = 30) -> int:
     """Verwijder robotruns ouder dan keep_days. Geeft het aantal verwijderde runs terug."""
-    cutoff = (_now() - timedelta(days=keep_days)).isoformat()
+    # RowKey = omgekeerde starttijd: oudere runs hebben een grotere sleutel (bereik, geen scan)
+    cutoff = _run_key(_now() - timedelta(days=keep_days))
     table = _table(T_ROBOT)
-    old = [e for e in table.query_entities(f"PartitionKey eq '{_q(_key(hotel_id))}'")
-           if e.get("started_at", "") < cutoff]
+    old = list(table.query_entities(f"{_runs_filter(hotel_id)} and RowKey gt '{cutoff}'"))
     for e in old:
         table.delete_entity(e["PartitionKey"], e["RowKey"])
     return len(old)
 
 
-def robot_runs(hotel_id: str, limit: int = 50) -> list[dict]:
-    rows = _table(T_ROBOT).query_entities(f"PartitionKey eq '{_q(_key(hotel_id))}'")
-    return sorted(rows, key=lambda e: e["RowKey"])[:limit]
+def robot_runs(hotel_id: str, limit: int = 50, task: str | None = None) -> list[dict]:
+    """Nieuwste runs eerst (de tabel geeft ze al in die volgorde: RowKey = omgekeerde tijd).
+    Alleen de eerste `limit` worden gelezen; task filtert op de server."""
+    from itertools import islice
+
+    rows = _table(T_ROBOT).query_entities(_runs_filter(hotel_id, task), results_per_page=min(limit, 1000))
+    return list(islice(rows, limit))
 
 
 # ---------------------------------------------------------------- marketing
@@ -526,34 +659,76 @@ def is_opted_out(hotel_id: str, email: str) -> bool:
 # Voor de lokale testserver en tests: zelfde gedrag als Azure Table Storage, zonder Azure.
 
 
+class _MemoryEntity(dict):
+    """Rij met metadata (ETag), zoals TableEntity van de Azure SDK."""
+
+    def __init__(self, *args, metadata: dict | None = None, **kw):
+        super().__init__(*args, **kw)
+        self.metadata = metadata or {}
+
+
 class MemoryTable:
     def __init__(self):
         self.rows: dict[tuple[str, str], dict] = {}
+        self.etags: dict[tuple[str, str], str] = {}
 
-    def upsert_entity(self, entity):
-        self.rows[(entity["PartitionKey"], entity["RowKey"])] = dict(entity)
+    def _stamp(self, key) -> None:
+        self.etags[key] = uuid.uuid4().hex
 
-    def delete_entity(self, pk, rk):
+    def upsert_entity(self, entity, **_):
+        key = (entity["PartitionKey"], entity["RowKey"])
+        self.rows[key] = dict(entity)
+        self._stamp(key)
+
+    def create_entity(self, entity, **_):
+        from azure.core.exceptions import ResourceExistsError
+
+        if (entity["PartitionKey"], entity["RowKey"]) in self.rows:
+            raise ResourceExistsError("EntityAlreadyExists")
+        self.upsert_entity(entity)
+
+    def update_entity(self, entity, mode=None, etag=None, match_condition=None, **_):
+        from azure.core.exceptions import ResourceModifiedError, ResourceNotFoundError
+
+        key = (entity["PartitionKey"], entity["RowKey"])
+        if key not in self.rows:
+            raise ResourceNotFoundError("ResourceNotFound")
+        if etag is not None and self.etags.get(key) != etag:
+            raise ResourceModifiedError("UpdateConditionNotSatisfied")
+        if str(mode).lower().endswith("merge"):
+            self.rows[key].update(entity)
+            self._stamp(key)
+        else:
+            self.upsert_entity(entity)
+
+    def delete_entity(self, pk, rk, **_):
         self.rows.pop((pk, rk), None)
+        self.etags.pop((pk, rk), None)
 
-    def get_entity(self, pk, rk):
+    def get_entity(self, pk, rk, **_):
+        from azure.core.exceptions import ResourceNotFoundError
+
         if (pk, rk) not in self.rows:
-            raise KeyError("ResourceNotFound")
-        return dict(self.rows[(pk, rk)])
+            raise ResourceNotFoundError("ResourceNotFound")
+        return _MemoryEntity(self.rows[(pk, rk)], metadata={"etag": self.etags.get((pk, rk))})
 
-    def query_entities(self, flt):
-        """Ondersteunt filters van de vorm: veld eq 'waarde' [and veld eq 'waarde' ...]."""
-        import re
+    _OPS: ClassVar[dict] = {"eq": lambda a, b: a == b, "ne": lambda a, b: a != b, "gt": lambda a, b: a > b,
+            "ge": lambda a, b: a >= b, "lt": lambda a, b: a < b, "le": lambda a, b: a <= b}
 
+    def query_entities(self, flt, **_):
+        """Ondersteunt filters van de vorm: veld op 'waarde' [and veld op 'waarde' ...] (op: eq ne gt ge lt le).
+        Resultaat gesorteerd op PartitionKey en RowKey, zoals Azure Table Storage."""
         conds = [
-            (f, v.replace("''", "'"))
-            for f, v in re.findall(r"(\w+) eq '((?:[^']|'')*)'", flt)
+            (f, op, v.replace("''", "'"))
+            for f, op, v in re.findall(r"(\w+) (eq|ne|gt|ge|lt|le) '((?:[^']|'')*)'", flt)
         ]
-        return [dict(e) for e in self.rows.values() if all(str(e.get(f)) == v for f, v in conds)]
+        hits = [dict(e) for k, e in sorted(self.rows.items())
+                if all(self._OPS[op](str(e.get(f, "")), v) for f, op, v in conds)]
+        return iter(hits)
 
 
 def use_memory_store() -> None:
     """Schakel over naar opslag in het geheugen (gegevens verdwijnen bij het afsluiten)."""
     global _client_factory
     tables: dict[str, MemoryTable] = {}
-    _client_factory = lambda name: tables.setdefault(name, MemoryTable())  # noqa: E731
+    _client_factory = lambda name: tables.setdefault(name, MemoryTable())

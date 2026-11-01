@@ -1,6 +1,6 @@
 """Proces send_messages: bevestiging één keer, alleen nieuwe reservaties, in TST naar het testadres."""
 
-from datetime import date, datetime, timedelta, timezone
+from datetime import UTC, date, datetime, timedelta
 
 import pytest
 
@@ -14,7 +14,7 @@ from hotel_checkin.processes import send_messages
 def setup(monkeypatch):
     repo.use_memory_store()
     monkeypatch.setenv("APP_ENV", "tst")
-    monkeypatch.setattr(send_messages, "start", lambda h: datetime(2026, 10, 30, tzinfo=timezone.utc))
+    monkeypatch.setattr(send_messages, "start", lambda h: datetime(2026, 10, 30, tzinfo=UTC))
     sent = []
 
     def fake_send(to, subject, html_body, sender=None, reply_to=None, **kw):
@@ -40,10 +40,10 @@ def test_confirmation_once(setup):
 
 
 def test_old_reservations_and_cancelled_get_nothing(setup, monkeypatch):
-    monkeypatch.setattr(send_messages, "start", lambda h: datetime.now(timezone.utc) + timedelta(hours=1))
+    monkeypatch.setattr(send_messages, "start", lambda h: datetime.now(UTC) + timedelta(hours=1))
     _res("old")
     assert send_messages.run("lucca") == 0
-    monkeypatch.setattr(send_messages, "start", lambda h: datetime(2026, 10, 30, tzinfo=timezone.utc))
+    monkeypatch.setattr(send_messages, "start", lambda h: datetime(2026, 10, 30, tzinfo=UTC))
     repo.delete_reservation("lucca", "old")
     _res("c", status=ReservationStatus.CANCELLED)
     _res("noemail", email=None)
@@ -112,7 +112,7 @@ def test_code_mail_placeholder_in_test(setup):
 
     r = _res("ph1", arrival_in=2)
     step = next(s for s in workflow.steps("lucca", "website_unpaid") if s.step == "access_code")
-    msg, data = send_messages._rendered("lucca", step, r, workflow.config("lucca"))
+    msg, _data = send_messages._rendered("lucca", step, r, workflow.config("lucca"))
     assert "XXXXXX" in msg.html and "Salto is nog niet actief" in msg.html and "Saferpay" in msg.html
 
 
@@ -140,7 +140,7 @@ def test_phone_whatsapp_then_sms_fallback(setup, monkeypatch):
     send_messages.run("lucca")
     assert len(calls) == 1  # WhatsApp gelukt: niets meer
     # Twilio meldt later: geen WhatsApp op dit nummer -> volgende run per sms
-    wa = [m for m in repo.messages_for("lucca", "p1") if m["channel"] == "whatsapp"][0]
+    wa = next(m for m in repo.messages_for("lucca", "p1") if m["channel"] == "whatsapp")
     send_messages.twilio_status("lucca", "p1", wa["RowKey"], "undelivered", "63003")
     send_messages.run("lucca")
     assert [c[0] for c in calls] == ["wa", "sms"]

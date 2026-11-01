@@ -71,6 +71,14 @@ param robotLocation string = location
 
 param mailSender string = 'checkin@hotellucca.be'
 
+@description('Geheugen per instantie van de Function App (Flex Consumption: 512, 2048 of 4096 MB). Kost per GB-seconde: 512 is een kwart van 2048.')
+@allowed([512, 2048, 4096])
+param funcMemoryMB int = 512
+
+@description('Maximaal aantal instanties van de Function App. Begrenst de kost, ook bij misbruik van het open check-in-formulier.')
+@minValue(1)
+param funcMaxInstances int = 3
+
 var suffix = take(uniqueString(resourceGroup().id), 6)
 var tags = { app: 'hotel-checkin', env: env }
 var tables = ['Reservations', 'Messages', 'MarketingOptOut', 'RobotRuns']
@@ -233,7 +241,7 @@ resource func 'Microsoft.Web/sites@2024-04-01' = {
           authentication: { type: 'SystemAssignedIdentity' }
         }
       }
-      scaleAndConcurrency: { maximumInstanceCount: 40, instanceMemoryMB: 2048 }
+      scaleAndConcurrency: { maximumInstanceCount: funcMaxInstances, instanceMemoryMB: funcMemoryMB }
       runtime: { name: 'python', version: '3.12' }
     }
   }

@@ -11,6 +11,7 @@ import json
 
 import httpx
 
+from hotel_checkin.core import clients
 from hotel_checkin.core.config import hotel_setting
 from hotel_checkin.core.models import Channel, SendResult
 from hotel_checkin.core.safety import route
@@ -57,7 +58,7 @@ def send_message(
             data["ContentVariables"] = json.dumps(content_variables)
 
     try:
-        http = client or httpx.Client(timeout=30)
+        http = client or clients.http()
         response = http.post(
             f"{TWILIO_API}/Accounts/{account_sid}/Messages.json",
             data=data,

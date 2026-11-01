@@ -17,11 +17,12 @@ from __future__ import annotations
 
 import argparse
 import re
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import httpx
 
+from hotel_checkin.core import clients
 from hotel_checkin.core.config import hotel_setting
 from hotel_checkin.messaging.email import GRAPH_URL, _get_token
 
@@ -35,11 +36,11 @@ def list_messages(
 ) -> list[dict]:
     """Berichten in de inbox sinds `since`, oudste eerst: id, received_at, sender, subject, text."""
     if since.tzinfo is None:
-        since = since.replace(tzinfo=timezone.utc)
-    http = client or httpx.Client(timeout=30)
+        since = since.replace(tzinfo=UTC)
+    http = client or clients.http()
     url = f"{GRAPH_URL}/users/{mailbox_address(hotel_id)}/mailFolders/inbox/messages"
     params = {
-        "$filter": f"receivedDateTime ge {since.astimezone(timezone.utc):%Y-%m-%dT%H:%M:%SZ}",
+        "$filter": f"receivedDateTime ge {since.astimezone(UTC):%Y-%m-%dT%H:%M:%SZ}",
         "$orderby": "receivedDateTime asc",
         "$select": "id,receivedDateTime,from,subject,body",
         "$top": str(min(limit, 50)),
@@ -56,7 +57,7 @@ def list_messages(
         for m in data.get("value", []):
             out.append({
                 "id": m["id"],
-                "received_at": datetime.fromisoformat(m["receivedDateTime"].replace("Z", "+00:00")),
+                "received_at": datetime.fromisoformat(m["receivedDateTime"]),
                 "sender": ((m.get("from") or {}).get("emailAddress") or {}).get("address", "").lower(),
                 "subject": m.get("subject") or "",
                 "text": (m.get("body") or {}).get("content") or "",
@@ -79,13 +80,13 @@ def mask(text: str, names: list[str]) -> str:
     in_guest_block = False
     for line in [x.rstrip() for x in text.splitlines()]:
         # Cubilis: "Gemaakt door <naam> op <datum>", daarna naam en adres op losse regels tot "Aankomst:"
-        if re.match(r"\s*(Gemaakt door|Made by|Created by|Créée? par|Erstellt von)\b", line, re.I):
-            line = re.sub(r"\b(door|by|par|von)\b.*?\b(op|on|le|am)\b", r"\1 <naam> \2", line, count=1, flags=re.I)
+        if re.match(r"\s*(Gemaakt door|Made by|Created by|Créée? par|Erstellt von)\b", line, re.IGNORECASE):
+            line = re.sub(r"\b(door|by|par|von)\b.*?\b(op|on|le|am)\b", r"\1 <naam> \2", line, count=1, flags=re.IGNORECASE)
             out.append(line)
             in_guest_block = True
             continue
         if in_guest_block:
-            if re.match(r"\s*(Aankomst|Arrival|Arrivée|Anreise)\b", line, re.I):
+            if re.match(r"\s*(Aankomst|Arrival|Arrivée|Anreise)\b", line, re.IGNORECASE):
                 in_guest_block = False
             elif line.strip():
                 out.append("<gastgegevens>")
@@ -96,7 +97,7 @@ def mask(text: str, names: list[str]) -> str:
                       lambda m: "<tel>" if len(re.sub(r"\D", "", m.group(0))) >= 9 else m.group(0), line)
         for n in names:
             if len(n) > 2:
-                line = re.sub(rf"\b{re.escape(n)}\b", "<naam>", line, flags=re.I)
+                line = re.sub(rf"\b{re.escape(n)}\b", "<naam>", line, flags=re.IGNORECASE)
         label, sep, value = line.partition(":")
         if sep and value.strip() and any(w in label.lower() for w in _NAME_LABELS):
             line = f"{label}: <waarde>"
@@ -123,7 +124,7 @@ def main() -> None:
     p.add_argument("hotel_id")
     p.add_argument("--days", type=int, default=3)
     args = p.parse_args()
-    since = datetime.now(timezone.utc) - timedelta(days=args.days)
+    since = datetime.now(UTC) - timedelta(days=args.days)
     messages = list_messages(args.hotel_id, since)
     names = _known_names(args.hotel_id)
     report = [f"# Mailbox {mailbox_address(args.hotel_id)} sinds {since:%d/%m %H:%M} UTC: {len(messages)} berichten", ""]
