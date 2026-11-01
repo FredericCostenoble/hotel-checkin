@@ -55,19 +55,24 @@ def _since(hotel_id: str, hours: int | None) -> datetime:
     return now - timedelta(days=30)
 
 
-SESSION_KEY = "lighthouse_session"
-MAX_SESSION_CHARS = 30_000  # een tekstveld in Table Storage mag max. 32K tekens bevatten
+SESSION_KEY = "lighthouse_session"  # vroeger in RobotState; nu in de sessiekluis (core/session_vault.py)
+
+
+def _session_secret(hotel_id: str) -> str:
+    return f"{hotel_id}-lighthouse-session"
 
 
 def _restore_session(hotel_id: str) -> None:
     """De container begint altijd leeg: de sessiecookies van Lighthouse van de vorige run terugzetten,
     zodat de robot niet bij elke run opnieuw aanmeldt (ongeveer 25 seconden per run). Is de sessie
-    verlopen, dan meldt de robot gewoon opnieuw aan. Bewaard in RobotState, met dezelfde toegang als de
-    gastgegevens (alleen de beheerde identiteiten van de omgeving)."""
+    verlopen, dan meldt de robot gewoon opnieuw aan. Bewaard in de aparte sessiekluis (Key Vault)."""
+    from hotel_checkin.core import session_vault
     from hotel_checkin.pms.lighthouse_browser import state_file
 
+    if not session_vault.available():
+        return  # codespace: het bestand blijft gewoon staan
     try:
-        data = guests.get_state(hotel_id, SESSION_KEY)
+        data = session_vault.get(_session_secret(hotel_id))
         path = state_file(hotel_id)
         if data and not path.exists():
             path.write_text(data)
@@ -76,18 +81,24 @@ def _restore_session(hotel_id: str) -> None:
 
 
 def _store_session(hotel_id: str) -> None:
-    """Alleen de cookies bewaren (geen localStorage), zodat het in één tabelveld past."""
+    """Alleen de cookies bewaren (geen localStorage), zodat het in één geheim past. Alleen als ze
+    veranderden (elke wijziging is een nieuwe versie van het geheim)."""
     import json
 
+    from hotel_checkin.core import session_vault
     from hotel_checkin.pms.lighthouse_browser import state_file
 
+    if not session_vault.available():
+        return
     try:
+        if guests.get_state(hotel_id, SESSION_KEY):  # eenmalig: oude kopie uit de tabel wissen
+            guests.delete_state(hotel_id, SESSION_KEY)
         path = state_file(hotel_id)
         if not path.exists():
             return
         data = json.dumps({"cookies": json.loads(path.read_text()).get("cookies", []), "origins": []})
-        if len(data) <= MAX_SESSION_CHARS and data != guests.get_state(hotel_id, SESSION_KEY):
-            guests.set_state(hotel_id, SESSION_KEY, data)
+        if data != session_vault.get(_session_secret(hotel_id)) and not session_vault.put(_session_secret(hotel_id), data):
+            logging.warning("%s: sessie van Lighthouse te groot om te bewaren", hotel_id)
     except Exception:
         logging.warning("%s: sessie van Lighthouse niet bewaard", hotel_id, exc_info=True)
 

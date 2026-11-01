@@ -4,8 +4,10 @@ Regels om te beslissen of twee boekingen van dezelfde gast zijn (voorspelbaar, g
 - Automatisch samen (sterk): zelfde eigen e-mailadres (geen doorstuuradres van Booking.com,
   Expedia, ...) of zelfde telefoonnummer (E.164).
 - Alleen voorgesteld in de monitor (de gebruiker beslist): zelfde naam (zonder hoofdletters,
-  accenten en volgorde van de woorden) in hetzelfde land, of bijna dezelfde naam (tikfout) in
-  hetzelfde land. Een keuze "andere persoon" wordt onthouden.
+  accenten, volgorde van de woorden, en met tussenvoegsels aan elkaar: "Van den Broucke" =
+  "Vandenbroucke") in hetzelfde land, of bijna dezelfde naam in hetzelfde land: tikfout, andere
+  schrijfwijze die hetzelfde klinkt (Peeters/Peters, Maria/Marie), een initiaal (J. Peeters) of een
+  extra voornaam (Anna Maria Peeters). Een keuze "andere persoon" wordt onthouden.
 
 Gegevens van het check-in-formulier (door de gast zelf ingevuld) gaan voor op die uit Lighthouse.
 Een verblijf telt mee in het profiel zodra het vertrek voorbij is en het niet geannuleerd werd.
@@ -40,6 +42,77 @@ def name_key(first: str, last: str) -> str:
     return " ".join(sorted(re.findall(r"[a-z]+", text)))
 
 
+# Tussenvoegsels: worden aan het volgende woord vastgemaakt (De Smet = Desmet)
+_PARTICLES = {"van", "von", "vom", "der", "den", "de", "del", "della", "dello", "des", "di", "da", "du", "le", "la",
+              "les", "het", "ter", "ten", "te", "dos", "das", "do", "mac", "mc", "st", "op", "in", "t"}
+
+
+def _ascii(text: str) -> str:
+    return unicodedata.normalize("NFKD", text).encode("ascii", "ignore").decode().lower()
+
+
+def name_tokens(first: str, last: str) -> list[str]:
+    """Woorden van de naam, met tussenvoegsels vast aan het volgende woord:
+    'Jan Van den Broucke' -> ['jan', 'vandenbroucke'], 'Jan Vandenbroucke' -> zelfde."""
+    out, pending = [], ""
+    for word in re.findall(r"[a-z]+", _ascii(f"{first} {last}")):
+        if word in _PARTICLES:
+            pending += word
+            continue
+        out.append(pending + word)
+        pending = ""
+    if pending:
+        out.append(pending)
+    return out
+
+
+def canonical_name(first: str, last: str) -> str:
+    """Sleutel voor 'zelfde naam': woorden gesorteerd, tussenvoegsels vast."""
+    return " ".join(sorted(name_tokens(first, last)))
+
+
+def sound(word: str) -> str:
+    """Hoe een woord ongeveer klinkt: eerste letter plus medeklinkers, met gelijk klinkende letters
+    samen (ck/c/q = k, ph = f, ij/y = i, z = s, w = v, d op het einde = t). Peeters en Peters,
+    Maria en Marie, Kathy en Cathy klinken zo hetzelfde."""
+    w = word
+    for a, b in (("ck", "k"), ("ph", "f"), ("ij", "i"), ("y", "i"), ("c", "k"), ("q", "k"), ("z", "s"),
+                 ("w", "v"), ("dt", "t")):
+        w = w.replace(a, b)
+    if len(w) > 1 and w.endswith("d"):
+        w = w[:-1] + "t"
+    if not w:
+        return ""
+    return re.sub(r"(.)\1+", r"\1", w[0] + re.sub(r"[aeiouh]", "", w[1:]))
+
+
+def token_match(a: str, b: str) -> int:
+    """2 = zelfde woord, 1 = waarschijnlijk hetzelfde (tikfout, klinkt hetzelfde, initiaal), 0 = anders."""
+    if a == b:
+        return 2
+    if len(a) == 1 or len(b) == 1:
+        return 1 if a[0] == b[0] else 0
+    ratio = difflib.SequenceMatcher(None, a, b).ratio()
+    return 1 if ratio >= 0.85 or (ratio >= 0.7 and sound(a) == sound(b)) else 0
+
+
+def names_similar(a: list[str], b: list[str]) -> bool:
+    """Bijna dezelfde naam: elk woord van de kortste naam (min. 2 woorden) past bij een ander woord van
+    de langste, en minstens één volledig woord (3+ letters) past (niet alleen initialen)."""
+    short, long_ = sorted((a, b), key=len)
+    if len(short) < 2:
+        return False
+    used: set[int] = set()
+    full = False
+    for word in short:
+        best = max(((token_match(word, other), i) for i, other in enumerate(long_) if i not in used), default=(0, -1))
+        if best[0] == 0:
+            return False
+        used.add(best[1])
+        full = full or (len(word) >= 3 and len(long_[best[1]]) >= 3)
+    return full
+
+
 def channel_of(r: Reservation) -> str:
     return r.source or "onbekend"
 
@@ -59,8 +132,8 @@ def phones(g: GuestProfile) -> set[str]:
 def names_fit(first: str, last: str, g: GuestProfile) -> bool:
     """Passen de namen? Minstens een deel van de naam gemeen (of een van beide zonder naam).
     Zo wordt een partner of familielid met hetzelfde adres of nummer niet samengevoegd."""
-    a, b = set(name_key(first, last).split()), set(name_key(g.first_name, g.last_name).split())
-    return not a or not b or bool(a & b)
+    a, b = name_tokens(first, last), name_tokens(g.first_name, g.last_name)
+    return not a or not b or any(len(x) >= 3 and len(y) >= 3 and token_match(x, y) for x in a for y in b)
 
 
 def _strong_match(r: Reservation, candidates: list[GuestProfile]) -> GuestProfile | None:
@@ -275,17 +348,21 @@ def merge(hotel_id: str, keep_id: str, other_id: str, keep: GuestProfile | None 
     return keep
 
 
-# Naamdelen die niets zeggen over wie iemand is (Van, De, Der, ...): niet gebruikt om te vergelijken
-_PARTICLES = {"van", "von", "der", "den", "del", "della", "des", "het", "ter", "ten", "dos", "das", "les", "mac"}
-# Gelijkaardige namen (tikfouten) alleen zoeken binnen groepen tot zoveel profielen met hetzelfde
-# naamdeel; anders groeit het kwadratisch (2 jaar gasten). Exact dezelfde naam wordt altijd gevonden.
-MAX_GROUP = 200
+# Veiligheidsgrens: een blok (zelfde klank van een woord + zelfde beginletter van een ander woord) met
+# meer profielen wordt overgeslagen. Normaal zijn blokken klein (familienaam + initiaal voornaam).
+MAX_GROUP = 300
+
+
+def _blocks(tokens: list[str]) -> set[str]:
+    """Sleutels om kandidaten te vinden zonder alle paren te vergelijken: klank van een woord plus
+    de beginklank van een ander woord, bv. Maria Peeters -> 'ptrs|m' en 'mr|p'."""
+    return {f"{sound(t)}|{sound(u)[:1]}" for t in tokens for u in tokens if t is not u and len(t) >= 3 and u}
 
 
 def possible_matches(hotel_id: str, limit: int = 50) -> list[dict]:
     """Paren die misschien dezelfde gast zijn, voor de monitor. Nooit automatisch samengevoegd.
 
-    Volgorde: zelfde (of extra) adres of nummer, dan exact dezelfde naam, dan een gelijkaardige naam.
+    Volgorde: zelfde (of extra) adres of nummer, dan dezelfde naam, dan bijna dezelfde naam.
     """
     all_profiles = profiles.list_profiles(hotel_id)
     different = profiles.different_pairs(hotel_id)
@@ -319,35 +396,33 @@ def possible_matches(hotel_id: str, limit: int = 50) -> list[dict]:
                     return out
 
     pool = [g for g in all_profiles if g.first_name or g.last_name]
-    keys = {g.guest_id: name_key(g.first_name, g.last_name) for g in pool}
+    tokens = {g.guest_id: name_tokens(g.first_name, g.last_name) for g in pool}
 
     def other_country(a: GuestProfile, b: GuestProfile) -> bool:
         return bool(a.country and b.country and a.country != b.country)
 
-    by_key: dict[str, list[GuestProfile]] = {}
+    by_name: dict[str, list[GuestProfile]] = {}
     for g in pool:
-        by_key.setdefault(keys[g.guest_id], []).append(g)
-    for group in by_key.values():
+        by_name.setdefault(" ".join(sorted(tokens[g.guest_id])), []).append(g)
+    for group in by_name.values():
         for i, a in enumerate(group):
             for b in group[i + 1:]:
                 if not other_country(a, b) and add(a, b, "same_name"):
                     return out
 
-    by_token: dict[str, list[GuestProfile]] = {}
+    by_block: dict[str, list[GuestProfile]] = {}
     for g in pool:
-        for token in set(keys[g.guest_id].split()):
-            if len(token) > 2 and token not in _PARTICLES:
-                by_token.setdefault(token, []).append(g)
-    for group in by_token.values():
+        for key in _blocks(tokens[g.guest_id]):
+            by_block.setdefault(key, []).append(g)
+    for group in by_block.values():
         if len(group) > MAX_GROUP:
             continue
         for i, a in enumerate(group):
-            ka = keys[a.guest_id]
+            ta = tokens[a.guest_id]
             for b in group[i + 1:]:
-                kb = keys[b.guest_id]
-                if ka == kb or other_country(a, b) or abs(len(ka) - len(kb)) > max(len(ka), len(kb)) // 5 + 1:
+                tb = tokens[b.guest_id]
+                if sorted(ta) == sorted(tb) or other_country(a, b):
                     continue
-                m = difflib.SequenceMatcher(None, ka, kb)
-                if m.quick_ratio() >= 0.9 and m.ratio() >= 0.9 and add(a, b, "similar_name"):
+                if names_similar(ta, tb) and add(a, b, "similar_name"):
                     return out
     return out

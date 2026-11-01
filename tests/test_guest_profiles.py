@@ -187,3 +187,26 @@ def test_relay_address_never_matches():
     a = guest_profiles.link(_rsv("b1", "Ann", "Dewit", email="ann.1@guest.booking.com"))
     b = guest_profiles.link(_rsv("b2", "Ann", "Dewit", email="ann.1@guest.booking.com"))
     assert a.guest_id != b.guest_id  # alleen voorgesteld als zelfde naam, nooit automatisch
+
+
+@pytest.mark.parametrize("a,b,reason", [
+    (("Jan", "Van den Broucke"), ("Jan", "Vandenbroucke"), "same_name"),
+    (("Pieter", "De Smet"), ("Pieter", "Desmet"), "same_name"),
+    (("Maria", "Peeters"), ("Marie", "Peters"), "similar_name"),
+    (("J.", "Peeters"), ("Jan", "Peeters"), "similar_name"),
+    (("Anna Maria", "Peeters"), ("Anna", "Peeters"), "similar_name"),
+    (("Kathy", "Janssens"), ("Cathy", "Jansens"), "similar_name"),
+    (("Tom", "Maes"), ("Tim", "Maes"), None),
+    (("Jan", "Peeters"), ("Els", "Peeters"), None),
+])
+def test_name_variants(a, b, reason):
+    """Tussenvoegsels, klank, initialen en extra voornamen (review 01/11)."""
+    from hotel_checkin.guests import profiles
+    from hotel_checkin.processes import guest_profiles
+
+    for first, last in (a, b):
+        g = profiles.new_profile("lucca")
+        g.first_name, g.last_name, g.country = first, last, "BE"
+        profiles.save_profile(g)
+    found = [m["reason"] for m in guest_profiles.possible_matches("lucca")]
+    assert found == ([reason] if reason else [])

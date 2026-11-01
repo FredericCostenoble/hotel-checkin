@@ -584,6 +584,13 @@ def set_state(hotel_id: str, key: str, value: str) -> None:
                                    "updated_at": _now().isoformat()})
 
 
+def delete_state(hotel_id: str, key: str) -> None:
+    try:
+        _table(T_STATE).delete_entity(_key(hotel_id), _key(key))
+    except Exception:  # noqa: BLE001 - stond er niet
+        pass
+
+
 def delete_robot_run(hotel_id: str, run_id: str) -> bool:
     """Verwijder één run uit het logboek (monitor, vuilbakje). run_id = RowKey."""
     if not re.fullmatch(r"\d{10}-[0-9a-f]{6}", run_id or ""):

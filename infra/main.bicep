@@ -167,6 +167,21 @@ resource kv 'Microsoft.KeyVault/vaults@2023-07-01' = {
   }
 }
 
+// Aparte kluis voor wat de robot zelf schrijft (sessiecookies van Lighthouse, <hotel_id>-lighthouse-session).
+// De robot mag hier schrijven, in kv-checkin alleen lezen. De Function App kan hier niet bij.
+resource kvSession 'Microsoft.KeyVault/vaults@2023-07-01' = {
+  name: 'kv-session-${env}-${suffix}'
+  location: location
+  tags: tags
+  properties: {
+    tenantId: subscription().tenantId
+    sku: { family: 'A', name: 'standard' }
+    enableRbacAuthorization: true
+    softDeleteRetentionInDays: 7
+    publicNetworkAccess: 'Enabled'
+  }
+}
+
 // Pagina's van het formulier checkin.<hotel> (de API zit in de Function App)
 resource swa 'Microsoft.Web/staticSites@2023-12-01' = {
   name: 'swa-checkin-${env}'
@@ -378,6 +393,16 @@ resource raRobotKv 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (wi
   }
 }
 
+resource raRobotKvSession 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (withRobot) {
+  scope: kvSession
+  name: guid(kvSession.id, 'robot', roles.kvSecretsOfficer)
+  properties: {
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', roles.kvSecretsOfficer)
+    principalId: robotId!.properties.principalId
+    principalType: 'ServicePrincipal'
+  }
+}
+
 resource cae 'Microsoft.App/managedEnvironments@2024-03-01' = if (withRobot) {
   name: 'cae-checkin-${env}'
   location: robotLocation
@@ -402,7 +427,7 @@ resource robotJob 'Microsoft.App/jobs@2024-03-01' = if (withRobot) {
     type: 'UserAssigned'
     userAssignedIdentities: { '${robotId.id}': {} }
   }
-  dependsOn: [robotAcrPull, raRobotTables, raRobotKv]
+  dependsOn: [robotAcrPull, raRobotTables, raRobotKv, raRobotKvSession]
   properties: {
     environmentId: cae.id
     workloadProfileName: 'Consumption'
@@ -422,6 +447,7 @@ resource robotJob 'Microsoft.App/jobs@2024-03-01' = if (withRobot) {
           env: [
             { name: 'APP_ENV', value: env }
             { name: 'KEY_VAULT_URL', value: kv.properties.vaultUri }
+            { name: 'SESSION_VAULT_URL', value: kvSession.properties.vaultUri }
             { name: 'STORAGE_TABLE_ENDPOINT', value: st.properties.primaryEndpoints.table }
             { name: 'AZURE_CLIENT_ID', value: robotId!.properties.clientId }
           ]
