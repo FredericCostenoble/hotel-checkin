@@ -521,6 +521,12 @@ def list_reservations(hotel_id: str) -> list[Reservation]:
 # ---------------------------------------------------------------- robot
 
 
+def _run_fields() -> dict:
+    from hotel_checkin.core import run_context
+
+    return run_context.fields()
+
+
 def log_robot_run(
     hotel_id: str, task: str, started: datetime, ok: bool,
     found: int = 0, new: int = 0, error: str | None = None,
@@ -548,6 +554,8 @@ def log_robot_run(
         "skipped": skipped,
         # gemeten duur per onderdeel in seconden, bv. {"login": 25, "list": 6, "contact": 9}
         "timings": json.dumps(timings or {}),
+        # robot: wanneer de container begon en welke run van Azure (core/run_context.py)
+        **_run_fields(),
     })
 
 

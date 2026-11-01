@@ -103,7 +103,8 @@ def reservations(hotel_id: str) -> list[dict]:
 
 def runs(hotel_id: str) -> dict:
     return {"running": _robot_state.get(hotel_id) == "bezig", "runs": [
-        {k: e.get(k) for k in ("task", "started_at", "finished_at", "ok", "found", "new", "error", "skipped")}
+        {k: e.get(k) for k in ("task", "started_at", "finished_at", "ok", "found", "new", "error", "skipped",
+                               "process_started_at", "execution")}
         | {"timings": json.loads(e.get("timings") or "{}"), "id": e.get("RowKey")}
         for e in repo.robot_runs(hotel_id, limit=200)
     ]}

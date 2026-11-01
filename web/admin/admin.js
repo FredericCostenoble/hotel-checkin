@@ -73,7 +73,7 @@ const T = {
     hours_a: "Nieuwe reservaties van de laatste", hours_b: "uur", run: "Robot nu draaien",
     r_start: "Start", r_duration: "Duur", r_task: "Taak", r_result: "Resultaat", r_found: "Gevonden", r_new: "Nieuw", r_error: "Opmerking",
     all_tasks: "Alle", sub_log: "Logboek robot", del: "Verwijderen", del_confirm: "Deze regel uit het logboek verwijderen?", del_all: "Alles verwijderen",
-    del_all_confirm: (n, task) => `${n} regels${task ? ` van "${task}"` : ""} uit het logboek verwijderen?`, t_login: "aanmelden", t_browser: "browser starten", t_reused: "sessie hergebruikt", t_new: "opnieuw aangemeld", t_list: "lijst", t_contact: (n, sec) => `${n} contact${n > 1 ? "en" : ""} à ${sec} s`, task_nieuwe_reservaties: "Nieuwe reservaties", task_contactgegevens_nalezen: "Reservaties bijwerken", task_meldingen: "Meldingen per mail", task_onderhoud: "Gasten synchroniseren", task_berichten: "Berichten",
+    del_all_confirm: (n, task) => `${n} regels${task ? ` van "${task}"` : ""} uit het logboek verwijderen?`, t_azure: "Azure start", t_container: "container", t_ready: s => `klaar om te lezen na ${s} s`, t_login: "aanmelden", t_browser: "browser starten", t_reused: "sessie hergebruikt", t_new: "opnieuw aangemeld", t_list: "lijst", t_contact: (n, sec) => `${n} contact${n > 1 ? "en" : ""} à ${sec} s`, task_nieuwe_reservaties: "Nieuwe reservaties", task_contactgegevens_nalezen: "Reservaties bijwerken", task_meldingen: "Meldingen per mail", task_onderhoud: "Gasten synchroniseren", task_berichten: "Berichten",
     ok: "ok", fail: "fout", busy: "De robot is bezig...", scheduled: "Draait ook automatisch op schema.",
     not_installed: "De robot is in deze omgeving nog niet geïnstalleerd.", no_runs: "Nog geen afgeronde run",
     load_error: "Fout bij laden",
@@ -150,7 +150,7 @@ const T = {
     hours_a: "New reservations of the last", hours_b: "hours", run: "Run robot now",
     r_start: "Start", r_duration: "Duration", r_task: "Task", r_result: "Result", r_found: "Found", r_new: "New", r_error: "Note",
     all_tasks: "All", sub_log: "Robot log", del: "Delete", del_confirm: "Delete this line from the log?", del_all: "Delete all",
-    del_all_confirm: (n, task) => `Delete ${n} lines${task ? ` of "${task}"` : ""} from the log?`, t_login: "login", t_browser: "start browser", t_reused: "session reused", t_new: "logged in again", t_list: "list", t_contact: (n, sec) => `${n} contact${n > 1 ? "s" : ""} × ${sec} s`, task_nieuwe_reservaties: "New reservations", task_contactgegevens_nalezen: "Update reservations", task_meldingen: "Mail notifications", task_onderhoud: "Synchronize guests", task_berichten: "Messages",
+    del_all_confirm: (n, task) => `Delete ${n} lines${task ? ` of "${task}"` : ""} from the log?`, t_azure: "Azure start", t_container: "container", t_ready: s => `ready to read after ${s} s`, t_login: "login", t_browser: "start browser", t_reused: "session reused", t_new: "logged in again", t_list: "list", t_contact: (n, sec) => `${n} contact${n > 1 ? "s" : ""} × ${sec} s`, task_nieuwe_reservaties: "New reservations", task_contactgegevens_nalezen: "Update reservations", task_meldingen: "Mail notifications", task_onderhoud: "Synchronize guests", task_berichten: "Messages",
     ok: "ok", fail: "failed", busy: "The robot is running...", scheduled: "Also runs automatically on a schedule.",
     not_installed: "The robot is not installed in this environment yet.", no_runs: "No finished run yet",
     load_error: "Loading failed",
@@ -723,6 +723,20 @@ async function loadRuns() {
 }
 
 // Gemeten duur per onderdeel onder de totale duur, bv. "aanmelden 25 s, lijst 6 s, 2 contacten à 9 s"
+// Opstart van een robotrun: Azure start de run, de container start, klaar om te lezen (aangemeld)
+const hms = iso => iso ? new Date(iso).toLocaleTimeString(locale(), { hour: "2-digit", minute: "2-digit", second: "2-digit" }) : "";
+function startText(x, execs) {
+  if (!x.process_started_at) return "";
+  const azure = (execs || {})[x.execution];
+  const p = [];
+  if (azure) p.push(`${t("t_azure")} ${hms(azure)}`);
+  const wait = azure ? Math.round((new Date(x.process_started_at) - new Date(azure)) / 1000) : null;
+  p.push(`${t("t_container")} ${hms(x.process_started_at)}${wait != null ? ` (+${wait} s)` : ""}`);
+  const tm = x.timings || {};
+  if (tm.ready != null) p.push(t("t_ready", Math.round(tm.ready + (wait || 0))));
+  return `<div class="timing">${esc(p.join(" · "))}</div>`;
+}
+
 function timingText(tm) {
   if (!tm || !Object.keys(tm).length) return "";
   const p = [];
@@ -778,11 +792,12 @@ function renderRuns(d) {
     tasks.map(k => `<option value="${esc(k)}">${esc(taskName(k))}</option>`).join("");
   sel.value = tasks.includes(chosen) ? chosen : "";
   const shown = d.runs.filter(x => !sel.value || x.task === sel.value);
+  const execStart = Object.fromEntries((d.executions || []).map(e => [e.name, e.start]));
   $("#runs").innerHTML = shown.map(x => {
     const secs = (new Date(x.finished_at) - new Date(x.started_at)) / 1000;
     // Rood alleen bij een fout of overgeslagen rijen; anders is de opmerking gewoon informatie
     const problem = !x.ok || Number(x.skipped || 0) > 0;
-    return `<tr><td>${stamp(x.started_at)}</td><td>${Math.round(secs)} s${timingText(x.timings)}</td>
+    return `<tr><td>${stamp(x.started_at)}</td><td>${Math.round(secs)} s${startText(x, execStart)}${timingText(x.timings)}</td>
       <td><span class="task task-${esc(x.task)}">${esc(taskName(x.task))}</span></td>
       <td class="${x.ok ? "ok" : "err"}">${x.ok ? t("ok") : t("fail")}</td><td>${x.found}</td><td>${x.new}</td>
       <td class="wrap ${problem ? "err" : ""}">${esc(x.error)}</td>

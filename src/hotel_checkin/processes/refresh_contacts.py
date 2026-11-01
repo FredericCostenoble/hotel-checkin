@@ -16,7 +16,7 @@ from __future__ import annotations
 import time
 from datetime import UTC, date, datetime, timedelta
 
-from hotel_checkin.core import clock, workflow
+from hotel_checkin.core import clock, run_context, workflow
 from hotel_checkin.core.models import ReservationStatus
 from hotel_checkin.guests import repository as guests
 from hotel_checkin.pms import lighthouse
@@ -108,6 +108,9 @@ def run(hotel_id: str) -> int:
             with lighthouse.connect(hotel_id) as lh:
                 timings["login"] = round(time.monotonic() - t0, 1)
                 timings.update({f"lh_{k}": v for k, v in getattr(lh, "timings", {}).items()})
+                ready = run_context.seconds_since_start()  # sinds de container startte, aangemeld en klaar om te lezen
+                if ready is not None:
+                    timings["ready"] = ready
                 deadline = time.monotonic() + MAX_SECONDS
                 for reservation in todo:
                     if time.monotonic() > deadline:

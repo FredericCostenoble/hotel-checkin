@@ -43,7 +43,7 @@ def start() -> bool:
     return r.status_code in (200, 202)
 
 
-def executions(limit: int = 10) -> list[dict]:
+def executions(limit: int = 30) -> list[dict]:
     """Laatste runs van de job volgens Azure (ook runs die mislukten voor ze iets konden loggen)."""
     job = os.environ["ROBOT_JOB_ID"]
     r = httpx.get(f"{ARM}{job}/executions?api-version={API_VERSION}", headers=_headers(), timeout=30)

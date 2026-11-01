@@ -9,7 +9,7 @@ from __future__ import annotations
 import time
 from datetime import UTC, datetime
 
-from hotel_checkin.core import workflow
+from hotel_checkin.core import run_context, workflow
 from hotel_checkin.guests import repository as guests
 from hotel_checkin.pms import lighthouse
 from hotel_checkin.processes import guest_profiles
@@ -35,6 +35,9 @@ def run(hotel_id: str, since: datetime) -> int:
         with lighthouse.connect(hotel_id) as lh:
             timings["login"] = round(time.monotonic() - t0, 1)
             timings.update({f"lh_{k}": v for k, v in getattr(lh, "timings", {}).items()})
+            ready = run_context.seconds_since_start()  # sinds de container startte, aangemeld en klaar om te lezen
+            if ready is not None:
+                timings["ready"] = ready
             t0 = time.monotonic()
             listed = lighthouse.get_new_reservations(hotel_id, since, lh, skipped)
             timings["list"] = round(time.monotonic() - t0, 1)

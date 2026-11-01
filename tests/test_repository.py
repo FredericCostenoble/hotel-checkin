@@ -244,3 +244,23 @@ def test_robot_runs_newest_first_with_task_filter():
     runs = repo.robot_runs("lucca", task="a")
     assert [r["task"] for r in runs] == ["a", "a"] and runs[0]["started_at"] > runs[1]["started_at"]
     assert len(repo.robot_runs("lucca", limit=1)) == 1
+
+
+def test_robot_log_has_container_start_and_azure_run():
+    """Logregels van de robot krijgen mee wanneer de container startte en welke run van Azure het is."""
+    import time
+    from datetime import datetime
+
+    from hotel_checkin.core import run_context
+
+    run_context.start(time.time() - 30, "job-checkin-robot-tst-abc12")
+    try:
+        assert 29 <= run_context.seconds_since_start() <= 32
+        repo.log_robot_run("lucca", "nieuwe_reservaties", datetime.now(UTC), True)
+    finally:
+        run_context.clear()
+    repo.log_robot_run("lucca", "berichten", datetime.now(UTC), True)  # Function App: geen context
+    runs = {r["task"]: r for r in repo.robot_runs("lucca")}
+    assert runs["nieuwe_reservaties"]["execution"] == "job-checkin-robot-tst-abc12"
+    assert runs["nieuwe_reservaties"]["process_started_at"]
+    assert "execution" not in runs["berichten"]

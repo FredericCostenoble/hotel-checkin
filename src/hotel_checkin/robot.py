@@ -23,6 +23,10 @@ overgeslagen rijen, dan leest hij dezelfde periode opnieuw.
 
 from __future__ import annotations
 
+import time
+
+PROCESS_STARTED = time.time()  # zo vroeg mogelijk: begin van de container (vóór de zware imports)
+
 import argparse
 import logging
 import os
@@ -137,6 +141,11 @@ def main() -> int:
     p.add_argument("--hours", type=int, default=None)
     args = p.parse_args()
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
+    from hotel_checkin.core import run_context
+
+    run_context.start(PROCESS_STARTED, os.environ.get("CONTAINER_APP_JOB_EXECUTION_NAME", ""))
+    logging.info("run %s: proces gestart, %.1f s voor de code klaar was",
+                 os.environ.get("CONTAINER_APP_JOB_EXECUTION_NAME", "lokaal"), time.time() - PROCESS_STARTED)
 
     failed = False
     for hotel_id in [args.hotel] if args.hotel else list_hotels():
