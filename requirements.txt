@@ -1,6 +1,6 @@
 # Function App (Azure installeert dit bij de uitrol). Vastgezet op een geteste versie: ~=X.Y laat
 # alleen updates binnen dezelfde hoofdversie toe, zodat een nieuwe hoofdversie niet ongemerkt binnenkomt.
-azure-functions~=2.3
+azure-functions~=1.25
 azure-data-tables~=12.7
 azure-identity~=1.27
 azure-keyvault-secrets~=4.12

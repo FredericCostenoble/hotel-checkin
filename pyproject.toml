@@ -17,7 +17,7 @@ dependencies = [
 messaging = ["twilio~=9.12"]
 lighthouse = ["playwright~=1.63", "pyotp~=2.10"]
 storage = ["azure-data-tables~=12.7"]
-functions = ["azure-functions~=2.3"]
+functions = ["azure-functions~=1.25"]
 all = ["hotel-checkin[messaging,lighthouse,storage,functions]"]
 dev = ["pytest>=8", "ruff>=0.5"]
 
@@ -32,6 +32,7 @@ pythonpath = ["src"]
 
 [tool.ruff]
 line-length = 100
+target-version = "py312"  # zelfde als Azure (Function App en robot)
 
 [tool.ruff.lint]
 # Bewuste keuzes, geen fouten:
