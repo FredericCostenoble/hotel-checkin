@@ -129,7 +129,7 @@ items = [
 module = "practical_info"
 type = "text"
 titel = "Vertrek"
-alineas = ["Uitchecken kan tot {checkout_tot}. U kunt uw bagage gratis bij ons achterlaten."]
+alineas = ["Uitchecken kan tot {checkout_tot}. U kunt uw bagage gratis bij ons achterlaten. Uw code opent de voordeur nog tot {checkout_voordeur_tot} die dag, bv. om uw bagage op te halen."]
 
 [[access_code.blokken]]
 type = "text"
@@ -280,7 +280,7 @@ items = [
 [[modules.practical_info]]
 type = "text"
 titel = "Vertrek"
-alineas = ["Uitchecken kan tot {checkout_tot}. U kunt uw bagage gratis bij ons achterlaten."]
+alineas = ["Uitchecken kan tot {checkout_tot}. U kunt uw bagage gratis bij ons achterlaten. Uw code opent de voordeur nog tot {checkout_voordeur_tot} die dag, bv. om uw bagage op te halen."]
 
 [[modules.pay_open_amount]]
 type = "text"

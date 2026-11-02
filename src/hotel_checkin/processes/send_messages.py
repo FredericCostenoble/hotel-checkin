@@ -179,6 +179,12 @@ def room_codes(hotel_id: str, r: Reservation) -> list[dict]:
     return out
 
 
+def _checkout(hotel_id: str, r: Reservation):
+    from hotel_checkin.processes import grant_access
+
+    return grant_access.checkout_at(hotel_id, r)
+
+
 def message_data(hotel_id: str, r: Reservation) -> dict[str, str]:
     lang = r.guest.language
     code = {}
@@ -189,7 +195,8 @@ def message_data(hotel_id: str, r: Reservation) -> dict[str, str]:
     if r.access_pin:
         code |= {"pincode": r.access_pin,
                 "code_geldig_van": templates.format_moment(r.access_valid_from, lang) if r.access_valid_from else "",
-                "code_geldig_tot": templates.format_moment(r.access_valid_until, lang) if r.access_valid_until else ""}
+                # in de mail: de officiële check-out, niet de marge van de kamerdeur bij Salto
+                "code_geldig_tot": templates.format_moment(_checkout(hotel_id, r), lang) if r.access_valid_until else ""}
     return {**code,
         "voornaam": r.guest.first_name or r.guest.last_name, "achternaam": r.guest.last_name,
         "reservatienummer": r.booking_number or "", "kamertype": r.room_type or "",
@@ -243,9 +250,9 @@ def _rendered(hotel_id: str, step: workflow.Step, r: Reservation, cfg: dict, ext
         if not r.access_valid_from:
             from hotel_checkin.processes import grant_access
 
-            start, end = grant_access.period(hotel_id, r)
+            start, _end = grant_access.period(hotel_id, r)
             data["code_geldig_van"] = templates.format_moment(start, r.guest.language)
-            data["code_geldig_tot"] = templates.format_moment(end, r.guest.language)
+            data["code_geldig_tot"] = templates.format_moment(grant_access.checkout_at(hotel_id, r), r.guest.language)
         notes.append("Salto is nog niet actief: XXXXXX is geen echte pincode.")
     if test and pay != "none" and not has_pay_link(r):
         data["betaal_link"] = "#nog-geen-betaallink"

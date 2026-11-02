@@ -69,14 +69,21 @@ def test_grant_full_sequence(monkeypatch):
     codes = grant_access.grant("lucca", r)
     assert [c["pin"] for c in codes] == ["482916"]
     paths = [(m, p.replace("/v1.2/sites/site1", "").replace("/v1.1/sites/site1", "")) for m, p, _ in calls if not p.endswith("token")]
+    # kamerdeur (tot 12:00) en voordeur (tot het einde van de vertrekdag) in twee access groups, één code
     assert paths == [("POST", "/users"), ("POST", "/access_groups"), ("POST", "/access_groups/group1/locks"),
-                     ("POST", "/access_groups/group1/locks"), ("POST", "/access_groups/group1/time_schedules"),
-                     ("POST", "/access_groups/group1/users"), ("PUT", "/users/user1/pin")]
-    schedule = next(b for m, p, b in calls if p.endswith("time_schedules"))
-    assert schedule["start_date"] == "2099-01-10T14:00:00" and schedule["end_date"] == "2099-01-12T11:00:00"
+                     ("POST", "/access_groups/group1/time_schedules"), ("POST", "/access_groups/group1/users"),
+                     ("POST", "/access_groups"), ("POST", "/access_groups/group1/locks"),
+                     ("POST", "/access_groups/group1/time_schedules"), ("POST", "/access_groups/group1/users"),
+                     ("PUT", "/users/user1/pin")]
+    locks = [b["lock_id"] for m, p, b in calls if p.endswith("/locks")]
+    assert locks == ["lock12", "front"]
+    room, front = [b for m, p, b in calls if p.endswith("time_schedules")]
+    assert room["start_date"] == "2099-01-10T14:00:00" and room["end_date"] == "2099-01-12T12:00:00"
+    assert front["end_date"] == "2099-01-12T23:59:00"
+    pin_body = next(b for m, p, b in calls if p.endswith("/pin"))
+    assert pin_body["expiry_date"] == "2099-01-12T23:59:00"
     saved = repo.get_reservation("lucca", "r1")
-    assert saved.access_codes == [{"room": "12", "pin": "482916", "user_id": "user1", "group_id": "group1",
-                                   "schedule_id": saved.access_codes[0]["schedule_id"]}]
+    assert saved.access_codes[0]["pin"] == "482916" and saved.access_codes[0]["front_group_id"] == "group1"
     before = len(calls)
     assert grant_access.grant("lucca", saved)[0]["pin"] == "482916" and len(calls) == before  # geen nieuwe oproepen
 
@@ -131,7 +138,7 @@ def test_maintenance_revokes_after_departure(monkeypatch):
     from hotel_checkin.processes import maintenance
 
     revoked = []
-    monkeypatch.setattr(grant_access, "_cleanup", lambda h, u, g: revoked.append((u, g)))
+    monkeypatch.setattr(grant_access, "_cleanup", lambda h, u, g, f=None: revoked.append((u, g)))
     r = Reservation("lucca", "d1", Guest("A", "B"), date.today() - timedelta(days=3), date.today() - timedelta(days=1),
                     access_codes=[{"room": "12", "pin": "1", "user_id": "u", "group_id": "g"}])
     repo.save_reservation(r)
@@ -163,7 +170,7 @@ def test_room_change_keeps_user_and_pin(monkeypatch):
 
 def test_cancel_revokes_immediately(monkeypatch):
     removed = []
-    monkeypatch.setattr(grant_access, "_cleanup", lambda h, u, g: removed.append((u, g)))
+    monkeypatch.setattr(grant_access, "_cleanup", lambda h, u, g, f=None: removed.append((u, g)))
     r = _res()
     r.access_codes = [{"room": "12", "pin": "1", "user_id": "u", "group_id": "g"}]
     r.status = ReservationStatus.CANCELLED
@@ -180,7 +187,7 @@ def test_one_code_per_room_and_room_changes(monkeypatch):
         return {"room": room, "pin": f"pin{room}", "user_id": f"u{room}", "group_id": f"g{room}", "schedule_id": None}
 
     monkeypatch.setattr(grant_access, "_grant_room", fake_room)
-    monkeypatch.setattr(grant_access, "_cleanup", lambda h, u, g: cleaned.append(g))
+    monkeypatch.setattr(grant_access, "_cleanup", lambda h, u, g, f=None: cleaned.append(g))
     monkeypatch.setattr(grant_access.salto, "change_locks", lambda h, g, add, remove: locks.append((g, add, remove)))
     monkeypatch.setattr(grant_access.salto, "add_time_schedule", lambda *a: "s")
     r = _res(rooms=("12", "14"))
@@ -300,8 +307,14 @@ def test_user_limit_stops_new_codes(monkeypatch):
 def test_users_removed_right_after_checkout(monkeypatch):
 
     removed = []
-    monkeypatch.setattr(grant_access, "_cleanup", lambda h, u, g: removed.append(g))
+    monkeypatch.setattr(grant_access, "_cleanup", lambda h, u, g, f=None: removed.append(g))
     r = _res()
     r.access_codes = [{"room": "12", "pin": "1", "user_id": "u", "group_id": "g"}]
+    r.arrival, r.departure = date.today() - timedelta(days=2), date.today()
     r.access_valid_until = datetime.now(UTC) - timedelta(minutes=5)
+    monkeypatch.setattr(grant_access.salto, "update_time_schedule", lambda *a: None)
+    monkeypatch.setattr(grant_access.salto, "add_time_schedule", lambda *a: "s")
+    # vertrekdag: de voordeur werkt nog tot het einde van de dag, dus nog niet opruimen
+    assert "vertrokken: toegang ingetrokken" not in grant_access.follow_changes("lucca", r) and removed == []
+    r.arrival, r.departure = date.today() - timedelta(days=3), date.today() - timedelta(days=1)
     assert grant_access.follow_changes("lucca", r) == ["vertrokken: toegang ingetrokken"] and removed == ["g"]

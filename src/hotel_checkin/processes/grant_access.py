@@ -27,10 +27,26 @@ def _at(day, hhmm: str, tz) -> datetime:
     return datetime.combine(day, time(h, m), tzinfo=tz)
 
 
-def period(hotel_id: str, r: Reservation) -> tuple[datetime, datetime]:
+def front_until(hotel_id: str, r: Reservation) -> datetime:
+    """Tot wanneer de code de voordeur (en andere gemeenschappelijke deuren) opent: op de dag van vertrek tot
+    [checkout] voordeur_tot (standaard 23:59), bv. om de bagage op te halen. De kamerdeur tot [checkout] kamer_tot."""
     cfg, tz = load_hotel(hotel_id), clock.tz(hotel_id)
+    return _at(r.departure, cfg.get("checkout", {}).get("voordeur_tot", "23:59"), tz)
+
+
+def checkout_at(hotel_id: str, r: Reservation) -> datetime:
+    """Officiële check-out ([checkout] tot, bv. 11:00): dit staat in de mails als einde van de code."""
+    cfg, tz = load_hotel(hotel_id), clock.tz(hotel_id)
+    return _at(r.departure, cfg.get("checkout", {}).get("tot", "11:00"), tz)
+
+
+def period(hotel_id: str, r: Reservation) -> tuple[datetime, datetime]:
+    """Periode van de kamerdeur bij Salto: van check-in tot [checkout] kamer_tot (bv. 12:00, een uur marge
+    na de check-out); zonder kamer_tot tot de check-out zelf."""
+    cfg, tz = load_hotel(hotel_id), clock.tz(hotel_id)
+    co = cfg.get("checkout", {})
     return (_at(r.arrival, cfg.get("receptie", {}).get("van", "14:00"), tz),
-            _at(r.departure, cfg.get("checkout", {}).get("tot", "11:00"), tz))
+            _at(r.departure, co.get("kamer_tot") or co.get("tot", "11:00"), tz))
 
 
 def _name(r: Reservation, room: str) -> str:
@@ -83,16 +99,27 @@ def check_user_limit(hotel_id: str, needed: int) -> None:
 
 
 def _grant_room(hotel_id: str, r: Reservation, room: str, valid_from: datetime, valid_until: datetime) -> dict:
-    """Gebruiker, access group (voordeur en deze kamer), schema en pincode voor één kamer.
+    """Gebruiker, twee access groups en pincode voor één kamer:
+    - kamerdeur: van check-in tot check-out (11:00);
+    - voordeur en andere gemeenschappelijke deuren: van check-in tot het einde van de vertrekdag.
     Lukt een stap niet, dan wordt wat al aangemaakt was weer verwijderd."""
-    lock_ids = salto.lock_ids_for(hotel_id, [room])
-    user_id = group_id = None
+    room_locks = salto.lock_ids_for(hotel_id, [room], common=False)
+    front_locks = [x for x in salto.lock_ids_for(hotel_id, [room]) if x not in room_locks]
+    front_end = front_until(hotel_id, r)
+    user_id = group_id = front_group_id = None
+    front_schedule_id = None
     try:
         user_id = salto.create_user(hotel_id, r.guest.first_name, r.guest.last_name, alias=_name(r, room))
         group_id = salto.create_access_group(hotel_id, _name(r, room))
-        salto.add_locks(hotel_id, group_id, lock_ids)
+        salto.add_locks(hotel_id, group_id, room_locks)
         schedule_id = salto.add_time_schedule(hotel_id, group_id, valid_from, valid_until)
         salto.add_user_to_group(hotel_id, group_id, user_id)
+        if front_locks:
+            front_group_id = salto.create_access_group(hotel_id, _name(r, room) + " voordeur")
+            salto.add_locks(hotel_id, front_group_id, front_locks)
+            front_schedule_id = salto.add_time_schedule(hotel_id, front_group_id, valid_from, front_end)
+            salto.add_user_to_group(hotel_id, front_group_id, user_id)
+        valid_until = max(valid_until, front_end)  # de code zelf vervalt pas als ook de voordeur dicht is
         length = pin_length(hotel_id)
         if length:
             taken = _pins_in_use(hotel_id)
@@ -106,9 +133,10 @@ def _grant_room(hotel_id: str, r: Reservation, room: str, valid_from: datetime, 
         else:
             pin = salto.create_pin(hotel_id, user_id, expiry=valid_until)
     except Exception:
-        _cleanup(hotel_id, user_id, group_id)
+        _cleanup(hotel_id, user_id, group_id, front_group_id)
         raise
-    return {"room": room, "pin": pin, "user_id": user_id, "group_id": group_id, "schedule_id": schedule_id}
+    return {"room": room, "pin": pin, "user_id": user_id, "group_id": group_id, "schedule_id": schedule_id,
+            "front_group_id": front_group_id, "front_schedule_id": front_schedule_id}
 
 
 def grant(hotel_id: str, r: Reservation) -> list[dict]:
@@ -144,8 +172,9 @@ def follow_changes(hotel_id: str, r: Reservation) -> list[str]:
     if r.status == ReservationStatus.CANCELLED:
         revoke(hotel_id, r)
         return ["geannuleerd: toegang ingetrokken"]
-    if r.access_valid_until and datetime.now(r.access_valid_until.tzinfo) > r.access_valid_until:
-        # Vertrokken (check-out voorbij): gebruikers meteen weg, niet wachten op het dagelijkse onderhoud.
+    if r.access_valid_until and datetime.now(r.access_valid_until.tzinfo) > front_until(hotel_id, r):
+        # Vertrokken (ook de voordeur dicht, einde vertrekdag): gebruikers meteen weg, niet wachten op het
+        # dagelijkse onderhoud.
         # Zo blijft het aantal gebruikers bij Salto klein (maximum van het abonnement).
         revoke(hotel_id, r)
         return ["vertrokken: toegang ingetrokken"]
@@ -163,16 +192,19 @@ def follow_changes(hotel_id: str, r: Reservation) -> list[str]:
             r.room_moves.append({"from": c["room"], "to": room, "at": datetime.now(clock.tz(hotel_id)).isoformat()})
             c["room"] = room
         for c in removed[len(added):]:  # kamer weg
-            _cleanup(hotel_id, c.get("user_id"), c.get("group_id"))
+            _cleanup(hotel_id, c.get("user_id"), c.get("group_id"), c.get("front_group_id"))
             r.access_codes.remove(c)
             changes.append(f"kamer {c['room']}: code ingetrokken")
     valid_from, valid_until = period(hotel_id, r)
     if (valid_from, valid_until) != (r.access_valid_from, r.access_valid_until):
+        front_end = front_until(hotel_id, r)
         for c in r.access_codes:
             if c.get("schedule_id"):
                 salto.update_time_schedule(hotel_id, c["group_id"], c["schedule_id"], valid_from, valid_until)
             else:
                 c["schedule_id"] = salto.add_time_schedule(hotel_id, c["group_id"], valid_from, valid_until)
+            if c.get("front_group_id") and c.get("front_schedule_id"):
+                salto.update_time_schedule(hotel_id, c["front_group_id"], c["front_schedule_id"], valid_from, front_end)
         changes.append(f"periode {valid_from:%d/%m %H:%M} tot {valid_until:%d/%m %H:%M}")
         r.access_valid_from, r.access_valid_until = valid_from, valid_until
     if changes:
@@ -189,14 +221,16 @@ def revoke(hotel_id: str, r: Reservation) -> bool:
     if not r.access_codes:
         return False
     for c in r.access_codes:
-        _cleanup(hotel_id, c.get("user_id"), c.get("group_id"))
+        _cleanup(hotel_id, c.get("user_id"), c.get("group_id"), c.get("front_group_id"))
     r.access_codes = []
     guests.save_reservation(r, fields=guests.SALTO_FIELDS)
     return True
 
 
-def _cleanup(hotel_id: str, user_id: str | None, group_id: str | None) -> None:
-    for kind, fn, ident in (("access group", salto.delete_access_group, group_id), ("gebruiker", salto.delete_user, user_id)):
+def _cleanup(hotel_id: str, user_id: str | None, group_id: str | None, front_group_id: str | None = None) -> None:
+    for kind, fn, ident in (("access group", salto.delete_access_group, group_id),
+                            ("access group voordeur", salto.delete_access_group, front_group_id),
+                            ("gebruiker", salto.delete_user, user_id)):
         if ident:
             try:
                 fn(hotel_id, ident)

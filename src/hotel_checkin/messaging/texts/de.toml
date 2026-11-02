@@ -127,7 +127,7 @@ items = [
 module = "practical_info"
 type = "text"
 titel = "Abreise"
-alineas = ["Der Check-out ist bis {checkout_tot} Uhr möglich. Ihr Gepäck können Sie kostenlos bei uns lassen."]
+alineas = ["Der Check-out ist bis {checkout_tot} Uhr möglich. Ihr Gepäck können Sie kostenlos bei uns lassen. Ihr Code öffnet die Haustür an diesem Tag noch bis {checkout_voordeur_tot} Uhr, zum Beispiel um Ihr Gepäck abzuholen."]
 
 [[access_code.blokken]]
 type = "text"
@@ -278,7 +278,7 @@ items = [
 [[modules.practical_info]]
 type = "text"
 titel = "Abreise"
-alineas = ["Der Check-out ist bis {checkout_tot} Uhr möglich. Ihr Gepäck können Sie kostenlos bei uns lassen."]
+alineas = ["Der Check-out ist bis {checkout_tot} Uhr möglich. Ihr Gepäck können Sie kostenlos bei uns lassen. Ihr Code öffnet die Haustür an diesem Tag noch bis {checkout_voordeur_tot} Uhr, zum Beispiel um Ihr Gepäck abzuholen."]
 
 [[modules.pay_open_amount]]
 type = "text"

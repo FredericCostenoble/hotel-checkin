@@ -43,6 +43,8 @@ tot = "18:30"
 
 [checkout]
 tot = "11:00"
+kamer_tot = "12:00"      # op de dag van vertrek werkt de code aan de kamerdeur nog tot dit uur (marge na de check-out, niet in de mails)
+voordeur_tot = "23:59"   # op de dag van vertrek werkt de code aan de voordeur (en andere gemeenschappelijke deuren) nog tot dit uur
 
 [ontbijt]
 van = "8:30"

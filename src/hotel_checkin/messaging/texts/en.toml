@@ -127,7 +127,7 @@ items = [
 module = "practical_info"
 type = "text"
 titel = "Departure"
-alineas = ["Check-out is until {checkout_tot}. You are welcome to leave your luggage with us free of charge."]
+alineas = ["Check-out is until {checkout_tot}. You are welcome to leave your luggage with us free of charge. Your code still opens the front door until {checkout_voordeur_tot} that day, for example to collect your luggage."]
 
 [[access_code.blokken]]
 type = "text"
@@ -278,7 +278,7 @@ items = [
 [[modules.practical_info]]
 type = "text"
 titel = "Departure"
-alineas = ["Check-out is until {checkout_tot}. You are welcome to leave your luggage with us free of charge."]
+alineas = ["Check-out is until {checkout_tot}. You are welcome to leave your luggage with us free of charge. Your code still opens the front door until {checkout_voordeur_tot} that day, for example to collect your luggage."]
 
 [[modules.pay_open_amount]]
 type = "text"
