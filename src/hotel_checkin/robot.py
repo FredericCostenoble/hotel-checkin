@@ -191,7 +191,10 @@ def main() -> int:
                  os.environ.get("CONTAINER_APP_JOB_EXECUTION_NAME", "lokaal"), time.time() - PROCESS_STARTED)
 
     failed = False
+    from hotel_checkin.core import progress
+
     for hotel_id in [args.hotel] if args.hotel else list_hotels():
+        progress.step(hotel_id, SKIP_TASK, "robot gestart in Azure, check-in-formulieren nakijken", force=True)
         # Vangnet: ingevulde check-in-formulieren die niet in de reservatie staan, opnieuw toepassen.
         # Normaal gebeurt dat meteen bij het indienen; hier alleen nakijken (bij elke run, ook als vangnet-uur).
         try:
@@ -207,9 +210,9 @@ def main() -> int:
         if skip:
             logging.info("%s: %s", hotel_id, skip)
             guests.log_robot_run(hotel_id, SKIP_TASK, datetime.now(UTC), True, 0, 0, skip)
+            if "andere run" not in skip:
+                progress.done(hotel_id)  # de andere run houdt zijn eigen live regel
             continue
-        from hotel_checkin.core import progress
-
         progress.step(hotel_id, new_reservation.TASK, "aanmelden bij Lighthouse", force=True)
         since = _since(hotel_id, args.hours)
         _restore_session(hotel_id)

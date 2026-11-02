@@ -59,6 +59,11 @@ def run(hotel_id: str) -> int:
         logging.info("%s: %s meldingen, robot is al bezig; volgende minuut opnieuw", hotel_id, len(notices))
         return len(notices)  # leesgrens niet verzetten, zodat dit na de lopende run opnieuw gebeurt
     started_robot = cloud_robot.start() if cloud_robot.available() else False
+    if started_robot:
+        from hotel_checkin.core import progress
+
+        progress.step(hotel_id, "robot", "gestart door een meldingsmail: Azure start de robot (duurt meestal 40 tot 60 s)",
+                      force=True)
     kinds = {"new": "nieuw", "modified": "gewijzigd", "cancelled": "geannuleerd"}
     note = ", ".join(f"{kinds.get(n.kind, n.kind)} {n.number or '?'}" for n in notices)
     note += ". Robot gestart." if started_robot else ". Robot NIET gestart."

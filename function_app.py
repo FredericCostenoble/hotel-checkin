@@ -207,7 +207,14 @@ def admin_api(req: func.HttpRequest) -> func.HttpResponse:
         # De robot (browser) draait als Container Apps Job, niet in de Function App
         if not cloud_robot.available():
             return _json(501, {"error": "robot_not_in_cloud"})
-        return _json(200, {"started": cloud_robot.start()})
+        started = cloud_robot.start()
+        if started:  # meteen een live regel in het robotlog, nog voor Azure de robot echt start
+            from hotel_checkin.core import progress
+
+            for h in list_hotels():
+                progress.step(h, "robot", "gevraagd in de monitor: Azure start de robot (duurt meestal 40 tot 60 s)",
+                              force=True)
+        return _json(200, {"started": started})
     if req.method == "DELETE" and what == "runs":
         # Eén regel uit het robotlogboek verwijderen (vuilbakje in de monitor)
         if req.params.get("all") == "1":
