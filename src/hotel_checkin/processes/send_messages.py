@@ -499,6 +499,8 @@ def plan(hotel_id: str, r: Reservation, rows: list[dict], cfg: dict, ready: tupl
             item.update(state="off", reason="before_start")
         elif failed_now:
             item.update(state="skipped", reason="condition:" + ",".join(failed_now))
+        elif step.when == "after_booking" and workflow.stored_late(r):
+            item.update(state="skipped", reason="stored_late")
         elif workflow._booked_late(step, r):
             item.update(state="skipped", reason="booked_late")
         elif workflow.is_due(step, r, today):

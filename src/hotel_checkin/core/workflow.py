@@ -279,10 +279,23 @@ def city_tax(hotel_id: str, r: Reservation, cfg: dict | None = None) -> float:
     return round(p["city_tax_amount"] * persons * (nights if p["city_tax_unit"] == "person_night" else 1), 2)
 
 
+STORED_LATE_DAYS = 2  # pas zoveel dagen na de boeking binnengehaald: geen bericht "na de boeking" meer
+
+
+def stored_late(r: Reservation) -> bool:
+    """Lang na de boeking binnengehaald (bv. oudere boekingen, processes/backfill.py)? Dan is het moment van
+    de boeking voorbij: de bevestiging gaat niet meer, de berichten voor de aankomst wel."""
+    if not (r.booked_at and r.created_at):
+        return False
+    booked = r.booked_at if r.booked_at.tzinfo else r.booked_at.replace(tzinfo=r.created_at.tzinfo)
+    return r.created_at - booked > timedelta(days=STORED_LATE_DAYS)
+
+
 def is_due(step: Step, r: Reservation, today: date) -> bool:
     """Moet deze stap nu gebeuren (los van de voorwaarden in only_if)?"""
     if step.when == "after_booking":
-        return today < r.departure  # niet meer als de gast al vertrokken is (laat ingelezen)
+        # niet meer als de gast al vertrokken is, en niet als de reservatie pas lang na de boeking binnenkwam
+        return today < r.departure and not stored_late(r)
     if step.when == "days_before_arrival":
         # tot en met de aankomstdag: wie vandaag boekt voor vandaag krijgt nog de code
         return step.due_date(r) <= today <= r.arrival
