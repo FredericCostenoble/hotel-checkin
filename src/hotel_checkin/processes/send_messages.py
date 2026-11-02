@@ -143,6 +143,19 @@ def payments_ready(hotel_id: str) -> bool:
     return True
 
 
+def waiting_for_pay_link(hotel_id: str, step: workflow.Step, r: Reservation, cfg: dict, today: date) -> bool:
+    """Moet deze mail met betaalknop nog even wachten op de betaallink? Ja als er iets openstaat, er nog geen
+    link is, en de robot het betaalverzoek gaat maken of net maakte (processes/pay_requests.py). Na 2 uur
+    zonder link gaat de mail toch (zonder werkende knop), zodat de gast niet zonder code-mail blijft."""
+    if step.pay == "none" or has_pay_link(r) or (r.open_amount is not None and r.open_amount <= 0.004):
+        return False
+    from hotel_checkin.processes import pay_requests
+
+    if r.pay_requested_at:
+        return datetime.now(UTC) - r.pay_requested_at < pay_requests.WAIT_FOR_MAIL
+    return pay_requests.candidate(r, today, cfg, unknown_open=True) is not None
+
+
 def has_pay_link(r: Reservation) -> bool:
     """Betaallink van Lighthouse bij deze reservatie (uit het betaalverzoek in checkin@)."""
     return bool(r.pay_link)
@@ -318,7 +331,19 @@ def recipients(r: Reservation, kind: str, own_from_profile=_LOOKUP) -> list[str]
     for v in values:
         if v and v.strip().lower() not in [o.lower() for o in out]:
             out.append(v.strip())
+    if not out and kind == "email" and _test_guest_without_address(r):
+        # Testgast zonder e-mailadres, buiten PRD: toch naar het testadres, zodat de hele flow te testen is
+        from hotel_checkin.core import safety
+
+        out = [a for a in [safety.test_address("email", r.hotel_id)] if a]
     return out
+
+
+def _test_guest_without_address(r: Reservation) -> bool:
+    from hotel_checkin.core import safety
+
+    return (environment() != "prd" and not r.guest.email
+            and safety.is_test_guest(r.hotel_id, r.guest.first_name, r.guest.last_name))
 
 
 def _same(a: str, b: str) -> bool:
@@ -534,7 +559,7 @@ def run(hotel_id: str, today: date | None = None) -> int:
     ready = ready_steps(hotel_id)
     sent, failed = [], []
     for r in guests.list_reservations(hotel_id):
-        if before_start(r, begin) or not (r.guest.email or r.guest.phone):
+        if before_start(r, begin) or not (r.guest.email or r.guest.phone or _test_guest_without_address(r)):
             continue
         flow = workflow.flow_for(hotel_id, r, cfg)  # kanaal en betaalstatus
         all_steps = [s for s in workflow._steps_from(cfg, flow) if s.enabled]
@@ -549,6 +574,8 @@ def run(hotel_id: str, today: date | None = None) -> int:
                 continue  # pas als Lighthouse de betaallink gaf (betaalverzoek naar checkin@)
             if step.step == "access_code" and not code_ready(hotel_id, r, failed):
                 continue
+            if waiting_for_pay_link(hotel_id, step, r, cfg, today):
+                continue  # de robot maakt het betaalverzoek; de mail wacht op de link (hoogstens 2 uur)
             # Vervangt deze stap eerdere (late boeking)? Dan ook hun inhoud, als die nog niet verstuurd zijn
             earlier = workflow.replaced_steps(step, r, today, sendable)
             if earlier:

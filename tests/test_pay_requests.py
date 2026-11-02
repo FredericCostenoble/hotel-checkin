@@ -72,3 +72,18 @@ def test_reads_open_amount_first_when_unknown(monkeypatch):
     monkeypatch.setattr(pr.lighthouse, "create_payment_request", lambda *a: made.append(a[1]) or 8.4)
     monkeypatch.setattr("hotel_checkin.messaging.mailbox.mailbox_address", lambda h: "checkin@hotellucca.be")
     assert pr.run("lucca", None, TODAY)["made"] and made == ["r1"]
+
+
+def test_pay_mail_waits_for_link_at_most_two_hours():
+    from datetime import UTC, datetime
+
+    from hotel_checkin.processes import send_messages as sm
+
+    cfg = pr.workflow.config("lucca")
+    step = next(s for s in pr.workflow.steps("lucca", "booking") if s.step == "access_code")
+    r = _r(arrival_in=1)
+    assert sm.waiting_for_pay_link("lucca", step, r, cfg, TODAY)  # robot gaat het verzoek maken: wachten
+    r.pay_requested_at = datetime.now(UTC) - timedelta(hours=3)
+    assert not sm.waiting_for_pay_link("lucca", step, r, cfg, TODAY)  # na 2 uur toch versturen
+    r.pay_link = "https://pay"
+    assert not sm.waiting_for_pay_link("lucca", step, r, cfg, TODAY)
