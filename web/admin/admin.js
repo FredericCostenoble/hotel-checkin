@@ -38,13 +38,13 @@ const T = {
     rss_before_start: "voor de startdatum", rss_booked_late: "te laat geboekt", rss_later_due: "zit in de latere mail",
     rss_window_passed: "moment voorbij", rss_messaging_off: "berichten uit", rss_disabled: "stap uit", rss_not_ready: "nog niet gebouwd", sb_other: "Ander adres...", sb_bad_email: "Ongeldig e-mailadres", sb_bad_phone: "Ongeldig nummer (met landcode, bv. +32...)", src_test: "testadres", src_form: "check-in-formulier",
     src_form_extra: "extra, check-in-formulier", src_relay: "doorstuuradres", src_profile: "gastprofiel", src_used: "eerder gebruikt", src_earlier: "vroeger", sb_to: "naar", sb_go: "Versturen", sb_off: "(nog niet actief)", send_to: "Versturen naar...", send_to_ask: "Naar welk e-mailadres (of gsm-nummer met +32...) versturen? Het wordt bij de reservatie bewaard.", ct_add: "E-mailadres of gsm-nummer toevoegen", ct_email: "e-mailadres", ct_phone: "gsm-nummer met landcode (+32...)", env_to_prd: "Naar PRD", env_bar_tst: "TESTOMGEVING (TST): berichten gaan alleen naar het testadres, nooit naar gasten",
-    env_bar_prd: "PRODUCTIE (PRD): berichten gaan naar echte gasten", env_to_tst: "Naar TST",
+    env_bar_prd: "PRODUCTIE (PRD): berichten gaan naar echte gasten", env_to_tst: "Naar TST", sw_title: "Hoofdschakelaars (instellingen, tabblad Hotel)", sw_payout: "Overschrijvingen", sw_messages: "Berichten en Salto", sw_on: "AAN", sw_off: "UIT",
     env_confirm_prd: "Overschakelen naar PRODUCTIE? Daar gaan berichten naar echte gasten.", env_confirm_tst: "Overschakelen naar de testomgeving (TST)?", pl_not_sent: "niet verstuurd", relay_hint: "Doorstuuradres van het boekingsplatform, geen eigen adres van de gast.", relay_kept: "Doorstuuradres van het boekingsplatform. Bewaard, maar het eigen adres uit het check-in-formulier gaat voor.", mg_test_addr: "testadres", mg_for: "bedoeld voor", tab_hotel: "Hotel",
     hs_intro: "Gegevens en instellingen van het hotel. Standaard uit het hotelbestand; wat u hier wijzigt, gaat voor (alleen in deze omgeving).",
     hs_default: "standaard", hs_env: "In deze omgeving vastgelegd in Key Vault of de Function App: die waarde gaat voor.",
     hs_add: "Toevoegen", hs_key: "naam", hs_value: "waarde", hs_reset_confirm: "Alle instellingen terug naar het hotelbestand? Alle wijzigingen gaan verloren.",
     hs_list: "komma's ertussen",
-    sec_hotel: "Hotel", sec_test: "Testomgeving", sec_workflow_parameters: "Toeristenbelasting en munt", sec_reviews: "Reviews", sec_verzending: "Afzender van de mails", sec_receptie: "Receptie", sec_checkout: "Check-out", sec_ontbijt: "Ontbijt",
+    sec_schakelaars: "Hoofdschakelaars", sec_hotel: "Hotel", sec_test: "Testomgeving", sec_workflow_parameters: "Toeristenbelasting en munt", sec_reviews: "Reviews", sec_verzending: "Afzender van de mails", sec_receptie: "Receptie", sec_checkout: "Check-out", sec_ontbijt: "Ontbijt",
     sec_wifi: "Wifi", sec_parking: "Parking", sec_nood: "Noodnummer", sec_twilio: "Twilio (sms en WhatsApp)", sec_robot: "Robot",
     sec_messaging: "Berichten", sec_whatsapp: "WhatsApp-sjablonen", sec_retention: "Bewaartermijnen", sec_salto: "Salto",
     sec_salto_rooms: "Salto: kamers en deuren", sec_lighthouse: "Lighthouse", sec_checkin: "Check-in-formulier",
@@ -115,13 +115,13 @@ const T = {
     rss_before_start: "before start date", rss_booked_late: "booked too late", rss_later_due: "included in the later mail",
     rss_window_passed: "moment passed", rss_messaging_off: "messages off", rss_disabled: "step off", rss_not_ready: "not built yet", sb_other: "Other address...", sb_bad_email: "Invalid e-mail address", sb_bad_phone: "Invalid number (with country code, e.g. +32...)", src_test: "test address", src_form: "check-in form",
     src_form_extra: "extra, check-in form", src_relay: "relay address", src_profile: "guest profile", src_used: "used before", src_earlier: "earlier", sb_to: "to", sb_go: "Send", sb_off: "(not active yet)", send_to: "Send to...", send_to_ask: "Send to which e-mail address (or mobile number with +32...)? It is saved with the reservation.", ct_add: "Add e-mail address or mobile number", ct_email: "e-mail address", ct_phone: "mobile number with country code (+32...)", env_to_prd: "To PRD", env_bar_tst: "TEST ENVIRONMENT (TST): messages only go to the test address, never to guests",
-    env_bar_prd: "PRODUCTION (PRD): messages go to real guests", env_to_tst: "To TST",
+    env_bar_prd: "PRODUCTION (PRD): messages go to real guests", env_to_tst: "To TST", sw_title: "Main switches (settings, Hotel tab)", sw_payout: "Bank transfers", sw_messages: "Messages and Salto", sw_on: "ON", sw_off: "OFF",
     env_confirm_prd: "Switch to PRODUCTION? Messages there go to real guests.", env_confirm_tst: "Switch to the test environment (TST)?", pl_not_sent: "not sent", relay_hint: "Relay address of the booking platform, not the guest's own address.", relay_kept: "Relay address of the booking platform. Kept, but the guest's own address from the check-in form takes precedence.", mg_test_addr: "test address", mg_for: "meant for", tab_hotel: "Hotel",
     hs_intro: "Hotel details and settings. Default from the hotel file; what you change here takes precedence (in this environment only).",
     hs_default: "default", hs_env: "Set for this environment in Key Vault or the Function App: that value takes precedence.",
     hs_add: "Add", hs_key: "name", hs_value: "value", hs_reset_confirm: "Reset all settings to the hotel file? All changes will be lost.",
     hs_list: "comma separated",
-    sec_hotel: "Hotel", sec_test: "Test environment", sec_workflow_parameters: "City tax and currency", sec_reviews: "Reviews", sec_verzending: "Mail sender", sec_receptie: "Reception", sec_checkout: "Check-out", sec_ontbijt: "Breakfast",
+    sec_schakelaars: "Main switches", sec_hotel: "Hotel", sec_test: "Test environment", sec_workflow_parameters: "City tax and currency", sec_reviews: "Reviews", sec_verzending: "Mail sender", sec_receptie: "Reception", sec_checkout: "Check-out", sec_ontbijt: "Breakfast",
     sec_wifi: "Wi-Fi", sec_parking: "Parking", sec_nood: "Emergency number", sec_twilio: "Twilio (SMS and WhatsApp)", sec_robot: "Robot",
     sec_messaging: "Messages", sec_whatsapp: "WhatsApp templates", sec_retention: "Retention", sec_salto: "Salto",
     sec_salto_rooms: "Salto: rooms and doors", sec_lighthouse: "Lighthouse", sec_checkin: "Check-in form",
@@ -197,7 +197,25 @@ function setLang(l) {
   document.querySelectorAll(".langs button").forEach(b => b.classList.toggle("active", b.dataset.lang === lang));
   if ($("#env-bar")) $("#env-bar").textContent = t("env_bar_" + ($(".brand .env")?.textContent || "").trim().toLowerCase());
   if ($("#env-switch") && !$("#env-switch").hidden) $("#env-switch").textContent = t("env_to_" + ($("#env-switch").className.includes("to-prd") ? "prd" : "tst"));
+  renderSwitches();
   if (PAGE === "main") { render(); renderGuests(); } else { renderWorkflow(); renderSettings(); if (runsData) renderRuns(runsData); }
+}
+
+// Hoofdschakelaars van het gekozen hotel, altijd zichtbaar bovenaan (groen = aan, grijs = uit)
+function renderSwitches() {
+  const el = $("#switches");
+  if (!el) return;
+  const sw = hotelNow().switches;
+  el.hidden = !sw;
+  if (!sw) return;
+  el.title = t("sw_title");
+  el.innerHTML = [["overschrijvingen", "sw_payout"], ["berichten", "sw_messages"]].map(([k, label]) =>
+    `<span class="sw ${sw[k] ? "on" : "off"}">${esc(t(label))}: <b>${t(sw[k] ? "sw_on" : "sw_off")}</b></span>`).join("");
+}
+
+async function refreshSwitches() {
+  try { hotelList = await get("/api/monitor/hotels"); } catch (e) { return; }
+  renderSwitches();
 }
 
 async function init() {
@@ -208,7 +226,8 @@ async function init() {
   $("#hotel").innerHTML = hotels.map(h => `<option value="${esc(h.id)}">${esc(h.name)}</option>`).join("");
   const saved = store("hotel");
   if (saved && hotels.some(h => h.id === saved)) $("#hotel").value = saved;
-  $("#hotel").onchange = () => { store("hotel", $("#hotel").value); load(); };
+  $("#hotel").onchange = () => { store("hotel", $("#hotel").value); renderSwitches(); load(); };
+  renderSwitches();
   if ($("#version").textContent.includes("__")) $("#version").textContent = "dev";  // lokaal, niet uitgerold
   envSwitch();
   // Twee aparte pagina's: de monitor (index.html: reservaties, gasten) en de instellingen
@@ -1115,13 +1134,13 @@ const HS_TEXT = {
     "Starten bij meldingsmail",
     "De robot start meteen als Lighthouse een mail stuurt over een nieuwe of gewijzigde boeking."
    ],
-   "messaging.enabled_tst": [
-    "Berichten aan in TST",
-    "In TST gaat alles naar het testadres, nooit naar gasten."
+   "schakelaars.overschrijvingen": [
+    "Overschrijvingen Booking.com",
+    "De robot registreert in Lighthouse de betaling door Booking.com (overschrijving of virtuele kaart) als Overschrijving. Alleen niet-annuleerbaar (meteen) of vanaf 2 dagen voor aankomst. Geldt alleen voor deze omgeving."
    ],
-   "messaging.enabled_prd": [
-    "Berichten aan in PRD",
-    "Echte berichten naar gasten. Pas aanzetten als alles getest is."
+   "schakelaars.berichten": [
+    "Berichten en Salto",
+    "Mails, sms en WhatsApp aan gasten, en de pincodes bij Salto. Uit = niets naar gasten en geen codes. Geldt alleen voor deze omgeving; buiten PRD gaat alles naar het testadres."
    ],
    "messaging.start": [
     "Vanaf",
@@ -1204,6 +1223,7 @@ const HS_TEXT = {
    "hotel": "Gegevens die gasten zien in de mails en op het formulier.",
    "twilio": "Het Twilio-account zelf staat in Key Vault.",
    "robot": "De robot leest Lighthouse (alleen lezen).",
+   "schakelaars": "Hoofdschakelaars: wat het systeem echt mag doen. Standaard uit, per omgeving apart.",
    "messaging": "Berichten uit de workflow.",
    "whatsapp": "Door Meta goedgekeurde sjablonen per bericht en taal, bv. template_confirmation_nl = HX... Zonder sjabloon gaat het bericht per sms.",
    "retention": "Opruimen gebeurt bij Synchroniseren op het tabblad Gasten.",
@@ -1333,13 +1353,13 @@ const HS_TEXT = {
     "Start on notification mail",
     "The robot starts as soon as Lighthouse sends a mail about a new or changed booking."
    ],
-   "messaging.enabled_tst": [
-    "Messages on in TST",
-    "In TST everything goes to the test address, never to guests."
+   "schakelaars.overschrijvingen": [
+    "Booking.com bank transfers",
+    "The robot registers the Booking.com payment (bank transfer or virtual card) as Overschrijving in Lighthouse. Only non-refundable (right away) or from 2 days before arrival. Applies to this environment only."
    ],
-   "messaging.enabled_prd": [
-    "Messages on in PRD",
-    "Real messages to guests. Only switch on when everything is tested."
+   "schakelaars.berichten": [
+    "Messages and Salto",
+    "Mails, SMS and WhatsApp to guests, and the Salto PIN codes. Off = nothing to guests and no codes. Applies to this environment only; outside PRD everything goes to the test address."
    ],
    "messaging.start": [
     "From",
@@ -1422,6 +1442,7 @@ const HS_TEXT = {
    "hotel": "Details guests see in the mails and on the form.",
    "twilio": "The Twilio account itself is in Key Vault.",
    "robot": "The robot reads Lighthouse (read only).",
+   "schakelaars": "Main switches: what the system is really allowed to do. Off by default, per environment.",
    "messaging": "Messages from the workflow.",
    "whatsapp": "Templates approved by Meta per message and language, e.g. template_confirmation_nl = HX... Without a template the message goes by SMS.",
    "retention": "Clean-up happens with Synchronize on the Guests tab.",
@@ -1538,6 +1559,7 @@ async function saveSettings() {
   $("#hs-state").className = "muted";
   $("#hs-state").textContent = t("wf_saved");
   renderSettings();
+  refreshSwitches();
 }
 
 async function resetSettings() {
@@ -1546,6 +1568,7 @@ async function resetSettings() {
   hsEdit = {}; hsDirty = false;
   $("#hs-state").textContent = "";
   renderSettings();
+  refreshSwitches();
 }
 
 // ---------------------------------------------------------------- wisselen tussen TST en PRD

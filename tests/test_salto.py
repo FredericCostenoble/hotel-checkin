@@ -19,6 +19,7 @@ SETTINGS = {"SALTO_SITE_ID": "site1", "SALTO_USERNAME": "robot@hotel", "SALTO_PA
 @pytest.fixture(autouse=True)
 def setup(monkeypatch):
     repo.use_memory_store()
+    monkeypatch.setenv("LUCCA_SCHAKELAARS_BERICHTEN", "true")  # hoofdschakelaar berichten aan
     salto._tokens.clear()
     monkeypatch.setattr(salto, "hotel_setting", lambda h, n, default=None, required=True, shared=True: SETTINGS.get(n, default))
     monkeypatch.setattr(salto, "load_hotel", lambda h: {"salto": {"common_lock_ids": ["front"], "rooms": {"12": "lock12", "14": ["lock14a", "lock14b"]}}}, raising=False)

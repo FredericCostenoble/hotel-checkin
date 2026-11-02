@@ -14,6 +14,7 @@ from hotel_checkin.processes import send_messages
 def setup(monkeypatch):
     repo.use_memory_store()
     monkeypatch.setenv("APP_ENV", "tst")
+    monkeypatch.setenv("LUCCA_SCHAKELAARS_BERICHTEN", "true")  # hoofdschakelaar berichten aan
     monkeypatch.setattr(send_messages, "start", lambda h: datetime(2026, 10, 30, tzinfo=UTC))
     sent = []
 
@@ -65,8 +66,9 @@ def test_reminder_seven_days_before(setup, monkeypatch):
     assert repo.was_sent("lucca", "r1", "reminder") and not repo.was_sent("lucca", "r2", "reminder")
 
 
-def test_disabled_in_prd(monkeypatch, setup):
+def test_disabled_by_main_switch(monkeypatch, setup):
     monkeypatch.setenv("APP_ENV", "prd")
+    monkeypatch.delenv("LUCCA_SCHAKELAARS_BERICHTEN")  # standaard uit
     _res("r1")
     assert send_messages.run("lucca") == 0 and setup == []
 

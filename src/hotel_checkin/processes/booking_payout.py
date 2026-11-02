@@ -1,18 +1,23 @@
 """Proces: de overschrijving van Booking.com in Lighthouse registreren.
 
-Bij "Payments by Booking.com" int Booking.com de kamerprijs zelf en stort ze per overschrijving door.
-De opmerking van de reservatie zegt dat: 'PrePay:payment_on_Booking.com (Payout type: BankTransfer)362 EUR'.
-Dan registreert de robot onder Transacties een betaling "Overschrijving" van dat bedrag. Daarna staat
-alleen de toeristenbelasting nog open (betaalverzoek aan de gast).
+Alleen als de hoofdschakelaar [schakelaars] overschrijvingen aan staat (per omgeving, standaard uit).
+
+Welke reservaties (Booking.com, "Payments by Booking.com"):
+- de opmerking vermeldt een overschrijving: 'PrePay:payment_on_Booking.com (Payout type: BankTransfer)362 EUR';
+  dat bedrag moet gelijk zijn aan de kamerprijs in de folio;
+- of de opmerking vermeldt een virtuele kredietkaart ("Virtual credit card"); daar staat geen bedrag bij,
+  dus de kamerprijs uit de folio.
+Dan registreert de robot onder Transacties een betaling "Overschrijving" van de kamerprijs. Daarna staan
+alleen de toeristenbelasting en eventuele extra's (bv. ontbijt) nog open.
 
 Wanneer:
-- niet annuleerbaar (annuleringsvoorwaarden "op elk moment", of tarief NRF): meteen;
-- annuleerbaar of niet gekend: vanaf 2 dagen voor aankomst (dan kan de gast via Booking.com niet meer
-  annuleren), en alleen als de reservatie niet geannuleerd is.
+- niet annuleerbaar (annuleringsvoorwaarden "op elk moment", of tarief NRF): meteen, ook ver op voorhand;
+- anders: vanaf 2 dagen voor aankomst (dan kan de gast via Booking.com niet meer annuleren), en alleen als
+  de reservatie niet geannuleerd is. Vanaf dan wordt ze bij elke robotrun opnieuw nagekeken.
 Controles, vlak ervoor op de detailpagina (altijd opnieuw gelezen):
-- het bedrag uit de opmerking = de kamerprijs in de folio (alles behalve de toeristenbelasting);
-  klopt het niet, dan niets registreren en een melding in het berichtenlog (monitor);
-- staat er al een overschrijving bij de transacties, dan niets (nooit dubbel).
+- klopt het bedrag niet met de kamerprijs, dan niets registreren en één melding in het berichtenlog;
+- staat er al een overschrijving bij de transacties, dan niets (nooit dubbel). Wat geregistreerd is,
+  wordt bij de reservatie onthouden (payout_registered_at) en niet meer bekeken.
 Schrijven in Lighthouse alleen in PRD, of op reservaties van een testgast ([test] guest_names).
 Een testgast zonder opmerking van Booking.com: de kamerprijs uit de folio, om te oefenen.
 """
@@ -20,13 +25,16 @@ Een testgast zonder opmerking van Booking.com: de kamerprijs uit de folio, om te
 from __future__ import annotations
 
 import logging
+import re
+import time
 from datetime import UTC, date, datetime, timedelta
 
 from hotel_checkin.core import clock, safety, workflow
 from hotel_checkin.core.models import Channel, Reservation, ReservationStatus, SendResult
 from hotel_checkin.guests import repository as guests
 from hotel_checkin.pms import lighthouse
-from hotel_checkin.pms.lighthouse_parse import booking_prepay, free_cancel_days
+from hotel_checkin.pms.lighthouse_parse import booking_prepay, free_cancel_days, rate_plans_from
+from hotel_checkin.processes.send_messages import switch
 
 TASK = "overschrijving_booking"
 DAYS_BEFORE = 2
@@ -35,11 +43,32 @@ MESSAGE_TYPE = "booking_payout"
 _CITY_TAX = workflow.CITY_TAX_LABELS
 
 
+def _city_tax(line: dict) -> bool:
+    return any(k in line["label"].lower() for k in _CITY_TAX)
+
+
 def room_price(r: Reservation) -> float | None:
-    """Kamerprijs uit de folio: alle lijnen behalve de toeristenbelasting. None = folio niet gekend."""
+    """Kamerprijs uit de folio: de kamerlijnen ("Superior double - NRF BREAKFAST EXCL"), zonder
+    toeristenbelasting en extra's (bv. ontbijt). Geen kamerlijn herkend: alles behalve de toeristenbelasting.
+    None = folio niet gekend."""
     if not r.folio:
         return None
-    return round(sum(x["amount"] for x in r.folio if not any(k in x["label"].lower() for k in _CITY_TAX)), 2)
+    rooms = [x for x in r.folio if rate_plans_from(x["label"]) and not _city_tax(x)]
+    lines = rooms or [x for x in r.folio if not _city_tax(x)]
+    return round(sum(x["amount"] for x in lines), 2)
+
+
+_VCC = re.compile(r"virtual\s*credit\s*card|virtuele\s*kredietkaart", re.IGNORECASE)
+
+
+def virtual_card(remarks: str | None) -> bool:
+    """Betaalt Booking.com met een virtuele kredietkaart (vermeld in de opmerking)?"""
+    return bool(_VCC.search(remarks or ""))
+
+
+def paid_by_booking(r: Reservation) -> bool:
+    """Betaalt Booking.com de kamer (overschrijving of virtuele kaart)? Een testgast altijd (om te oefenen)."""
+    return booking_prepay(r.remarks) is not None or virtual_card(r.remarks) or is_test(r)
 
 
 def is_test(r: Reservation) -> bool:
@@ -55,11 +84,17 @@ def candidate(r: Reservation, cfg: dict, today: date) -> bool:
     toch opnieuw gelezen."""
     if r.status == ReservationStatus.CANCELLED or r.departure < today or r.payout_registered_at:
         return False
+    if not switch(r.hotel_id, "overschrijvingen"):
+        return False
     if not (workflow.flow_for(r.hotel_id, r, cfg) == "booking" or is_test(r)):
         return False
     if not safety.may_write_pms(r.hotel_id, r.guest.first_name, r.guest.last_name):
         return False
-    return r.non_refundable is True or r.arrival - timedelta(days=DAYS_BEFORE) <= today or r.remarks is None
+    if r.remarks is None:
+        return True  # nog nooit gelezen: één keer lezen (opmerking en annuleerbaarheid)
+    if not paid_by_booking(r):
+        return False  # de gast betaalt zelf: niets te doen
+    return r.non_refundable is True or r.arrival - timedelta(days=DAYS_BEFORE) <= today
 
 
 def due(r: Reservation, today: date) -> bool:
@@ -70,10 +105,14 @@ def due(r: Reservation, today: date) -> bool:
 
 
 def amount_for(r: Reservation) -> float | None:
-    paid_by_booking = booking_prepay(r.remarks)
-    if paid_by_booking is None and is_test(r):
-        return room_price(r)  # oefenen op een testreservatie zonder opmerking van Booking.com
-    return paid_by_booking
+    """Te registreren bedrag: dat van de overschrijving uit de opmerking; bij een virtuele kredietkaart
+    (zonder bedrag) de kamerprijs. None = Booking.com betaalt niet (de gast betaalt zelf)."""
+    prepay = booking_prepay(r.remarks)
+    if prepay is not None:
+        return prepay
+    if virtual_card(r.remarks) or is_test(r):
+        return room_price(r)
+    return None
 
 
 def _log(r: Reservation, ok: bool, note: str) -> None:
@@ -97,8 +136,8 @@ def handle(hotel_id: str, stored: Reservation, lh, today: date) -> str | None:
     if r.status == ReservationStatus.CANCELLED or not due(r, today):
         return None
     amount = amount_for(r)
-    if amount is None:
-        return None  # geen overschrijving door Booking.com (bv. de gast betaalt zelf)
+    if amount is None or amount <= 0:
+        return None  # geen overschrijving door Booking.com (bv. de gast betaalt zelf), of geen kamerprijs
     if already_registered(r):
         stored.payout_registered_at = stored.payout_registered_at or datetime.now(UTC)
         guests.save_reservation(stored, fields=guests.PAYOUT_FIELDS)
@@ -124,12 +163,16 @@ def handle(hotel_id: str, stored: Reservation, lh, today: date) -> str | None:
     return f"{label}: {note}"
 
 
-def run(hotel_id: str, lh, today: date | None = None) -> list[str]:
-    """Alle reservaties die in aanmerking komen, binnen een al geopende Lighthouse-sessie (robot)."""
+def run(hotel_id: str, lh, today: date | None = None, deadline: float | None = None) -> list[str]:
+    """Alle toekomstige reservaties die in aanmerking komen, binnen een al geopende Lighthouse-sessie (robot).
+    Eerst wie het eerst aankomt. Met deadline (time.monotonic()): stoppen als de tijd om is; de volgende run
+    gaat verder (wat al gedaan is, wordt onthouden)."""
     today = today or clock.today(hotel_id)
     cfg = workflow.config(hotel_id)
     done: list[str] = []
-    for r in guests.list_reservations(hotel_id):
+    for r in sorted(guests.list_reservations(hotel_id), key=lambda x: x.arrival):
+        if deadline is not None and time.monotonic() > deadline:
+            break
         if not candidate(r, cfg, today):
             continue
         try:

@@ -5,6 +5,13 @@
 # bv. {hotel_naam} of {receptie_van}. Elke sleutel hieronder wordt een veld met de
 # naam <sectie>_<sleutel>, behalve in [hotel] waar het hotel_<sleutel> is.
 
+[schakelaars]
+# HOOFDSCHAKELAARS, per omgeving apart in te stellen in de monitor (instellingen, tabblad Hotel). Standaard uit.
+# overschrijvingen: de robot registreert de betaling van Booking.com als overschrijving in Lighthouse (processes/booking_payout.py).
+# berichten: mails, sms en WhatsApp aan gasten, en de pincodes bij Salto (die gaan alleen mee met de code-mail).
+overschrijvingen = false
+berichten = false
+
 [hotel]
 naam = "Hotel Lucca"
 tijdzone = "Europe/Brussels"   # kalender van de workflow (herinnering, code-mail, opruimen)
@@ -88,10 +95,8 @@ controle_uren = ["17:00", "20:00"]            # nakijken of elke aankomst alles 
 robot_max_uren = 3                            # waarschuwing als de robot zo lang niet meer gelukt is
 
 [messaging]
-# Berichten uit de workflow (processes/send_messages.py). Per omgeving aan of uit.
-# Buiten PRD gaat alles naar het testadres ([test] hierboven). PRD pas aanzetten als alles getest is.
-enabled_tst = true
-enabled_prd = false
+# Berichten uit de workflow (processes/send_messages.py). Aan of uit met de hoofdschakelaar [schakelaars] berichten.
+# Buiten PRD gaat alles naar het testadres ([test] hierboven).
 # Alleen reservaties die vanaf dit moment toegevoegd worden, krijgen berichten (de bestaande niet).
 start = "2026-10-30T15:30:00+01:00"
 # WhatsApp (met sms als terugval) naast de mail. Aan zodra Twilio betaald is.

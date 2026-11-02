@@ -61,8 +61,15 @@ def ready_steps(hotel_id: str) -> tuple[str, ...]:
 
 
 def enabled(hotel_id: str) -> bool:
-    flag = hotel_setting(hotel_id, f"MESSAGING_ENABLED_{environment().upper()}", default="false", shared=False)
-    return str(flag).lower() == "true"
+    """Hoofdschakelaar [schakelaars] berichten (per omgeving, standaard uit): mails, sms, WhatsApp en de
+    pincodes bij Salto. Uit = er gaat niets naar gasten en er wordt geen code gemaakt."""
+    return switch(hotel_id, "berichten")
+
+
+def switch(hotel_id: str, name: str) -> bool:
+    """Hoofdschakelaar van het hotel ([schakelaars] <naam>), standaard uit."""
+    flag = hotel_setting(hotel_id, f"SCHAKELAARS_{name.upper()}", default="false", shared=False)
+    return str(flag).strip().lower() in ("true", "1", "ja", "aan")
 
 
 def start(hotel_id: str) -> datetime | None:

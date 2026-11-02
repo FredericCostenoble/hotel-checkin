@@ -12,6 +12,7 @@ from hotel_checkin.processes import oversight
 @pytest.fixture(autouse=True)
 def setup(monkeypatch):
     repo.use_memory_store()
+    monkeypatch.setenv("LUCCA_SCHAKELAARS_BERICHTEN", "true")  # hoofdschakelaar berichten aan
     mails = []
     monkeypatch.setenv("APP_ENV", "tst")
     monkeypatch.setattr(oversight.email, "send_email",

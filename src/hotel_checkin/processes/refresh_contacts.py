@@ -126,6 +126,10 @@ def run(hotel_id: str) -> int:
                 if ready is not None:
                     timings["ready"] = ready
                 deadline = time.monotonic() + MAX_SECONDS
+                # Eerst de overschrijving van Booking.com (PRD of testgast, hoofdschakelaar), zodat een nieuwe
+                # reservatie die in aanmerking komt meteen in deze run geregistreerd wordt. Zie booking_payout.py
+                if payouts:
+                    payout_notes = booking_payout.run(hotel_id, lh, today, deadline)
                 for reservation in todo:
                     if time.monotonic() > deadline:
                         finished = False
@@ -162,9 +166,6 @@ def run(hotel_id: str) -> int:
                             continue
                         if changes:
                             access_changes.append(f"{reservation.booking_number}: {'; '.join(changes)}")
-                # Overschrijving van Booking.com registreren (PRD of testgast), zie booking_payout.py
-                if payouts and time.monotonic() <= deadline:
-                    payout_notes = booking_payout.run(hotel_id, lh, today)
                 # Pincode in de opmerking en kamers op KLAAR OM IN TE CHECKEN (PRD of testgast), zie pms_sync.py
                 if syncs and time.monotonic() <= deadline:
                     sync_notes = pms_sync.run(hotel_id, lh)

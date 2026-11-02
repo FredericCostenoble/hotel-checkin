@@ -28,8 +28,9 @@ Totaal
 
 
 @pytest.fixture(autouse=True)
-def memory():
+def memory(monkeypatch):
     repo.use_memory_store()
+    monkeypatch.setenv("LUCCA_SCHAKELAARS_OVERSCHRIJVINGEN", "true")  # hoofdschakelaar aan
 
 
 def test_remark_amount_and_cancellation():
@@ -67,6 +68,32 @@ def test_only_prd_or_test_guest(monkeypatch):
     assert booking_payout.candidate(_r(NRF, 5, True, last="Meersseman"), cfg, today)
     monkeypatch.setenv("APP_ENV", "prd")
     assert booking_payout.candidate(_r(NRF, 5, True), cfg, today)
+
+
+VCC = ("ResGlobalInfo Booking.com Virtual credit card ** THIS RESERVATION HAS BEEN PRE-PAID **\n"
+       "Annuleringsvoorwaarden : De gast betaalt de totaalprijs van de reservering als hij/zij annuleert op elk moment.")
+
+
+def test_virtual_card_room_price_without_extras():
+    r = _r(VCC, 30, True)
+    r.folio.append({"label": "Ontbijt", "qty": 2, "amount": 36.0})  # extra: blijft open
+    assert booking_payout.virtual_card(VCC) and not booking_payout.virtual_card(NRF)
+    assert booking_payout.room_price(r) == 362.0  # alleen de kamerlijn
+    assert booking_payout.amount_for(r) == 362.0  # geen bedrag in de opmerking: de kamerprijs
+
+
+def test_main_switch_and_which_reservations(monkeypatch):
+    cfg = __import__("hotel_checkin.core.workflow", fromlist=["config"]).config("lucca")
+    today = date(2026, 11, 2)
+    monkeypatch.setenv("APP_ENV", "prd")
+    assert booking_payout.candidate(_r(None, 40), cfg, today)  # nieuw, nog niet gelezen: meteen lezen
+    assert booking_payout.candidate(_r(NRF, 40, True), cfg, today)  # niet annuleerbaar: meteen
+    assert booking_payout.candidate(_r(VCC, 40, True), cfg, today)
+    assert not booking_payout.candidate(_r(FLEX, 10, False), cfg, today)  # annuleerbaar: nog niet
+    assert booking_payout.candidate(_r(FLEX, 2, False), cfg, today)  # 2 dagen voor aankomst: wel
+    assert not booking_payout.candidate(_r("Opmerkingen: gast betaalt zelf", 1, False), cfg, today)
+    monkeypatch.delenv("LUCCA_SCHAKELAARS_OVERSCHRIJVINGEN")  # hoofdschakelaar standaard uit
+    assert not booking_payout.candidate(_r(NRF, 40, True), cfg, today)
 
 
 def test_registers_once_and_checks_amount(monkeypatch):

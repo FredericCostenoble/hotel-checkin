@@ -28,7 +28,10 @@ def hotels() -> list[dict]:
     return [{"id": h, "name": load_hotel(h)["hotel"]["naam"], "production": prd,
              "test_email": "" if prd else (safety.test_address("email", h) or ""),
              "test_phone": "" if prd else (safety.test_address("phone", h) or ""),
-             "phone_enabled": send_messages.phone_enabled(h)}
+             "phone_enabled": send_messages.phone_enabled(h),
+             # hoofdschakelaars (per omgeving): bovenaan de monitor getoond
+             "switches": {"overschrijvingen": send_messages.switch(h, "overschrijvingen"),
+                          "berichten": send_messages.switch(h, "berichten")}}
             for h in list_hotels()]
 
 
