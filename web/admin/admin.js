@@ -74,7 +74,7 @@ const T = {
     r_start: "Start", r_duration: "Duur", r_task: "Taak", r_result: "Resultaat", r_found: "Te doen", r_new: "Gedaan", r_error: "Opmerking",
     all_tasks: "Alle", sub_log: "Logboek robot", del: "Verwijderen", del_confirm: "Deze regel uit het logboek verwijderen?", del_all: "Alles verwijderen",
     del_all_confirm: (n, task) => `${n} regels${task ? ` van "${task}"` : ""} uit het logboek verwijderen?`, t_azure: "Azure start", t_container: "container", t_ready: s => `klaar om te lezen na ${s} s`, t_login: "aanmelden", t_browser: "browser starten", t_reused: "sessie hergebruikt", t_new: "opnieuw aangemeld", t_list: "lijst", t_contact: (n, sec) => `${n} contact${n > 1 ? "en" : ""} à ${sec} s`, task_nieuwe_reservaties: "Nieuwe reservaties", task_contactgegevens_nalezen: "Reservaties bijwerken", task_overschrijving_booking: "Overschrijvingen", task_lighthouse_bijwerken: "Pincode en status in Lighthouse", task_meldingen: "Meldingen per mail", task_onderhoud: "Gasten synchroniseren", task_berichten: "Berichten", task_bewaking: "Bewaking", task_robot: "Run", task_ontbijt_labels: "Ontbijt labels", sw_not_built: "nog niet gebouwd",
-    ok: "ok", fail: "fout", busy: "De robot is bezig...", live_now: "nu bezig", live_done: "afsluiten", live_since: s => `sinds ${s} s`, live_quiet: s => `geen teken van leven sinds ${s} s`, live_run: "run gestart om", scheduled: "Draait ook automatisch op schema.",
+    ok: "ok", fail: "fout", busy: "De robot is bezig...", live_now: "nu bezig", run_label: "Robotrun", run_tasks: n => `${n} ${n === 1 ? "taak" : "taken"}`, run_failed: n => `fout in ${n} ${n === 1 ? "taak" : "taken"}`, live_done: "afsluiten", live_since: s => `sinds ${s} s`, live_quiet: s => `geen teken van leven sinds ${s} s`, live_run: "run gestart om", scheduled: "Draait ook automatisch op schema.",
     not_installed: "De robot is in deze omgeving nog niet geïnstalleerd.", no_runs: "Nog geen afgeronde run",
     load_error: "Fout bij laden",
     exec_title: "Runs volgens Azure", exec_end: "Einde", exec_status: "Status", exec_name: "Naam",
@@ -151,7 +151,7 @@ const T = {
     r_start: "Start", r_duration: "Duration", r_task: "Task", r_result: "Result", r_found: "To do", r_new: "Done", r_error: "Note",
     all_tasks: "All", sub_log: "Robot log", del: "Delete", del_confirm: "Delete this line from the log?", del_all: "Delete all",
     del_all_confirm: (n, task) => `Delete ${n} lines${task ? ` of "${task}"` : ""} from the log?`, t_azure: "Azure start", t_container: "container", t_ready: s => `ready to read after ${s} s`, t_login: "login", t_browser: "start browser", t_reused: "session reused", t_new: "logged in again", t_list: "list", t_contact: (n, sec) => `${n} contact${n > 1 ? "s" : ""} × ${sec} s`, task_nieuwe_reservaties: "New reservations", task_contactgegevens_nalezen: "Update reservations", task_overschrijving_booking: "Bank transfers", task_lighthouse_bijwerken: "PIN and status in Lighthouse", task_meldingen: "Mail notifications", task_onderhoud: "Synchronize guests", task_berichten: "Messages", task_bewaking: "Monitoring", task_robot: "Run", task_ontbijt_labels: "Breakfast labels", sw_not_built: "not built yet",
-    ok: "ok", fail: "failed", busy: "The robot is running...", live_now: "running now", live_done: "closing", live_since: s => `for ${s} s`, live_quiet: s => `no sign of life for ${s} s`, live_run: "run started at", scheduled: "Also runs automatically on a schedule.",
+    ok: "ok", fail: "failed", busy: "The robot is running...", live_now: "running now", run_label: "Robot run", run_tasks: n => `${n} ${n === 1 ? "task" : "tasks"}`, run_failed: n => `error in ${n} ${n === 1 ? "task" : "tasks"}`, live_done: "closing", live_since: s => `for ${s} s`, live_quiet: s => `no sign of life for ${s} s`, live_run: "run started at", scheduled: "Also runs automatically on a schedule.",
     not_installed: "The robot is not installed in this environment yet.", no_runs: "No finished run yet",
     load_error: "Loading failed",
     exec_title: "Runs according to Azure", exec_end: "End", exec_status: "Status", exec_name: "Name",
@@ -821,25 +821,67 @@ function renderRuns(d) {
   sel.value = tasks.includes(chosen) ? chosen : "";
   const shown = d.runs.filter(x => !sel.value || x.task === sel.value);
   const execStart = Object.fromEntries((d.executions || []).map(e => [e.name, e.start]));
-  // Live regel bovenaan: welke taak de robot nu doet en hoe ver hij staat (core/progress.py)
+  // Per robotrun gegroepeerd: een kopregel met start, duur en resultaat van de hele run, daaronder de taken van
+  // die run in volgorde (boven = eerst). Regels zonder run (bewaking, meldingen per mail, berichten) apart.
   const p = d.progress, now = Date.now();
   const age = p ? Math.round((now - new Date(p.updated)) / 1000) : null;
-  // Klaar (done): alleen tonen zolang Azure de run nog als bezig ziet (afsluiten duurt even)
-  const live = p && (p.done ? busy : (busy || age < 180)) ? `<tr class="live"><td>${stamp(p.task_started)}</td>
-      <td>${Math.round((now - new Date(p.task_started)) / 1000)} s<div class="muted">${t("live_run")} ${stamp(p.run_started)}</div></td>
-      <td><span class="task task-${esc(p.task)}">${esc(taskName(p.task))}</span></td>
-      <td class="${!p.done && age > 120 ? "err" : "running"}">${p.done ? "" : '<span class="spin"></span>'}${t(p.done ? "live_done" : "live_now")}</td><td></td><td></td>
-      <td class="wrap">${esc(p.text)} ${p.done ? "" : `<span class="${age > 120 ? "err" : "muted"}">(${age > 120 ? t("live_quiet", age) : t("live_since", age)})</span>`}</td><td></td></tr>` : "";
-  $("#runs").innerHTML = live + shown.map(x => {
+  // Live (core/progress.py). Klaar (done): alleen zolang Azure de run nog als bezig ziet (afsluiten duurt even)
+  const showLive = p && (p.done ? busy : (busy || age < 180));
+  const groups = new Map();
+  for (const x of shown) {
+    const key = x.execution ? "run:" + x.execution : "one:" + (x.id || x.started_at);
+    if (!groups.has(key)) groups.set(key, { key, exec: x.execution || "", rows: [] });
+    groups.get(key).rows.push(x);
+  }
+  let liveGroup = null;
+  if (showLive) {
+    liveGroup = p.run && groups.get("run:" + p.run);
+    if (!liveGroup) {  // run nog zonder afgewerkte taak (net gestart): eigen groep bovenaan
+      liveGroup = { key: "live", exec: p.run || "", rows: [] };
+      groups.set("live", liveGroup);
+    }
+    liveGroup.live = p;
+  }
+  const first = g => g.live ? now : Math.max(...g.rows.map(x => +new Date(x.started_at)));
+  const ordered = [...groups.values()].sort((a, b) => first(b) - first(a));
+  const rel = (iso, t0) => { const s = Math.max(0, Math.round((new Date(iso) - t0) / 1000)); return `+${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`; };
+  const counts = x => NO_COUNTS.includes(x.task) ? "<td></td><td></td>" : `<td>${x.found}</td><td>${x.new}</td>`;
+  const bin = x => x.id ? `<button type="button" class="bin" data-id="${esc(x.id)}" title="${esc(t("del"))}" aria-label="${esc(t("del"))}">${BIN}</button>` : "";
+  const rowHtml = (x, t0, inRun) => {
     const secs = (new Date(x.finished_at) - new Date(x.started_at)) / 1000;
     // Rood alleen bij een fout of overgeslagen rijen; anders is de opmerking gewoon informatie
     const problem = !x.ok || Number(x.skipped || 0) > 0;
-    return `<tr><td>${stamp(x.started_at)}</td><td>${Math.round(secs)} s${startText(x, execStart)}${timingText(x.timings)}</td>
+    return `<tr class="${inRun ? "run-step" : ""}"><td>${inRun ? `<span class="rel">${rel(x.started_at, t0)}</span> <span class="muted">${hms(x.started_at)}</span>` : stamp(x.started_at)}</td>
+      <td>${Math.round(secs)} s${inRun ? "" : startText(x, execStart)}${timingText(x.timings)}</td>
       <td><span class="task task-${esc(x.task)}">${esc(taskName(x.task))}</span></td>
-      <td class="${x.ok ? "ok" : "err"}">${x.ok ? t("ok") : t("fail")}</td>${NO_COUNTS.includes(x.task) ? "<td></td><td></td>" : `<td>${x.found}</td><td>${x.new}</td>`}
-      <td class="wrap ${problem ? "err" : ""}">${esc(x.error)}</td>
-      <td>${x.id ? `<button type="button" class="bin" data-id="${esc(x.id)}" title="${esc(t("del"))}" aria-label="${esc(t("del"))}">${BIN}</button>` : ""}</td></tr>`;
-  }).join("") || (live ? "" : `<tr><td colspan="8" class="muted">${t("no_runs")}</td></tr>`);
+      <td class="${x.ok ? "ok" : "err"}">${x.ok ? t("ok") : t("fail")}</td>${counts(x)}
+      <td class="wrap ${problem ? "err" : ""}">${esc(x.error)}</td><td>${bin(x)}</td></tr>`;
+  };
+  const liveHtml = (q, t0) => `<tr class="run-step live"><td><span class="rel">${rel(q.task_started, t0)}</span> <span class="muted">${hms(q.task_started)}</span></td>
+      <td>${Math.round((now - new Date(q.task_started)) / 1000)} s</td>
+      <td><span class="task task-${esc(q.task)}">${esc(taskName(q.task))}</span></td>
+      <td class="${!q.done && age > 120 ? "err" : "running"}">${q.done ? "" : '<span class="spin"></span>'}${t(q.done ? "live_done" : "live_now")}</td><td></td><td></td>
+      <td class="wrap">${esc(q.text)} ${q.done ? "" : `<span class="${age > 120 ? "err" : "muted"}">(${age > 120 ? t("live_quiet", age) : t("live_since", age)})</span>`}</td><td></td></tr>`;
+  const html = ordered.map(g => {
+    const single = !g.exec && !g.live;
+    if (single) return g.rows.map(x => rowHtml(x, 0, false)).join("");
+    const rows = [...g.rows].sort((a, b) => new Date(a.started_at) - new Date(b.started_at));
+    const starts = [execStart[g.exec], g.live && g.live.run_started, ...rows.map(x => x.process_started_at), ...rows.map(x => x.started_at)]
+      .filter(Boolean).map(v => +new Date(v));
+    const t0 = Math.min(...starts);
+    const t1 = g.live ? now : Math.max(...rows.map(x => +new Date(x.finished_at)));
+    const failed = rows.filter(x => !x.ok).length;
+    const running = g.live && !g.live.done;
+    const state = running ? `<span class="spin"></span>${t("live_now")}` : (failed ? t("run_failed", failed) : t("ok"));
+    const tasks = rows.filter(x => x.task !== "robot").map(x => taskName(x.task));
+    const head = `<tr class="run-head"><td>${stamp(new Date(t0).toISOString())}</td><td>${Math.round((t1 - t0) / 1000)} s${rows[0] ? startText(rows[0], execStart) : ""}</td>
+      <td><span class="task task-robot">${t("run_label")}</span></td>
+      <td class="${running ? "running" : (failed ? "err" : "ok")}">${state}</td><td></td><td></td>
+      <td class="wrap muted">${esc(tasks.length ? t("run_tasks", tasks.length) + ": " + tasks.join(", ") : (rows[0] && rows[0].error) || "")}</td><td></td></tr>`;
+    const body = rows.filter(x => !(rows.length === 1 && x.task === "robot")).map(x => rowHtml(x, t0, true)).join("");
+    return head + body + (g.live ? liveHtml(g.live, t0) : "");
+  }).join("");
+  $("#runs").innerHTML = html || `<tr><td colspan="8" class="muted">${t("no_runs")}</td></tr>`;
   document.querySelectorAll("#runs .bin").forEach(b => b.onclick = () => deleteRun(b.dataset.id));
   // In de cloud: ook de runs volgens Azure (toont runs die mislukten voor ze iets konden noteren)
   // Runs volgens Azure: apart subtabblad, alleen in de cloud

@@ -56,9 +56,11 @@ def breakfast(r: Reservation) -> tuple[bool, str]:
     if not r.guest_count or nights <= 0:
         return False, f"{count} ontbijt(en) in de folio, aantal personen of nachten onbekend"
     needed = r.guest_count * nights
+    who = (f"{r.guest_count} {'persoon' if r.guest_count == 1 else 'personen'} x "
+           f"{nights} {'nacht' if nights == 1 else 'nachten'}")
     if count >= needed:
-        return True, f"{count} ontbijten in de folio voor {r.guest_count} personen x {nights} nachten"
-    return False, f"maar {count} van {needed} ontbijten in de folio ({r.guest_count} personen x {nights} nachten)"
+        return True, f"{count} {'ontbijt' if count == 1 else 'ontbijten'} in de folio voor {who}"
+    return False, f"maar {count} van {needed} ontbijten in de folio ({who})"
 
 
 def candidate(r: Reservation, today: date, horizon: int) -> bool:

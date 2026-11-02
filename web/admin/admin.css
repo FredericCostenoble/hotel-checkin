@@ -283,3 +283,9 @@ td.running { color: #1F4E8C; white-space: nowrap; }
 @keyframes spin { to { transform: rotate(360deg); } }
 .switches .sw.todo { border-style: dashed; background: #FFF8E6; color: #8A5A00; }
 .task-ontbijt_labels { background: #FFF7D6; color: #7A5C00; }
+
+/* Robotlog per run: kopregel van de hele run, daaronder de taken (ingesprongen, in volgorde) */
+tr.run-head td { background: #F1F3F8; font-weight: 600; border-top: 2px solid #D5DAE5; }
+tr.run-head td.wrap { font-weight: normal; }
+tr.run-step td:first-child { padding-left: 22px; white-space: nowrap; }
+tr.run-step .rel { font-variant-numeric: tabular-nums; color: #3B4255; }

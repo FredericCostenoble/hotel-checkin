@@ -257,7 +257,7 @@ def run(hotel_id: str, lh, today: date | None = None, deadline: float | None = N
             status, text = handle(hotel_id, r, lh, today)
         except Exception as exc:
             logging.exception("%s: overschrijving %s", hotel_id, r.booking_number)
-            status, text = "error", f"{r.booking_number or r.reservation_id[:8]}: {type(exc).__name__}"
+            status, text = "error", f"{r.booking_number or r.reservation_id[:8]}: {type(exc).__name__}: {str(exc)[:160]}"
         result["read"] += 1
         result["counts"][status] = result["counts"].get(status, 0) + 1
         if text:
