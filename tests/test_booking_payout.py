@@ -102,7 +102,7 @@ def test_registers_once_and_checks_amount(monkeypatch):
     calls = []
     stored = repo.save_reservation(_r(NRF, 5, True))
     detail = _r(NRF, 5, True)
-    monkeypatch.setattr(booking_payout.lighthouse, "get_reservation", lambda h, rid, lh: detail)
+    monkeypatch.setattr(booking_payout.lighthouse, "get_reservation", lambda h, rid, lh, **k: detail)
 
     def add(h, rid, method, amount, comment, lh, min_open=None):
         assert min_open == amount  # vlak voor het klikken nog eens het saldo nakijken
@@ -119,7 +119,7 @@ def test_registers_once_and_checks_amount(monkeypatch):
     # bedrag klopt niet met de folio: niets registreren, één melding
     other = repo.save_reservation(_r(NRF, 6, True))
     detail2 = _r(NRF, 6, True, folio_room=300.0)
-    monkeypatch.setattr(booking_payout.lighthouse, "get_reservation", lambda h, rid, lh: detail2)
+    monkeypatch.setattr(booking_payout.lighthouse, "get_reservation", lambda h, rid, lh, **k: detail2)
     assert booking_payout.handle("lucca", other, None, date(2026, 11, 2))[0] == "problem"
     booking_payout.handle("lucca", other, None, date(2026, 11, 2))
     assert len(calls) == 1
@@ -134,14 +134,14 @@ def test_never_more_than_open_and_booking_amount_checked(monkeypatch):
     stored = repo.save_reservation(_r(VCC, 5, True))
     detail = _r(VCC, 5, True)
     detail.open_amount = 12.6
-    monkeypatch.setattr(booking_payout.lighthouse, "get_reservation", lambda h, rid, lh: detail)
+    monkeypatch.setattr(booking_payout.lighthouse, "get_reservation", lambda h, rid, lh, **k: detail)
     assert "open" in booking_payout.handle("lucca", stored, None, date(2026, 11, 2))[1]
     # saldo niet gelezen (transacties niet geladen): niets doen
     detail.open_amount = None
     assert "niet gelezen" in booking_payout.handle("lucca", stored, None, date(2026, 11, 2))[1]
     # Booking.com vermeldt een ander geïnd bedrag dan de kamerprijs
     detail2 = _r(VCC + "\nAlready collected by Booking.com: 300.00 EUR", 5, True)
-    monkeypatch.setattr(booking_payout.lighthouse, "get_reservation", lambda h, rid, lh: detail2)
+    monkeypatch.setattr(booking_payout.lighthouse, "get_reservation", lambda h, rid, lh, **k: detail2)
     assert "geïnd 300.00" in booking_payout.handle("lucca", stored, None, date(2026, 11, 2))[1]
     assert calls == []
 
@@ -160,7 +160,7 @@ def test_run_summary_for_robot_log(monkeypatch):
     repo.save_reservation(_r(NRF, 5, True))
     repo.save_reservation(_r(FLEX, 1, False, folio_room=1054.8, last="Flex"))
     details = {"r5Brand": _r(NRF, 5, True), "r1Flex": _r(FLEX, 1, False, folio_room=1054.8, last="Flex")}
-    monkeypatch.setattr(booking_payout.lighthouse, "get_reservation", lambda h, rid, lh: details[rid])
+    monkeypatch.setattr(booking_payout.lighthouse, "get_reservation", lambda h, rid, lh, **k: details[rid])
 
     def add(h, rid, method, amount, comment, lh, min_open=None):
         details[rid].transactions = ["Overschrijving"]
@@ -225,7 +225,7 @@ def test_pms_sync_only_with_codes_and_allowed(monkeypatch):
     monkeypatch.setattr(pms_sync.lighthouse, "set_comments", lambda h, rid, compose, lh: written.append(compose("oud")))
     detail = _r(None, 5, last="meersseman")
     detail.room_statuses = ["none"]
-    monkeypatch.setattr(pms_sync.lighthouse, "get_reservation", lambda h, rid, lh: detail)
+    monkeypatch.setattr(pms_sync.lighthouse, "get_reservation", lambda h, rid, lh, **k: detail)
     monkeypatch.setattr(pms_sync.lighthouse, "set_room_status", lambda h, rid, s, lh: statuses.append(s) or [s])
     repo.save_reservation(r)
     assert "KLAAR OM IN TE CHECKEN" in pms_sync.handle("lucca", r, None)

@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import argparse
 import html
+import logging
 import re
 import time
 from datetime import datetime, timedelta
@@ -154,26 +155,31 @@ _TRANSACTIONS_LOADED = r"""() => {
 }"""
 
 
-def _read_detail(session: LighthouseSession, hotel_id: str, reservation_id: str) -> Reservation:
+def _read_detail(session: LighthouseSession, hotel_id: str, reservation_id: str, contact: bool = True) -> Reservation:
     # Klaar zodra de transacties ingevuld zijn (laden asynchroon); geen transactieblok: na 10 s verder
     page = session.goto(DETAIL_PATH.format(id=reservation_id), ready=_TRANSACTIONS_LOADED, timeout=10_000)
     session.close_popups()
     toggle = page.locator(".js-masked-contact-toggle").first
-    if toggle.count() and "*" in (page.locator('[data-field="email"]').first.inner_text() or "*"):
+    if contact and toggle.count() and "*" in (page.locator('[data-field="email"]').first.inner_text() or "*"):
         toggle.click()
-        page.wait_for_function(
-            "() => !(document.querySelector('[data-field=\"email\"]')?.innerText || '').includes('*')",
-            timeout=15_000,
-        )
+        try:
+            page.wait_for_function(
+                "() => !(document.querySelector('[data-field=\"email\"]')?.innerText || '').includes('*')",
+                timeout=8_000,
+            )
+        except Exception:  # noqa: BLE001 - blijft gemaskeerd (bv. geen e-mailadres): de rest van de pagina telt
+            logging.info("%s: contactgegevens bleven gemaskeerd bij %s", hotel_id, reservation_id)
     return parse_detail(hotel_id, reservation_id, page.evaluate(_DETAIL_JS))
 
 
-def get_reservation(hotel_id: str, reservation_id: str, session: LighthouseSession | None = None) -> Reservation:
-    """Detail van één reservatie: contactgegevens, land (en taal), status per kamer, betaling, annulering."""
+def get_reservation(hotel_id: str, reservation_id: str, session: LighthouseSession | None = None,
+                    contact: bool = True) -> Reservation:
+    """Detail van één reservatie: contactgegevens, land (en taal), status per kamer, betaling, annulering.
+    contact=False: de gemaskeerde contactgegevens niet openklikken (sneller, bv. voor de betaling)."""
     if session is None:
         with LighthouseSession(hotel_id) as lh:
-            return _read_detail(lh, hotel_id, reservation_id)
-    return _read_detail(session, hotel_id, reservation_id)
+            return _read_detail(lh, hotel_id, reservation_id, contact)
+    return _read_detail(session, hotel_id, reservation_id, contact)
 
 
 CONTACT_PATH = "/Customer/Reservations/ContactDetails/{id}"

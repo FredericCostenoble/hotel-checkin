@@ -132,7 +132,9 @@ def handle(hotel_id: str, stored: Reservation, lh, today: date) -> tuple[str, st
     registered, problem, early (annuleerbaar, nog te vroeg), self (gast betaalt zelf), already (al betaald),
     cancelled of skipped. Uitleg alleen bij registered en problem (voor het robotlog)."""
     label = stored.booking_number or stored.reservation_id[:8]
-    r = lighthouse.get_reservation(hotel_id, stored.reservation_id, lh)  # altijd de huidige toestand
+    # Altijd de huidige toestand; contactgegevens zijn hier niet nodig (sneller, en geen wachttijd als ze
+    # gemaskeerd blijven)
+    r = lighthouse.get_reservation(hotel_id, stored.reservation_id, lh, contact=False)
     r.guest.first_name = r.guest.first_name or stored.guest.first_name
     r.guest.last_name = r.guest.last_name or stored.guest.last_name
     # Opmerking, transacties en annuleerbaarheid bewaren: dan moet deze reservatie pas opnieuw gelezen
