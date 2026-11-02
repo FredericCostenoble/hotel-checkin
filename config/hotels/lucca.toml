@@ -211,7 +211,7 @@ pay = "none"
 step = "access_code"   # pincode en praktische info
 when = "days_before_arrival"
 days = 2
-only_if = ["not_cancelled"]
+only_if = ["room_paid", "not_cancelled"]
 channels = ["email", "sms"]
 pay = "open_amount"
 
@@ -254,7 +254,7 @@ pay = "none"
 step = "access_code"   # pincode en praktische info
 when = "days_before_arrival"
 days = 2
-only_if = ["not_cancelled"]
+only_if = ["room_paid", "not_cancelled"]
 channels = ["email", "sms"]
 pay = "open_amount"
 
@@ -299,7 +299,7 @@ pay = "none"
 step = "access_code"   # pincode en praktische info
 when = "days_before_arrival"
 days = 2
-only_if = ["not_cancelled"]
+only_if = ["room_paid", "not_cancelled"]
 channels = ["email", "sms"]
 pay = "open_amount"
 

@@ -32,7 +32,7 @@ TASK = "overschrijving_booking"
 DAYS_BEFORE = 2
 COMMENT = "Booking.com overschrijving (automatisch)"
 MESSAGE_TYPE = "booking_payout"
-_CITY_TAX = ("citytax", "city tax", "toeristenbelasting", "taxe de séjour", "kurtaxe")
+_CITY_TAX = workflow.CITY_TAX_LABELS
 
 
 def room_price(r: Reservation) -> float | None:

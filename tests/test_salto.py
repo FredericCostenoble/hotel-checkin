@@ -117,7 +117,7 @@ def test_code_mail_sends_pin(monkeypatch):
     monkeypatch.setattr(grant_access, "grant", fake_grant)
     arrival = date.today() + timedelta(days=2)
     r = Reservation("lucca", "c1", Guest("Jan", "Voorbeeld", email="jan@example.com", language="nl"), arrival,
-                    arrival + timedelta(days=2), rooms=["12"], source="Booking.com", booking_number="CPB-9")
+                    arrival + timedelta(days=2), rooms=["12"], source="Booking.com", booking_number="CPB-9", paid=True)
     repo.save_reservation(r)
     assert send_messages.run("lucca") == 1
     assert "482916" in sent[0] and "1 januari, 14:00" in sent[0]
@@ -248,3 +248,18 @@ def test_rooms_with_own_entrance():
     msg, _ = send_messages._rendered("lucca", step, r, workflow.config("lucca"))
     assert "Kamer 20, appartement naast het hotel: 2020 ↵" in msg.text and "Kamer 14, 1e verdieping: 1414 ↵" in msg.text
     assert "<strong>Kamer 20, appartement naast het hotel:</strong> Uw appartement is in het gebouw rechts" in msg.html
+
+
+def test_no_code_when_room_not_paid(monkeypatch):
+    """Vaste regel: geen pincode bij Salto en geen code-mail zolang de kamer niet betaald is."""
+    from hotel_checkin.processes import send_messages
+
+    monkeypatch.setattr(salto, "configured", lambda h: True)
+    made = []
+    monkeypatch.setattr(grant_access, "grant", lambda h, r: made.append(r.reservation_id))
+    r = _res()
+    r.open_amount, r.folio = 118.4, [{"label": "Kamer", "qty": None, "amount": 110.0},
+                                     {"label": "Citytax", "qty": 2, "amount": 8.4}]
+    assert not send_messages.code_ready("lucca", r, []) and made == []
+    r.open_amount = 8.4  # alleen de toeristenbelasting staat nog open
+    assert send_messages.code_ready("lucca", r, []) and made == ["r1"]

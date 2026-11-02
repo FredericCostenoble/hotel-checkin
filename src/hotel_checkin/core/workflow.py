@@ -57,12 +57,27 @@ DEFAULT_CONTENT = {
     "payment_request": {"reservation": True, "checkin_form": False, "code": False, "practical_info": False},
 }
 
+CITY_TAX_LABELS = ("citytax", "city tax", "toeristenbelasting", "taxe de séjour", "kurtaxe")
+
+
+def room_paid(r: Reservation) -> bool:
+    """Is de kamer betaald? De toeristenbelasting mag nog openstaan. Onbekend (folio nog niet gelezen) = nee.
+    Regel: geen pincode bij Salto en geen code-mail zolang de kamer niet betaald is."""
+    if r.paid is True:
+        return True
+    if r.open_amount is None:
+        return False
+    tax = sum(x["amount"] for x in r.folio if any(k in x["label"].lower() for k in CITY_TAX_LABELS))
+    return r.open_amount <= tax + 0.01
+
+
 CONDITIONS = {
     "not_cancelled": lambda r: r.status != ReservationStatus.CANCELLED,
     "form_completed": lambda r: r.checkin_completed_at is not None,
     "form_not_completed": lambda r: r.checkin_completed_at is None,
     "paid": lambda r: r.paid is True,
     "not_paid": lambda r: r.paid is False,  # alleen als Lighthouse "openstaand" toont (onbekend telt niet)
+    "room_paid": room_paid,  # kamer betaald, toeristenbelasting mag openstaan (voorwaarde voor de code)
     "checked_in": lambda r: r.status == ReservationStatus.CHECKED_IN,
     "has_email": lambda r: bool(r.guest.email),
     "has_phone": lambda r: bool(r.guest.phone),

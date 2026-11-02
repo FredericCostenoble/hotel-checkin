@@ -24,10 +24,10 @@ def setup(monkeypatch):
     return sent
 
 
-def _res(rid, email="jan@example.com", arrival_in=30, status=ReservationStatus.READY_FOR_CHECKIN):
+def _res(rid, email="jan@example.com", arrival_in=30, status=ReservationStatus.READY_FOR_CHECKIN, paid=True):
     arr = date.today() + timedelta(days=arrival_in)
     r = Reservation("lucca", rid, Guest("Jan", "Voorbeeld", email=email, language="nl"), arr,
-                    arr + timedelta(days=2), status=status, booking_number="CPB-1-" + rid)
+                    arr + timedelta(days=2), status=status, booking_number="CPB-1-" + rid, paid=paid)
     return repo.save_reservation(r)
 
 
@@ -110,7 +110,7 @@ def test_booking_on_arrival_day_gets_code(setup):
 def test_code_mail_placeholder_in_test(setup):
     from hotel_checkin.core import workflow
 
-    r = _res("ph1", arrival_in=2)
+    r = _res("ph1", arrival_in=2, paid=None)  # betaalstatus onbekend: betaalknop (nog zonder link)
     step = next(s for s in workflow.steps("lucca", "website") if s.step == "access_code")
     msg, _data = send_messages._rendered("lucca", step, r, workflow.config("lucca"))
     assert "XXXXXX" in msg.html and "Salto is nog niet actief" in msg.html and "Nog geen betaallink" in msg.html

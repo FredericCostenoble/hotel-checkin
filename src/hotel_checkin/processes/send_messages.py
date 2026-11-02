@@ -414,6 +414,8 @@ def resend(hotel_id: str, reservation_id: str, step_name: str, channel: str, to:
     step = next((s for s in workflow._steps_from(cfg, workflow.flow_for(hotel_id, r, cfg)) if s.step == step_name), None)
     if step is None or step.step not in ready_steps(hotel_id):
         return {"ok": False, "error": "Dit bericht kan nog niet verstuurd worden"}
+    if step.step == "access_code" and not r.access_pin and not workflow.room_paid(r):
+        return {"ok": False, "error": "De kamer is nog niet betaald: geen pincode (toeristenbelasting mag openstaan)"}
     if step.step == "access_code" and not code_ready(hotel_id, r, []):
         return {"ok": False, "error": "Nog geen pincode bij Salto"}
     results = deliver(hotel_id, step, r, cfg, only=(channel, to), note=f"opnieuw verstuurd door {user or 'monitor'}")
@@ -541,6 +543,8 @@ def code_ready(hotel_id: str, r: Reservation, failed: list[str]) -> bool:
 
     if r.access_pin:
         return True
+    if not workflow.room_paid(r):
+        return False  # vaste regel: pas een code als de kamer betaald is (toeristenbelasting mag openstaan)
     if test_mode(hotel_id) and not salto_ready(hotel_id):
         return True  # testomgeving zonder Salto: mail met XXXXXX (zie _rendered)
     if not r.rooms:

@@ -34,8 +34,12 @@ def test_conditions():
     assert not reminder.conditions_met(_r(status=ReservationStatus.CANCELLED))
     assert not reminder.conditions_met(_r(checkin_completed_at=datetime(2099, 1, 1)))
     code = next(s for s in workflow.steps("lucca", "website") if s.step == "access_code")
-    # één website-flow: code-mail ook als er nog iets openstaat (dan met betaalknop), niet bij annulering
-    assert code.conditions_met(_r()) and code.conditions_met(_r(paid=True))
+    # code alleen als de kamer betaald is; de toeristenbelasting mag openstaan (review 02/11)
+    assert not code.conditions_met(_r()) and code.conditions_met(_r(paid=True))
+    tax_open = _r(open_amount=8.4, folio=[{"label": "Kamer", "qty": None, "amount": 110.0},
+                                          {"label": "Citytax", "qty": 2, "amount": 8.4}])
+    room_open = _r(open_amount=118.4, folio=tax_open.folio)
+    assert code.conditions_met(tax_open) and not code.conditions_met(room_open)
 
 
 def test_flow_for():
