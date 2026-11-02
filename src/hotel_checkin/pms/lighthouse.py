@@ -239,16 +239,21 @@ def set_comments(hotel_id: str, reservation_id: str, compose, session: Lighthous
     box.wait_for(state="visible")
     new = compose(box.input_value())
     box.fill(new)
-    with page.expect_response(lambda r: "EditGeneralSettings" in r.url and r.request.method == "POST", timeout=20_000):
-        page.locator("input[type=submit][value=Bewaren]").first.click()
-    # Nakijken: de opmerking zoals Lighthouse ze nu bewaard heeft
+    # Lighthouse kijkt eerst na of de tekst een kredietkaartnummer bevat (CheckTextContainsCreditCard) en
+    # bewaart dan. Klaar zodra Lighthouse de nieuwe tekst teruggeeft (opnieuw gelezen, geen vaste wachttijd).
+    page.locator("input[type=submit][value=Bewaren]").first.click()
     saved = page.evaluate(
-        """async id => { const h = await fetch('/Customer/Reservations/EditGeneralSettings/' + id,
-                                               {headers: {'X-Requested-With': 'XMLHttpRequest'}}).then(r => r.text());
-                         const d = new DOMParser().parseFromString(h, 'text/html');
-                         return (d.querySelector('#txtComments') || {}).value || ''; }""", reservation_id)
-    if saved.strip() != new.strip():
-        raise RuntimeError("Opmerking niet bewaard in Lighthouse")
+        """async ([id, want]) => {
+             for (let i = 0; i < 40; i++) {
+               const h = await fetch('/Customer/Reservations/EditGeneralSettings/' + id,
+                                     {headers: {'X-Requested-With': 'XMLHttpRequest'}}).then(r => r.text());
+               const v = (new DOMParser().parseFromString(h, 'text/html').querySelector('#txtComments') || {}).value || '';
+               if (v.trim() === want.trim()) return v;
+               await new Promise(r => setTimeout(r, 500));
+             }
+             return null; }""", [reservation_id, new])
+    if saved is None:
+        raise RuntimeError("Opmerking niet bewaard in Lighthouse (bv. geweigerd als kredietkaartnummer)")
     return saved
 
 
