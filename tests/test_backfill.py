@@ -25,6 +25,8 @@ def _r(rid, arrival_in, booked_days_ago):
 def test_stores_only_future_and_finishes(monkeypatch):
     pages = [[_r("future", 40, 300), _r("past", -30, 320)], [_r("old", 10, 800)], []]
     monkeypatch.setattr(backfill.lighthouse, "list_page", lambda h, n, lh, sk: pages[n] if n < len(pages) else [])
+    monkeypatch.setattr(backfill.lighthouse, "get_contact",
+                        lambda h, rid, lh: Guest("", "", email=f"{rid}@example.com", phone="", language="", country=None))
     backfill.run("lucca", None)
     assert repo.get_reservation("lucca", "future") and repo.get_reservation("lucca", "past") is None
     assert backfill.done("lucca")
@@ -32,8 +34,6 @@ def test_stores_only_future_and_finishes(monkeypatch):
     assert "2 toekomstige nieuw bewaard" in note and "Klaar" in note  # ook lang geleden geboekt, als het verblijf nog komt
 
 
-def test_old_booking_gets_no_messages():
-    r = repo.save_reservation(_r("future", 40, 300))
-    assert send_messages.before_start(r, datetime.now(UTC) - timedelta(days=3))  # geboekt voor de start
-    r2 = repo.save_reservation(_r("new", 40, 1))
-    assert not send_messages.before_start(r2, datetime.now(UTC) - timedelta(days=3))
+def test_old_booking_follows_the_normal_rules():
+    r = repo.save_reservation(_r("future", 40, 300))  # lang geleden geboekt, nu binnengehaald
+    assert not send_messages.before_start(r, datetime.now(UTC) - timedelta(days=3))

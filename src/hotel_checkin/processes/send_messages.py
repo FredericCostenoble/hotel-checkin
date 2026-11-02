@@ -73,14 +73,11 @@ def switch(hotel_id: str, name: str) -> bool:
 
 
 def before_start(r, begin: datetime | None) -> bool:
-    """Valt deze reservatie buiten de berichten? Bewaard voor [messaging] start, of geboekt voor de start
-    (bv. oudere boekingen die later eenmalig binnengehaald werden, processes/backfill.py)."""
+    """Valt deze reservatie buiten de berichten? Alleen als ze al bewaard was voor [messaging] start. Oudere
+    boekingen die later binnengehaald worden (processes/backfill.py) volgen gewoon de regels van de workflow."""
     if not r.created_at:
         return True
-    if begin is None:
-        return False
-    booked = r.booked_at if (r.booked_at is None or r.booked_at.tzinfo) else r.booked_at.replace(tzinfo=UTC)
-    return r.created_at < begin or (booked is not None and booked < begin)
+    return begin is not None and r.created_at < begin
 
 
 def start(hotel_id: str) -> datetime | None:

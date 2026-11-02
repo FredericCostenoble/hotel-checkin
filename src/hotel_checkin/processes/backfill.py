@@ -4,8 +4,9 @@ Het systeem kende alleen reservaties die het zelf binnenhaalde sinds de start (d
 Wie vroeger boekte voor een verblijf dat nog moet komen (bv. geboekt in januari voor december), stond er niet in,
 dus overschrijvingen en ontbijtlabels sloegen die over. Deze taak bladert eenmalig door de hele reservatielijst
 van Lighthouse (nieuwste boeking eerst) en bewaart elke reservatie met een vertrek vandaag of later.
-- Geen berichten voor deze reservaties: ze zijn geboekt voor [messaging] start (send_messages.before_start).
-- Geen contactgegevens lezen (kan later, Reservaties bijwerken); alleen wat in de lijst staat.
+- Ze volgen daarna gewoon de regels van de workflow (berichten als Berichten aan staat, overschrijvingen,
+  ontbijtlabels), net als een nieuwe reservatie. Daarom ook meteen de contactgegevens lezen (snelle opvraging,
+  zoals het oogje), zodat er een e-mailadres en telefoonnummer is.
 - Hoogstens MAX_SECONDS per run; de volgende run gaat verder waar deze stopte (state backfill_page).
 - Klaar als een pagina leeg is of alleen boekingen ouder dan MAX_YEARS jaar heeft (state backfill_done).
 """
@@ -19,6 +20,8 @@ from datetime import UTC, datetime, timedelta
 from hotel_checkin.core import clock
 from hotel_checkin.guests import repository as guests
 from hotel_checkin.pms import lighthouse
+from hotel_checkin.processes import guest_profiles
+from hotel_checkin.processes.new_reservation import _apply_contact
 
 TASK = "oude_boekingen"
 PAGE_KEY = "backfill_page"
@@ -51,6 +54,13 @@ def run(hotel_id: str, lh) -> None:
             if r.departure < today or guests.get_reservation(hotel_id, r.reservation_id) is not None:
                 continue
             guests.save_reservation(r)
+            try:
+                contact = lighthouse.get_contact(hotel_id, r.reservation_id, lh)
+                _apply_contact(r, contact)
+                guests.save_reservation(r, fields=guests.CONTACT_FIELDS)
+            except Exception as exc:  # noqa: BLE001 - Reservaties bijwerken leest het later opnieuw
+                skipped.append(f"{r.booking_number or r.reservation_id[:8]}: contact niet gelezen ({type(exc).__name__})")
+            guest_profiles.link(r)
             stored.append(r)
         oldest = min((r.booked_at for r in rows if r.booked_at), default=None)
         number += 1
@@ -66,7 +76,8 @@ def run(hotel_id: str, lh) -> None:
     note = (f"eenmalig: oudere boekingen voor toekomstige verblijven binnenhalen. Pagina {first + 1} tot {number} "
             f"gelezen ({rows_seen} reservaties), {len(stored)} toekomstige nieuw bewaard"
             + (f", bv. {examples}" if examples else "")
-            + ". Geen berichten voor deze reservaties (geboekt voor de start). "
+            + f", {sum(1 for r in stored if r.guest.email)} met e-mailadres. Ze volgen verder de gewone regels "
+              "(berichten als Berichten aan staat, overschrijvingen, ontbijtlabels). "
             + ("Klaar." if finished else "Nog niet klaar: de volgende run gaat verder (tijd op)."))
     if skipped:
         note += f" {len(skipped)} rij(en) niet leesbaar: " + "; ".join(skipped[:3])
