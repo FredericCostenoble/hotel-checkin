@@ -65,6 +65,25 @@ def candidate(r: Reservation, today: date, cfg: dict) -> str | None:
     return pay_step_soon(r.hotel_id, r, today, cfg)
 
 
+def why_not(r: Reservation, today: date, cfg: dict) -> str:
+    """Waarom er voor deze reservatie (nu) geen betaalverzoek gemaakt wordt, in woorden (voor het robotlog)."""
+    if r.status == ReservationStatus.CANCELLED:
+        return "geannuleerd"
+    if r.pay_requested_at:
+        return "betaalverzoek al gemaakt"
+    if r.pay_link and not safety.is_test_guest(r.hotel_id, r.guest.first_name, r.guest.last_name):
+        return "heeft al een betaallink"
+    if r.open_amount is None:
+        return "openstaand saldo nog niet gelezen"
+    if r.open_amount <= 0.01:
+        return "niets open"
+    if not safety.may_write_pms(r.hotel_id, r.guest.first_name, r.guest.last_name):
+        return "geen testgast (buiten PRD alleen testgasten)"
+    if not pay_step_soon(r.hotel_id, r, today, cfg):
+        return f"geen bericht met betaalknop binnen {days_ahead(r.hotel_id)} dagen"
+    return "komt in aanmerking"
+
+
 def due(hotel_id: str, today: date | None = None) -> list[Reservation]:
     from hotel_checkin.processes.send_messages import switch
 
@@ -127,8 +146,23 @@ def log_run(hotel_id: str, started: datetime, result: dict) -> None:
         parts = [f"{len(result['made'])} betaalverzoek(en) gemaakt, mail naar {mailbox.mailbox_address(hotel_id)}: "
                  + "; ".join(result["made"]) if result["made"] else "geen betaalverzoek gemaakt"]
     else:
-        parts = [(f"niets te doen nu: geen bericht met betaalknop binnen {days_ahead(hotel_id)} dagen "
-                  "zonder betaallink (of Berichten staat uit)")]
+        from hotel_checkin.processes.send_messages import switch
+
+        if not switch(hotel_id, "berichten"):
+            parts = ["schakelaar Berichten en Salto staat uit: geen betaalverzoeken (zonder mails geen link nodig)"]
+        else:
+            parts = [(f"niets te doen nu: geen bericht met betaalknop binnen {days_ahead(hotel_id)} dagen "
+                      "zonder betaallink")]
+            # Testgasten: per reservatie waarom niet (om te testen)
+            today, cfg = clock.today(hotel_id), workflow.config(hotel_id)
+            tests = [r for r in guests.list_reservations(hotel_id)
+                     if r.departure >= today - timedelta(days=2)
+                     and safety.is_test_guest(hotel_id, r.guest.first_name, r.guest.last_name)]
+            if tests:
+                parts.append("testgast: " + "; ".join(
+                    f"{r.booking_number or r.reservation_id[:8]} ({r.arrival:%d/%m}, open "
+                    f"{'?' if r.open_amount is None else f'{r.open_amount:.2f}'}): {why_not(r, today, cfg)}"
+                    for r in tests[:6]))
     if result["errors"]:
         parts.append(f"{len(result['errors'])} fout: " + "; ".join(result["errors"][:5]))
     if result["left"]:
