@@ -109,8 +109,7 @@ def run(hotel_id: str) -> int:
 
     payouts = [r for r in guests.list_reservations(hotel_id) if booking_payout.candidate(r, cfg, today)]
     syncs = [r for r in guests.list_reservations(hotel_id) if pms_sync.candidate(r)]
-    payout_notes: list[str] = []
-    sync_notes: list[str] = []
+
     details_read = 0
     access_changes: list[str] = []
     stats = _ContactStats()
@@ -128,10 +127,12 @@ def run(hotel_id: str) -> int:
                 deadline = time.monotonic() + MAX_SECONDS
                 # Eerst de overschrijving van Booking.com (PRD of testgast, hoofdschakelaar), zodat een nieuwe
                 # reservatie die in aanmerking komt meteen in deze run geregistreerd wordt. Zie booking_payout.py
+                # Eigen taak in het robotlog, met een eigen tijdslimiet: de rest van deze run komt altijd aan bod.
                 if payouts:
                     payout_started = datetime.now(UTC)
-                    payout_notes = booking_payout.run(hotel_id, lh, today, deadline)
-                    booking_payout.log_run(hotel_id, payout_started, len(payouts), payout_notes)
+                    booking_payout.log_run(hotel_id, payout_started,
+                                           booking_payout.run(hotel_id, lh, today, deadline))
+                started = datetime.now(UTC)  # "Reservaties bijwerken" begint pas hier
                 for reservation in todo:
                     if time.monotonic() > deadline:
                         finished = False
@@ -170,23 +171,26 @@ def run(hotel_id: str) -> int:
                             access_changes.append(f"{reservation.booking_number}: {'; '.join(changes)}")
                 # Pincode in de opmerking en kamers op KLAAR OM IN TE CHECKEN (PRD of testgast), zie pms_sync.py
                 if syncs and time.monotonic() <= deadline:
-                    sync_notes = pms_sync.run(hotel_id, lh)
+                    sync_started = datetime.now(UTC)
+                    pms_sync.log_run(hotel_id, sync_started, len(syncs), pms_sync.run(hotel_id, lh))
     except Exception as exc:
         guests.log_robot_run(hotel_id, TASK, started, False, len(todo), 0, f"{type(exc).__name__}: {exc}", timings=timings)
         raise
     if finished and not skipped:
         refresh_requests.done(hotel_id, requested)
-    parts = [stats.note()] if stats.read else []
+    parts = [f"{stats.read} reservaties zonder e-mailadres nagelezen: " + stats.note()] if stats.read else []
     if requested:
         parts.append("nagelezen na melding: " + ", ".join(sorted(requested)))
     if details_read:
         parts.append(f"{details_read} aankomsten en verblijven nagekeken (kamer, data, betaling)")
+    if not finished:
+        parts.append("tijd op: de rest in een volgende run")
     if access_changes:
         parts.append("Salto aangepast: " + ", ".join(access_changes))
-    if sync_notes:
-        parts.append("Lighthouse bijgewerkt: " + "; ".join(sync_notes))
     if skipped:
         parts.append(f"{len(skipped)} niet gelezen: " + "; ".join(skipped[:5]))
-    guests.log_robot_run(hotel_id, TASK, started, True, len(todo) + len(arrivals), stats.with_email, ". ".join(parts) or None,
+    if not parts:
+        parts.append("niets nagelezen: alle aankomsten van de komende dagen zijn al bijgewerkt")
+    guests.log_robot_run(hotel_id, TASK, started, True, stats.read + details_read, stats.with_email, ". ".join(parts),
                          skipped=len(skipped), timings=timings | stats.timings())
     return stats.with_email

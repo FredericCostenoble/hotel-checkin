@@ -9,8 +9,10 @@
 # HOOFDSCHAKELAARS, per omgeving apart in te stellen in de monitor (instellingen, tabblad Hotel). Standaard uit.
 # overschrijvingen: de robot registreert de betaling van Booking.com als overschrijving in Lighthouse (processes/booking_payout.py).
 # berichten: mails, sms en WhatsApp aan gasten, en de pincodes bij Salto (die gaan alleen mee met de code-mail).
+# ontbijt_labels: de robot zet het label ONTBIJT op het planbord bij wie ontbijt heeft (nog in opbouw).
 overschrijvingen = false
 berichten = false
+ontbijt_labels = false
 
 [hotel]
 naam = "Hotel Lucca"

@@ -96,7 +96,9 @@ def candidate(r: Reservation, cfg: dict, today: date) -> bool:
     if not safety.may_write_pms(r.hotel_id, r.guest.first_name, r.guest.last_name):
         return False
     if r.remarks is None:
-        return True  # nog nooit gelezen: één keer lezen (opmerking en annuleerbaarheid)
+        # Nog nooit gelezen. Annuleerbaar volgens het tarief uit de lijst (bv. STANDARD RATE): pas lezen vanaf
+        # 2 dagen voor aankomst. Niet annuleerbaar (NRF) of onbekend: meteen lezen.
+        return r.non_refundable is not False or r.arrival - timedelta(days=DAYS_BEFORE) <= today
     if not paid_by_booking(r):
         return False  # de gast betaalt zelf: niets te doen
     return due(r, today)  # zelfde regel als vlak voor het registreren: anders bij elke run opnieuw lezen
@@ -125,9 +127,10 @@ def _log(r: Reservation, ok: bool, note: str) -> None:
                        SendResult(Channel.PMS, "Lighthouse", ok, error=None if ok else note), note=note)
 
 
-def handle(hotel_id: str, stored: Reservation, lh, today: date) -> str | None:
-    """Eén reservatie: detailpagina lezen, controleren, registreren. Geeft een korte uitleg terug als er
-    iets gebeurde of misliep (voor het robotlog), anders None."""
+def handle(hotel_id: str, stored: Reservation, lh, today: date) -> tuple[str, str | None]:
+    """Eén reservatie: detailpagina lezen, controleren, registreren. Geeft (status, uitleg) terug; status is
+    registered, problem, early (annuleerbaar, nog te vroeg), self (gast betaalt zelf), already (al betaald),
+    cancelled of skipped. Uitleg alleen bij registered en problem (voor het robotlog)."""
     label = stored.booking_number or stored.reservation_id[:8]
     r = lighthouse.get_reservation(hotel_id, stored.reservation_id, lh)  # altijd de huidige toestand
     r.guest.first_name = r.guest.first_name or stored.guest.first_name
@@ -138,15 +141,17 @@ def handle(hotel_id: str, stored: Reservation, lh, today: date) -> str | None:
     if r.non_refundable is not None:
         stored.non_refundable = r.non_refundable
     guests.save_reservation(stored, fields=("remarks", "transactions", "non_refundable"))
-    if r.status == ReservationStatus.CANCELLED or not due(r, today):
-        return None
+    if r.status == ReservationStatus.CANCELLED:
+        return "cancelled", None
     amount = amount_for(r)
     if amount is None or amount <= 0:
-        return None  # geen overschrijving door Booking.com (bv. de gast betaalt zelf), of geen kamerprijs
+        return "self", None  # geen overschrijving door Booking.com (de gast betaalt zelf), of geen kamerprijs
+    if not due(r, today):
+        return "early", None
     if already_registered(r):
         stored.payout_registered_at = stored.payout_registered_at or datetime.now(UTC)
         guests.save_reservation(stored, fields=guests.PAYOUT_FIELDS)
-        return None
+        return "already", None
     problem = check(r, amount)
     if problem:
         note = f"Overschrijving Booking.com niet geregistreerd: {problem}. Nakijken in Lighthouse."
@@ -154,9 +159,9 @@ def handle(hotel_id: str, stored: Reservation, lh, today: date) -> str | None:
                    if m["message_type"] == MESSAGE_TYPE and not m["ok"] and m.get("note") == note]
         if not already:  # één melding, niet bij elke run opnieuw
             _log(stored, False, note)
-        return f"{label}: niet geregistreerd ({problem})"
+        return "problem", f"{label}: {problem}"
     if not safety.may_write_pms(hotel_id, r.guest.first_name, r.guest.last_name):
-        return None
+        return "skipped", None
     after = lighthouse.add_payment(hotel_id, r.reservation_id, "bank_transfer", amount, COMMENT, lh,
                                    min_open=amount)
     # De betaling staat erbij (add_payment wacht daarop): onthouden, ook als het saldo hieronder niet klopt
@@ -171,7 +176,8 @@ def handle(hotel_id: str, stored: Reservation, lh, today: date) -> str | None:
         _log(stored, False, note)
     else:
         _log(stored, True, note)
-    return f"{label}: {note}"
+    return "registered", f"{label}: {amount:.2f} EUR" + (
+        f" (nog open {open_after:.2f} EUR)" if open_after is not None else "")
 
 
 def check(r: Reservation, amount: float) -> str | None:
@@ -195,32 +201,56 @@ def check(r: Reservation, amount: float) -> str | None:
     return None
 
 
-def log_run(hotel_id: str, started: datetime, checked: int, notes: list[str]) -> None:
-    """Eigen regel in het robotlog (taak "Overschrijvingen"): hoeveel nagekeken, hoeveel geregistreerd,
-    en per reservatie wat er gebeurde of waarom niet."""
-    registered = [n for n in notes if " geregistreerd" in n and "niet geregistreerd" not in n]
-    errors = [n for n in notes if ": fout " in n]
-    guests.log_robot_run(hotel_id, TASK, started, not errors, checked, len(registered),
-                         "; ".join(notes) if notes else "niets te registreren")
+MAX_SECONDS = 4 * 60  # per run; de rest in een volgende run (wat gelezen is, wordt onthouden)
 
 
-def run(hotel_id: str, lh, today: date | None = None, deadline: float | None = None) -> list[str]:
+def log_run(hotel_id: str, started: datetime, result: dict) -> None:
+    """Eigen regel in het robotlog (taak "Overschrijvingen"). Gevonden = gelezen in Lighthouse,
+    nieuw = geregistreerd. De notitie zegt per soort wat er gebeurde."""
+    c = result["counts"]
+    parts = [f"{result['read']} reservaties van Booking.com gelezen"]
+    if c.get("registered"):
+        parts.append(f"{c['registered']} overschrijving(en) geregistreerd: " + "; ".join(result["registered"]))
+    else:
+        parts.append("niets geregistreerd")
+    if c.get("problem"):
+        parts.append(f"{c['problem']} niet geregistreerd, nakijken: " + "; ".join(result["problems"]))
+    if c.get("early"):
+        parts.append(f"{c['early']} annuleerbaar, pas vanaf 2 dagen voor aankomst")
+    if c.get("self"):
+        parts.append(f"{c['self']} zonder betaling door Booking.com (gast betaalt zelf)")
+    if c.get("already"):
+        parts.append(f"{c['already']} al betaald (Overschrijving stond er al)")
+    if c.get("error"):
+        parts.append(f"{c['error']} fout bij lezen: " + "; ".join(result["errors"][:5]))
+    if result["left"]:
+        parts.append(f"nog {result['left']} te lezen in een volgende run (tijd op)")
+    guests.log_robot_run(hotel_id, TASK, started, not c.get("error"), result["read"], c.get("registered", 0),
+                         ". ".join(parts))
+
+
+def run(hotel_id: str, lh, today: date | None = None, deadline: float | None = None) -> dict:
     """Alle toekomstige reservaties die in aanmerking komen, binnen een al geopende Lighthouse-sessie (robot).
-    Eerst wie het eerst aankomt. Met deadline (time.monotonic()): stoppen als de tijd om is; de volgende run
-    gaat verder (wat al gedaan is, wordt onthouden)."""
+    Eerst wie het eerst aankomt. Stopt na MAX_SECONDS (of eerder aan de deadline); de volgende run gaat verder.
+    Geeft een samenvatting terug voor het robotlog (log_run)."""
     today = today or clock.today(hotel_id)
     cfg = workflow.config(hotel_id)
-    done: list[str] = []
-    for r in sorted(guests.list_reservations(hotel_id), key=lambda x: x.arrival):
-        if deadline is not None and time.monotonic() > deadline:
+    stop = time.monotonic() + MAX_SECONDS
+    if deadline is not None:
+        stop = min(stop, deadline)
+    todo = [r for r in sorted(guests.list_reservations(hotel_id), key=lambda x: x.arrival) if candidate(r, cfg, today)]
+    result: dict = {"read": 0, "counts": {}, "registered": [], "problems": [], "errors": [], "left": 0}
+    for i, r in enumerate(todo):
+        if time.monotonic() > stop:
+            result["left"] = len(todo) - i
             break
-        if not candidate(r, cfg, today):
-            continue
         try:
-            result = handle(hotel_id, r, lh, today)
+            status, text = handle(hotel_id, r, lh, today)
         except Exception as exc:
             logging.exception("%s: overschrijving %s", hotel_id, r.booking_number)
-            result = f"{r.booking_number or r.reservation_id[:8]}: fout {type(exc).__name__}"
-        if result:
-            done.append(result)
-    return done
+            status, text = "error", f"{r.booking_number or r.reservation_id[:8]}: {type(exc).__name__}"
+        result["read"] += 1
+        result["counts"][status] = result["counts"].get(status, 0) + 1
+        if text:
+            {"registered": result["registered"], "problem": result["problems"], "error": result["errors"]}[status].append(text)
+    return result

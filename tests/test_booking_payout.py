@@ -112,15 +112,15 @@ def test_registers_once_and_checks_amount(monkeypatch):
         return detail
 
     monkeypatch.setattr(booking_payout.lighthouse, "add_payment", add)
-    note = booking_payout.handle("lucca", stored, None, date(2026, 11, 2))
-    assert calls == [("bank_transfer", 362.0)] and "nog open 12.60" in note
+    status, note = booking_payout.handle("lucca", stored, None, date(2026, 11, 2))
+    assert status == "registered" and calls == [("bank_transfer", 362.0)] and "nog open 12.60" in note
     assert repo.get_reservation("lucca", stored.reservation_id).payout_registered_at
-    assert booking_payout.handle("lucca", stored, None, date(2026, 11, 2)) is None and len(calls) == 1
+    assert booking_payout.handle("lucca", stored, None, date(2026, 11, 2))[0] == "already" and len(calls) == 1
     # bedrag klopt niet met de folio: niets registreren, één melding
     other = repo.save_reservation(_r(NRF, 6, True))
     detail2 = _r(NRF, 6, True, folio_room=300.0)
     monkeypatch.setattr(booking_payout.lighthouse, "get_reservation", lambda h, rid, lh: detail2)
-    assert "niet geregistreerd" in booking_payout.handle("lucca", other, None, date(2026, 11, 2))
+    assert booking_payout.handle("lucca", other, None, date(2026, 11, 2))[0] == "problem"
     booking_payout.handle("lucca", other, None, date(2026, 11, 2))
     assert len(calls) == 1
     assert len([m for m in repo.messages_for("lucca", other.reservation_id) if not m["ok"]]) == 1
@@ -135,15 +135,46 @@ def test_never_more_than_open_and_booking_amount_checked(monkeypatch):
     detail = _r(VCC, 5, True)
     detail.open_amount = 12.6
     monkeypatch.setattr(booking_payout.lighthouse, "get_reservation", lambda h, rid, lh: detail)
-    assert "open" in booking_payout.handle("lucca", stored, None, date(2026, 11, 2))
+    assert "open" in booking_payout.handle("lucca", stored, None, date(2026, 11, 2))[1]
     # saldo niet gelezen (transacties niet geladen): niets doen
     detail.open_amount = None
-    assert "niet gelezen" in booking_payout.handle("lucca", stored, None, date(2026, 11, 2))
+    assert "niet gelezen" in booking_payout.handle("lucca", stored, None, date(2026, 11, 2))[1]
     # Booking.com vermeldt een ander geïnd bedrag dan de kamerprijs
     detail2 = _r(VCC + "\nAlready collected by Booking.com: 300.00 EUR", 5, True)
     monkeypatch.setattr(booking_payout.lighthouse, "get_reservation", lambda h, rid, lh: detail2)
-    assert "geïnd 300.00" in booking_payout.handle("lucca", stored, None, date(2026, 11, 2))
+    assert "geïnd 300.00" in booking_payout.handle("lucca", stored, None, date(2026, 11, 2))[1]
     assert calls == []
+
+
+def test_flexible_rate_not_read_until_two_days(monkeypatch):
+    cfg = __import__("hotel_checkin.core.workflow", fromlist=["config"]).config("lucca")
+    monkeypatch.setenv("APP_ENV", "prd")
+    today = date(2026, 11, 2)
+    assert not booking_payout.candidate(_r(None, 30, False), cfg, today)  # STANDARD RATE: pas 2 dagen ervoor
+    assert booking_payout.candidate(_r(None, 2, False), cfg, today)
+    assert booking_payout.candidate(_r(None, 30, True), cfg, today)  # NRF: meteen
+
+
+def test_run_summary_for_robot_log(monkeypatch):
+    monkeypatch.setenv("APP_ENV", "prd")
+    repo.save_reservation(_r(NRF, 5, True))
+    repo.save_reservation(_r(FLEX, 1, False, folio_room=1054.8, last="Flex"))
+    details = {"r5Brand": _r(NRF, 5, True), "r1Flex": _r(FLEX, 1, False, folio_room=1054.8, last="Flex")}
+    monkeypatch.setattr(booking_payout.lighthouse, "get_reservation", lambda h, rid, lh: details[rid])
+
+    def add(h, rid, method, amount, comment, lh, min_open=None):
+        details[rid].transactions = ["Overschrijving"]
+        details[rid].open_amount = 12.6
+        return details[rid]
+
+    monkeypatch.setattr(booking_payout.lighthouse, "add_payment", add)
+    logged = []
+    monkeypatch.setattr(booking_payout.guests, "log_robot_run", lambda *a, **k: logged.append(a))
+    result = booking_payout.run("lucca", None, date(2026, 11, 2))
+    booking_payout.log_run("lucca", __import__("datetime").datetime.now(), result)
+    assert result["read"] == 2 and result["counts"]["registered"] == 2
+    note = logged[0][-1]
+    assert "2 reservaties van Booking.com gelezen" in note and "2 overschrijving(en) geregistreerd" in note
 
 
 def test_only_future_reservations(monkeypatch):

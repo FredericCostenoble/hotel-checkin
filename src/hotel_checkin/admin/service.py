@@ -31,7 +31,8 @@ def hotels() -> list[dict]:
              "phone_enabled": send_messages.phone_enabled(h),
              # hoofdschakelaars (per omgeving): bovenaan de monitor getoond
              "switches": {"overschrijvingen": send_messages.switch(h, "overschrijvingen"),
-                          "berichten": send_messages.switch(h, "berichten")}}
+                          "berichten": send_messages.switch(h, "berichten"),
+                          "ontbijt_labels": send_messages.switch(h, "ontbijt_labels")}}
             for h in list_hotels()]
 
 

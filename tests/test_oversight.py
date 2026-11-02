@@ -31,11 +31,11 @@ def test_overview_once_in_the_morning(setup):
     _res("a", today, paid=True)
     _res("b", today + timedelta(days=1))
     morning = datetime(2026, 11, 3, 7, 35, tzinfo=oversight.clock.tz("lucca"))
-    assert "overzicht" in oversight.run("lucca", morning)
+    assert any("overzicht" in d for d in oversight.run("lucca", morning))
     to, subject, body = setup[0]
     assert to == "management@hotellucca.be" and "aankomsten 03/11" in subject
     assert "CPB-b" in body and "kamer nog niet betaald" in body  # rood: kamer niet betaald, geen code
-    assert "overzicht" not in oversight.run("lucca", morning + timedelta(minutes=15))  # niet twee keer
+    assert not any("overzicht" in d for d in oversight.run("lucca", morning + timedelta(minutes=15)))  # niet twee keer
 
 
 def test_check_warns_once_for_missing_code_mail(setup):
@@ -46,7 +46,7 @@ def test_check_warns_once_for_missing_code_mail(setup):
     evening = datetime(2026, 11, 3, 17, 5, tzinfo=oversight.clock.tz("lucca"))
     done = oversight.run("lucca", evening)
     warn = [m for m in setup if m[1].startswith("WAARSCHUWING")]
-    assert warn and "code-mail niet verstuurd" in warn[0][2] and any("controle 17:00" in d for d in done)
+    assert warn and "code-mail niet verstuurd" in warn[0][2] and any("controle van 17:00" in d for d in done)
     oversight.run("lucca", evening.replace(hour=20, minute=5))  # zelfde probleem: niet opnieuw melden
     assert len([m for m in setup if m[1].startswith("WAARSCHUWING")]) == 1
     repo.log_message("lucca", "c", "access_code", SendResult(Channel.EMAIL, "ann@example.com", True))

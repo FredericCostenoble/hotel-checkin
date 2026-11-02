@@ -188,12 +188,13 @@ def run(hotel_id: str, now: datetime | None = None) -> list[str]:
     st["days"] = {k: v for k, v in st["days"].items() if k >= (today - timedelta(days=2)).isoformat()}
     if _due(hm, cfg["overview"], day.get("overview")) and send_overview(hotel_id, today):
         day["overview"] = True
-        done.append("overzicht")
+        done.append(f"dagelijks overzicht (vandaag en morgen) gemaild naar {', '.join(cfg['email'])}")
     for at in cfg["checks"]:
         if _due(hm, at, day.get(f"check_{at}")):
             n = check(hotel_id, today, st)
             day[f"check_{at}"] = True
-            done.append(f"controle {at}" + (f": {n} probleem" if n else ": in orde"))
+            done.append(f"controle van {at}: " + (f"{n} aankomst(en) met een probleem, waarschuwing gemaild"
+                                                  if n else "alle aankomsten in orde, geen mail"))
     rp = robot_problem(hotel_id, cfg["robot_hours"])
     last = st.get("robot_alert_at")
     if rp and (not last or datetime.fromisoformat(last) < datetime.now(UTC) - timedelta(hours=3)):
@@ -204,8 +205,8 @@ def run(hotel_id: str, now: datetime | None = None) -> list[str]:
                      ("Nieuwe reservaties en wijzigingen komen dan niet binnen. Nakijken in de monitor "
                       "(instellingen, Robot) of de robot opnieuw starten.")], [], _monitor_url())):
             st["robot_alert_at"] = datetime.now(UTC).isoformat()
-            done.append("waarschuwing robot")
+            done.append(f"waarschuwing gemaild: {rp}")
     _save_state(hotel_id, st)
     if done:
-        guests.log_robot_run(hotel_id, TASK, datetime.now(UTC), True, 0, 0, ", ".join(done))
+        guests.log_robot_run(hotel_id, TASK, datetime.now(UTC), True, 0, 0, "; ".join(done))
     return done

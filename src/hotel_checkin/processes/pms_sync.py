@@ -61,6 +61,19 @@ def handle(hotel_id: str, r: Reservation, lh) -> str | None:
     return None
 
 
+TASK = "lighthouse_bijwerken"
+
+
+def log_run(hotel_id: str, started, checked: int, notes: list[str]) -> None:
+    """Eigen regel in het robotlog (taak "Pincode en status in Lighthouse")."""
+    errors = [n for n in notes if ": fout " in n]
+    done = [n for n in notes if n not in errors]
+    note = (f"{checked} reservaties met een code nagekeken. "
+            + (f"{len(done)} bijgewerkt: " + "; ".join(done) if done else "niets te doen (alles stond al goed)")
+            + (f". {len(errors)} fout: " + "; ".join(errors) if errors else ""))
+    guests.log_robot_run(hotel_id, TASK, started, not errors, checked, len(done), note)
+
+
 def run(hotel_id: str, lh) -> list[str]:
     out = []
     for r in guests.list_reservations(hotel_id):
