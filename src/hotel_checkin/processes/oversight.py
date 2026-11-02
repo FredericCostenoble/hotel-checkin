@@ -139,7 +139,7 @@ def _send(hotel_id: str, subject: str, html_body: str) -> bool:
 # Taken uit het robotlog die in het overzicht komen, met hun naam voor de lezer
 _TASK_NAMES = {"overschrijving_booking": "Overschrijvingen", "ontbijt_labels": "Ontbijt labels",
                "lighthouse_bijwerken": "Pincode en status in Lighthouse", "nieuwe_reservaties": "Nieuwe reservaties",
-               "oude_boekingen": "Oudere boekingen", "betaalverzoeken": "Betaalverzoeken", "berichten": "Berichten", "meldingen": "Meldingen per mail"}
+               "oude_boekingen": "Oudere boekingen", "betaalverzoeken": "Betaalverzoeken", "berichten": "Berichten", "meldingen": "Mailbox nakijken"}
 
 
 def activity(hotel_id: str, hours: int = 24) -> list[str]:

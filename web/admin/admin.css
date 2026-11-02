@@ -295,3 +295,4 @@ tr.run-head { cursor: pointer; }
 tr.run-head:hover td { background: #E7EBF4; }
 .caret-run { display: inline-block; width: 12px; color: #5C6478; }
 .task-betaalverzoeken { background: #F0EDFF; color: #3F2E8C; }
+.not-robot { font-size: 11px; color: #8A90A0; border: 1px dashed #C9CED8; border-radius: 8px; padding: 0 6px; white-space: nowrap; }
