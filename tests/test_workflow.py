@@ -29,19 +29,20 @@ def test_lucca_workflow():
 
 
 def test_conditions():
-    reminder = next(s for s in workflow.steps("lucca", "website_paid") if s.step == "reminder")
+    reminder = next(s for s in workflow.steps("lucca", "website") if s.step == "reminder")
     assert reminder.conditions_met(_r())
     assert not reminder.conditions_met(_r(status=ReservationStatus.CANCELLED))
     assert not reminder.conditions_met(_r(checkin_completed_at=datetime(2099, 1, 1)))
-    code = next(s for s in workflow.steps("lucca", "website_paid") if s.step == "access_code")
-    assert not code.conditions_met(_r()) and code.conditions_met(_r(paid=True))
+    code = next(s for s in workflow.steps("lucca", "website") if s.step == "access_code")
+    # één website-flow: code-mail ook als er nog iets openstaat (dan met betaalknop), niet bij annulering
+    assert code.conditions_met(_r()) and code.conditions_met(_r(paid=True))
 
 
 def test_flow_for():
     assert workflow.flow_for("lucca", _r(source="Booking.com")) == "booking"
     assert workflow.flow_for("lucca", _r(source="Expedia")) == "expedia"
-    assert workflow.flow_for("lucca", _r(source="Booking Engine", paid=True)) == "website_paid"
-    assert workflow.flow_for("lucca", _r(source="Booking Engine")) == "website_unpaid"
+    assert workflow.flow_for("lucca", _r(source="Booking Engine", paid=True)) == "website"
+    assert workflow.flow_for("lucca", _r(source="Booking Engine")) == "website"  # betaald of niet: zelfde flow
 
 
 def test_city_tax_per_person_per_night():
@@ -86,3 +87,18 @@ def test_monitor_save_error_and_user():
     assert not ok and "expedia" in data["error"]
     ok, data = service.workflow_save("lucca", {"parameters": view["parameters"], "flows": view["flows"]}, "frederic")
     assert ok and data["meta"]["updated_by"] == "frederic"
+
+
+def test_old_website_flows_from_monitor_become_one():
+    """Een vroeger in de monitor bewaarde workflow met website_paid en website_unpaid (tot 02/11)."""
+    from hotel_checkin.guests import repository
+
+    old = workflow.file_config("lucca")
+    unpaid = old["flows"].pop("website")
+    unpaid["steps"][1]["days"] = 9
+    old["flows"]["website_unpaid"], old["flows"]["website_paid"] = unpaid, {"sources": [], "steps": []}
+    repository.set_config_doc("lucca", workflow.CONFIG_DOC, old, "x")
+    cfg = workflow.config("lucca")
+    assert set(cfg["flows"]) == {"booking", "expedia", "website"}
+    assert next(s for s in workflow._steps_from(cfg, "website") if s.step == "reminder").days == 9
+    workflow.reset_config("lucca")

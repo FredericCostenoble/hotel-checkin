@@ -4,8 +4,8 @@ apart per flow (boekingskanaal en betaalstatus).
 Flows (vaste namen, volgorde van herkennen):
     booking         reservaties via Booking.com
     expedia         reservaties via Expedia
-    website_paid    andere kanalen (website, telefoon, ...), al betaald
-    website_unpaid  andere kanalen, nog niet (volledig) betaald
+    website         alle andere kanalen (website, telefoon, ...), betaald of niet: wat nog openstaat
+                    bepaalt de inhoud van de mail (betaalknop), niet de flow
 
 Standaard staat de workflow in config/hotels/<hotel_id>.toml ([workflow_parameters] en
 [flows.<naam>] met [[flows.<naam>.steps]]). In de monitor (tabblad Workflow) kan hij gewijzigd
@@ -36,7 +36,9 @@ from datetime import date, timedelta
 from hotel_checkin.core.hotels import load_hotel
 from hotel_checkin.core.models import Reservation, ReservationStatus
 
-FLOWS = ("booking", "expedia", "website_paid", "website_unpaid")
+FLOWS = ("booking", "expedia", "website")
+# Vroegere flows (tot 02/11/2026): een eerder in de monitor bewaarde workflow neemt de niet-betaalde over
+_OLD_FLOWS = {"website_unpaid": "website"}
 WHEN = ("after_booking", "days_before_arrival", "days_after_departure")
 AFTER_DEPARTURE_WINDOW = 14  # dagen: een bericht na vertrek dat zo lang niet weg kon, vervalt
 CHANNELS = ("email", "sms", "whatsapp")
@@ -129,6 +131,12 @@ def _with_new_steps(saved: dict, default: dict) -> dict:
     """Stappen die later aan de standaard zijn toegevoegd (bv. na vertrek) ook tonen in een eerder
     bewaarde workflow. Een stap uitzetten gebeurt met enabled, dus ontbrekend betekent nieuw."""
     out = copy.deepcopy(saved)
+    flows = out.setdefault("flows", {})
+    for old, new in _OLD_FLOWS.items():
+        if old in flows and new not in flows:
+            flows[new] = flows[old]
+    for old in ("website_paid", "website_unpaid"):
+        flows.pop(old, None)
     for name, flow in default.get("flows", {}).items():
         mine = out.setdefault("flows", {}).setdefault(name, copy.deepcopy(flow))
         known = {s.get("step") for s in mine.get("steps", [])}
@@ -245,7 +253,7 @@ def flow_for(hotel_id: str, r: Reservation, cfg: dict | None = None) -> str:
         sources = [x.lower() for x in cfg["flows"][name]["sources"]]
         if sources and any(x in source for x in sources):
             return name
-    return "website_paid" if r.paid is True else "website_unpaid"
+    return "website"
 
 
 def city_tax(hotel_id: str, r: Reservation, cfg: dict | None = None) -> float:

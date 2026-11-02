@@ -179,7 +179,9 @@ def status_url(hotel_id: str, reservation_id: str, message_id: str) -> str | Non
 
 def _rendered(hotel_id: str, step: workflow.Step, r: Reservation, cfg: dict):
     test = test_mode(hotel_id)
-    pay = step.pay if has_pay_link(r) or test else "none"
+    # Betaalknop alleen als er nog iets openstaat (volledig betaald, bv. niet annuleerbaar via de website: geen knop)
+    open_now = r.paid is not True and (r.open_amount is None or r.open_amount > 0.004)
+    pay = step.pay if open_now and (has_pay_link(r) or test) else "none"
     data = {**message_data(hotel_id, r), **pay_data(hotel_id, r, cfg)}
     if r.pay_link:
         data["betaal_link"] = r.pay_link

@@ -236,62 +236,19 @@ only_if = ["not_cancelled", "not_paid"]
 channels = ["email"]
 pay = "open_amount"
 
-[flows.website_paid]
-sources = []                 # alle andere kanalen
-paid = true
-
-[[flows.website_paid.steps]]
-step = "confirmation"   # mail met link naar het check-in-formulier
-when = "after_booking"
-only_if = ["not_cancelled"]
-channels = ["email"]
-pay = "none"
-
-[[flows.website_paid.steps]]
-step = "reminder"   # herinnering als het formulier niet ingevuld is
-when = "days_before_arrival"
-days = 7
-only_if = ["form_not_completed", "not_cancelled"]
-channels = ["email"]
-skip_if_booked_late = true
-pay = "none"
-
-[[flows.website_paid.steps]]
-step = "access_code"   # pincode en praktische info
-when = "days_before_arrival"
-days = 2
-only_if = ["paid", "not_cancelled"]
-channels = ["email", "sms"]
-pay = "none"
-
-[[flows.website_paid.steps]]
-step = "thank_you"   # bedankmail na vertrek
-when = "days_after_departure"
-days = 1
-only_if = ["not_cancelled"]
-channels = ["email"]
-pay = "none"
-
-[[flows.website_paid.steps]]
-step = "payment_request"   # betaalverzoek als er na vertrek nog iets openstaat
-when = "days_after_departure"
-days = 1
-only_if = ["not_cancelled", "not_paid"]
-channels = ["email"]
-pay = "open_amount"
-
-[flows.website_unpaid]
+[flows.website]
+# Alle andere kanalen (website, telefoon, ...). Eén flow, betaald of niet: wat er nog openstaat, bepaalt
+# de inhoud van de mail (betaalknop alleen als er iets openstaat en Lighthouse een betaallink gaf).
 sources = []
-paid = false
 
-[[flows.website_unpaid.steps]]
+[[flows.website.steps]]
 step = "confirmation"   # mail met link naar het check-in-formulier
 when = "after_booking"
 only_if = ["not_cancelled"]
 channels = ["email"]
 pay = "none"
 
-[[flows.website_unpaid.steps]]
+[[flows.website.steps]]
 step = "reminder"   # herinnering als het formulier niet ingevuld is
 when = "days_before_arrival"
 days = 7
@@ -300,7 +257,7 @@ channels = ["email"]
 skip_if_booked_late = true
 pay = "none"
 
-[[flows.website_unpaid.steps]]
+[[flows.website.steps]]
 step = "access_code"   # pincode en praktische info
 when = "days_before_arrival"
 days = 2
@@ -308,7 +265,7 @@ only_if = ["not_cancelled"]
 channels = ["email", "sms"]
 pay = "open_amount"
 
-[[flows.website_unpaid.steps]]
+[[flows.website.steps]]
 step = "thank_you"   # bedankmail na vertrek
 when = "days_after_departure"
 days = 1
@@ -316,7 +273,7 @@ only_if = ["not_cancelled"]
 channels = ["email"]
 pay = "none"
 
-[[flows.website_unpaid.steps]]
+[[flows.website.steps]]
 step = "payment_request"   # betaalverzoek als er na vertrek nog iets openstaat
 when = "days_after_departure"
 days = 1
