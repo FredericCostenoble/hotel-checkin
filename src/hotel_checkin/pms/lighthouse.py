@@ -343,17 +343,19 @@ def create_payment_request(hotel_id: str, reservation_id: str, send_to: str, tem
     form = page.locator("#SaveFormPaymentRequest")
     form.wait_for(state="attached", timeout=15_000)
     modal = page.locator(".modal:has(#SaveFormPaymentRequest)").first
-    modal.locator('a[data-fieldvalue="Payment"]').first.click()
-    modal.locator('a[data-fieldvalue="SendRequest"]').first.click()
+    modal.locator('a[data-fieldvalue="Payment"]:visible').first.click(timeout=10_000)
+    # "Stuur verzoek" staat er per soort transactie; alleen de zichtbare, en alleen als het nog niet gekozen is
+    if form.locator("[name=ActionSubType]").input_value() != "SendRequest":
+        modal.locator('a[data-fieldvalue="SendRequest"]:visible').first.click(timeout=10_000)
     page.wait_for_function("() => document.querySelector('#SaveFormPaymentRequest [name=ActionType]')?.value === 'Payment'"
                            " && document.querySelector('#SaveFormPaymentRequest [name=ActionSubType]')?.value === 'SendRequest'",
                            timeout=5_000)
-    modal.locator('input[name=requestChargesType][value="0"]').first.check()  # openstaand saldo
+    modal.locator('input[name=requestChargesType][value="0"]:visible').first.check(timeout=10_000)  # openstaand saldo
     # Ontvanger: altijd "een ander e-mailadres" (lege waarde) met de eigen mailbox
-    modal.locator("select.js-sendtoselect").first.select_option(value="")
-    modal.locator("input[name=SendToCustom]").first.fill(send_to)
-    modal.locator("select.js-templateselect:visible").first.select_option(label=template)
-    langs = modal.locator("select.js-languageselect").first
+    modal.locator("select.js-sendtoselect:visible").first.select_option(value="", timeout=10_000)
+    modal.locator("input[name=SendToCustom]:visible").first.fill(send_to, timeout=10_000)
+    modal.locator("select.js-templateselect:visible").first.select_option(label=template, timeout=10_000)
+    langs = modal.locator("select.js-languageselect:visible").first
     if language in [o.get_attribute("value") for o in langs.locator("option").all()]:
         langs.select_option(value=language)
     check = page.evaluate("""() => { const m = document.querySelector('#SaveFormPaymentRequest');
@@ -366,7 +368,7 @@ def create_payment_request(hotel_id: str, reservation_id: str, send_to: str, tem
             or check["sub"] != "SendRequest" or not check["amount"] or check["amount"] <= 0:
         modal.locator('input[value="Sluiten"]').first.click()
         raise RuntimeError(f"betaalverzoek niet verstuurd, venster niet zoals verwacht: {check}")
-    modal.locator("#SaveFormPaymentRequestSubmit").first.click()
+    modal.locator("#SaveFormPaymentRequestSubmit").first.click(timeout=10_000)
     # Klaar zodra het venster dicht is (Lighthouse bewaart en verstuurt de mail)
     page.wait_for_function("() => { const m = document.querySelector('#SaveFormPaymentRequest');"
                            " return !m || !m.closest('.modal') || m.closest('.modal').offsetParent === null; }",
