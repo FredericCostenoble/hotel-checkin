@@ -38,6 +38,9 @@ def run(hotel_id: str, since: datetime) -> int:
             ready = run_context.seconds_since_start()  # sinds de container startte, aangemeld en klaar om te lezen
             if ready is not None:
                 timings["ready"] = ready
+            from hotel_checkin.core import progress
+
+            progress.step(hotel_id, TASK, "lijst van Lighthouse lezen", force=True)
             t0 = time.monotonic()
             listed = lighthouse.get_new_reservations(hotel_id, since, lh, skipped)
             timings["list"] = round(time.monotonic() - t0, 1)
@@ -45,6 +48,7 @@ def run(hotel_id: str, since: datetime) -> int:
             details_after_booking = workflow.needs_details_after_booking(hotel_id)
             for reservation in listed:
                 found += 1
+                progress.step(hotel_id, TASK, f"{found} van {len(listed)}: {reservation.booking_number or ''}")
                 existing = guests.get_reservation(hotel_id, reservation.reservation_id)
                 if existing is None:
                     new += 1

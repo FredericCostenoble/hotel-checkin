@@ -208,6 +208,9 @@ def main() -> int:
             logging.info("%s: %s", hotel_id, skip)
             guests.log_robot_run(hotel_id, SKIP_TASK, datetime.now(UTC), True, 0, 0, skip)
             continue
+        from hotel_checkin.core import progress
+
+        progress.step(hotel_id, new_reservation.TASK, "aanmelden bij Lighthouse", force=True)
         since = _since(hotel_id, args.hours)
         _restore_session(hotel_id)
         try:
@@ -215,6 +218,7 @@ def main() -> int:
             logging.info("%s: %s nieuwe reservaties", hotel_id, new)
             # Gasten synchroniseren: één keer per dag mee in een run die toch al draait (geen eigen schema)
             if maintenance.due(hotel_id):
+                progress.step(hotel_id, maintenance.TASK, "gasten synchroniseren en oude gegevens opruimen")
                 maintenance.run(hotel_id)
             if _refresh_due(hotel_id):
                 found = refresh_contacts.run(hotel_id)
@@ -227,6 +231,7 @@ def main() -> int:
         finally:
             _store_session(hotel_id)
             guests.delete_state(hotel_id, LOCK_KEY)  # deze run is klaar
+            progress.done(hotel_id)
     return 1 if failed else 0
 
 

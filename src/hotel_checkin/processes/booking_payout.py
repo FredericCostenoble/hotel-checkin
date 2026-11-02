@@ -242,7 +242,12 @@ def run(hotel_id: str, lh, today: date | None = None, deadline: float | None = N
         stop = min(stop, deadline)
     todo = [r for r in sorted(guests.list_reservations(hotel_id), key=lambda x: x.arrival) if candidate(r, cfg, today)]
     result: dict = {"read": 0, "counts": {}, "registered": [], "problems": [], "errors": [], "left": 0}
+    from hotel_checkin.core import progress
+
+    progress.step(hotel_id, TASK, f"{len(todo)} reservaties na te kijken", force=True)
     for i, r in enumerate(todo):
+        progress.step(hotel_id, TASK, f"{i + 1} van {len(todo)}: {r.booking_number or ''}, "
+                                      f"{result['counts'].get('registered', 0)} geregistreerd tot nu")
         if time.monotonic() > stop:
             result["left"] = len(todo) - i
             break

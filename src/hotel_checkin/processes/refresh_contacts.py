@@ -133,7 +133,12 @@ def run(hotel_id: str) -> int:
                     booking_payout.log_run(hotel_id, payout_started,
                                            booking_payout.run(hotel_id, lh, today, deadline))
                 started = datetime.now(UTC)  # "Reservaties bijwerken" begint pas hier
-                for reservation in todo:
+                from hotel_checkin.core import progress
+
+                total = len(todo) + len(arrivals)
+                progress.step(hotel_id, TASK, f"{total} reservaties na te lezen", force=True)
+                for n, reservation in enumerate(todo, 1):
+                    progress.step(hotel_id, TASK, f"contact {n} van {total}: {reservation.booking_number or ''}")
                     if time.monotonic() > deadline:
                         finished = False
                         break
@@ -149,7 +154,9 @@ def run(hotel_id: str) -> int:
                     if contact.email or contact.phone:
                         guest_profiles.link(reservation)
                 # Aankomsten van de komende dagen: kamer en betaling voor de code-mail
-                for reservation in arrivals:
+                for n, reservation in enumerate(arrivals, len(todo) + 1):
+                    progress.step(hotel_id, TASK, f"aankomst {n} van {total}: {reservation.booking_number or ''} "
+                                                  "(kamer, data, betaling)")
                     if time.monotonic() > deadline:
                         finished = False
                         break

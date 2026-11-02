@@ -75,10 +75,12 @@ def log_run(hotel_id: str, started, checked: int, notes: list[str]) -> None:
 
 
 def run(hotel_id: str, lh) -> list[str]:
+    from hotel_checkin.core import progress
+
     out = []
-    for r in guests.list_reservations(hotel_id):
-        if not candidate(r):
-            continue
+    todo = [r for r in guests.list_reservations(hotel_id) if candidate(r)]
+    for n, r in enumerate(todo, 1):
+        progress.step(hotel_id, TASK, f"{n} van {len(todo)}: {r.booking_number or ''}", force=n == 1)
         try:
             result = handle(hotel_id, r, lh)
         except Exception as exc:

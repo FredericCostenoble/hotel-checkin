@@ -110,7 +110,7 @@ _DETAIL_JS = r"""() => {
     .filter(s => [...s.options].some(o => o.text === 'INGECHECKT'))
     .map(s => ({ status: s.selectedOptions[0]?.text || '', value: s.value || '', text: txt(s.closest('tr') || s.parentElement.parentElement) }));
   const contactName = document.querySelector('#contact-name');
-  const trans = [...document.querySelectorAll('*')].find(e => e.childElementCount === 0 && e.textContent.trim() === 'Transacties');
+  const trans = [...document.querySelectorAll('h1,h2,h3,h4,h5,h6,legend,strong,b,span,div,p')].find(e => [...e.childNodes].filter(n => n.nodeType === 3).map(n => n.textContent).join('').trim() === 'Transacties');
   return {
     title: txt(document.querySelector('h1')),
     contact_name: txt(contactName),
@@ -122,17 +122,20 @@ _DETAIL_JS = r"""() => {
     paid_text: txt(trans && (trans.closest('.jarviswidget, .col-md-6, .col-lg-6') || trans.parentElement.parentElement)),
     // Regels onder Transacties, zonder het formulier om een betaling toe te voegen (de keuzelijst
     // bevat ook het woord "Overschrijving")
-    transactions: (() => { const t = [...document.querySelectorAll('*')].find(e => e.childElementCount === 0 && e.textContent.trim() === 'Transacties');
+    transactions: (() => { const t = [...document.querySelectorAll('h1,h2,h3,h4,h5,h6,legend,strong,b,span,div,p')].find(e => [...e.childNodes].filter(n => n.nodeType === 3).map(n => n.textContent).join('').trim() === 'Transacties');
                            if (!t) return [];
                            const box = (t.closest('.jarviswidget, .col-md-6, .col-lg-6') || t.parentElement.parentElement).cloneNode(true);
                            box.querySelectorAll('fieldset, form, select, input, button').forEach(e => e.remove());
                            return txt(box).split('\n').map(s => s.trim()).filter(Boolean); })(),
     // Blok "Opmerkingen:" onder Algemene informatie (betaalinfo van Booking.com, wensen van de gast, ...)
-    remarks: (() => { const h = [...document.querySelectorAll('*')].find(e => e.childElementCount === 0
-                        && /^Opmerkingen:?$/.test(e.textContent.trim()));
+    // De kop heeft een icoon (paperclip) en staat in een <p>; de opmerking zelf in de volgende <p>, samen in een <li>.
+    remarks: (() => { const own = e => [...e.childNodes].filter(n => n.nodeType === 3).map(n => n.textContent).join('').trim();
+                      const h = [...document.querySelectorAll('strong,b,span,p,div,label,h4,h5')]
+                        .find(e => /^Opmerkingen:?$/.test(own(e)) || (e.childElementCount === 0 && /^Opmerkingen:?$/.test(e.textContent.trim())));
                       if (!h) return '';
-                      const box = h.closest('.alert, .well, .panel, .note, div') || h.parentElement;
-                      return txt(box.parentElement && txt(box).trim() === h.textContent.trim() ? box.parentElement : box); })(),
+                      let box = h.closest('li') || h.closest('p')?.parentElement || h.parentElement;
+                      while (box && box !== document.body && txt(box).replace(/Opmerkingen:?/, '').trim() === '') box = box.parentElement;
+                      return box && box !== document.body ? txt(box).replace(/^\s*Opmerkingen:?\s*/, '') : ''; })(),
     // Hele folio (lijnen links, transacties rechts): eerste blok rond "Transacties" waar ook "Totaal" in staat
     folio_text: (() => { let b = trans; while (b && b !== document.body && !/\bTotaal\b/.test(b.innerText || '')) b = b.parentElement;
                          return b && b !== document.body ? txt(b) : ''; })(),
@@ -142,10 +145,12 @@ _DETAIL_JS = r"""() => {
 
 # Transacties laden asynchroon: klaar als het blok meer toont dan zijn titel en niets meer laadt.
 _TRANSACTIONS_LOADED = r"""() => {
-  const t = [...document.querySelectorAll('*')].find(e => e.childElementCount === 0 && e.textContent.trim() === 'Transacties');
+  const t = [...document.querySelectorAll('h1,h2,h3,h4,h5,h6,legend,strong,b,span,div,p')].find(e => [...e.childNodes].filter(n => n.nodeType === 3).map(n => n.textContent).join('').trim() === 'Transacties');
   if (!t) return false;
   const box = t.closest('.jarviswidget, .col-md-6, .col-lg-6') || t.parentElement.parentElement;
-  return !box.querySelector('.fa-spin, .spinner, .loading') && box.innerText.trim().length > 20;
+  // Het laadsymbool staat altijd in de kop (verborgen als het klaar is): alleen een zichtbaar telt
+  const busy = [...box.querySelectorAll('.fa-spin, .spinner, .loading, .paymentloader')].some(e => e.offsetParent !== null);
+  return !busy && /Openstaand saldo|volledig betaald|Saldo/i.test(box.innerText);
 }"""
 
 
@@ -293,7 +298,7 @@ def add_payment(hotel_id: str, reservation_id: str, method: str, amount: float, 
     form.locator("button.AddPaymentBtn").click()
     # Klaar zodra de opmerking bij de transacties staat (niet wachten tot het netwerk stil is)
     page.wait_for_function(
-        """c => { const t = [...document.querySelectorAll('*')].find(e => e.childElementCount === 0 && e.textContent.trim() === 'Transacties');
+        """c => { const t = [...document.querySelectorAll('h1,h2,h3,h4,h5,h6,legend,strong,b,span,div,p')].find(e => [...e.childNodes].filter(n => n.nodeType === 3).map(n => n.textContent).join('').trim() === 'Transacties');
                   const b = t && (t.closest('.jarviswidget, .col-md-6, .col-lg-6') || t.parentElement.parentElement);
                   if (!b) return false; const k = b.cloneNode(true); k.querySelectorAll('fieldset').forEach(e => e.remove());
                   return k.innerText.includes(c); }""", arg=comment, timeout=20_000)

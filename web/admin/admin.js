@@ -74,7 +74,7 @@ const T = {
     r_start: "Start", r_duration: "Duur", r_task: "Taak", r_result: "Resultaat", r_found: "Te doen", r_new: "Gedaan", r_error: "Opmerking",
     all_tasks: "Alle", sub_log: "Logboek robot", del: "Verwijderen", del_confirm: "Deze regel uit het logboek verwijderen?", del_all: "Alles verwijderen",
     del_all_confirm: (n, task) => `${n} regels${task ? ` van "${task}"` : ""} uit het logboek verwijderen?`, t_azure: "Azure start", t_container: "container", t_ready: s => `klaar om te lezen na ${s} s`, t_login: "aanmelden", t_browser: "browser starten", t_reused: "sessie hergebruikt", t_new: "opnieuw aangemeld", t_list: "lijst", t_contact: (n, sec) => `${n} contact${n > 1 ? "en" : ""} à ${sec} s`, task_nieuwe_reservaties: "Nieuwe reservaties", task_contactgegevens_nalezen: "Reservaties bijwerken", task_overschrijving_booking: "Overschrijvingen", task_lighthouse_bijwerken: "Pincode en status in Lighthouse", task_meldingen: "Meldingen per mail", task_onderhoud: "Gasten synchroniseren", task_berichten: "Berichten", task_bewaking: "Bewaking", task_robot: "Run",
-    ok: "ok", fail: "fout", busy: "De robot is bezig...", scheduled: "Draait ook automatisch op schema.",
+    ok: "ok", fail: "fout", busy: "De robot is bezig...", live_now: "nu bezig", live_since: s => `sinds ${s} s`, live_quiet: s => `geen teken van leven sinds ${s} s`, live_run: "run gestart om", scheduled: "Draait ook automatisch op schema.",
     not_installed: "De robot is in deze omgeving nog niet geïnstalleerd.", no_runs: "Nog geen afgeronde run",
     load_error: "Fout bij laden",
     exec_title: "Runs volgens Azure", exec_end: "Einde", exec_status: "Status", exec_name: "Naam",
@@ -151,7 +151,7 @@ const T = {
     r_start: "Start", r_duration: "Duration", r_task: "Task", r_result: "Result", r_found: "To do", r_new: "Done", r_error: "Note",
     all_tasks: "All", sub_log: "Robot log", del: "Delete", del_confirm: "Delete this line from the log?", del_all: "Delete all",
     del_all_confirm: (n, task) => `Delete ${n} lines${task ? ` of "${task}"` : ""} from the log?`, t_azure: "Azure start", t_container: "container", t_ready: s => `ready to read after ${s} s`, t_login: "login", t_browser: "start browser", t_reused: "session reused", t_new: "logged in again", t_list: "list", t_contact: (n, sec) => `${n} contact${n > 1 ? "s" : ""} × ${sec} s`, task_nieuwe_reservaties: "New reservations", task_contactgegevens_nalezen: "Update reservations", task_overschrijving_booking: "Bank transfers", task_lighthouse_bijwerken: "PIN and status in Lighthouse", task_meldingen: "Mail notifications", task_onderhoud: "Synchronize guests", task_berichten: "Messages", task_bewaking: "Monitoring", task_robot: "Run",
-    ok: "ok", fail: "failed", busy: "The robot is running...", scheduled: "Also runs automatically on a schedule.",
+    ok: "ok", fail: "failed", busy: "The robot is running...", live_now: "running now", live_since: s => `for ${s} s`, live_quiet: s => `no sign of life for ${s} s`, live_run: "run started at", scheduled: "Also runs automatically on a schedule.",
     not_installed: "The robot is not installed in this environment yet.", no_runs: "No finished run yet",
     load_error: "Loading failed",
     exec_title: "Runs according to Azure", exec_end: "End", exec_status: "Status", exec_name: "Name",
@@ -743,7 +743,8 @@ async function loadRuns() {
   if (since && waitTries++ > 60) delete $("#run").dataset.waiting;
   renderRuns(runsData);
   clearTimeout(timer);
-  if (runsData.running || $("#run").dataset.waiting) timer = setTimeout(loadRuns, 5000);
+  // Tijdens een run elke 3 seconden verversen, zodat je de voortgang ziet
+  if (runsData.running || runsData.progress || $("#run").dataset.waiting) timer = setTimeout(loadRuns, 3000);
 }
 
 // Gemeten duur per onderdeel onder de totale duur, bv. "aanmelden 25 s, lijst 6 s, 2 contacten à 9 s"
@@ -817,7 +818,15 @@ function renderRuns(d) {
   sel.value = tasks.includes(chosen) ? chosen : "";
   const shown = d.runs.filter(x => !sel.value || x.task === sel.value);
   const execStart = Object.fromEntries((d.executions || []).map(e => [e.name, e.start]));
-  $("#runs").innerHTML = shown.map(x => {
+  // Live regel bovenaan: welke taak de robot nu doet en hoe ver hij staat (core/progress.py)
+  const p = d.progress, now = Date.now();
+  const age = p ? Math.round((now - new Date(p.updated)) / 1000) : null;
+  const live = p && (busy || age < 180) ? `<tr class="live"><td>${stamp(p.task_started)}</td>
+      <td>${Math.round((now - new Date(p.task_started)) / 1000)} s<div class="muted">${t("live_run")} ${stamp(p.run_started)}</div></td>
+      <td><span class="task task-${esc(p.task)}">${esc(taskName(p.task))}</span></td>
+      <td class="${age > 120 ? "err" : "running"}"><span class="spin"></span>${t("live_now")}</td><td></td><td></td>
+      <td class="wrap">${esc(p.text)} <span class="${age > 120 ? "err" : "muted"}">(${age > 120 ? t("live_quiet")(age) : t("live_since")(age)})</span></td><td></td></tr>` : "";
+  $("#runs").innerHTML = live + shown.map(x => {
     const secs = (new Date(x.finished_at) - new Date(x.started_at)) / 1000;
     // Rood alleen bij een fout of overgeslagen rijen; anders is de opmerking gewoon informatie
     const problem = !x.ok || Number(x.skipped || 0) > 0;
@@ -826,7 +835,7 @@ function renderRuns(d) {
       <td class="${x.ok ? "ok" : "err"}">${x.ok ? t("ok") : t("fail")}</td>${NO_COUNTS.includes(x.task) ? "<td></td><td></td>" : `<td>${x.found}</td><td>${x.new}</td>`}
       <td class="wrap ${problem ? "err" : ""}">${esc(x.error)}</td>
       <td>${x.id ? `<button type="button" class="bin" data-id="${esc(x.id)}" title="${esc(t("del"))}" aria-label="${esc(t("del"))}">${BIN}</button>` : ""}</td></tr>`;
-  }).join("") || `<tr><td colspan="8" class="muted">${t("no_runs")}</td></tr>`;
+  }).join("") || (live ? "" : `<tr><td colspan="8" class="muted">${t("no_runs")}</td></tr>`);
   document.querySelectorAll("#runs .bin").forEach(b => b.onclick = () => deleteRun(b.dataset.id));
   // In de cloud: ook de runs volgens Azure (toont runs die mislukten voor ze iets konden noteren)
   // Runs volgens Azure: apart subtabblad, alleen in de cloud

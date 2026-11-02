@@ -234,3 +234,18 @@ def test_pms_sync_only_with_codes_and_allowed(monkeypatch):
     other = _r(None, 6)
     other.access_codes = [{"room": "16", "pin": "1"}]
     assert not pms_sync.candidate(other)  # echte gast in TST: alleen lezen
+
+
+def test_real_lighthouse_page_hamhuis():
+    """Echte gegevens van de detailpagina (02/11): NRF, BankTransfer 362 EUR, nog niets betaald."""
+    from hotel_checkin.pms.lighthouse_parse import parse_folio
+
+    folio = parse_folio("Extra toevoegen\n24 QUAD KAMER - 2e verdiep\n\tQuad kamer - NRF BREAKFAST EXCL\t\t€ 362,00\t\n\n"
+                        "\tCitytax\t3 x\t€ 12,60\t\n\nTotaal\t€ 374,60\t\nTransacties\nOpenstaand saldo van € 374,60\n")
+    rem = ("ResGlobalInfo\nBooking.com\nPrePay:payment_on_Booking.com (Payout type: BankTransfer)362 EUR** THIS RESERVATION "
+           "HAS BEEN PRE-PAID ** Annuleringsvoorwaarden : De gast betaalt de totaalprijs van de reservering als hij/zij "
+           "annuleert op elk moment. Payments by Booking.com Already collected by Booking.com: 362.00 EUR")
+    r = _r(rem, 52, None)
+    r.folio, r.open_amount = folio["lines"], folio["open"]
+    assert booking_payout.amount_for(r) == 362.0 and booking_payout.check(r, 362.0) is None
+    assert booking_payout.due(r, date(2026, 11, 2))

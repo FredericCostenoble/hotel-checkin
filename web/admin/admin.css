@@ -274,3 +274,10 @@ td .small { font-size: 12px; }
 .switches .sw { font-size: 12px; padding: 2px 8px; border-radius: 10px; border: 1px solid var(--line); white-space: nowrap; }
 .switches .sw.on { background: #E8F5EC; color: #1E6B3A; border-color: #9FD3AE; }
 .switches .sw.off { background: #F1F2F5; color: #6B7280; }
+
+/* Live regel van de robot (bezig) */
+tr.live td { background: #F4F8FF; }
+td.running { color: #1F4E8C; white-space: nowrap; }
+.spin { display: inline-block; width: 10px; height: 10px; margin-right: 6px; border: 2px solid currentColor;
+        border-right-color: transparent; border-radius: 50%; animation: spin 0.8s linear infinite; vertical-align: -1px; }
+@keyframes spin { to { transform: rotate(360deg); } }

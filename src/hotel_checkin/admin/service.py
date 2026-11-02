@@ -108,7 +108,9 @@ def reservations(hotel_id: str) -> list[dict]:
 
 
 def runs(hotel_id: str) -> dict:
-    return {"running": _robot_state.get(hotel_id) == "bezig", "runs": [
+    from hotel_checkin.core import progress
+
+    return {"running": _robot_state.get(hotel_id) == "bezig", "progress": progress.current(hotel_id), "runs": [
         {k: e.get(k) for k in ("task", "started_at", "finished_at", "ok", "found", "new", "error", "skipped",
                                "process_started_at", "execution")}
         | {"timings": json.loads(e.get("timings") or "{}"), "id": e.get("RowKey")}
