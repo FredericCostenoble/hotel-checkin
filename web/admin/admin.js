@@ -74,7 +74,7 @@ const T = {
     r_start: "Start", r_duration: "Duur", r_task: "Taak", r_result: "Resultaat", r_found: "Te doen", r_new: "Gedaan", r_error: "Opmerking",
     all_tasks: "Alle", sub_log: "Logboek robot", del: "Verwijderen", del_confirm: "Deze regel uit het logboek verwijderen?", del_all: "Alles verwijderen",
     del_all_confirm: (n, task) => `${n} regels${task ? ` van "${task}"` : ""} uit het logboek verwijderen?`, t_azure: "Azure start", t_container: "container", t_ready: s => `klaar om te lezen na ${s} s`, t_login: "aanmelden", t_browser: "browser starten", t_reused: "sessie hergebruikt", t_new: "opnieuw aangemeld", t_list: "lijst", t_contact: (n, sec) => `${n} contact${n > 1 ? "en" : ""} à ${sec} s`, task_nieuwe_reservaties: "Nieuwe reservaties", task_contactgegevens_nalezen: "Reservaties bijwerken", task_overschrijving_booking: "Overschrijvingen", task_lighthouse_bijwerken: "Pincode en status in Lighthouse", task_meldingen: "Meldingen per mail", task_onderhoud: "Gasten synchroniseren", task_berichten: "Berichten", task_bewaking: "Bewaking", task_robot: "Run", task_ontbijt_labels: "Ontbijt labels", task_oude_boekingen: "Oudere boekingen", sw_not_built: "nog niet gebouwd",
-    ok: "ok", fail: "fout", partial: "deels", busy: "De robot is bezig...", live_now: "nu bezig", run_label: "Robotrun", run_tasks: n => `${n} ${n === 1 ? "taak" : "taken"}`, run_failed: n => `fout in ${n} ${n === 1 ? "taak" : "taken"}`, live_done: "afsluiten", live_since: s => `sinds ${s} s`, live_quiet: s => `geen teken van leven sinds ${s} s`, live_run: "run gestart om", scheduled: "Draait ook automatisch op schema.",
+    ok: "ok", fail: "fout", partial: "deels", busy: "De robot is bezig...", live_now: "nu bezig", run_open: "klik om de taken te tonen", run_close: "klik om te verbergen", run_label: "Robotrun", run_tasks: n => `${n} ${n === 1 ? "taak" : "taken"}`, run_failed: n => `fout in ${n} ${n === 1 ? "taak" : "taken"}`, live_done: "afsluiten", live_since: s => `sinds ${s} s`, live_quiet: s => `geen teken van leven sinds ${s} s`, live_run: "run gestart om", scheduled: "Draait ook automatisch op schema.",
     not_installed: "De robot is in deze omgeving nog niet geïnstalleerd.", no_runs: "Nog geen afgeronde run",
     load_error: "Fout bij laden",
     exec_title: "Runs volgens Azure", exec_end: "Einde", exec_status: "Status", exec_name: "Naam",
@@ -151,7 +151,7 @@ const T = {
     r_start: "Start", r_duration: "Duration", r_task: "Task", r_result: "Result", r_found: "To do", r_new: "Done", r_error: "Note",
     all_tasks: "All", sub_log: "Robot log", del: "Delete", del_confirm: "Delete this line from the log?", del_all: "Delete all",
     del_all_confirm: (n, task) => `Delete ${n} lines${task ? ` of "${task}"` : ""} from the log?`, t_azure: "Azure start", t_container: "container", t_ready: s => `ready to read after ${s} s`, t_login: "login", t_browser: "start browser", t_reused: "session reused", t_new: "logged in again", t_list: "list", t_contact: (n, sec) => `${n} contact${n > 1 ? "s" : ""} × ${sec} s`, task_nieuwe_reservaties: "New reservations", task_contactgegevens_nalezen: "Update reservations", task_overschrijving_booking: "Bank transfers", task_lighthouse_bijwerken: "PIN and status in Lighthouse", task_meldingen: "Mail notifications", task_onderhoud: "Synchronize guests", task_berichten: "Messages", task_bewaking: "Monitoring", task_robot: "Run", task_ontbijt_labels: "Breakfast labels", task_oude_boekingen: "Older bookings", sw_not_built: "not built yet",
-    ok: "ok", fail: "failed", partial: "partly", busy: "The robot is running...", live_now: "running now", run_label: "Robot run", run_tasks: n => `${n} ${n === 1 ? "task" : "tasks"}`, run_failed: n => `error in ${n} ${n === 1 ? "task" : "tasks"}`, live_done: "closing", live_since: s => `for ${s} s`, live_quiet: s => `no sign of life for ${s} s`, live_run: "run started at", scheduled: "Also runs automatically on a schedule.",
+    ok: "ok", fail: "failed", partial: "partly", busy: "The robot is running...", live_now: "running now", run_open: "click to show the tasks", run_close: "click to hide", run_label: "Robot run", run_tasks: n => `${n} ${n === 1 ? "task" : "tasks"}`, run_failed: n => `error in ${n} ${n === 1 ? "task" : "tasks"}`, live_done: "closing", live_since: s => `for ${s} s`, live_quiet: s => `no sign of life for ${s} s`, live_run: "run started at", scheduled: "Also runs automatically on a schedule.",
     not_installed: "The robot is not installed in this environment yet.", no_runs: "No finished run yet",
     load_error: "Loading failed",
     exec_title: "Runs according to Azure", exec_end: "End", exec_status: "Status", exec_name: "Name",
@@ -165,6 +165,7 @@ const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "
 const day = iso => iso ? new Date(iso + (iso.length === 10 ? "T00:00" : "")).toLocaleDateString(locale(), { day: "2-digit", month: "2-digit", year: "2-digit" }) : "";
 const stamp = iso => iso ? new Date(iso).toLocaleString(locale(), { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) : "";
 let rows = [], runsData = null, timer = null, waitTries = 0;
+const runOpen = {};  // robotlog: welke runs zelf open- of dichtgeklapt werden (blijft zo bij het verversen)
 const TASKS = ["nieuwe_reservaties", "contactgegevens_nalezen", "overschrijving_booking", "lighthouse_bijwerken", "ontbijt_labels", "meldingen", "onderhoud", "berichten"];
 // Taken zonder Te doen/Gedaan (alleen een notitie, bv. de bewaking: welke mail verstuurd werd)
 const NO_COUNTS = ["bewaking", "onderhoud", "robot"];  // onderhoud: de aantallen staan in de notitie
@@ -863,6 +864,8 @@ function renderRuns(d) {
       <td><span class="task task-${esc(q.task)}">${esc(taskName(q.task))}</span></td>
       <td class="${!q.done && age > 120 ? "err" : "running"}">${q.done ? "" : '<span class="spin"></span>'}${t(q.done ? "live_done" : "live_now")}</td><td></td><td></td>
       <td class="wrap">${esc(q.text)} ${q.done ? "" : `<span class="${age > 120 ? "err" : "muted"}">(${age > 120 ? t("live_quiet", age) : t("live_since", age)})</span>`}</td><td></td></tr>`;
+  // Inklapbaar per run: standaard alleen de lopende of de laatste run open; wat je zelf open- of dichtklapt, blijft zo
+  const firstRun = ordered.find(g => g.exec || g.live);
   const html = ordered.map(g => {
     const single = !g.exec && !g.live;
     if (single) return g.rows.map(x => rowHtml(x, 0, false)).join("");
@@ -876,15 +879,25 @@ function renderRuns(d) {
     const running = g.live && !g.live.done;
     const state = running ? `<span class="spin"></span>${t("live_now")}` : (failed ? t("run_failed", failed) : (partials ? t("partial") : t("ok")));
     const tasks = rows.filter(x => x.task !== "robot").map(x => taskName(x.task));
-    const head = `<tr class="run-head"><td>${stamp(new Date(t0).toISOString())}</td><td>${Math.round((t1 - t0) / 1000)} s${rows[0] ? startText(rows[0], execStart) : ""}</td>
+    const rk = g.exec || "live";
+    const open = rk in runOpen ? runOpen[rk] : g === firstRun;
+    const head = `<tr class="run-head" data-toggle="${esc(rk)}" title="${esc(t(open ? "run_close" : "run_open"))}"><td><span class="caret-run">${open ? "\u25BE" : "\u25B8"}</span> ${stamp(new Date(t0).toISOString())}</td><td>${Math.round((t1 - t0) / 1000)} s${rows[0] ? startText(rows[0], execStart) : ""}</td>
       <td><span class="task task-robot">${t("run_label")}</span></td>
       <td class="${running ? "running" : (failed ? "err" : (partials ? "warn" : "ok"))}">${state}</td><td></td><td></td>
       <td class="wrap muted">${esc(tasks.length ? t("run_tasks", tasks.length) + ": " + tasks.join(", ") : (rows[0] && rows[0].error) || "")}</td><td></td></tr>`;
     const body = rows.filter(x => !(rows.length === 1 && x.task === "robot")).map(x => rowHtml(x, t0, true)).join("");
-    return head + body + (g.live ? liveHtml(g.live, t0) : "");
+    const inner = (body + (g.live ? liveHtml(g.live, t0) : ""))
+      .replaceAll('<tr class="run-step', `<tr data-run="${esc(rk)}"${open ? "" : " hidden"} class="run-step`);
+    return head + inner;
   }).join("");
   $("#runs").innerHTML = html || `<tr><td colspan="8" class="muted">${t("no_runs")}</td></tr>`;
   document.querySelectorAll("#runs .bin").forEach(b => b.onclick = () => deleteRun(b.dataset.id));
+  document.querySelectorAll("#runs tr[data-toggle]").forEach(tr => tr.onclick = () => {
+    const k = tr.dataset.toggle, nowOpen = !tr.nextElementSibling || tr.nextElementSibling.hidden;
+    runOpen[k] = nowOpen;
+    document.querySelectorAll(`#runs tr[data-run="${CSS.escape(k)}"]`).forEach(r => { r.hidden = !nowOpen; });
+    tr.querySelector(".caret-run").textContent = nowOpen ? "\u25BE" : "\u25B8";
+  });
   // In de cloud: ook de runs volgens Azure (toont runs die mislukten voor ze iets konden noteren)
   // Runs volgens Azure: apart subtabblad, alleen in de cloud
   $("#sub-azure").hidden = !d.executions;

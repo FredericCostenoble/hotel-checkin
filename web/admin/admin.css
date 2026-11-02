@@ -291,3 +291,6 @@ tr.run-step td:first-child { padding-left: 22px; white-space: nowrap; }
 tr.run-step .rel { font-variant-numeric: tabular-nums; color: #3B4255; }
 td.warn, .wrap.warn { color: #A85C12; }
 .task-oude_boekingen { background: #EAF6FF; color: #12506E; }
+tr.run-head { cursor: pointer; }
+tr.run-head:hover td { background: #E7EBF4; }
+.caret-run { display: inline-block; width: 12px; color: #5C6478; }
