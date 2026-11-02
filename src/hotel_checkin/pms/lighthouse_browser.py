@@ -71,7 +71,9 @@ class LighthouseSession:
 
         t0 = time.monotonic()
         self._pw = sync_playwright().start()
-        self._browser = self._pw.chromium.launch(headless=self.headless)
+        # In een container is /dev/shm klein (64 MB): zonder deze vlag crasht het tabblad na veel pagina's
+        self._browser = self._pw.chromium.launch(headless=self.headless,
+                                                 args=["--disable-dev-shm-usage", "--disable-gpu"])
         state = str(self.state_file) if self.state_file.exists() else None
         self._context = self._browser.new_context(
             storage_state=state, locale="nl-BE", viewport={"width": 1600, "height": 1000}
@@ -177,9 +179,31 @@ class LighthouseSession:
                 page.keyboard.press("Escape")
             page.wait_for_timeout(500)
 
+    RECYCLE_AFTER = 40  # na zoveel pagina's een vers tabblad (geheugen blijft laag)
+
+    def _fresh_page(self) -> None:
+        """Nieuw tabblad in dezelfde sessie (cookies blijven): na een crash, of om de zoveel pagina's."""
+        old = self.page
+        self.page = self._context.new_page()
+        self._pages = 0
+        try:
+            old.close()
+        except Exception:  # noqa: BLE001 - al gecrasht of gesloten
+            pass
+
     def goto(self, path: str, ready: str | None = None, timeout: int = 20_000):
-        """Open een pagina en wacht tot ze geladen is (ready: zie _wait_loaded)."""
-        self.page.goto(self.base + path)
+        """Open een pagina en wacht tot ze geladen is (ready: zie _wait_loaded). Crasht het tabblad, dan
+        één keer opnieuw in een vers tabblad; om de RECYCLE_AFTER pagina's sowieso een vers tabblad."""
+        self._pages = getattr(self, "_pages", 0) + 1
+        if self._pages > self.RECYCLE_AFTER or self.page.is_closed():
+            self._fresh_page()
+        try:
+            self.page.goto(self.base + path)
+        except Exception as exc:
+            if "crash" not in str(exc).lower() and "closed" not in str(exc).lower():
+                raise
+            self._fresh_page()
+            self.page.goto(self.base + path)
         if self._on_login_page():
             self.login()
             self.page.goto(self.base + path)

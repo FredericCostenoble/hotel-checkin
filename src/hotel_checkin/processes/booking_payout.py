@@ -135,6 +135,9 @@ def handle(hotel_id: str, stored: Reservation, lh, today: date) -> tuple[str, st
     # Altijd de huidige toestand; contactgegevens zijn hier niet nodig (sneller, en geen wachttijd als ze
     # gemaskeerd blijven)
     r = lighthouse.get_reservation(hotel_id, stored.reservation_id, lh, contact=False)
+    if not r.remarks or r.open_amount is None:
+        # Pagina niet volledig gelezen: niet als "gast betaalt zelf" tellen, volgende run opnieuw
+        raise RuntimeError("opmerking of saldo niet gevonden op de pagina")
     r.guest.first_name = r.guest.first_name or stored.guest.first_name
     r.guest.last_name = r.guest.last_name or stored.guest.last_name
     # Opmerking, transacties en annuleerbaarheid bewaren: dan moet deze reservatie pas opnieuw gelezen

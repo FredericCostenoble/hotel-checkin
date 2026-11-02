@@ -138,7 +138,8 @@ def test_never_more_than_open_and_booking_amount_checked(monkeypatch):
     assert "open" in booking_payout.handle("lucca", stored, None, date(2026, 11, 2))[1]
     # saldo niet gelezen (transacties niet geladen): niets doen
     detail.open_amount = None
-    assert "niet gelezen" in booking_payout.handle("lucca", stored, None, date(2026, 11, 2))[1]
+    with pytest.raises(RuntimeError, match="niet gevonden"):  # pagina niet volledig gelezen: fout, later opnieuw
+        booking_payout.handle("lucca", stored, None, date(2026, 11, 2))
     # Booking.com vermeldt een ander geïnd bedrag dan de kamerprijs
     detail2 = _r(VCC + "\nAlready collected by Booking.com: 300.00 EUR", 5, True)
     monkeypatch.setattr(booking_payout.lighthouse, "get_reservation", lambda h, rid, lh, **k: detail2)
