@@ -27,9 +27,12 @@ def test_notice_starts_robot(monkeypatch, memory):
     monkeypatch.setattr(mail_trigger.mailbox, "list_messages", lambda h, since: [
         _mail("noreply@cubilis.com", "Cancelled reservation via Booking.com (12345678)"),
         _mail("someone@example.com", "Question about breakfast")])
+    moved = []
+    monkeypatch.setattr(mail_trigger.mailbox, "move_message", lambda h, mid, folder: moved.append(folder) or True)
     assert mail_trigger.run("lucca") == 1 and memory == [1]
     run = repo.robot_runs("lucca")[0]
     assert run["task"] == "meldingen" and "geannuleerd 12345678" in run["error"]
+    assert moved == ["Geannuleerde reservaties"] and "1 mail(s) naar de mappen verplaatst" in run["error"]
     assert repo.get_state("lucca", mail_trigger.STATE_KEY)  # leesgrens verzet
 
 

@@ -24,6 +24,11 @@ from hotel_checkin.pms.lighthouse_mail import parse_payment_mail
 
 TASK = "meldingen"
 PAYMENT_FOLDER = "Betaalverzoeken"
+# Verwerkte meldingen uit de inbox, per soort in een eigen map (onder de inbox)
+NOTICE_FOLDERS = {"new": "Nieuwe reservaties", "modified": "Gewijzigde reservaties",
+                  "cancelled": "Geannuleerde reservaties"}
+CLEANUP_KEY = "mail_cleanup_done"
+CLEANUP_DAYS = 90
 STATE_KEY = "mail_trigger_since"
 ERROR_LOG_MINUTES = 60  # een fout hoogstens eens per uur in het logboek (draait elke minuut)
 
@@ -43,7 +48,8 @@ def run(hotel_id: str) -> int:
         _log_error(hotel_id, started, f"Mailbox niet gelezen: {type(exc).__name__}: {str(exc)[:300]}")
         return 0
     _payment_links(hotel_id, messages)
-    notices = [n for m in messages if (n := parse_notice(m["sender"], m["subject"], m["text"]))]
+    found = [(m, n) for m in messages if (n := parse_notice(m["sender"], m["subject"], m["text"]))]
+    notices = [n for _, n in found]
     newest = max((m["received_at"] for m in messages), default=None)
     # Gewijzigd of geannuleerd: de lijst van nieuwe boekingen toont dat niet; de robot leest de
     # reservaties van die dagen opnieuw (ook als hij nu al bezig is: bij de volgende run)
@@ -67,10 +73,49 @@ def run(hotel_id: str) -> int:
     kinds = {"new": "nieuw", "modified": "gewijzigd", "cancelled": "geannuleerd"}
     note = ", ".join(f"{kinds.get(n.kind, n.kind)} {n.number or '?'}" for n in notices)
     note += ". Robot gestart." if started_robot else ". Robot NIET gestart."
+    if started_robot:  # verwerkt: uit de inbox, naar de map van die soort
+        moved = sum(mailbox.move_message(hotel_id, m["id"], NOTICE_FOLDERS.get(n.kind, "Meldingen"))
+                    for m, n in found)
+        note += (f" {moved} mail(s) naar de mappen verplaatst." if moved == len(found) else
+                 f" {len(found) - moved} mail(s) niet verplaatst (recht Mail.ReadWrite op de mailbox?).")
     guests.log_robot_run(hotel_id, TASK, started, started_robot, len(notices), 0, note)
     if started_robot and newest:
         guests.set_state(hotel_id, STATE_KEY, (newest + timedelta(seconds=1)).isoformat())
     return len(notices)
+
+
+def cleanup(hotel_id: str) -> None:
+    """Eenmalig: meldingen en betaalverzoeken die al in de inbox stonden (laatste CLEANUP_DAYS dagen) naar hun
+    map. Alleen mails die verwerkt zijn: van voor de leesgrens van de mailtrigger."""
+    if guests.get_state(hotel_id, CLEANUP_KEY):
+        return
+    boundary_text = guests.get_state(hotel_id, STATE_KEY)
+    if not boundary_text:
+        return
+    boundary = datetime.fromisoformat(boundary_text)
+    try:
+        messages = mailbox.list_messages(hotel_id, datetime.now(UTC) - timedelta(days=CLEANUP_DAYS), limit=2000)
+    except Exception as exc:  # noqa: BLE001
+        _log_error(hotel_id, datetime.now(UTC), f"Opruimen inbox: mailbox niet gelezen: {type(exc).__name__}")
+        return
+    moved = failed = 0
+    for m in messages:
+        if m["received_at"] >= boundary:
+            continue  # nog niet verwerkt: de mailtrigger doet het
+        n = parse_notice(m["sender"], m["subject"], m["text"])
+        folder = NOTICE_FOLDERS.get(n.kind, "Meldingen") if n else (
+            PAYMENT_FOLDER if parse_payment_mail(m["subject"], m["text"]) else None)
+        if not folder:
+            continue  # andere mail: blijft staan
+        if mailbox.move_message(hotel_id, m["id"], folder):
+            moved += 1
+        else:
+            failed += 1
+    guests.set_state(hotel_id, CLEANUP_KEY, datetime.now(UTC).isoformat())
+    guests.log_robot_run(hotel_id, TASK, datetime.now(UTC), not failed, moved + failed, moved,
+                         f"eenmalig de inbox opgeruimd: {moved} verwerkte meldingen en betaalverzoeken naar hun map"
+                         + (f", {failed} niet verplaatst (recht Mail.ReadWrite op de mailbox?)" if failed else ""),
+                         skipped=failed)
 
 
 def _payment_links(hotel_id: str, messages: list[dict]) -> int:

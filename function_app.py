@@ -234,6 +234,7 @@ def mail_trigger(timer: func.TimerRequest) -> None:
         try:
             if process.enabled(hotel_id):
                 process.run(hotel_id)
+                process.cleanup(hotel_id)  # eenmalig: oude verwerkte mails naar hun map
         except Exception:
             logging.exception("%s: mail_trigger mislukt", hotel_id)
 
