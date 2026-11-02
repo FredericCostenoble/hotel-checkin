@@ -113,6 +113,17 @@ def booking_prepay(remarks: str | None) -> float | None:
     return _amount(m.group(1)) if m else None
 
 
+def booking_collected(remarks: str | None) -> float | None:
+    """Bedrag dat Booking.com al geïnd heeft, uit de opmerking: 'Already collected by Booking.com: 362.00 EUR',
+    of het bedrag achter een ander uitbetalingstype ('Payout type: VirtualCreditCard)362 EUR').
+    Alleen om na te kijken. None = niet vermeld."""
+    text = remarks or ""
+    m = re.search(r"Already collected by Booking\.com:\s*([\d.,]+)\s*EUR", text, re.IGNORECASE)
+    if not m:
+        m = re.search(r"Payout type:\s*[^)]*\)\s*([\d.,]+)\s*EUR", text, re.IGNORECASE)
+    return _amount(m.group(1)) if m else None
+
+
 def free_cancel_days(remarks: str | None) -> int | None:
     """Tot hoeveel dagen voor aankomst de gast gratis kan annuleren, uit de annuleringsvoorwaarden
     van Booking.com ('De gast kan gratis annuleren tot 3 dagen voor aankomst'). 0 = nooit gratis

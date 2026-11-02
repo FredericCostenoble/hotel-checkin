@@ -33,7 +33,12 @@ from hotel_checkin.core import clock, safety, workflow
 from hotel_checkin.core.models import Channel, Reservation, ReservationStatus, SendResult
 from hotel_checkin.guests import repository as guests
 from hotel_checkin.pms import lighthouse
-from hotel_checkin.pms.lighthouse_parse import booking_prepay, free_cancel_days, rate_plans_from
+from hotel_checkin.pms.lighthouse_parse import (
+    booking_collected,
+    booking_prepay,
+    free_cancel_days,
+    rate_plans_from,
+)
 from hotel_checkin.processes.send_messages import switch
 
 TASK = "overschrijving_booking"
@@ -82,8 +87,8 @@ def already_registered(r: Reservation) -> bool:
 def candidate(r: Reservation, cfg: dict, today: date) -> bool:
     """Komt deze reservatie in aanmerking (op basis van wat bewaard is)? De detailpagina wordt daarna
     toch opnieuw gelezen."""
-    if r.status == ReservationStatus.CANCELLED or r.departure < today or r.payout_registered_at:
-        return False
+    if r.status == ReservationStatus.CANCELLED or r.arrival < today or r.payout_registered_at:
+        return False  # alleen toekomstige reservaties (aankomst vandaag of later)
     if not switch(r.hotel_id, "overschrijvingen"):
         return False
     if not (workflow.flow_for(r.hotel_id, r, cfg) == "booking" or is_test(r)):
@@ -94,7 +99,7 @@ def candidate(r: Reservation, cfg: dict, today: date) -> bool:
         return True  # nog nooit gelezen: één keer lezen (opmerking en annuleerbaarheid)
     if not paid_by_booking(r):
         return False  # de gast betaalt zelf: niets te doen
-    return r.non_refundable is True or r.arrival - timedelta(days=DAYS_BEFORE) <= today
+    return due(r, today)  # zelfde regel als vlak voor het registreren: anders bij elke run opnieuw lezen
 
 
 def due(r: Reservation, today: date) -> bool:
@@ -142,25 +147,52 @@ def handle(hotel_id: str, stored: Reservation, lh, today: date) -> str | None:
         stored.payout_registered_at = stored.payout_registered_at or datetime.now(UTC)
         guests.save_reservation(stored, fields=guests.PAYOUT_FIELDS)
         return None
-    price = room_price(r)
-    if price is None or abs(price - amount) > 0.01:
-        note = (f"Overschrijving Booking.com niet geregistreerd: bedrag in de opmerking {amount:.2f} EUR, "
-                f"kamerprijs in de folio {'onbekend' if price is None else f'{price:.2f} EUR'}. Nakijken in Lighthouse.")
+    problem = check(r, amount)
+    if problem:
+        note = f"Overschrijving Booking.com niet geregistreerd: {problem}. Nakijken in Lighthouse."
         already = [m for m in guests.messages_for(hotel_id, r.reservation_id)
                    if m["message_type"] == MESSAGE_TYPE and not m["ok"] and m.get("note") == note]
         if not already:  # één melding, niet bij elke run opnieuw
             _log(stored, False, note)
-        return f"{label}: bedrag klopt niet ({amount:.2f} tegenover {price})"
+        return f"{label}: niet geregistreerd ({problem})"
     if not safety.may_write_pms(hotel_id, r.guest.first_name, r.guest.last_name):
         return None
-    after = lighthouse.add_payment(hotel_id, r.reservation_id, "bank_transfer", amount, COMMENT, lh)
-    open_after = after.open_amount
+    after = lighthouse.add_payment(hotel_id, r.reservation_id, "bank_transfer", amount, COMMENT, lh,
+                                   min_open=amount)
+    # De betaling staat erbij (add_payment wacht daarop): onthouden, ook als het saldo hieronder niet klopt
     stored.payout_registered_at = datetime.now(UTC)
     guests.save_reservation(stored, fields=guests.PAYOUT_FIELDS)
+    open_after = after.open_amount
+    expected = round(r.open_amount - amount, 2)
     note = f"Overschrijving Booking.com {amount:.2f} EUR geregistreerd" + (
         f", nog open {open_after:.2f} EUR" if open_after is not None else "")
-    _log(stored, True, note)
+    if open_after is None or abs(open_after - expected) > 0.01:
+        note += f" (verwacht nog open {expected:.2f} EUR: nakijken in Lighthouse)"
+        _log(stored, False, note)
+    else:
+        _log(stored, True, note)
     return f"{label}: {note}"
+
+
+def check(r: Reservation, amount: float) -> str | None:
+    """Mag dit bedrag geregistreerd worden? None = ja, anders de reden (voor de melding).
+    - het bedrag = de kamerprijs in de folio (zonder toeristenbelasting en extra's);
+    - vermeldt Booking.com een geïnd bedrag, dan moet dat ook gelijk zijn;
+    - het openstaande saldo is gekend en minstens dat bedrag (anders is er al iets betaald, bv. de virtuele
+      kaart al aangerekend, of een vorige poging die toch gelukt is): nooit meer registreren dan wat open staat."""
+    price = room_price(r)
+    if price is None:
+        return f"bedrag {amount:.2f} EUR, kamerprijs in de folio onbekend"
+    if abs(price - amount) > 0.01:
+        return f"bedrag in de opmerking {amount:.2f} EUR, kamerprijs in de folio {price:.2f} EUR"
+    collected = booking_collected(r.remarks)
+    if collected is not None and abs(collected - amount) > 0.01:
+        return f"kamerprijs {amount:.2f} EUR, door Booking.com geïnd {collected:.2f} EUR"
+    if r.open_amount is None:
+        return "openstaand saldo niet gelezen"
+    if r.open_amount < amount - 0.01:
+        return f"nog maar {r.open_amount:.2f} EUR open, minder dan {amount:.2f} EUR (al iets betaald?)"
+    return None
 
 
 def run(hotel_id: str, lh, today: date | None = None, deadline: float | None = None) -> list[str]:

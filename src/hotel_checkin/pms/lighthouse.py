@@ -25,7 +25,13 @@ from datetime import datetime, timedelta
 
 from hotel_checkin.core.models import AccessCode, Guest, Reservation, ReservationStatus
 from hotel_checkin.pms.lighthouse_browser import LighthouseSession
-from hotel_checkin.pms.lighthouse_parse import TZ, parse_contact, parse_detail, parse_list_row
+from hotel_checkin.pms.lighthouse_parse import (
+    TZ,
+    parse_contact,
+    parse_detail,
+    parse_folio,
+    parse_list_row,
+)
 
 LIST_PATH = "/Customer/Reservations/List"  # standaard gesorteerd op boekdatum, nieuwste eerst
 _ROWS = "table.table-bordered > tbody > tr"
@@ -265,15 +271,21 @@ PAYMENT_METHODS = {"bank_transfer": "Overschrijving"}  # naam in de keuzelijst "
 
 
 def add_payment(hotel_id: str, reservation_id: str, method: str, amount: float, comment: str,
-                session: LighthouseSession) -> Reservation:
+                session: LighthouseSession, min_open: float | None = None) -> Reservation:
     """Een betaling toevoegen onder Transacties van de reservatie (veld Selecteer een betaalmethode,
     bedrag, opmerking, knop Toevoegen). Klikt verder nergens op. Geeft de reservatie terug zoals ze
     daarna op de detailpagina staat, zodat het proces kan nakijken of de betaling erbij staat.
 
-    Of dit mag (PRD of testgast) en wanneer, beslist het proces, niet dit blok."""
+    Of dit mag (PRD of testgast) en wanneer, beslist het proces, niet dit blok. Met min_open: vlak voor het
+    klikken nog eens nakijken dat minstens zoveel open staat (fout zonder iets te doen als dat niet zo is of
+    het saldo niet te lezen is), zodat twee runs na elkaar nooit dubbel betalen."""
     label = PAYMENT_METHODS[method]
     page = session.goto(DETAIL_PATH.format(id=reservation_id), ready=_TRANSACTIONS_LOADED, timeout=10_000)
     session.close_popups()
+    if min_open is not None:
+        open_now = parse_folio(page.evaluate(_DETAIL_JS).get("folio_text") or "")["open"]
+        if open_now is None or open_now < min_open - 0.01:
+            raise RuntimeError(f"openstaand saldo {open_now} lager dan {min_open:.2f}: niets toegevoegd")
     form = page.locator("fieldset:has(select[name=PaymentMethodID])").first
     form.locator("select[name=PaymentMethodID]").select_option(label=label)
     form.locator("input[name=Value]").fill(f"{amount:.2f}")

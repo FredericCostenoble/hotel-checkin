@@ -45,6 +45,7 @@ def _r(remarks, arrival_in, non_refundable=None, folio_room=362.0, last="Brand")
                     source="Booking.com", remarks=remarks, non_refundable=non_refundable)
     r.folio = [{"label": "Quad kamer - NRF BREAKFAST EXCL", "qty": None, "amount": folio_room},
                {"label": "Citytax", "qty": 3, "amount": 12.6}]
+    r.open_amount = round(folio_room + 12.6, 2)  # nog niets betaald
     return r
 
 
@@ -103,7 +104,8 @@ def test_registers_once_and_checks_amount(monkeypatch):
     detail = _r(NRF, 5, True)
     monkeypatch.setattr(booking_payout.lighthouse, "get_reservation", lambda h, rid, lh: detail)
 
-    def add(h, rid, method, amount, comment, lh):
+    def add(h, rid, method, amount, comment, lh, min_open=None):
+        assert min_open == amount  # vlak voor het klikken nog eens het saldo nakijken
         calls.append((method, amount))
         detail.transactions = ["Overschrijving", f"€ {amount}"]
         detail.open_amount = 12.6
@@ -118,10 +120,37 @@ def test_registers_once_and_checks_amount(monkeypatch):
     other = repo.save_reservation(_r(NRF, 6, True))
     detail2 = _r(NRF, 6, True, folio_room=300.0)
     monkeypatch.setattr(booking_payout.lighthouse, "get_reservation", lambda h, rid, lh: detail2)
-    assert "klopt niet" in booking_payout.handle("lucca", other, None, date(2026, 11, 2))
+    assert "niet geregistreerd" in booking_payout.handle("lucca", other, None, date(2026, 11, 2))
     booking_payout.handle("lucca", other, None, date(2026, 11, 2))
     assert len(calls) == 1
     assert len([m for m in repo.messages_for("lucca", other.reservation_id) if not m["ok"]]) == 1
+
+
+def test_never_more_than_open_and_booking_amount_checked(monkeypatch):
+    monkeypatch.setenv("APP_ENV", "prd")
+    calls = []
+    monkeypatch.setattr(booking_payout.lighthouse, "add_payment", lambda *a, **k: calls.append(a))
+    # virtuele kaart al aangerekend aan de balie (geen Overschrijving): nog maar de toeristenbelasting open
+    stored = repo.save_reservation(_r(VCC, 5, True))
+    detail = _r(VCC, 5, True)
+    detail.open_amount = 12.6
+    monkeypatch.setattr(booking_payout.lighthouse, "get_reservation", lambda h, rid, lh: detail)
+    assert "open" in booking_payout.handle("lucca", stored, None, date(2026, 11, 2))
+    # saldo niet gelezen (transacties niet geladen): niets doen
+    detail.open_amount = None
+    assert "niet gelezen" in booking_payout.handle("lucca", stored, None, date(2026, 11, 2))
+    # Booking.com vermeldt een ander geïnd bedrag dan de kamerprijs
+    detail2 = _r(VCC + "\nAlready collected by Booking.com: 300.00 EUR", 5, True)
+    monkeypatch.setattr(booking_payout.lighthouse, "get_reservation", lambda h, rid, lh: detail2)
+    assert "geïnd 300.00" in booking_payout.handle("lucca", stored, None, date(2026, 11, 2))
+    assert calls == []
+
+
+def test_only_future_reservations(monkeypatch):
+    cfg = __import__("hotel_checkin.core.workflow", fromlist=["config"]).config("lucca")
+    monkeypatch.setenv("APP_ENV", "prd")
+    assert not booking_payout.candidate(_r(NRF, -1, True), cfg, date(2026, 11, 2))  # al aangekomen
+    assert booking_payout.candidate(_r(NRF, 0, True), cfg, date(2026, 11, 2))  # komt vandaag
 
 
 def test_payment_mail_link_saved_and_moved(monkeypatch):
