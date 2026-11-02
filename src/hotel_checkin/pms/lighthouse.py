@@ -159,17 +159,28 @@ def _read_detail(session: LighthouseSession, hotel_id: str, reservation_id: str,
     # Klaar zodra de transacties ingevuld zijn (laden asynchroon); geen transactieblok: na 10 s verder
     page = session.goto(DETAIL_PATH.format(id=reservation_id), ready=_TRANSACTIONS_LOADED, timeout=10_000)
     session.close_popups()
-    toggle = page.locator(".js-masked-contact-toggle").first
-    if contact and toggle.count() and "*" in (page.locator('[data-field="email"]').first.inner_text() or "*"):
-        toggle.click()
-        try:
-            page.wait_for_function(
-                "() => !(document.querySelector('[data-field=\"email\"]')?.innerText || '').includes('*')",
-                timeout=8_000,
-            )
-        except Exception:  # noqa: BLE001 - blijft gemaskeerd (bv. geen e-mailadres): de rest van de pagina telt
-            logging.info("%s: contactgegevens bleven gemaskeerd bij %s", hotel_id, reservation_id)
-    return parse_detail(hotel_id, reservation_id, page.evaluate(_DETAIL_JS))
+    d = page.evaluate(_DETAIL_JS)
+    if contact and "*" in (d.get("email") or "") + (d.get("phone") or ""):
+        # Gemaskeerd: rechtstreeks opvragen wat het oog-icoon ophaalt (zelfde als manueel op het oogje
+        # klikken, maar zonder klik en zonder wachten tot het op het scherm staat)
+        found = _contact_request(session, reservation_id)
+        if found:
+            d["email"], d["phone"] = found["email"] or "", found["phone"] or ""
+        else:
+            logging.info("%s: contactgegevens niet opgehaald bij %s", hotel_id, reservation_id)
+    return parse_detail(hotel_id, reservation_id, d)
+
+
+def _contact_request(session: LighthouseSession, reservation_id: str) -> dict | None:
+    """E-mail en telefoon via de opvraging achter het oog-icoon. None als dat niet lukt."""
+    try:
+        resp = session.page.request.get(
+            session.base + CONTACT_PATH.format(id=reservation_id),
+            headers={"X-Requested-With": "XMLHttpRequest"},
+        )
+        return parse_contact(resp.text()) if resp.ok and "/Customer/" in resp.url else None
+    except Exception:  # noqa: BLE001
+        return None
 
 
 def get_reservation(hotel_id: str, reservation_id: str, session: LighthouseSession | None = None,
@@ -195,14 +206,7 @@ def get_contact(hotel_id: str, reservation_id: str, session: LighthouseSession |
     if session is None:
         with LighthouseSession(hotel_id) as lh:
             return get_contact(hotel_id, reservation_id, lh)
-    try:
-        resp = session.page.request.get(
-            session.base + CONTACT_PATH.format(id=reservation_id),
-            headers={"X-Requested-With": "XMLHttpRequest"},
-        )
-        found = parse_contact(resp.text()) if resp.ok and "/Customer/" in resp.url else None
-    except Exception:  # noqa: BLE001 - dan de volledige pagina
-        found = None
+    found = _contact_request(session, reservation_id)
     if found:
         return Guest(first_name="", last_name="", email=found["email"], phone=found["phone"], language="",
                      country=None)
