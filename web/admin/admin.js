@@ -1159,7 +1159,7 @@ const HS_TEXT = {
    ],
    "ontbijt.label_dagen": [
     "Label voor aankomsten binnen",
-    "Aantal dagen vooruit dat de robot het ontbijtlabel zet."
+    "Aantal dagen vooruit dat de robot het ontbijtlabel zet. 0 = alle toekomstige reservaties."
    ],
    "wifi.naam": [
     "Netwerk",
@@ -1390,7 +1390,7 @@ const HS_TEXT = {
    ],
    "ontbijt.label_dagen": [
     "Label for arrivals within",
-    "Number of days ahead for which the robot sets the breakfast label."
+    "Number of days ahead for which the robot sets the breakfast label. 0 = all future reservations."
    ],
    "wifi.naam": [
     "Network",

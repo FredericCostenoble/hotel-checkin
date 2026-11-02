@@ -74,3 +74,26 @@ def test_switch_off_does_nothing(monkeypatch):
     monkeypatch.delenv("LUCCA_SCHAKELAARS_ONTBIJT_LABELS")
     repo.save_reservation(_r("NRF BREAKFAST INCL"))
     assert bl.due("lucca", TODAY) == [] and bl.run("lucca", None, TODAY)["off"]
+
+
+def test_new_reservation_folio_read_once_then_label(monkeypatch):
+    """Nieuw, folio nog niet gekend: één keer lezen; ontbijt bijgeboekt voor alle personen en nachten: label."""
+    r = _r("STANDARD RATE BREAKFAST EXCL", arrival_in=200)  # ver in de toekomst: ook nagekeken
+    r.folio = []
+    repo.save_reservation(r)
+    assert bl.due("lucca", TODAY)  # folio onbekend: nakijken
+    detail = _r("STANDARD RATE BREAKFAST EXCL", folio=[{"label": "Ontbijt", "qty": 6, "amount": 120.0}],
+                arrival_in=200)
+    reads = []
+    monkeypatch.setattr(bl.lighthouse, "get_reservation",
+                        lambda h, rid, lh, contact=True: reads.append(rid) or detail)
+    monkeypatch.setattr(bl.lighthouse, "reservation_labels", lambda *a: {
+        "rooms": [{"accommodation_id": "a1", "unit": "", "labels": ["15912"]}], "names": {"ONTBIJT": "15912"}})
+    monkeypatch.setattr(bl.lighthouse, "add_label", lambda *a: None)
+    result = bl.run("lucca", None, TODAY)
+    assert reads == ["r1"] and result["read"] == 1 and len(result["labeled"]) == 1
+
+
+def test_no_breakfast_known_folio_not_read_again():
+    repo.save_reservation(_r("STANDARD RATE BREAKFAST EXCL"))  # folio gekend, geen ontbijt
+    assert bl.due("lucca", TODAY) == []
