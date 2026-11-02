@@ -151,5 +151,6 @@ def log_run(hotel_id: str, started: datetime, result: dict) -> None:
         parts.append(f"{result['no']} zonder ontbijt")
     if result["errors"]:
         parts.append(f"{len(result['errors'])} fout: " + "; ".join(result["errors"][:5]))
-    guests.log_robot_run(hotel_id, TASK, started, not result["errors"], result["checked"], len(result["labeled"]),
-                         ". ".join(parts))
+    errors = len(result["errors"])
+    guests.log_robot_run(hotel_id, TASK, started, not errors or result["checked"] > errors, result["checked"],
+                         len(result["labeled"]), ". ".join(parts), skipped=errors)

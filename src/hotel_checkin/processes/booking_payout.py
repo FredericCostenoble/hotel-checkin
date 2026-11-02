@@ -228,9 +228,10 @@ def log_run(hotel_id: str, started: datetime, result: dict) -> None:
     if result["left"]:
         parts.append(f"nog {result['left']} te lezen in een volgende run (tijd op)")
     # Te doen: reservaties die nagekeken moesten worden; gedaan: geregistreerde overschrijvingen
-    guests.log_robot_run(hotel_id, TASK, started, not c.get("error"), result["read"] + result["left"],
-                         c.get("registered", 0),
-                         ". ".join(parts))
+    # Resultaat: ok; deels (skipped > 0) als enkele reservaties een fout gaven; fout alleen als niets lukte
+    errors = c.get("error", 0)
+    guests.log_robot_run(hotel_id, TASK, started, not errors or result["read"] > errors,
+                         result["read"] + result["left"], c.get("registered", 0), ". ".join(parts), skipped=errors)
 
 
 def run(hotel_id: str, lh, today: date | None = None, deadline: float | None = None) -> dict:

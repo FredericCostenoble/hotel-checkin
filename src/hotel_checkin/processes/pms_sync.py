@@ -71,7 +71,8 @@ def log_run(hotel_id: str, started, checked: int, notes: list[str]) -> None:
     note = (f"{checked} reservaties met een code nagekeken. "
             + (f"{len(done)} bijgewerkt: " + "; ".join(done) if done else "niets te doen (alles stond al goed)")
             + (f". {len(errors)} fout: " + "; ".join(errors) if errors else ""))
-    guests.log_robot_run(hotel_id, TASK, started, not errors, checked, len(done), note)
+    guests.log_robot_run(hotel_id, TASK, started, not errors or checked > len(errors), checked, len(done), note,
+                         skipped=len(errors))
 
 
 def run(hotel_id: str, lh) -> list[str]:
