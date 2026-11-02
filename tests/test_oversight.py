@@ -38,7 +38,29 @@ def test_overview_once_in_the_morning(setup):
     assert not any("overzicht" in d for d in oversight.run("lucca", morning + timedelta(minutes=15)))  # niet twee keer
 
 
-def test_check_warns_once_for_missing_code_mail(setup):
+def _with(monkeypatch, **extra):
+    """Bewaking met extra instellingen (standaard: alleen het ochtendoverzicht)."""
+    base = oversight.settings
+    monkeypatch.setattr(oversight, "settings", lambda h: base(h) | extra)
+
+
+def test_only_morning_mail_by_default(setup):
+    evening = datetime(2026, 11, 3, 17, 5, tzinfo=oversight.clock.tz("lucca"))
+    repo.log_robot_run("lucca", "nieuwe_reservaties", datetime.now(UTC) - timedelta(hours=5), False, error="TimeoutError")
+    assert oversight.run("lucca", evening) == [] or all("overzicht" in d for d in oversight.run("lucca", evening))
+    assert not [m for m in setup if m[1].startswith("WAARSCHUWING")]  # geen controle- of robotmail
+
+
+def test_overview_tells_what_happened(setup):
+    repo.log_robot_run("lucca", "overschrijving_booking", datetime.now(UTC) - timedelta(hours=2), True, 5, 2, "x")
+    repo.log_robot_run("lucca", "ontbijt_labels", datetime.now(UTC) - timedelta(hours=2), True, 3, 1, "y", skipped=1)
+    lines = oversight.activity("lucca")
+    assert "2 overschrijving(en) geregistreerd" in lines[0] and "1 ontbijtlabel(s) gezet" in lines[0]
+    assert "Wat misliep (1)" in lines[1]
+
+
+def test_check_warns_once_for_missing_code_mail(setup, monkeypatch):
+    _with(monkeypatch, checks=["17:00", "20:00"])
     today = date(2026, 11, 3)
     r = _res("c", today, paid=True)
     r.access_codes = [{"room": "16", "pin": "2242"}]
@@ -53,7 +75,8 @@ def test_check_warns_once_for_missing_code_mail(setup):
     assert oversight.row("lucca", repo.get_reservation("lucca", "c"), today, today, True, True)["problemen"] == []
 
 
-def test_robot_down_alert(setup):
+def test_robot_down_alert(setup, monkeypatch):
+    _with(monkeypatch, robot_alert=True)
     repo.log_robot_run("lucca", "nieuwe_reservaties", datetime.now(UTC) - timedelta(hours=5), True)
     repo.log_robot_run("lucca", "nieuwe_reservaties", datetime.now(UTC) - timedelta(hours=1), False, error="TimeoutError")
     assert "lukte niet meer" in oversight.robot_problem("lucca", 3)

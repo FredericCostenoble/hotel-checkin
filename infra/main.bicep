@@ -45,6 +45,10 @@ param alertExtraEmails string = ''
 @description('Waarschuwingen van Azure als de Function App niets meer doet of steeds faalt. Standaard alleen in PRD (kost een klein bedrag per regel per maand).')
 param appAlerts bool = env == 'prd'
 
+// Waarschuwingsmails van Azure staan uit: één mail per dag, 's ochtends, uit de bewaking (processes/oversight.py).
+// Aan te zetten met alertMails=true als het ooit nodig is.
+param alertMails bool = false
+
 @description('Maandbudget in de munt van het abonnement. 0 = geen budgetmelding.')
 param budgetAmount int = 0
 
@@ -521,7 +525,7 @@ resource alertSilent 'Microsoft.Insights/scheduledQueryRules@2023-03-15-preview'
     displayName: 'Check-in ${env}: Function App doet niets meer'
     description: 'In 30 minuten geen enkele run van mail_trigger of send_messages. Berichten en meldingen worden niet meer verwerkt.'
     severity: 1
-    enabled: true
+    enabled: alertMails
     scopes: [appi.id]
     evaluationFrequency: 'PT15M'
     windowSize: 'PT30M'
@@ -549,7 +553,7 @@ resource alertFailing 'Microsoft.Insights/scheduledQueryRules@2023-03-15-preview
     displayName: 'Check-in ${env}: Function App faalt herhaaldelijk'
     description: 'Meer dan 10 mislukte runs of aanvragen in een uur (bv. geen toegang meer tot de opslag of Key Vault).'
     severity: 2
-    enabled: true
+    enabled: alertMails
     scopes: [appi.id]
     evaluationFrequency: 'PT1H'
     windowSize: 'PT1H'

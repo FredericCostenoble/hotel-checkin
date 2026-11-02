@@ -35,7 +35,8 @@ def settings(hotel_id: str) -> dict:
     cfg = load_hotel(hotel_id).get("bewaking", {})
     to = cfg.get("email") or []
     return {"email": [to] if isinstance(to, str) else list(to), "overview": cfg.get("overzicht_uur", "07:30"),
-            "checks": list(cfg.get("controle_uren", ["17:00", "20:00"])), "robot_hours": float(cfg.get("robot_max_uren", 3))}
+            "checks": list(cfg.get("controle_uren", [])), "robot_hours": float(cfg.get("robot_max_uren", 3)),
+            "robot_alert": str(cfg.get("robot_waarschuwing", False)).lower() in ("true", "1", "ja")}
 
 
 def _state(hotel_id: str) -> dict:
@@ -135,6 +136,39 @@ def _send(hotel_id: str, subject: str, html_body: str) -> bool:
     return ok
 
 
+# Taken uit het robotlog die in het overzicht komen, met hun naam voor de lezer
+_TASK_NAMES = {"overschrijving_booking": "Overschrijvingen", "ontbijt_labels": "Ontbijt labels",
+               "lighthouse_bijwerken": "Pincode en status in Lighthouse", "nieuwe_reservaties": "Nieuwe reservaties",
+               "oude_boekingen": "Oudere boekingen", "berichten": "Berichten", "meldingen": "Meldingen per mail"}
+
+
+def activity(hotel_id: str, hours: int = 24) -> list[str]:
+    """Wat er de voorbije 24 uur gebeurde, in een paar regels: wat gedaan werd en wat misliep."""
+    since = datetime.now(UTC) - timedelta(hours=hours)
+    runs = [r for r in guests.robot_runs(hotel_id, limit=500) if datetime.fromisoformat(r["started_at"]) >= since]
+    if not runs:
+        return [f"De voorbije {hours} uur deed de robot niets (geen runs)."]
+    robot_runs = len({r.get("execution") for r in runs if r.get("execution")})
+    done = {}
+    problems = []
+    for r in runs:
+        task = r.get("task")
+        if task in _TASK_NAMES and int(r.get("new") or 0):
+            done[task] = done.get(task, 0) + int(r["new"])
+        if not r.get("ok") or int(r.get("skipped") or 0):
+            problems.append(f"{_TASK_NAMES.get(task, task)}: {(r.get('error') or '')[:200]}")
+    words = {"overschrijving_booking": "overschrijving(en) geregistreerd", "ontbijt_labels": "ontbijtlabel(s) gezet",
+             "lighthouse_bijwerken": "reservatie(s) bijgewerkt in Lighthouse", "nieuwe_reservaties": "nieuwe reservatie(s)",
+             "oude_boekingen": "oudere boeking(en) binnengehaald", "berichten": "bericht(en) verstuurd",
+             "meldingen": "betaallink(s) bewaard"}
+    out = [f"De voorbije {hours} uur: {robot_runs} robotrun(s)"
+           + (", " + ", ".join(f"{n} {words[t]}" for t, n in done.items()) if done else ", niets geregistreerd of gezet")
+           + "."]
+    if problems:
+        out.append(f"Wat misliep ({len(problems)}): " + " | ".join(problems[:8]) + ". Details in de monitor (Robot).")
+    return out
+
+
 def send_overview(hotel_id: str, today: date) -> bool:
     a = arrivals(hotel_id, today)
     problems = sum(1 for rows in a.values() for x in rows if x["problemen"])
@@ -144,6 +178,7 @@ def send_overview(hotel_id: str, today: date) -> bool:
     rp = robot_problem(hotel_id, settings(hotel_id)["robot_hours"])
     if rp:
         intro.append(f"Let op: {rp}.")
+    intro += activity(hotel_id)
     body = report.overview_html(f"{name}: aankomsten {today:%d/%m}", intro,
                                 [(f"Vandaag {today:%d/%m}", a["today"]), (f"Morgen {today + timedelta(days=1):%d/%m}", a["tomorrow"])],
                                 _monitor_url())
@@ -195,7 +230,7 @@ def run(hotel_id: str, now: datetime | None = None) -> list[str]:
             day[f"check_{at}"] = True
             done.append(f"controle van {at}: " + (f"{n} aankomst(en) met een probleem, mail verstuurd naar {', '.join(cfg['email'])}"
                                                   if n else "alle aankomsten in orde, geen mail nodig"))
-    rp = robot_problem(hotel_id, cfg["robot_hours"])
+    rp = robot_problem(hotel_id, cfg["robot_hours"]) if cfg["robot_alert"] else None
     last = st.get("robot_alert_at")
     if rp and (not last or datetime.fromisoformat(last) < datetime.now(UTC) - timedelta(hours=3)):
         name = load_hotel(hotel_id)["hotel"]["naam"]

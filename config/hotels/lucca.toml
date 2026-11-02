@@ -96,10 +96,13 @@ mail_trigger = true
 [bewaking]
 # Dagelijks overzicht van de aankomsten en waarschuwingen als er iets misloopt (processes/oversight.py).
 # Buiten PRD gaan deze mails naar het testadres ([test] email).
-email = ["management@hotellucca.be"]          # overzicht en waarschuwingen
-overzicht_uur = "07:30"                       # dagelijks overzicht van vandaag en morgen
-controle_uren = ["17:00", "20:00"]            # nakijken of elke aankomst alles heeft; waarschuwing als iets ontbreekt
-robot_max_uren = 3                            # waarschuwing als de robot zo lang niet meer gelukt is
+# Eén mail per dag, 's ochtends: aankomsten van vandaag en morgen, wat er de voorbije 24 uur gebeurde, en wat
+# misliep (ook de robot). Geen andere mails, tenzij controle_uren of robot_waarschuwing aangezet worden.
+email = ["management@hotellucca.be"]          # het dagelijkse overzicht
+overzicht_uur = "07:30"                       # dagelijks overzicht
+controle_uren = []                            # extra controles op die uren met een mail als iets ontbreekt (uit)
+robot_max_uren = 3                            # in het overzicht: robot zo lang niet gelukt = probleem
+robot_waarschuwing = false                    # aparte mail als de robot stilvalt (uit: staat in het overzicht)
 
 [messaging]
 # Berichten uit de workflow (processes/send_messages.py). Aan of uit met de hoofdschakelaar [schakelaars] berichten.
