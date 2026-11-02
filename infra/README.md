@@ -43,8 +43,10 @@ resources in de resource group (de tabellen eerst overzetten).
   TST mag de productie van Lighthouse lezen, maar schrijft er nooit in.
 - PRD: `APP_ENV=prd`, berichten naar de echte gasten, formulier op `checkin.hotellucca.be`.
 - De Lighthouse-robot (Container Apps Job, `job-checkin-robot-<env>`) leest Lighthouse alleen.
-  Schema: PRD elk kwartier, TST elk uur (UTC, parameter `robotSchedule`). Daarnaast de knop
-  "Robot nu draaien" op de monitor. Hij leest alles sinds de nieuwste opgeslagen boeking.
+  Normaal start de meldingsmail van Lighthouse de robot meteen (processes/mail_trigger.py). Het schema is
+  alleen een vangnet: elk uur (UTC, parameter `robotSchedule`, GitHub-variabele ROBOT_SCHEDULE; standaard
+  `0 * * * *`), met per hotel [robot] check_minutes = 60. Daarnaast de knop "Robot nu draaien" op de monitor.
+  Hij leest alles sinds de nieuwste opgeslagen boeking.
 
 ## Eenmalige opzet
 
