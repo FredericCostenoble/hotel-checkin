@@ -166,8 +166,8 @@ const day = iso => iso ? new Date(iso + (iso.length === 10 ? "T00:00" : "")).toL
 const stamp = iso => iso ? new Date(iso).toLocaleString(locale(), { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) : "";
 let rows = [], runsData = null, timer = null, waitTries = 0;
 const TASKS = ["nieuwe_reservaties", "contactgegevens_nalezen", "overschrijving_booking", "lighthouse_bijwerken", "meldingen", "onderhoud", "berichten"];
-// Taken zonder aantallen (alleen een notitie, bv. de bewaking: welke mail verstuurd werd)
-const NO_COUNTS = ["bewaking"];
+// Taken zonder Te doen/Gedaan (alleen een notitie, bv. de bewaking: welke mail verstuurd werd)
+const NO_COUNTS = ["bewaking", "onderhoud"];  // onderhoud: de aantallen staan in de notitie
 const taskName = k => T[lang]["task_" + k] || k;
 let taskFilter = "";
 try { taskFilter = localStorage.getItem("monitor-task") || ""; } catch (e) { /* geen opslag */ }
