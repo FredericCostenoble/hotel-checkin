@@ -34,7 +34,7 @@ param adminClientId string = ''
 @description('Waar budgetmeldingen naartoe gaan.')
 param alertEmail string
 
-@description('Extra adressen voor de waarschuwingen van Azure (komma ertussen), naast alertEmail. GitHub-variabele ALERT_EXTRA_EMAILS.')
+@description('Adressen van de hotels voor de waarschuwingen van Azure (komma ertussen), naast alertEmail: [bewaking] email uit elk hotelbestand (infra/alert_emails.py, bij de uitrol).')
 param alertExtraEmails string = ''
 
 @description('Waarschuwingen van Azure als de Function App niets meer doet of steeds faalt. Standaard alleen in PRD (kost een klein bedrag per regel per maand).')
@@ -486,6 +486,7 @@ output keyVaultName string = kv.name
 output storageAccountName string = st.name
 
 // ---------------------------------------------------------------- waarschuwingen van Azure
+// Platform gedeeld door alle hotels: naar de beheerder (alertEmail) en naar elk hotel ([bewaking] email).
 // Los van onze eigen code (processes/oversight.py): ook als de Function App helemaal stilvalt of steeds
 // faalt, komt er een mail. Timers draaien elke minuut (mail_trigger) en elke 2 minuten (send_messages);
 // aanvragen worden in Application Insights niet uitgedund (host.json, excludedTypes Request).

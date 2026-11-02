@@ -82,6 +82,8 @@ jobs:
         id: infra
         run: |
           STARTER=$(az role definition list --name "Container Apps Jobs Operator" --query "[0].name" -o tsv || true)
+          # Waarschuwingen van Azure (platform valt stil): ook naar het adres van elk hotel ([bewaking] email)
+          HOTEL_ALERTS=$(python3 infra/alert_emails.py config/hotels)
           out=$(az deployment group create \
             --resource-group "rg-checkin-$ENV_NAME" \
             --name "checkin-${{ github.run_number }}" \
@@ -99,7 +101,7 @@ jobs:
                          budgetAmount="${{ vars.BUDGET_AMOUNT || '0' }}" \
                          robotSchedule="${{ vars.ROBOT_SCHEDULE || '0 * * * *' }}" \
                          alertEmail="${{ vars.ALERT_EMAIL }}" \
-                         alertExtraEmails="${{ vars.ALERT_EXTRA_EMAILS }}" \
+                         alertExtraEmails="$HOTEL_ALERTS" \
                          kvAdminObjectId="${{ vars.KV_ADMIN_OBJECT_ID }}" \
             --query properties.outputs -o json)
           echo "func=$(jq -r .functionAppName.value <<<"$out")" >> "$GITHUB_OUTPUT"
