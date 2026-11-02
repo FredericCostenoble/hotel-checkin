@@ -2,7 +2,7 @@
 deuren, periode, pincode; opruimen bij een fout en na vertrek."""
 
 import json
-from datetime import date, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 
 import httpx
 import pytest
@@ -22,6 +22,9 @@ def setup(monkeypatch):
     salto._tokens.clear()
     monkeypatch.setattr(salto, "hotel_setting", lambda h, n, default=None, required=True, shared=True: SETTINGS.get(n, default))
     monkeypatch.setattr(salto, "load_hotel", lambda h: {"salto": {"common_lock_ids": ["front"], "rooms": {"12": "lock12", "14": ["lock14a", "lock14b"]}}}, raising=False)
+    # Standaard: Salto kiest de code en geen telling van gebruikers (apart getest hieronder)
+    monkeypatch.setattr(grant_access, "pin_length", lambda h: None)
+    monkeypatch.setattr(grant_access, "max_users", lambda h: None)
 
 
 def fake_api(calls, fail_on=None):
@@ -263,3 +266,41 @@ def test_no_code_when_room_not_paid(monkeypatch):
     assert not send_messages.code_ready("lucca", r, []) and made == []
     r.open_amount = 8.4  # alleen de toeristenbelasting staat nog open
     assert send_messages.code_ready("lucca", r, []) and made == ["r1"]
+
+
+def test_own_four_digit_pin_rules():
+    """Eigen pincode van 4 cijfers: niet 1111, geen reeks 1234 of 4321, niet een code die in gebruik is."""
+    for _ in range(300):
+        pin = grant_access.new_pin(4, {"2242"})
+        assert len(pin) == 4 and pin.isdigit() and pin != "2242"
+        assert len(set(pin)) > 1 and pin not in ("0123", "1234", "2345", "3456", "4567", "5678", "6789",
+                                                "9876", "8765", "7654", "6543", "5432", "4321", "3210")
+
+
+def test_custom_pin_used_when_length_set(monkeypatch):
+    monkeypatch.setattr(grant_access, "pin_length", lambda h: 4)
+    got = []
+    for name in ("create_user", "create_access_group", "add_locks", "add_time_schedule", "add_user_to_group"):
+        monkeypatch.setattr(grant_access.salto, name, lambda *a, _n=name, **k: f"{_n}-id")
+    monkeypatch.setattr(grant_access.salto, "set_custom_pin", lambda h, u, pin, expiry: got.append(pin) or pin)
+    monkeypatch.setattr(grant_access.salto, "create_pin", lambda *a, **k: pytest.fail("Salto mocht de code niet kiezen"))
+    codes = grant_access.grant("lucca", _res())
+    assert len(got) == 1 and codes[0]["pin"] == got[0] and len(got[0]) == 4
+
+
+def test_user_limit_stops_new_codes(monkeypatch):
+    monkeypatch.setattr(grant_access, "max_users", lambda h: 150)
+    monkeypatch.setattr(grant_access.salto, "count_users", lambda h: 145)
+    monkeypatch.setattr(grant_access, "_grant_room", lambda *a: pytest.fail("geen nieuwe gebruiker"))
+    with pytest.raises(salto.SaltoError, match="maximum"):
+        grant_access.grant("lucca", _res())
+
+
+def test_users_removed_right_after_checkout(monkeypatch):
+
+    removed = []
+    monkeypatch.setattr(grant_access, "_cleanup", lambda h, u, g: removed.append(g))
+    r = _res()
+    r.access_codes = [{"room": "12", "pin": "1", "user_id": "u", "group_id": "g"}]
+    r.access_valid_until = datetime.now(UTC) - timedelta(minutes=5)
+    assert grant_access.follow_changes("lucca", r) == ["vertrokken: toegang ingetrokken"] and removed == ["g"]

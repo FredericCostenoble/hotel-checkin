@@ -115,6 +115,31 @@ def create_pin(hotel_id: str, user_id: str, expiry: datetime | None, client: htt
     return str(pin)
 
 
+def set_custom_pin(hotel_id: str, user_id: str, pin: str, expiry: datetime | None,
+                   client: httpx.Client | None = None) -> str:
+    """Eigen gekozen pincode (4 tot 6 cijfers) voor deze gebruiker; alleen met Custom Pin (Salto KS Pro).
+    Veldnaam "pin" volgens de specificatie van PUT .../pin/custom; na te kijken met de developer kit."""
+    body = {"pin": pin, "expiry_date": expiry.strftime("%Y-%m-%dT%H:%M:%S") if expiry else None}
+    _call(hotel_id, "PUT", f"/v1.2/sites/{{site}}/users/{user_id}/pin/custom", body, client)
+    return pin
+
+
+def count_users(hotel_id: str, client: httpx.Client | None = None) -> int:
+    """Aantal gebruikers op de site (ook personeel). Het abonnement heeft een maximum (bv. 150)."""
+    data = _call(hotel_id, "GET", "/v1.2/sites/{site}/users?$count=true&$top=1", client=client) or {}
+    if isinstance(data, dict):
+        for key in ("count", "@odata.count", "total", "total_count"):
+            if isinstance(data.get(key), int):
+                return data[key]
+        items = data.get("items") or data.get("value") or []
+    else:
+        items = data
+    # Geen totaal in het antwoord: alles ophalen en tellen
+    data = _call(hotel_id, "GET", "/v1.2/sites/{site}/users", client=client) or {}
+    items = data.get("items", data.get("value", [])) if isinstance(data, dict) else data
+    return len(items)
+
+
 def delete_user(hotel_id: str, user_id: str, client: httpx.Client | None = None) -> None:
     _call(hotel_id, "DELETE", f"/v1.2/sites/{{site}}/users/{user_id}", client=client)
 

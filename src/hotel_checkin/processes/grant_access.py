@@ -37,6 +37,51 @@ def _name(r: Reservation, room: str) -> str:
     return f"{r.booking_number or r.reservation_id[:8]} {room} {r.arrival:%d/%m}"
 
 
+def pin_length(hotel_id: str) -> int | None:
+    """[salto] pin_lengte (bv. 4): eigen gekozen pincodes van die lengte (vraagt Custom Pin, Salto KS Pro).
+    Leeg = Salto kiest de code zelf."""
+    value = str(load_hotel(hotel_id).get("salto", {}).get("pin_lengte") or "").strip()
+    return int(value) if value.isdigit() else None
+
+
+def new_pin(length: int, taken: set[str]) -> str:
+    """Willekeurige pincode van `length` cijfers: niet allemaal hetzelfde (1111), geen reeks (1234, 4321),
+    en niet gelijk aan een code die nu in gebruik is."""
+    import secrets
+    from itertools import pairwise
+
+    while True:
+        pin = "".join(secrets.choice("0123456789") for _ in range(length))
+        steps = {int(b) - int(a) for a, b in pairwise(pin)}
+        if len(set(pin)) == 1 or steps in ({1}, {-1}) or pin in taken:
+            continue
+        return pin
+
+
+def _pins_in_use(hotel_id: str) -> set[str]:
+    return {c["pin"] for x in guests.list_reservations(hotel_id) for c in x.access_codes if c.get("pin")}
+
+
+def max_users(hotel_id: str) -> int | None:
+    """[salto] max_gebruikers: maximum van het abonnement (bv. 150), met personeel erbij. Leeg = niet nakijken."""
+    value = str(load_hotel(hotel_id).get("salto", {}).get("max_gebruikers") or "").strip()
+    return int(value) if value.isdigit() else None
+
+
+USERS_MARGIN = 5  # zoveel plaatsen vrij houden (bv. voor een nieuwe medewerker)
+
+
+def check_user_limit(hotel_id: str, needed: int) -> None:
+    """Fout (geen nieuwe gebruiker) als het maximum van het abonnement in zicht komt."""
+    limit = max_users(hotel_id)
+    if not limit:
+        return
+    count = salto.count_users(hotel_id)
+    if count + needed > limit - USERS_MARGIN:
+        raise salto.SaltoError(f"Bijna het maximum aantal gebruikers bij Salto ({count} van {limit}): "
+                               "geen nieuwe code gemaakt. Oude gebruikers opruimen of abonnement uitbreiden.")
+
+
 def _grant_room(hotel_id: str, r: Reservation, room: str, valid_from: datetime, valid_until: datetime) -> dict:
     """Gebruiker, access group (voordeur en deze kamer), schema en pincode voor één kamer.
     Lukt een stap niet, dan wordt wat al aangemaakt was weer verwijderd."""
@@ -48,7 +93,18 @@ def _grant_room(hotel_id: str, r: Reservation, room: str, valid_from: datetime, 
         salto.add_locks(hotel_id, group_id, lock_ids)
         schedule_id = salto.add_time_schedule(hotel_id, group_id, valid_from, valid_until)
         salto.add_user_to_group(hotel_id, group_id, user_id)
-        pin = salto.create_pin(hotel_id, user_id, expiry=valid_until)
+        length = pin_length(hotel_id)
+        if length:
+            taken = _pins_in_use(hotel_id)
+            for attempt in range(5):  # Salto weigert een code die al gebruikt wordt: een andere proberen
+                try:
+                    pin = salto.set_custom_pin(hotel_id, user_id, new_pin(length, taken), expiry=valid_until)
+                    break
+                except salto.SaltoError:
+                    if attempt == 4:
+                        raise
+        else:
+            pin = salto.create_pin(hotel_id, user_id, expiry=valid_until)
     except Exception:
         _cleanup(hotel_id, user_id, group_id)
         raise
@@ -66,6 +122,7 @@ def grant(hotel_id: str, r: Reservation) -> list[dict]:
     if not todo:
         return r.access_codes
     valid_from, valid_until = period(hotel_id, r)
+    check_user_limit(hotel_id, len(todo))
     try:
         for room in todo:
             r.access_codes.append(_grant_room(hotel_id, r, room, valid_from, valid_until))
@@ -87,6 +144,11 @@ def follow_changes(hotel_id: str, r: Reservation) -> list[str]:
     if r.status == ReservationStatus.CANCELLED:
         revoke(hotel_id, r)
         return ["geannuleerd: toegang ingetrokken"]
+    if r.access_valid_until and datetime.now(r.access_valid_until.tzinfo) > r.access_valid_until:
+        # Vertrokken (check-out voorbij): gebruikers meteen weg, niet wachten op het dagelijkse onderhoud.
+        # Zo blijft het aantal gebruikers bij Salto klein (maximum van het abonnement).
+        revoke(hotel_id, r)
+        return ["vertrokken: toegang ingetrokken"]
     changes: list[str] = []
     wanted = list(r.rooms)
     if wanted:

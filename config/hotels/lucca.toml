@@ -112,6 +112,8 @@ api_url = "https://clp-accept-user.my-clay.com"
 site_id = ""                       # TODO: id van de site (na levering van de kit); leeg = Salto uit
 guest_role_id = ""                 # leeg = de rol met "guest" of "gast" in de naam
 common_lock_ids = []               # TODO: voordeur en andere gemeenschappelijke deuren (python -m hotel_checkin.access.salto lucca)
+pin_lengte = 4                     # eigen gekozen pincodes van 4 cijfers (vraagt Custom Pin, Salto KS Pro); leeg = Salto kiest
+max_gebruikers = 150               # maximum gebruikers van het abonnement (personeel inbegrepen); leeg = niet nakijken
 
 [salto.rooms]
 # kamernummer = id van de deur bij Salto (of een lijst van ids), bv. "12" = "a1b2c3..."
