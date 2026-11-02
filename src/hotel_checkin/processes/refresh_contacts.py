@@ -135,6 +135,8 @@ def run(hotel_id: str) -> int:
                     payout_started = datetime.now(UTC)
                     booking_payout.log_run(hotel_id, payout_started,
                                            booking_payout.run(hotel_id, lh, today, deadline))
+                else:
+                    booking_payout.log_idle(hotel_id, today)
                 started = datetime.now(UTC)  # "Reservaties bijwerken" begint pas hier
                 from hotel_checkin.core import progress
 
@@ -188,6 +190,8 @@ def run(hotel_id: str) -> int:
                 if breakfasts and time.monotonic() <= deadline:
                     breakfast_started = datetime.now(UTC)
                     breakfast_labels.log_run(hotel_id, breakfast_started, breakfast_labels.run(hotel_id, lh, today))
+                elif not breakfasts:
+                    breakfast_labels.log_idle(hotel_id, today)
     except Exception as exc:
         guests.log_robot_run(hotel_id, TASK, started, False, len(todo), 0, f"{type(exc).__name__}: {exc}", timings=timings)
         raise

@@ -6,7 +6,7 @@ import pytest
 
 from hotel_checkin.core.models import Guest, Reservation
 from hotel_checkin.guests import repository as repo
-from hotel_checkin.processes import new_reservation
+from hotel_checkin.processes import new_reservation, refresh_contacts
 
 
 @pytest.fixture(autouse=True)
@@ -107,12 +107,11 @@ def test_backfill_missing_contact(monkeypatch):
     later.reservation_id = "u3"
     later.arrival, later.departure = date(2099, 1, 1), date(2099, 1, 2)
     repo.save_reservation(later)  # verre aankomst: nog niet nodig
-    from hotel_checkin.processes import refresh_contacts
 
     refresh_contacts.run("lucca")
     assert repo.get_reservation("lucca", "u2").guest.email == "jan@example.com"
     assert repo.get_reservation("lucca", "u3").guest.email is None
-    assert "1 contactgegevens gevonden" in repo.robot_runs("lucca")[0]["error"]
+    assert "1 contactgegevens gevonden" in repo.robot_runs("lucca", task=refresh_contacts.TASK)[0]["error"]
 
 
 def test_contact_without_email_read_again(monkeypatch):
@@ -123,14 +122,13 @@ def test_contact_without_email_read_again(monkeypatch):
     stored.arrival, stored.departure = soon, soon + timedelta(days=1)
     repo.save_reservation(stored)
     calls = []
-    from hotel_checkin.processes import refresh_contacts
 
     monkeypatch.setattr(refresh_contacts.lighthouse, "get_contact",
                         lambda h, rid, lh=None: calls.append(rid) or Guest("", "", phone="+32470000000"))
     refresh_contacts.run("lucca")
     refresh_contacts.run("lucca")
     assert calls == ["u1", "u1"]  # e-mail kan later nog in Lighthouse komen
-    note = repo.robot_runs("lucca")[0]["error"]
+    note = repo.robot_runs("lucca", task=refresh_contacts.TASK)[0]["error"]
     assert "1 nog zonder e-mail in Lighthouse" in note and "gevonden" not in note
 
 
@@ -148,7 +146,6 @@ def test_robot_refresh_every_two_hours(monkeypatch):
     from datetime import timedelta
 
     from hotel_checkin import robot
-    from hotel_checkin.processes import refresh_contacts
 
     assert robot._refresh_due("lucca")
     now = datetime.now(UTC)

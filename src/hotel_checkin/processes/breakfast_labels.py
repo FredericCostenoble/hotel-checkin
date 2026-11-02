@@ -137,6 +137,31 @@ def run(hotel_id: str, lh, today: date | None = None) -> dict:
     return result
 
 
+def log_idle(hotel_id: str, today: date | None = None) -> None:
+    """Regel in het robotlog als er nu geen label te zetten is, met waarom."""
+    from hotel_checkin.processes.send_messages import switch
+
+    started = datetime.now(UTC)
+    if not switch(hotel_id, "ontbijt_labels"):
+        note = "schakelaar Ontbijt labels staat uit: niets gedaan"
+    else:
+        today = today or clock.today(hotel_id)
+        horizon = days_ahead(hotel_id)
+        near = [r for r in guests.list_reservations(hotel_id)
+                if r.status != ReservationStatus.CANCELLED and r.departure > today
+                and r.arrival <= today + timedelta(days=horizon)]
+        labeled = [r for r in near if r.breakfast_labeled_at]
+        checks = [(r, *breakfast(r)) for r in near if not r.breakfast_labeled_at]
+        partial = [f"{r.booking_number or ''}: {why}" for r, yes, why in checks if not yes and why.startswith("maar ")]
+        parts = [f"niets te doen nu: {len(near)} reservaties met aankomst binnen {horizon} dagen of nu in het hotel",
+                 f"{len(labeled)} met label {label_name(hotel_id)}",
+                 f"{len(checks) - len(partial)} zonder ontbijt"]
+        if partial:
+            parts.append(f"{len(partial)} met te weinig ontbijten in de folio: " + "; ".join(partial[:5]))
+        note = ", ".join(parts)
+    guests.log_robot_run(hotel_id, TASK, started, True, 0, 0, note)
+
+
 def log_run(hotel_id: str, started: datetime, result: dict) -> None:
     """Eigen regel in het robotlog: te doen = nagekeken, gedaan = label gezet; de notitie zegt waarom."""
     if result["off"]:

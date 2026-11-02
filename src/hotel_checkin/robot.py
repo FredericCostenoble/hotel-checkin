@@ -174,12 +174,31 @@ def _refresh_due(hotel_id: str) -> bool:
     if breakfast_labels.due(hotel_id, today):
         return True  # label ONTBIJT te zetten
     hours = float(hotel_setting(hotel_id, "ROBOT_CONTACT_REFRESH_HOURS", default="2", shared=False))
-    runs = [r for r in guests.robot_runs(hotel_id, task=refresh_contacts.TASK) if r.get("ok")]
+    runs = [r for r in guests.robot_runs(hotel_id, task=refresh_contacts.TASK)
+            if r.get("ok") and not (r.get("error") or "").startswith(IDLE_PREFIX)]  # alleen echte nalezingen
     if not runs:
         return True
     last = datetime.fromisoformat(runs[0]["started_at"])
     # 5 minuten marge, zodat een run op schema net na het uur niet een beurt overslaat
     return datetime.now(UTC) - last >= timedelta(hours=hours) - timedelta(minutes=5)
+
+
+IDLE_PREFIX = "niet aan de beurt"  # regel van Reservaties bijwerken zonder nalezing (telt niet als vorige keer)
+
+
+def _refresh_idle_note(hotel_id: str) -> str:
+    """Waarom 'Reservaties bijwerken' in deze run niets doet: om de zoveel uur, en wanneer de volgende keer."""
+    from hotel_checkin.core import clock
+
+    hours = float(hotel_setting(hotel_id, "ROBOT_CONTACT_REFRESH_HOURS", default="2", shared=False))
+    runs = [r for r in guests.robot_runs(hotel_id, task=refresh_contacts.TASK)
+            if r.get("ok") and not (r.get("error") or "").startswith(IDLE_PREFIX)]
+    if not runs:
+        return f"{IDLE_PREFIX}: reservaties worden om de {hours:g} uur bijgewerkt"
+    last = datetime.fromisoformat(runs[0]["started_at"]).astimezone(clock.tz(hotel_id))
+    nxt = last + timedelta(hours=hours) - timedelta(minutes=5)
+    return (f"{IDLE_PREFIX}: om de {hours:g} uur (instelling Robot), vorige keer om {last:%H:%M}, "
+            f"volgende vanaf {nxt:%H:%M}. Niets te schrijven in Lighthouse")
 
 
 def main() -> int:
@@ -230,6 +249,14 @@ def main() -> int:
             if _refresh_due(hotel_id):
                 found = refresh_contacts.run(hotel_id)
                 logging.info("%s: %s e-mailadressen gevonden bij nalezen", hotel_id, found)
+            else:
+                # Niets te schrijven en nalezen nog niet aan de beurt: toch per taak zeggen waarom niets gebeurde
+                from hotel_checkin.processes import booking_payout, breakfast_labels
+
+                booking_payout.log_idle(hotel_id)
+                breakfast_labels.log_idle(hotel_id)
+                guests.log_robot_run(hotel_id, refresh_contacts.TASK, datetime.now(UTC), True, 0, 0,
+                                     _refresh_idle_note(hotel_id))
             # Log van de robot opruimen (standaard 30 dagen, instelling ROBOT_LOG_DAYS)
             progress.step(hotel_id, SKIP_TASK, "afronden: robotlog opruimen, sessie van Lighthouse bewaren", force=True)
             guests.prune_robot_runs(hotel_id, int(os.environ.get("ROBOT_LOG_DAYS") or 30))

@@ -206,6 +206,36 @@ def check(r: Reservation, amount: float) -> str | None:
 MAX_SECONDS = 4 * 60  # per run; de rest in een volgende run (wat gelezen is, wordt onthouden)
 
 
+def log_idle(hotel_id: str, today: date | None = None) -> None:
+    """Regel in het robotlog als er nu niets te doen is (Lighthouse wordt dan niet geopend), met waarom."""
+    from hotel_checkin.processes.send_messages import switch
+
+    started = datetime.now(UTC)
+    if not switch(hotel_id, "overschrijvingen"):
+        note = "schakelaar Overschrijvingen staat uit: niets gedaan"
+    else:
+        today = today or clock.today(hotel_id)
+        cfg = workflow.config(hotel_id)
+        future = [r for r in guests.list_reservations(hotel_id)
+                  if r.status != ReservationStatus.CANCELLED and r.arrival >= today
+                  and workflow.flow_for(hotel_id, r, cfg) == "booking"]
+        done = [r for r in future if r.payout_registered_at]
+        waiting = sorted((r for r in future if not r.payout_registered_at and r.remarks is not None
+                          and paid_by_booking(r) and not due(r, today)), key=lambda r: r.arrival)
+        flex_unread = [r for r in future if r.remarks is None and r.non_refundable is False]
+        own = [r for r in future if r.remarks is not None and not paid_by_booking(r)]
+        parts = [f"niets te doen nu: {len(future)} toekomstige reservaties van Booking.com",
+                 f"{len(done)} geregistreerd of al betaald"]
+        if waiting or flex_unread:
+            nxt = min([*waiting, *flex_unread], key=lambda r: r.arrival)
+            parts.append(f"{len(waiting) + len(flex_unread)} annuleerbaar, pas vanaf 2 dagen voor aankomst "
+                         f"(eerstvolgende {nxt.booking_number or ''} vanaf {nxt.arrival - timedelta(days=DAYS_BEFORE):%d/%m})")
+        if own:
+            parts.append(f"{len(own)} zonder betaling door Booking.com (gast betaalt zelf)")
+        note = ", ".join(parts)
+    guests.log_robot_run(hotel_id, TASK, started, True, 0, 0, note)
+
+
 def log_run(hotel_id: str, started: datetime, result: dict) -> None:
     """Eigen regel in het robotlog (taak "Overschrijvingen"). Gevonden = gelezen in Lighthouse,
     nieuw = geregistreerd. De notitie zegt per soort wat er gebeurde."""
