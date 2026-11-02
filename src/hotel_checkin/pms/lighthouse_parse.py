@@ -98,6 +98,35 @@ def non_refundable(plans: list[str]) -> bool | None:
     return all(_NON_REFUNDABLE.search(p) for p in plans)
 
 
+def _amount(text: str) -> float:
+    """Bedrag zoals Booking.com het schrijft: "362", "638,61", "1054,8" of "1.054,80"."""
+    t = text.strip()
+    if "," in t:
+        t = t.replace(".", "").replace(",", ".")
+    return float(t)
+
+
+def booking_prepay(remarks: str | None) -> float | None:
+    """Bedrag dat Booking.com zelf int en per overschrijving doorstort, uit de opmerking:
+    'PrePay:payment_on_Booking.com (Payout type: BankTransfer)362 EUR'. None = geen overschrijving."""
+    m = re.search(r"Payout type:\s*Bank\s*Transfer\)\s*([\d.,]+)\s*EUR", remarks or "", re.IGNORECASE)
+    return _amount(m.group(1)) if m else None
+
+
+def free_cancel_days(remarks: str | None) -> int | None:
+    """Tot hoeveel dagen voor aankomst de gast gratis kan annuleren, uit de annuleringsvoorwaarden
+    van Booking.com ('De gast kan gratis annuleren tot 3 dagen voor aankomst'). 0 = nooit gratis
+    ('... als hij/zij annuleert op elk moment'). None = niet gevonden."""
+    text = remarks or ""
+    m = re.search(r"gratis annuleren tot (\d+) dag(?:en)? voor aankomst|cancel free of charge until (\d+) days? before arrival",
+                  text, re.IGNORECASE)
+    if m:
+        return int(m.group(1) or m.group(2))
+    if re.search(r"annuleert op elk moment|cancels? at any time", text, re.IGNORECASE):
+        return 0
+    return None
+
+
 def rooms_from(text: str) -> list[str]:
     """Toegewezen kamers, bv. '30 DOUBLE ROOM' of '11 - SUPERIOR DOUBLE ROOM' geeft ['30'] en ['11']."""
     return re.findall(r"(?m)(?:^|\s)(\d{1,3})\s*-?\s*[A-Z]{3,}(?:\s+[A-Z]{2,})*\s*$", text)
@@ -186,6 +215,9 @@ def parse_detail(hotel_id: str, reservation_id: str, d: dict) -> Reservation:
     paid_text = d.get("paid_text", "").lower()
     folio = parse_folio(d.get("folio_text", "") or d.get("paid_text", ""))
     plans = rate_plans_from("\n".join(x["label"] for x in folio["lines"]))
+    # Annuleringsvoorwaarden uit de opmerking (Booking.com) gaan voor op de naam van het tarief
+    cancel_days = free_cancel_days(d.get("remarks"))
+    refund = (cancel_days == 0) if cancel_days is not None else non_refundable(plans)
     return Reservation(
         hotel_id=hotel_id,
         reservation_id=reservation_id.lower(),
@@ -205,8 +237,9 @@ def parse_detail(hotel_id: str, reservation_id: str, d: dict) -> Reservation:
         paid=True if "volledig betaald" in paid_text else (False if paid_text else None),
         open_amount=folio["open"],
         rate_plan=", ".join(plans) or None,
-        non_refundable=non_refundable(plans),
+        non_refundable=refund,
         remarks=(d.get("remarks") or "").strip() or None,
+        transactions=[t.strip() for t in d.get("transactions", []) if t and t.strip()],
         folio=folio["lines"],
         folio_total=folio["total"],
         booking_number=number.group(0) if number else None,

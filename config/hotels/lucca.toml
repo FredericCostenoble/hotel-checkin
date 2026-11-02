@@ -24,6 +24,9 @@ logo_url = "https://hotellucca.be/wp-content/uploads/2025/06/Logo-website-hotel-
 # Leeg = niets versturen.
 email = "frederic@hotellucca.be"
 phone = ""
+# Reservaties van deze gasten (achternaam) zijn testreservaties: de robot mag er ook in TST in Lighthouse
+# schrijven (bv. de overschrijving van Booking.com registreren). Echte reservaties leest TST alleen.
+guest_names = ["meersseman"]
 
 [reviews]
 # Link om een review te schrijven, in de bedankmail na het verblijf. Leeg = geen knop.

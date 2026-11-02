@@ -123,8 +123,14 @@ def mail_content(step: workflow.Step, r: Reservation) -> dict[str, bool]:
 
 
 def payments_ready(hotel_id: str) -> bool:
-    """Betaalknop pas als Saferpay ingesteld is (nog niet gebouwd)."""
-    return bool(hotel_setting(hotel_id, "SAFERPAY_TERMINAL_ID", required=False, shared=False))
+    """Betaalknop via de betaallink van Lighthouse (Saferpay achter Lighthouse). De knop en het
+    betaalverzoek komen per reservatie pas als er een link is (has_pay_link)."""
+    return True
+
+
+def has_pay_link(r: Reservation) -> bool:
+    """Betaallink van Lighthouse bij deze reservatie (uit het betaalverzoek in checkin@)."""
+    return bool(r.pay_link)
 
 
 def message_data(hotel_id: str, r: Reservation) -> dict[str, str]:
@@ -173,8 +179,10 @@ def status_url(hotel_id: str, reservation_id: str, message_id: str) -> str | Non
 
 def _rendered(hotel_id: str, step: workflow.Step, r: Reservation, cfg: dict):
     test = test_mode(hotel_id)
-    pay = step.pay if payments_ready(hotel_id) or test else "none"
+    pay = step.pay if has_pay_link(r) or test else "none"
     data = {**message_data(hotel_id, r), **pay_data(hotel_id, r, cfg)}
+    if r.pay_link:
+        data["betaal_link"] = r.pay_link
     notes = []
     if test and step.mail_content().get("code") and not salto_ready(hotel_id):
         data.setdefault("pincode", PLACEHOLDER_PIN)
@@ -185,11 +193,11 @@ def _rendered(hotel_id: str, step: workflow.Step, r: Reservation, cfg: dict):
             data["code_geldig_van"] = templates.format_moment(start, r.guest.language)
             data["code_geldig_tot"] = templates.format_moment(end, r.guest.language)
         notes.append("Salto is nog niet actief: XXXXXX is geen echte pincode.")
-    if test and pay != "none" and not payments_ready(hotel_id):
-        data["betaal_link"] = "#saferpay-nog-niet-actief"
+    if test and pay != "none" and not has_pay_link(r):
+        data["betaal_link"] = "#nog-geen-betaallink"
         if not data.get("openstaand_bedrag"):
             data["openstaand_bedrag"] = "€\u00a0XXX"
-        notes.append("Saferpay is nog niet actief: de betaalknop werkt nog niet.")
+        notes.append("Nog geen betaallink van Lighthouse voor deze reservatie: de betaalknop werkt nog niet.")
     if notes:
         data["_test_note"] = "TEST: " + " ".join(notes)
     return templates.render(hotel_id, step.step, r.guest.language, data, mail_content(step, r), pay), data
@@ -429,6 +437,8 @@ def run(hotel_id: str, today: date | None = None) -> int:
                 continue
             if workflow.is_replaced(step, r, today, sendable):
                 continue
+            if step.step == "payment_request" and not (has_pay_link(r) or test_mode(hotel_id)):
+                continue  # pas als Lighthouse de betaallink gaf (betaalverzoek naar checkin@)
             if step.step == "access_code" and not code_ready(hotel_id, r, failed):
                 continue
             # Vervangt deze stap eerdere (late boeking)? Dan ook hun inhoud, als die nog niet verstuurd zijn

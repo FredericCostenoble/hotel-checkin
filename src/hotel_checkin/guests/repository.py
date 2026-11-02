@@ -117,6 +117,9 @@ def _to_entity(r: Reservation) -> dict:
         "rate_plan": r.rate_plan or "",
         "non_refundable": "" if r.non_refundable is None else str(r.non_refundable),
         "remarks": (r.remarks or "")[:4000],
+        "transactions": json.dumps(r.transactions),
+        "payout_registered_at": r.payout_registered_at.isoformat() if r.payout_registered_at else "",
+        "pay_link": r.pay_link or "",
         "status": r.status.value,
         "source": r.source or "",
         "paid": "" if r.paid is None else str(r.paid),
@@ -170,6 +173,9 @@ def _from_entity(e: dict) -> Reservation:
         rate_plan=e.get("rate_plan") or None,
         non_refundable=None if e.get("non_refundable") in (None, "") else e["non_refundable"] == "True",
         remarks=e.get("remarks") or None,
+        transactions=json.loads(e["transactions"]) if e.get("transactions") else [],
+        payout_registered_at=datetime.fromisoformat(e["payout_registered_at"]) if e.get("payout_registered_at") else None,
+        pay_link=e.get("pay_link") or None,
         token=e["token"] or None,
         checkin_completed_at=(
             datetime.fromisoformat(e["checkin_completed_at"]) if e["checkin_completed_at"] else None
@@ -208,7 +214,9 @@ LIST_FIELDS = ("first_name", "last_name", "arrival", "departure", "rooms", "room
 CONTACT_FIELDS = ("email", "phone", "language", "country", "backup_email", "backup_phone", "relay_email",
                   "contact_checked_at")
 DETAIL_FIELDS = ("rooms", "arrival", "departure", "paid", "open_amount", "folio", "folio_total", "status",
-                 "pms_status", "email", "phone", "rate_plan", "non_refundable", "remarks")
+                 "pms_status", "email", "phone", "rate_plan", "non_refundable", "remarks", "transactions")
+PAYOUT_FIELDS = ("payout_registered_at",)
+PAY_LINK_FIELDS = ("pay_link",)
 FORM_FIELDS = ("email", "phone", "language", "backup_email", "backup_phone", "relay_email", "channels",
                "checkin_completed_at")
 SALTO_FIELDS = ("access_pin", "access_valid_from", "access_valid_until", "salto_user_id", "salto_group_id",

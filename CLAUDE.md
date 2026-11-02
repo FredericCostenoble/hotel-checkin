@@ -13,8 +13,11 @@
 - Technische namen (paden, bronnen, variabelen, berichttypes) in het Engels; teksten voor gasten
   en gebruikers in hun eigen taal.
 - Lighthouse: browserautomatisatie (Playwright) met een eigen robotgebruiker per hotel (zonder MFA).
-  Alleen lezen, behalve het wegschrijven van de code in PRD. Pagina's altijd volledig laten laden
-  (folio/transacties laden asynchroon). Nooit klikken op Bevestigen, Annuleren of Nieuwe reservering.
+  Alleen lezen, behalve in PRD: de code wegschrijven, de overschrijving van Booking.com registreren
+  (processes/booking_payout.py) en betaalverzoeken maken. Buiten PRD alleen schrijven op reservaties van een
+  testgast ([test] guest_names, Lucca: Seppe Meersseman; core/safety.py, may_write_pms).
+  Pagina's altijd volledig laten laden (folio/transacties laden asynchroon), en niet met vaste wachttijden
+  maar door na te gaan of wat nodig is er staat. Nooit klikken op Bevestigen, Annuleren of Nieuwe reservering.
 - Salto: rechtstreeks via KS Connect API. De code wordt daarna door het Lighthouse-blok
   in Lighthouse weggeschreven.
 - Hosting op Azure, zo goedkoop mogelijk (klein hotel). Secrets alleen in Key Vault.

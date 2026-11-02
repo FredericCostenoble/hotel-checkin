@@ -112,6 +112,13 @@ _DETAIL_JS = r"""() => {
     general: txt(widget('Algemene informatie')),
     rooms,
     paid_text: txt(trans && (trans.closest('.jarviswidget, .col-md-6, .col-lg-6') || trans.parentElement.parentElement)),
+    // Regels onder Transacties, zonder het formulier om een betaling toe te voegen (de keuzelijst
+    // bevat ook het woord "Overschrijving")
+    transactions: (() => { const t = [...document.querySelectorAll('*')].find(e => e.childElementCount === 0 && e.textContent.trim() === 'Transacties');
+                           if (!t) return [];
+                           const box = (t.closest('.jarviswidget, .col-md-6, .col-lg-6') || t.parentElement.parentElement).cloneNode(true);
+                           box.querySelectorAll('fieldset, form, select, input, button').forEach(e => e.remove());
+                           return txt(box).split('\n').map(s => s.trim()).filter(Boolean); })(),
     // Blok "Opmerkingen:" onder Algemene informatie (betaalinfo van Booking.com, wensen van de gast, ...)
     remarks: (() => { const h = [...document.querySelectorAll('*')].find(e => e.childElementCount === 0
                         && /^Opmerkingen:?$/.test(e.textContent.trim()));
@@ -191,6 +198,33 @@ def connect(hotel_id: str) -> LighthouseSession:
             detail = lighthouse.get_reservation("lucca", r.reservation_id, lh)
     """
     return LighthouseSession(hotel_id)
+
+
+PAYMENT_METHODS = {"bank_transfer": "Overschrijving"}  # naam in de keuzelijst "Selecteer een betaalmethode"
+
+
+def add_payment(hotel_id: str, reservation_id: str, method: str, amount: float, comment: str,
+                session: LighthouseSession) -> Reservation:
+    """Een betaling toevoegen onder Transacties van de reservatie (veld Selecteer een betaalmethode,
+    bedrag, opmerking, knop Toevoegen). Klikt verder nergens op. Geeft de reservatie terug zoals ze
+    daarna op de detailpagina staat, zodat het proces kan nakijken of de betaling erbij staat.
+
+    Of dit mag (PRD of testgast) en wanneer, beslist het proces, niet dit blok."""
+    label = PAYMENT_METHODS[method]
+    page = session.goto(DETAIL_PATH.format(id=reservation_id), ready=_TRANSACTIONS_LOADED, timeout=10_000)
+    session.close_popups()
+    form = page.locator("fieldset:has(select[name=PaymentMethodID])").first
+    form.locator("select[name=PaymentMethodID]").select_option(label=label)
+    form.locator("input[name=Value]").fill(f"{amount:.2f}")
+    form.locator("input[name=Comment]").fill(comment)
+    form.locator("button.AddPaymentBtn").click()
+    # Klaar zodra de opmerking bij de transacties staat (niet wachten tot het netwerk stil is)
+    page.wait_for_function(
+        """c => { const t = [...document.querySelectorAll('*')].find(e => e.childElementCount === 0 && e.textContent.trim() === 'Transacties');
+                  const b = t && (t.closest('.jarviswidget, .col-md-6, .col-lg-6') || t.parentElement.parentElement);
+                  if (!b) return false; const k = b.cloneNode(true); k.querySelectorAll('fieldset').forEach(e => e.remove());
+                  return k.innerText.includes(c); }""", arg=comment, timeout=20_000)
+    return _read_detail(session, hotel_id, reservation_id)
 
 
 def store_access_code(hotel_id: str, code: AccessCode) -> None:

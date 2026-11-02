@@ -23,6 +23,22 @@ def is_production() -> bool:
     return environment() == "prd"
 
 
+def is_test_guest(hotel_id: str, first_name: str | None, last_name: str | None) -> bool:
+    """Reservatie van een testgast van het hotel ([test] guest_names, bv. "meersseman"): daarop mag
+    de robot ook buiten PRD in Lighthouse schrijven, om te oefenen."""
+    from hotel_checkin.core.hotels import load_hotel
+
+    names = load_hotel(hotel_id).get("test", {}).get("guest_names") or []
+    full = f"{first_name or ''} {last_name or ''}".lower()
+    return any(n.strip().lower() and n.strip().lower() in full.split() for n in names)
+
+
+def may_write_pms(hotel_id: str, first_name: str | None, last_name: str | None) -> bool:
+    """Mag de robot iets in Lighthouse schrijven voor deze reservatie? In PRD wel, daarbuiten alleen
+    op reservaties van een testgast. TST mag de echte reservaties alleen lezen."""
+    return is_production() or is_test_guest(hotel_id, first_name, last_name)
+
+
 def test_address(kind: str, hotel_id: str | None = None) -> str | None:
     """Testadres (kind "email") of testnummer ("phone") uit de instellingen van het hotel, of None."""
     if not hotel_id:

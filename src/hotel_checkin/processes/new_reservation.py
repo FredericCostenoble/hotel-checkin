@@ -131,6 +131,9 @@ def _keep_known(reservation, existing) -> None:
     if not reservation.rate_plan:  # tarief uit de detailpagina niet wissen
         reservation.rate_plan, reservation.non_refundable = existing.rate_plan, existing.non_refundable
     reservation.remarks = existing.remarks
+    reservation.transactions = existing.transactions
+    reservation.payout_registered_at = existing.payout_registered_at
+    reservation.pay_link = existing.pay_link
     # Velden die de lijst niet kent (pincode, Salto, gastprofiel, folio): de bewaarde waarden
     for name in ("guest_id", "access_pin", "access_valid_from", "access_valid_until", "salto_user_id",
                  "salto_group_id", "salto_schedule_id", "access_rooms", "open_amount", "folio", "folio_total",

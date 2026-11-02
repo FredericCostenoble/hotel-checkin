@@ -29,6 +29,7 @@ class Channel(str, Enum):
     WHATSAPP = "whatsapp"
     SALTO = "salto"  # pincode maken (logboek van de code-mail)
     FORM = "form"  # de gast vulde het check-in-formulier in (logboek)
+    PMS = "lighthouse"  # iets in Lighthouse geschreven (logboek), bv. de overschrijving van Booking.com
 
 
 @dataclass
@@ -63,6 +64,9 @@ class Reservation:
     rate_plan: str | None = None  # tarief in Lighthouse, bv. "NRF BREAKFAST EXCL" of "STANDARD RATE"
     non_refundable: bool | None = None  # niet annuleerbaar (NRF); None = niet gekend
     remarks: str | None = None  # blok Opmerkingen op de detailpagina (bv. betaalinfo van het boekingskanaal)
+    transactions: list[str] = field(default_factory=list)  # regels onder Transacties (detailpagina), bv. "Overschrijving ... € 362,00"
+    payout_registered_at: datetime | None = None  # overschrijving van Booking.com in Lighthouse geregistreerd (processes/booking_payout.py)
+    pay_link: str | None = None  # betaallink van Lighthouse (mail "Betaal uw openstaande saldo" in checkin@)
     token: str | None = None  # geheime sleutel in de link naar het check-in-formulier
     checkin_completed_at: datetime | None = None  # wanneer de gast het formulier invulde
     booking_number: str | None = None  # reservatienummer in Lighthouse, bv. CPB-4276-002731

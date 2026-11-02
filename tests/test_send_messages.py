@@ -113,7 +113,7 @@ def test_code_mail_placeholder_in_test(setup):
     r = _res("ph1", arrival_in=2)
     step = next(s for s in workflow.steps("lucca", "website_unpaid") if s.step == "access_code")
     msg, _data = send_messages._rendered("lucca", step, r, workflow.config("lucca"))
-    assert "XXXXXX" in msg.html and "Salto is nog niet actief" in msg.html and "Saferpay" in msg.html
+    assert "XXXXXX" in msg.html and "Salto is nog niet actief" in msg.html and "Nog geen betaallink" in msg.html
 
 
 def test_booked_five_days_before_no_reminder(setup):

@@ -88,6 +88,7 @@ def _apply_detail(r, d) -> None:
     if d.rate_plan:  # tarief uit de folio; anders blijft dat uit de lijst
         r.rate_plan, r.non_refundable = d.rate_plan, d.non_refundable
     r.remarks = d.remarks if d.remarks is not None else r.remarks
+    r.transactions = d.transactions
     if not r.checkin_completed_at:
         r.guest.email = r.guest.email or d.guest.email
         r.guest.phone = r.guest.phone or d.guest.phone
@@ -100,13 +101,18 @@ def run(hotel_id: str) -> int:
     todo = due(hotel_id)
     arrivals = [r for r in arrivals_due(hotel_id, requested) if r.reservation_id not in {x.reservation_id for x in todo}]
     finished = True  # alles gelezen binnen de tijd (dan zijn de gevraagde dagen klaar)
+    from hotel_checkin.processes import booking_payout
+
+    cfg, today = workflow.config(hotel_id), clock.today(hotel_id)
+    payouts = [r for r in guests.list_reservations(hotel_id) if booking_payout.candidate(r, cfg, today)]
+    payout_notes: list[str] = []
     details_read = 0
     access_changes: list[str] = []
     stats = _ContactStats()
     skipped: list[str] = []
     timings: dict[str, float] = {}  # gemeten duur per onderdeel (seconden), voor de monitor
     try:
-        if todo or arrivals:
+        if todo or arrivals or payouts:
             t0 = time.monotonic()
             with lighthouse.connect(hotel_id) as lh:
                 timings["login"] = round(time.monotonic() - t0, 1)
@@ -151,6 +157,9 @@ def run(hotel_id: str) -> int:
                             continue
                         if changes:
                             access_changes.append(f"{reservation.booking_number}: {'; '.join(changes)}")
+                # Overschrijving van Booking.com registreren (PRD of testgast), zie booking_payout.py
+                if payouts and time.monotonic() <= deadline:
+                    payout_notes = booking_payout.run(hotel_id, lh, today)
     except Exception as exc:
         guests.log_robot_run(hotel_id, TASK, started, False, len(todo), 0, f"{type(exc).__name__}: {exc}", timings=timings)
         raise
@@ -163,6 +172,8 @@ def run(hotel_id: str) -> int:
         parts.append(f"{details_read} aankomsten en verblijven nagekeken (kamer, data, betaling)")
     if access_changes:
         parts.append("Salto aangepast: " + ", ".join(access_changes))
+    if payout_notes:
+        parts.append("Overschrijving Booking.com: " + "; ".join(payout_notes))
     if skipped:
         parts.append(f"{len(skipped)} niet gelezen: " + "; ".join(skipped[:5]))
     guests.log_robot_run(hotel_id, TASK, started, True, len(todo) + len(arrivals), stats.with_email, ". ".join(parts) or None,

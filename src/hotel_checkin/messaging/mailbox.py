@@ -1,6 +1,7 @@
-"""Bouwblok: mails lezen uit de mailbox van een hotel (Microsoft Graph). Alleen lezen.
+"""Bouwblok: mails lezen uit de mailbox van een hotel (Microsoft Graph), en een gelezen mail naar
+een map verplaatsen (bv. de betaalverzoeken van Lighthouse naar "Betaalverzoeken").
 
-Doet één ding: berichten ophalen (afzender, onderwerp, tijdstip, tekst). Wat ermee gebeurt
+Doet één ding: berichten ophalen (afzender, onderwerp, tijdstip, tekst) of verplaatsen. Wat ermee gebeurt
 (bv. een melding van Lighthouse/Cubilis herkennen) zit in een ander bouwblok; wanneer de robot
 start, beslist een proces.
 
@@ -8,6 +9,8 @@ Mailbox per hotel: config/hotels/<hotel_id>.toml, [verzending] mail_afzender (ch
 Rechten (Exchange RBAC for Applications, alleen voor die mailbox):
     New-ManagementRoleAssignment -App <client-id hotel-checkin> -Role "Application Mail.Read" `
       -CustomResourceScope "hotel-checkin-mailbox"
+Verplaatsen vraagt ook "Application Mail.ReadWrite" (zelfde commando, andere rol). Zonder dat recht
+blijft de mail gewoon in de inbox staan; de rest werkt.
 
 Verkennen in de codespace (schrijft naar mail-explore/, niet in git, gastgegevens gemaskeerd):
     python -m hotel_checkin.messaging.mailbox lucca --days 3
@@ -64,6 +67,42 @@ def list_messages(
             })
         url, params = data.get("@odata.nextLink"), None
     return out[:limit]
+
+
+_folders: dict[tuple[str, str], str] = {}  # (mailbox, mapnaam) -> id
+
+
+def _folder_id(http: httpx.Client, box: str, name: str, headers: dict) -> str:
+    """Id van de map onder de inbox met deze naam; bestaat ze nog niet, dan maken."""
+    key = (box, name)
+    if key in _folders:
+        return _folders[key]
+    base = f"{GRAPH_URL}/users/{box}/mailFolders/inbox/childFolders"
+    r = http.get(base, params={"$filter": f"displayName eq '{name}'"}, headers=headers)
+    r.raise_for_status()
+    found = r.json().get("value", [])
+    if found:
+        _folders[key] = found[0]["id"]
+    else:
+        r = http.post(base, json={"displayName": name}, headers=headers)
+        r.raise_for_status()
+        _folders[key] = r.json()["id"]
+    return _folders[key]
+
+
+def move_message(hotel_id: str, message_id: str, folder: str, client: httpx.Client | None = None) -> bool:
+    """Verplaats een mail naar een map onder de inbox. False als het niet lukt (bv. geen recht
+    Mail.ReadWrite): de mail blijft dan staan, er gaat niets verloren."""
+    http = client or clients.http()
+    box = mailbox_address(hotel_id)
+    headers = {"Authorization": f"Bearer {_get_token() if client is None else 'test'}"}
+    try:
+        target = _folder_id(http, box, folder, headers)
+        r = http.post(f"{GRAPH_URL}/users/{box}/messages/{message_id}/move", json={"destinationId": target},
+                      headers=headers)
+        return r.status_code in (200, 201)
+    except Exception:  # noqa: BLE001 - verplaatsen is netjes, niet nodig
+        return False
 
 
 # ---------------------------------------------------------------- verkennen (alleen lezen)
