@@ -1,0 +1,76 @@
+"""Label ONTBIJT op het planbord (processes/breakfast_labels.py)."""
+
+from datetime import date, timedelta
+
+import pytest
+
+from hotel_checkin.core.models import Guest, Reservation
+from hotel_checkin.guests import repository as repo
+from hotel_checkin.pms.lighthouse_parse import parse_planboard
+from hotel_checkin.processes import breakfast_labels as bl
+
+TODAY = date(2026, 11, 2)
+
+
+@pytest.fixture(autouse=True)
+def setup(monkeypatch):
+    repo.use_memory_store()
+    monkeypatch.setenv("APP_ENV", "prd")
+    monkeypatch.setenv("LUCCA_SCHAKELAARS_ONTBIJT_LABELS", "true")
+
+
+def _r(rate="STANDARD RATE BREAKFAST EXCL", folio=(), persons=2, nights=3, rid="r1", arrival_in=3):
+    a = TODAY + timedelta(days=arrival_in)
+    r = Reservation("lucca", rid, Guest("Ann", "Brand"), a, a + timedelta(days=nights), source="Booking.com",
+                    rate_plan=rate, guest_count=persons)
+    r.folio = [{"label": "Superior double - " + rate, "qty": None, "amount": 300.0}, *folio]
+    return r
+
+
+def test_rules():
+    assert bl.breakfast(_r("NRF BREAKFAST INCL"))[0]
+    assert not bl.breakfast(_r("LAST MINUTE"))[0]  # zonder vermelding: geen ontbijt
+    assert not bl.breakfast(_r("NRF BREAKFAST EXCL"))[0]
+    six = [{"label": "Ontbijt", "qty": 6, "amount": 120.0}]
+    yes, why = bl.breakfast(_r(folio=six))
+    assert yes and "6 ontbijten" in why and "2 personen x 3 nachten" in why
+    no, why = bl.breakfast(_r(folio=[{"label": "Ontbijt", "qty": 3, "amount": 60.0}]))
+    assert not no and "maar 3 van 6" in why
+
+
+PLANBOARD = """<div class="unitlabel" data-labelid="15912" data-labelname="ONTBIJT"></div>
+<div class="unitlabel" data-labelid="15913" data-labelname="LATE ARRIVAL"></div>
+<div class="reservation acco_a1" data-reservation="r1" data-accommodationid="a1" data-labelids="15913" data-unit="51902"></div>
+<div class="reservation acco_a1" data-reservation="r1" data-accommodationid="a1" data-labelids="15913"></div>
+<div class="reservation acco_b1" data-reservation="other" data-accommodationid="b1" data-labelids=""></div>"""
+
+
+def test_parse_planboard():
+    p = parse_planboard(PLANBOARD, "r1")
+    assert p["names"]["ONTBIJT"] == "15912"
+    assert p["rooms"] == [{"accommodation_id": "a1", "unit": "51902", "labels": ["15913"]}]
+
+
+def test_label_added_keeps_existing_and_only_once(monkeypatch):
+    r = repo.save_reservation(_r("NRF BREAKFAST INCL"))
+    state = {"labels": ["15913"]}
+    posted = []
+    monkeypatch.setattr(bl.lighthouse, "reservation_labels", lambda *a: {
+        "rooms": [{"accommodation_id": "a1", "unit": "", "labels": list(state["labels"])}],
+        "names": {"ONTBIJT": "15912"}})
+
+    def add(h, rid, acc, current, label_id, lh):
+        posted.append((acc, current, label_id))
+        state["labels"] = [*current, label_id]
+
+    monkeypatch.setattr(bl.lighthouse, "add_label", add)
+    result = bl.run("lucca", None, TODAY)
+    assert posted == [("a1", ["15913"], "15912")]  # LATE ARRIVAL blijft staan
+    assert len(result["labeled"]) == 1 and repo.get_reservation("lucca", r.reservation_id).breakfast_labeled_at
+    assert bl.run("lucca", None, TODAY)["checked"] == 0 and len(posted) == 1  # onthouden
+
+
+def test_switch_off_does_nothing(monkeypatch):
+    monkeypatch.delenv("LUCCA_SCHAKELAARS_ONTBIJT_LABELS")
+    repo.save_reservation(_r("NRF BREAKFAST INCL"))
+    assert bl.due("lucca", TODAY) == [] and bl.run("lucca", None, TODAY)["off"]

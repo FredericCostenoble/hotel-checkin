@@ -380,3 +380,25 @@ def parse_contact(text: str) -> dict | None:
 
 
 _EMAIL = re.compile(r"[\w.+-]+@[\w-]+(?:\.[\w-]+)+")
+
+
+def parse_planboard(text: str, reservation_id: str) -> dict:
+    """HTML van het planbord: de kamers (accommodaties) van één reservatie met hun labels, en de nummers van
+    alle labels. {"rooms": [{"accommodation_id", "labels": [id], "unit"}], "names": {naam: id}}."""
+    from html.parser import HTMLParser
+
+    rooms: dict[str, dict] = {}
+    names: dict[str, str] = {}
+
+    class P(HTMLParser):
+        def handle_starttag(self, tag, attrs):
+            a = dict(attrs)
+            if a.get("data-labelid") and a.get("data-labelname"):
+                names.setdefault(a["data-labelname"].strip(), a["data-labelid"])
+            if a.get("data-reservation") == reservation_id and a.get("data-accommodationid"):
+                acc = a["data-accommodationid"]
+                rooms.setdefault(acc, {"accommodation_id": acc, "unit": a.get("data-unit", ""),
+                                       "labels": [x for x in (a.get("data-labelids") or "").split(",") if x]})
+
+    P().feed(text)
+    return {"rooms": list(rooms.values()), "names": names}

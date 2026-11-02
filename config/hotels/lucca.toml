@@ -9,7 +9,8 @@
 # HOOFDSCHAKELAARS, per omgeving apart in te stellen in de monitor (instellingen, tabblad Hotel). Standaard uit.
 # overschrijvingen: de robot registreert de betaling van Booking.com als overschrijving in Lighthouse (processes/booking_payout.py).
 # berichten: mails, sms en WhatsApp aan gasten, en de pincodes bij Salto (die gaan alleen mee met de code-mail).
-# ontbijt_labels: de robot zet het label ONTBIJT op het planbord bij wie ontbijt heeft (nog in opbouw).
+# ontbijt_labels: de robot zet het label ONTBIJT op het planbord bij wie ontbijt heeft (tarief met ontbijt,
+# of ontbijt voor alle personen en nachten in de folio).
 overschrijvingen = false
 berichten = false
 ontbijt_labels = false
@@ -58,6 +59,10 @@ voordeur_tot = "23:59"   # op de dag van vertrek werkt de code aan de voordeur (
 [ontbijt]
 van = "8:30"
 tot = "10:30"
+# Label op het planbord voor wie ontbijt heeft (hoofdschakelaar ontbijt_labels, processes/breakfast_labels.py):
+# naam van het label in Lighthouse, en voor aankomsten binnen hoeveel dagen.
+label = "ONTBIJT"
+label_dagen = 14
 
 [wifi]
 naam = "HotelLucca"        # TODO: juiste naam invullen

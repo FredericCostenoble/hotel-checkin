@@ -165,9 +165,9 @@ const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "
 const day = iso => iso ? new Date(iso + (iso.length === 10 ? "T00:00" : "")).toLocaleDateString(locale(), { day: "2-digit", month: "2-digit", year: "2-digit" }) : "";
 const stamp = iso => iso ? new Date(iso).toLocaleString(locale(), { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) : "";
 let rows = [], runsData = null, timer = null, waitTries = 0;
-const TASKS = ["nieuwe_reservaties", "contactgegevens_nalezen", "overschrijving_booking", "lighthouse_bijwerken", "meldingen", "onderhoud", "berichten"];
+const TASKS = ["nieuwe_reservaties", "contactgegevens_nalezen", "overschrijving_booking", "lighthouse_bijwerken", "ontbijt_labels", "meldingen", "onderhoud", "berichten"];
 // Taken zonder Te doen/Gedaan (alleen een notitie, bv. de bewaking: welke mail verstuurd werd)
-const NO_COUNTS = ["bewaking", "onderhoud", "robot", "ontbijt_labels"];  // onderhoud: de aantallen staan in de notitie
+const NO_COUNTS = ["bewaking", "onderhoud", "robot"];  // onderhoud: de aantallen staan in de notitie
 const taskName = k => T[lang]["task_" + k] || k;
 let taskFilter = "";
 try { taskFilter = localStorage.getItem("monitor-task") || ""; } catch (e) { /* geen opslag */ }
@@ -205,7 +205,7 @@ function setLang(l) {
 
 // Hoofdschakelaars van het gekozen hotel, altijd zichtbaar bovenaan (groen = aan, grijs = uit)
 // Schakelaars waarvan de taak nog niet bestaat: aan zetten doet nog niets, en dat staat erbij
-const NOT_BUILT = ["ontbijt_labels"];
+const NOT_BUILT = [];
 
 function renderSwitches() {
   const el = $("#switches");
@@ -1109,6 +1109,14 @@ const HS_TEXT = {
     "Tot",
     ""
    ],
+   "ontbijt.label": [
+    "Label op het planbord",
+    "Naam van het label in Lighthouse dat de robot zet bij wie ontbijt heeft (hoofdschakelaar Ontbijt labels)."
+   ],
+   "ontbijt.label_dagen": [
+    "Label voor aankomsten binnen",
+    "Aantal dagen vooruit dat de robot het ontbijtlabel zet."
+   ],
    "wifi.naam": [
     "Netwerk",
     "Naam van het wifinetwerk voor gasten."
@@ -1155,7 +1163,7 @@ const HS_TEXT = {
    ],
    "schakelaars.ontbijt_labels": [
     "Ontbijt labels plaatsen",
-    "NOG NIET GEBOUWD: aan zetten doet nog niets. De robot zal het label ONTBIJT op het planbord zetten bij wie ontbijt heeft (tarief met ontbijt, of ontbijt voor alle personen en nachten in de folio). Geldt alleen voor deze omgeving."
+    "De robot zet het label ONTBIJT op het planbord bij wie ontbijt heeft (tarief met ontbijt, of ontbijt voor alle personen en nachten in de folio). Geldt alleen voor deze omgeving."
    ],
    "schakelaars.berichten": [
     "Berichten en Salto",
@@ -1332,6 +1340,14 @@ const HS_TEXT = {
     "Until",
     ""
    ],
+   "ontbijt.label": [
+    "Label on the planboard",
+    "Name of the Lighthouse label the robot sets for guests with breakfast (main switch Breakfast labels)."
+   ],
+   "ontbijt.label_dagen": [
+    "Label for arrivals within",
+    "Number of days ahead for which the robot sets the breakfast label."
+   ],
    "wifi.naam": [
     "Network",
     "Name of the guest Wi-Fi network."
@@ -1378,7 +1394,7 @@ const HS_TEXT = {
    ],
    "schakelaars.ontbijt_labels": [
     "Place breakfast labels",
-    "NOT BUILT YET: switching it on does nothing yet. The robot will put the ONTBIJT label on the planboard for guests with breakfast (rate with breakfast, or breakfast for all persons and nights in the folio). Applies to this environment only."
+    "The robot puts the ONTBIJT label on the planboard for guests with breakfast (rate with breakfast, or breakfast for all persons and nights in the folio). Applies to this environment only."
    ],
    "schakelaars.berichten": [
     "Messages and Salto",

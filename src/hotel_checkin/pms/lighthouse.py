@@ -32,6 +32,7 @@ from hotel_checkin.pms.lighthouse_parse import (
     parse_detail,
     parse_folio,
     parse_list_row,
+    parse_planboard,
 )
 
 LIST_PATH = "/Customer/Reservations/List"  # standaard gesorteerd op boekdatum, nieuwste eerst
@@ -317,6 +318,33 @@ def add_payment(hotel_id: str, reservation_id: str, method: str, amount: float, 
                   if (!m) return /volledig betaald/i.test(box.innerText);
                   return m[1].replace(/\\./g, '') !== b; }""", arg=before.replace(".", ""), timeout=20_000)
     return _read_detail(session, hotel_id, reservation_id)
+
+
+PLANBOARD_PATH = "/Customer/Planboard/{start}/{end}"  # planbord voor een periode (HTML, zonder te klikken)
+LABELS_PATH = "/Customer/Planboard/UpdateLabelsAccomodation"  # wat het menu Labels op het planbord doet
+
+def reservation_labels(hotel_id: str, reservation_id: str, arrival, departure, session: LighthouseSession) -> dict:
+    """Labels op het planbord per kamer van een reservatie, en welk nummer elk label heeft.
+    Geeft {"rooms": [{"accommodation_id", "labels": [label-id], "unit"}], "names": {naam: label-id}}.
+    Alleen lezen: het planbord van die periode wordt opgevraagd, niet geopend of aangeklikt."""
+    resp = session.page.request.get(session.base + PLANBOARD_PATH.format(start=arrival.isoformat(),
+                                                                         end=departure.isoformat()))
+    if not resp.ok or "/Customer/" not in resp.url:
+        raise RuntimeError(f"planbord niet gelezen ({resp.status})")
+    return parse_planboard(resp.text(), reservation_id)
+
+
+def add_label(hotel_id: str, reservation_id: str, accommodation_id: str, current: list[str], label_id: str,
+              session: LighthouseSession) -> None:
+    """Een label toevoegen aan een kamer van een reservatie, zoals het menu Labels op het planbord.
+    Lighthouse bewaart de hele lijst: de bestaande labels gaan mee, er wordt er alleen een bijgezet.
+    Of dit mag en wanneer, beslist het proces."""
+    labels = list(dict.fromkeys([*current, label_id]))
+    resp = session.page.request.post(session.base + LABELS_PATH, form={
+        "reservationid": reservation_id, "accomodationid": accommodation_id, "labels": ",".join(labels)},
+        headers={"X-Requested-With": "XMLHttpRequest"})
+    if not resp.ok:
+        raise RuntimeError(f"label niet bewaard ({resp.status})")
 
 
 def store_access_code(hotel_id: str, code: AccessCode) -> None:

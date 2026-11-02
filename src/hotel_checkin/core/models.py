@@ -65,6 +65,7 @@ class Reservation:
     non_refundable: bool | None = None  # niet annuleerbaar (NRF); None = niet gekend
     remarks: str | None = None  # blok Opmerkingen op de detailpagina (bv. betaalinfo van het boekingskanaal)
     transactions: list[str] = field(default_factory=list)  # regels onder Transacties (detailpagina), bv. "Overschrijving ... € 362,00"
+    breakfast_labeled_at: datetime | None = None  # label ONTBIJT op het planbord gezet (processes/breakfast_labels.py)
     payout_registered_at: datetime | None = None  # overschrijving van Booking.com in Lighthouse geregistreerd (processes/booking_payout.py)
     room_statuses: list[str] = field(default_factory=list)  # status per kamer in Lighthouse: none, readyforcheckin, checkin, checkout
     pms_codes_line: str | None = None  # regel "Deur Pin code: ..." zoals de robot ze in Lighthouse zette (processes/pms_sync.py)
