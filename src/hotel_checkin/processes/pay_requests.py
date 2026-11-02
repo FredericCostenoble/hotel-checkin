@@ -54,8 +54,10 @@ def pay_step_soon(hotel_id: str, r: Reservation, today: date, cfg: dict) -> str 
 
 def candidate(r: Reservation, today: date, cfg: dict) -> str | None:
     """Moet er nu een betaalverzoek gemaakt worden? Geeft het bericht terug waarvoor, anders None."""
-    if r.status == ReservationStatus.CANCELLED or r.pay_link or r.pay_requested_at:
+    if r.status == ReservationStatus.CANCELLED or r.pay_requested_at:
         return None
+    if r.pay_link and not safety.is_test_guest(r.hotel_id, r.guest.first_name, r.guest.last_name):
+        return None  # link bestaat al (bv. met de hand gemaakt). Testgast: toch één keer zelf maken, om te testen
     if r.open_amount is None or r.open_amount <= 0.01:
         return None
     if not safety.may_write_pms(r.hotel_id, r.guest.first_name, r.guest.last_name):

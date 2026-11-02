@@ -51,3 +51,13 @@ def test_tst_only_test_guest(monkeypatch):
     cfg = pr.workflow.config("lucca")
     assert pr.candidate(_r(arrival_in=1), TODAY, cfg) is None
     assert pr.candidate(_r(arrival_in=1, last="Meersseman"), TODAY, cfg)
+
+
+def test_test_guest_gets_own_request_even_with_manual_link(monkeypatch):
+    monkeypatch.setenv("APP_ENV", "tst")
+    cfg = pr.workflow.config("lucca")
+    r = _r(arrival_in=1, last="Meersseman")
+    r.pay_link = "https://handmatig"
+    assert pr.candidate(r, TODAY, cfg)  # testgast: één keer zelf maken
+    r.pay_requested_at = pr.datetime.now(pr.UTC)
+    assert pr.candidate(r, TODAY, cfg) is None  # daarna niet meer
