@@ -65,13 +65,17 @@ param robotLocation string = location
 
 param mailSender string = 'checkin@hotellucca.be'
 
-@description('Geheugen per instantie van de Function App (Flex Consumption: 512, 2048 of 4096 MB). Kost per GB-seconde: 512 is een kwart van 2048.')
+@description('Geheugen per instantie van de Function App (Flex Consumption: 512, 2048 of 4096 MB). 2048 = 1 processorkern (aanbevolen door Microsoft); 512 is maar een kwart kern en maakt de monitor traag.')
 @allowed([512, 2048, 4096])
-param funcMemoryMB int = 512
+param funcMemoryMB int = 2048
 
 @description('Maximaal aantal instanties van de Function App. Begrenst de kost, ook bij misbruik van het open check-in-formulier.')
 @minValue(1)
-param funcMaxInstances int = 3
+param funcMaxInstances int = 10
+
+@description('Aantal aanvragen dat één instantie tegelijk afhandelt. Python staat standaard op 1: dan wachten de 6 tot 8 aanvragen die de monitor bij het openen doet op elkaar, of start er telkens een nieuwe (koude) instantie.')
+@minValue(1)
+param funcHttpConcurrency int = 8
 
 var suffix = take(uniqueString(resourceGroup().id), 6)
 var tags = { app: 'hotel-checkin', env: env }
@@ -217,6 +221,8 @@ var funcSettings = filter(
     KEY_VAULT_URL: kv.properties.vaultUri
     STORAGE_TABLE_ENDPOINT: st.properties.primaryEndpoints.table
     MAIL_SENDER: mailSender
+    // Threads voor gelijktijdige aanvragen (zie funcHttpConcurrency); de code wacht vooral op opslag en Key Vault
+    PYTHON_THREADPOOL_THREAD_COUNT: string(funcHttpConcurrency)
     ADMIN_AUTH: empty(adminClientId) ? '' : 'easyauth'
     ROBOT_JOB_ID: empty(robotImage) ? '' : robotJob.id
     ROBOT_IMAGE: robotImage
@@ -248,7 +254,11 @@ resource func 'Microsoft.Web/sites@2024-04-01' = {
           authentication: { type: 'SystemAssignedIdentity' }
         }
       }
-      scaleAndConcurrency: { maximumInstanceCount: funcMaxInstances, instanceMemoryMB: funcMemoryMB }
+      scaleAndConcurrency: {
+        maximumInstanceCount: funcMaxInstances
+        instanceMemoryMB: funcMemoryMB
+        triggers: { http: { perInstanceConcurrency: funcHttpConcurrency } }
+      }
       runtime: { name: 'python', version: '3.12' }
     }
   }
