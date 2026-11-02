@@ -244,3 +244,18 @@ def send_messages(timer: func.TimerRequest) -> None:
             process.run(hotel_id)
         except Exception:
             logging.exception("%s: berichten versturen mislukt", hotel_id)
+
+
+@app.timer_trigger(schedule="0 */15 * * * *", arg_name="timer", run_on_startup=False, use_monitor=False)
+def oversight(timer: func.TimerRequest) -> None:
+    """Elke 15 minuten: dagelijks overzicht van de aankomsten en waarschuwingen (processes/oversight.py).
+    Los van de robot, zodat een robot die stilvalt toch gemeld wordt."""
+    import logging
+
+    from hotel_checkin.processes import oversight as process
+
+    for hotel_id in list_hotels():
+        try:
+            process.run(hotel_id)
+        except Exception:
+            logging.exception("%s: bewaking mislukt", hotel_id)

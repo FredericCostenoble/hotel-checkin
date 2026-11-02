@@ -77,6 +77,14 @@ contact_refresh_hours = 2
 # met Key Vault-geheim lucca-robot-mail-trigger = false.
 mail_trigger = true
 
+[bewaking]
+# Dagelijks overzicht van de aankomsten en waarschuwingen als er iets misloopt (processes/oversight.py).
+# Buiten PRD gaan deze mails naar het testadres ([test] email).
+email = ["management@hotellucca.be"]          # overzicht en waarschuwingen
+overzicht_uur = "07:30"                       # dagelijks overzicht van vandaag en morgen
+controle_uren = ["17:00", "20:00"]            # nakijken of elke aankomst alles heeft; waarschuwing als iets ontbreekt
+robot_max_uren = 3                            # waarschuwing als de robot zo lang niet meer gelukt is
+
 [messaging]
 # Berichten uit de workflow (processes/send_messages.py). Per omgeving aan of uit.
 # Buiten PRD gaat alles naar het testadres ([test] hierboven). PRD pas aanzetten als alles getest is.
