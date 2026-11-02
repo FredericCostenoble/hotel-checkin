@@ -107,17 +107,51 @@ def _store_session(hotel_id: str) -> None:
         logging.warning("%s: sessie van Lighthouse niet bewaard", hotel_id, exc_info=True)
 
 
-def _check_due(hotel_id: str) -> bool:
-    """Is het tijd om opnieuw naar nieuwe reservaties te kijken voor dit hotel?"""
+def _check_due(hotel_id: str) -> str | None:
+    """Is het tijd om opnieuw naar nieuwe reservaties te kijken voor dit hotel? None = ja, anders de reden
+    waarom niet (voor het robotlog)."""
     if os.environ.get("ROBOT_MANUAL"):
-        return True
+        return None
     minutes = float(hotel_setting(hotel_id, "ROBOT_CHECK_MINUTES", default="60", shared=False))
     runs = [r for r in guests.robot_runs(hotel_id, task=new_reservation.TASK) if r.get("ok")]
     if not runs:
-        return True
+        return None
     last = datetime.fromisoformat(runs[0]["started_at"])
     # 2 minuten marge: een run op schema start nooit precies op dezelfde seconde
-    return datetime.now(UTC) - last >= timedelta(minutes=minutes) - timedelta(minutes=2)
+    if datetime.now(UTC) - last >= timedelta(minutes=minutes) - timedelta(minutes=2):
+        return None
+    from hotel_checkin.core import clock
+
+    tz = clock.tz(hotel_id)
+    nxt = last + timedelta(minutes=minutes) - timedelta(minutes=2)
+    return (f"run op schema overgeslagen: vorige run om {last.astimezone(tz):%H:%M}, de robot kijkt om de "
+            f"{minutes:g} minuten (instelling Robot: hoe vaak), volgende vanaf {nxt.astimezone(tz):%H:%M}")
+
+
+SKIP_TASK = "robot"  # regel in het robotlog als een run niets doet (overgeslagen of al een andere bezig)
+LOCK_KEY = "robot_running"
+LOCK_MINUTES = 20  # een run duurt hoogstens 15 minuten (time-out van de job); ouder = vastgelopen
+
+
+def _other_run(hotel_id: str, me: str) -> str | None:
+    """Is er voor dit hotel al een andere run bezig? Geeft de uitleg terug, anders None (en dan is deze run
+    nu de lopende)."""
+    import json
+
+    raw = guests.get_state(hotel_id, LOCK_KEY)
+    if raw:
+        try:
+            other = json.loads(raw)
+            started = datetime.fromisoformat(other["started"])
+        except Exception:  # noqa: BLE001 - onleesbaar: negeren
+            other, started = None, None
+        if other and other.get("run") != me and datetime.now(UTC) - started < timedelta(minutes=LOCK_MINUTES):
+            from hotel_checkin.core import clock
+
+            return (f"run overgeslagen: een andere run ({other.get('run') or 'zonder naam'}) is nog bezig sinds "
+                    f"{started.astimezone(clock.tz(hotel_id)):%H:%M}; die doet het werk")
+    guests.set_state(hotel_id, LOCK_KEY, json.dumps({"run": me, "started": datetime.now(UTC).isoformat()}))
+    return None
 
 
 def _refresh_due(hotel_id: str) -> bool:
@@ -168,8 +202,11 @@ def main() -> int:
                 logging.warning("%s: %d check-in-formulier(en) opnieuw toegepast", hotel_id, fixed)
         except Exception:
             logging.exception("%s: formulieren nakijken mislukt", hotel_id)
-        if not args.hours and not _check_due(hotel_id):
-            logging.info("%s: interval nog niet om, overgeslagen", hotel_id)
+        me = os.environ.get("CONTAINER_APP_JOB_EXECUTION_NAME", "") or f"lokaal-{os.getpid()}"
+        skip = (None if args.hours else _check_due(hotel_id)) or _other_run(hotel_id, me)
+        if skip:
+            logging.info("%s: %s", hotel_id, skip)
+            guests.log_robot_run(hotel_id, SKIP_TASK, datetime.now(UTC), True, 0, 0, skip)
             continue
         since = _since(hotel_id, args.hours)
         _restore_session(hotel_id)
@@ -189,6 +226,7 @@ def main() -> int:
             failed = True
         finally:
             _store_session(hotel_id)
+            guests.delete_state(hotel_id, LOCK_KEY)  # deze run is klaar
     return 1 if failed else 0
 
 

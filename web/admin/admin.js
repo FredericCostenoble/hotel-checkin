@@ -73,7 +73,7 @@ const T = {
     hours_a: "Nieuwe reservaties van de laatste", hours_b: "uur", run: "Robot nu draaien",
     r_start: "Start", r_duration: "Duur", r_task: "Taak", r_result: "Resultaat", r_found: "Te doen", r_new: "Gedaan", r_error: "Opmerking",
     all_tasks: "Alle", sub_log: "Logboek robot", del: "Verwijderen", del_confirm: "Deze regel uit het logboek verwijderen?", del_all: "Alles verwijderen",
-    del_all_confirm: (n, task) => `${n} regels${task ? ` van "${task}"` : ""} uit het logboek verwijderen?`, t_azure: "Azure start", t_container: "container", t_ready: s => `klaar om te lezen na ${s} s`, t_login: "aanmelden", t_browser: "browser starten", t_reused: "sessie hergebruikt", t_new: "opnieuw aangemeld", t_list: "lijst", t_contact: (n, sec) => `${n} contact${n > 1 ? "en" : ""} à ${sec} s`, task_nieuwe_reservaties: "Nieuwe reservaties", task_contactgegevens_nalezen: "Reservaties bijwerken", task_overschrijving_booking: "Overschrijvingen", task_lighthouse_bijwerken: "Pincode en status in Lighthouse", task_meldingen: "Meldingen per mail", task_onderhoud: "Gasten synchroniseren", task_berichten: "Berichten", task_bewaking: "Bewaking",
+    del_all_confirm: (n, task) => `${n} regels${task ? ` van "${task}"` : ""} uit het logboek verwijderen?`, t_azure: "Azure start", t_container: "container", t_ready: s => `klaar om te lezen na ${s} s`, t_login: "aanmelden", t_browser: "browser starten", t_reused: "sessie hergebruikt", t_new: "opnieuw aangemeld", t_list: "lijst", t_contact: (n, sec) => `${n} contact${n > 1 ? "en" : ""} à ${sec} s`, task_nieuwe_reservaties: "Nieuwe reservaties", task_contactgegevens_nalezen: "Reservaties bijwerken", task_overschrijving_booking: "Overschrijvingen", task_lighthouse_bijwerken: "Pincode en status in Lighthouse", task_meldingen: "Meldingen per mail", task_onderhoud: "Gasten synchroniseren", task_berichten: "Berichten", task_bewaking: "Bewaking", task_robot: "Run",
     ok: "ok", fail: "fout", busy: "De robot is bezig...", scheduled: "Draait ook automatisch op schema.",
     not_installed: "De robot is in deze omgeving nog niet geïnstalleerd.", no_runs: "Nog geen afgeronde run",
     load_error: "Fout bij laden",
@@ -150,7 +150,7 @@ const T = {
     hours_a: "New reservations of the last", hours_b: "hours", run: "Run robot now",
     r_start: "Start", r_duration: "Duration", r_task: "Task", r_result: "Result", r_found: "To do", r_new: "Done", r_error: "Note",
     all_tasks: "All", sub_log: "Robot log", del: "Delete", del_confirm: "Delete this line from the log?", del_all: "Delete all",
-    del_all_confirm: (n, task) => `Delete ${n} lines${task ? ` of "${task}"` : ""} from the log?`, t_azure: "Azure start", t_container: "container", t_ready: s => `ready to read after ${s} s`, t_login: "login", t_browser: "start browser", t_reused: "session reused", t_new: "logged in again", t_list: "list", t_contact: (n, sec) => `${n} contact${n > 1 ? "s" : ""} × ${sec} s`, task_nieuwe_reservaties: "New reservations", task_contactgegevens_nalezen: "Update reservations", task_overschrijving_booking: "Bank transfers", task_lighthouse_bijwerken: "PIN and status in Lighthouse", task_meldingen: "Mail notifications", task_onderhoud: "Synchronize guests", task_berichten: "Messages", task_bewaking: "Monitoring",
+    del_all_confirm: (n, task) => `Delete ${n} lines${task ? ` of "${task}"` : ""} from the log?`, t_azure: "Azure start", t_container: "container", t_ready: s => `ready to read after ${s} s`, t_login: "login", t_browser: "start browser", t_reused: "session reused", t_new: "logged in again", t_list: "list", t_contact: (n, sec) => `${n} contact${n > 1 ? "s" : ""} × ${sec} s`, task_nieuwe_reservaties: "New reservations", task_contactgegevens_nalezen: "Update reservations", task_overschrijving_booking: "Bank transfers", task_lighthouse_bijwerken: "PIN and status in Lighthouse", task_meldingen: "Mail notifications", task_onderhoud: "Synchronize guests", task_berichten: "Messages", task_bewaking: "Monitoring", task_robot: "Run",
     ok: "ok", fail: "failed", busy: "The robot is running...", scheduled: "Also runs automatically on a schedule.",
     not_installed: "The robot is not installed in this environment yet.", no_runs: "No finished run yet",
     load_error: "Loading failed",
@@ -167,7 +167,7 @@ const stamp = iso => iso ? new Date(iso).toLocaleString(locale(), { day: "2-digi
 let rows = [], runsData = null, timer = null, waitTries = 0;
 const TASKS = ["nieuwe_reservaties", "contactgegevens_nalezen", "overschrijving_booking", "lighthouse_bijwerken", "meldingen", "onderhoud", "berichten"];
 // Taken zonder Te doen/Gedaan (alleen een notitie, bv. de bewaking: welke mail verstuurd werd)
-const NO_COUNTS = ["bewaking", "onderhoud"];  // onderhoud: de aantallen staan in de notitie
+const NO_COUNTS = ["bewaking", "onderhoud", "robot"];  // onderhoud: de aantallen staan in de notitie
 const taskName = k => T[lang]["task_" + k] || k;
 let taskFilter = "";
 try { taskFilter = localStorage.getItem("monitor-task") || ""; } catch (e) { /* geen opslag */ }

@@ -165,15 +165,27 @@ def test_robot_check_interval_per_hotel(monkeypatch):
     from hotel_checkin import robot
 
     monkeypatch.delenv("ROBOT_MANUAL", raising=False)
-    assert robot._check_due("lucca")
+    assert robot._check_due("lucca") is None  # None = tijd voor een run
     now = datetime.now(UTC)
     repo.log_robot_run("lucca", new_reservation.TASK, now - timedelta(minutes=5), True)
-    assert not robot._check_due("lucca")  # check_minutes = 60
+    why = robot._check_due("lucca")  # check_minutes = 60
+    assert why and "overgeslagen" in why and "60 minuten" in why
     monkeypatch.setenv("LUCCA_ROBOT_CHECK_MINUTES", "5")
-    assert robot._check_due("lucca")  # per omgeving overschreven
+    assert robot._check_due("lucca") is None  # per omgeving overschreven
     monkeypatch.delenv("LUCCA_ROBOT_CHECK_MINUTES")
     monkeypatch.setenv("ROBOT_MANUAL", "1")
-    assert robot._check_due("lucca")  # knop in de monitor
+    assert robot._check_due("lucca") is None  # knop in de monitor
+
+
+def test_robot_skips_when_other_run_busy():
+    from hotel_checkin import robot
+
+    assert robot._other_run("lucca", "run-a") is None  # niemand bezig: run-a is nu de lopende
+    why = robot._other_run("lucca", "run-b")
+    assert why and "run-a" in why and "nog bezig" in why
+    assert robot._other_run("lucca", "run-a") is None  # zichzelf blokkeert niet
+    repo.delete_state("lucca", robot.LOCK_KEY)  # run-a klaar
+    assert robot._other_run("lucca", "run-b") is None
 
 
 def test_relisted_reservation_keeps_pin_salto_and_profile(monkeypatch):
