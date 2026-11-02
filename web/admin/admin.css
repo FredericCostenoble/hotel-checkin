@@ -37,6 +37,7 @@ h3 { font-size: 13px; text-transform: uppercase; letter-spacing: .5px; color: va
 .task { display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: 0.9em; white-space: nowrap; }
 .task-nieuwe_reservaties { background: #E6F0FB; color: #1F4E8C; }
 .task-contactgegevens_nalezen { background: #F3ECFA; color: #5B2E91; }
+.task-overschrijving_booking { background: #E3F6F3; color: #0F6B5C; }
 .timing { font-size: 0.8em; color: #8A90A0; white-space: nowrap; }
 th[data-sort] { cursor: pointer; user-select: none; white-space: nowrap; }
 th[data-sort]:hover { color: #1F2433; }

@@ -129,7 +129,9 @@ def run(hotel_id: str) -> int:
                 # Eerst de overschrijving van Booking.com (PRD of testgast, hoofdschakelaar), zodat een nieuwe
                 # reservatie die in aanmerking komt meteen in deze run geregistreerd wordt. Zie booking_payout.py
                 if payouts:
+                    payout_started = datetime.now(UTC)
                     payout_notes = booking_payout.run(hotel_id, lh, today, deadline)
+                    booking_payout.log_run(hotel_id, payout_started, len(payouts), payout_notes)
                 for reservation in todo:
                     if time.monotonic() > deadline:
                         finished = False
@@ -183,8 +185,6 @@ def run(hotel_id: str) -> int:
         parts.append("Salto aangepast: " + ", ".join(access_changes))
     if sync_notes:
         parts.append("Lighthouse bijgewerkt: " + "; ".join(sync_notes))
-    if payout_notes:
-        parts.append("Overschrijving Booking.com: " + "; ".join(payout_notes))
     if skipped:
         parts.append(f"{len(skipped)} niet gelezen: " + "; ".join(skipped[:5]))
     guests.log_robot_run(hotel_id, TASK, started, True, len(todo) + len(arrivals), stats.with_email, ". ".join(parts) or None,

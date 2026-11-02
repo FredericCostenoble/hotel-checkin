@@ -195,6 +195,15 @@ def check(r: Reservation, amount: float) -> str | None:
     return None
 
 
+def log_run(hotel_id: str, started: datetime, checked: int, notes: list[str]) -> None:
+    """Eigen regel in het robotlog (taak "Overschrijvingen"): hoeveel nagekeken, hoeveel geregistreerd,
+    en per reservatie wat er gebeurde of waarom niet."""
+    registered = [n for n in notes if " geregistreerd" in n and "niet geregistreerd" not in n]
+    errors = [n for n in notes if ": fout " in n]
+    guests.log_robot_run(hotel_id, TASK, started, not errors, checked, len(registered),
+                         "; ".join(notes) if notes else "niets te registreren")
+
+
 def run(hotel_id: str, lh, today: date | None = None, deadline: float | None = None) -> list[str]:
     """Alle toekomstige reservaties die in aanmerking komen, binnen een al geopende Lighthouse-sessie (robot).
     Eerst wie het eerst aankomt. Met deadline (time.monotonic()): stoppen als de tijd om is; de volgende run
