@@ -72,6 +72,7 @@ def test_robot_main_runs(monkeypatch):
 
     called = []
     monkeypatch.setattr(robot.new_reservation, "run", lambda h, since: called.append(h) or 0)
+    monkeypatch.setattr("hotel_checkin.processes.backfill.done", lambda h: True)  # eenmalige ophaling: apart getest
     monkeypatch.setattr(sys, "argv", ["robot"])
     monkeypatch.delenv("ROBOT_HOTEL", raising=False)
     assert robot.main() == 0 and called == ["lucca"]

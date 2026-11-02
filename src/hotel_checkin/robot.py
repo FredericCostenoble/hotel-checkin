@@ -36,6 +36,7 @@ from datetime import UTC, datetime, timedelta
 from hotel_checkin.core.config import hotel_setting
 from hotel_checkin.core.hotels import list_hotels
 from hotel_checkin.guests import repository as guests
+from hotel_checkin.pms import lighthouse
 from hotel_checkin.processes import maintenance, new_reservation, refresh_contacts
 
 
@@ -242,6 +243,12 @@ def main() -> int:
         try:
             new = new_reservation.run(hotel_id, since)
             logging.info("%s: %s nieuwe reservaties", hotel_id, new)
+            # Eenmalig: oudere boekingen voor toekomstige verblijven (processes/backfill.py), verdeeld over runs
+            from hotel_checkin.processes import backfill
+
+            if not backfill.done(hotel_id):
+                with lighthouse.connect(hotel_id) as lh:
+                    backfill.run(hotel_id, lh)
             # Gasten synchroniseren: één keer per dag mee in een run die toch al draait (geen eigen schema)
             if maintenance.due(hotel_id):
                 progress.step(hotel_id, maintenance.TASK, "gasten synchroniseren en oude gegevens opruimen")

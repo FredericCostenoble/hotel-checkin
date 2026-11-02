@@ -72,6 +72,17 @@ def switch(hotel_id: str, name: str) -> bool:
     return str(flag).strip().lower() in ("true", "1", "ja", "aan")
 
 
+def before_start(r, begin: datetime | None) -> bool:
+    """Valt deze reservatie buiten de berichten? Bewaard voor [messaging] start, of geboekt voor de start
+    (bv. oudere boekingen die later eenmalig binnengehaald werden, processes/backfill.py)."""
+    if not r.created_at:
+        return True
+    if begin is None:
+        return False
+    booked = r.booked_at if (r.booked_at is None or r.booked_at.tzinfo) else r.booked_at.replace(tzinfo=UTC)
+    return r.created_at < begin or (booked is not None and booked < begin)
+
+
 def start(hotel_id: str) -> datetime | None:
     value = hotel_setting(hotel_id, "MESSAGING_START", required=False, shared=False)
     if not value:
@@ -487,7 +498,7 @@ def plan(hotel_id: str, r: Reservation, rows: list[dict], cfg: dict, ready: tupl
             item.update(state="off", reason="disabled")
         elif not on:
             item.update(state="off", reason="messaging_off")
-        elif not r.created_at or (begin and r.created_at < begin):
+        elif before_start(r, begin):
             item.update(state="off", reason="before_start")
         elif failed_now:
             item.update(state="skipped", reason="condition:" + ",".join(failed_now))
@@ -524,7 +535,7 @@ def run(hotel_id: str, today: date | None = None) -> int:
     ready = ready_steps(hotel_id)
     sent, failed = [], []
     for r in guests.list_reservations(hotel_id):
-        if not r.created_at or r.created_at < begin or not (r.guest.email or r.guest.phone):
+        if before_start(r, begin) or not (r.guest.email or r.guest.phone):
             continue
         flow = workflow.flow_for(hotel_id, r, cfg)  # kanaal en betaalstatus
         all_steps = [s for s in workflow._steps_from(cfg, flow) if s.enabled]

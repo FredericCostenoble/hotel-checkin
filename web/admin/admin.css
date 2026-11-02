@@ -290,3 +290,4 @@ tr.run-head td.wrap { font-weight: normal; }
 tr.run-step td:first-child { padding-left: 22px; white-space: nowrap; }
 tr.run-step .rel { font-variant-numeric: tabular-nums; color: #3B4255; }
 td.warn, .wrap.warn { color: #A85C12; }
+.task-oude_boekingen { background: #EAF6FF; color: #12506E; }

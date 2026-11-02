@@ -62,6 +62,14 @@ def _rows_on_page(hotel_id: str, page, skipped: list[str]) -> list[Reservation]:
     return out
 
 
+def list_page(hotel_id: str, number: int, session: LighthouseSession, skipped: list[str] | None = None
+              ) -> list[Reservation]:
+    """Eén pagina van de reservatielijst (15 per pagina, nieuwste boeking eerst; pagina 0 = de nieuwste).
+    Leeg = voorbij de laatste pagina."""
+    page = session.goto(f"{LIST_PATH}?CurrentPage={number}", ready=_LIST_READY, timeout=8_000)
+    return _rows_on_page(hotel_id, page, skipped if skipped is not None else [])
+
+
 def get_new_reservations(
     hotel_id: str, since: datetime, session: LighthouseSession | None = None,
     skipped: list[str] | None = None,
