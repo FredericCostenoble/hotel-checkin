@@ -191,6 +191,7 @@ def test_one_code_per_room_and_room_changes(monkeypatch):
         "12": "lock12", "14": ["lock14a", "lock14b"], "16": "lock16"}}}, raising=False)
     assert grant_access.follow_changes("lucca", r)[0] == "kamer 14 naar 16"
     assert locks == [("g14", ["lock16"], ["lock14a", "lock14b"])]
+    assert [(m["from"], m["to"]) for m in r.room_moves] == [("14", "16")]  # bericht aan de gast volgt
     r.rooms = ["12"]  # kamer weg
     assert "kamer 16: code ingetrokken" in grant_access.follow_changes("lucca", r) and cleaned == ["g14"]
     r.rooms = ["12", "21"]  # kamer erbij

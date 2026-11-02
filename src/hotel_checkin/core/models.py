@@ -82,6 +82,7 @@ class Reservation:
     access_codes: list[dict] = field(default_factory=list)
     access_valid_from: datetime | None = None  # zelfde periode voor alle kamers
     access_valid_until: datetime | None = None
+    room_moves: list[dict] = field(default_factory=list)  # kamerwissels met zelfde code: {"from", "to", "at"} (bericht aan de gast)
     stay_counted_at: datetime | None = None  # wanneer het verblijf meegeteld werd in het gastprofiel
     cancel_counted_at: datetime | None = None  # wanneer de annulering meegeteld werd in het gastprofiel
     created_at: datetime | None = None  # wanneer de robot de reservatie voor het eerst bewaarde (alleen lezen)

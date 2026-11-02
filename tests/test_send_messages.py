@@ -92,7 +92,7 @@ def test_late_booking_one_mail_with_confirmation_content(setup, monkeypatch):
     bodies = []
     real = send_messages.send_mail
     monkeypatch.setattr(send_messages, "send_mail",
-                        lambda h, step, r, cfg, to: bodies.append(step.mail_content()) or real(h, step, r, cfg, to=to))
+                        lambda h, step, r, cfg, to, extra=None: bodies.append(step.mail_content()) or real(h, step, r, cfg, to=to))
     assert send_messages.run("lucca") == 1
     assert repo.was_sent("lucca", "late2", "access_code") and not repo.was_sent("lucca", "late2", "confirmation")
     # de code-mail kreeg de inhoud van de weggevallen bevestiging erbij
@@ -265,3 +265,28 @@ def test_add_contact_by_hand(setup):
     assert r.guest.email == "jan@telenet.be" and r.guest.phone.startswith("+32")
     service.add_contact("lucca", "nc1", "tweede@telenet.be", "")
     assert repo.get_reservation("lucca", "nc1").guest.backup_email == "tweede@telenet.be"
+
+
+def test_room_change_message_once_with_same_code(setup, monkeypatch):
+    """Kamerwissel na de code-mail: één bericht, nieuwe kamer en dezelfde code (review 02/11)."""
+    from hotel_checkin.core.models import Channel, SendResult
+
+    sent = []
+    monkeypatch.setattr(send_messages.email, "send_email",
+                        lambda to, subject, html_body, **k: sent.append((subject, html_body)) or SendResult(Channel.EMAIL, to, True))
+    r = _res("rc1", arrival_in=0)
+    r.rooms = ["16"]
+    r.access_codes = [{"room": "16", "pin": "2242", "user_id": "u", "group_id": "g"}]
+    r.room_moves = [{"from": "14", "to": "16", "at": "2026-11-02T10:50:00+01:00"}]
+    repo.save_reservation(r)
+    cfg = send_messages.workflow.config("lucca")
+    assert send_messages.notify_room_change("lucca", r, cfg, date.today()) == []  # code nog niet verstuurd
+    repo.log_message("lucca", "rc1", "access_code", SendResult(Channel.EMAIL, "jan@example.com", True))
+    out = send_messages.notify_room_change("lucca", r, cfg, date.today())
+    assert [c for c, _, _ in out] == ["email"] and "gewijzigd" in sent[0][0]
+    assert "kamer 16, 1e verdieping" in sent[0][1] and "kamer 14" in sent[0][1] and "2242 ↵" in sent[0][1]
+    assert send_messages.notify_room_change("lucca", r, cfg, date.today()) == []  # niet twee keer
+    r.room_moves.append({"from": "16", "to": "2", "at": "2026-11-02T12:00:00+01:00"})  # nog eens, naar de suite
+    r.access_codes[0]["room"] = "2"
+    out = send_messages.notify_room_change("lucca", r, cfg, date.today())
+    assert len(out) == 1 and "Kuipersstraat" in sent[-1][1]

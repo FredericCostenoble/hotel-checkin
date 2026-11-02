@@ -26,7 +26,7 @@ from urllib.parse import urlencode
 from hotel_checkin.core import clock, workflow
 from hotel_checkin.core.addresses import is_own_email
 from hotel_checkin.core.config import hotel_setting
-from hotel_checkin.core.models import Reservation, SendResult, normalize_language
+from hotel_checkin.core.models import Reservation, ReservationStatus, SendResult, normalize_language
 from hotel_checkin.core.safety import environment
 from hotel_checkin.guests import repository as guests
 from hotel_checkin.messaging import email, sms, templates, whatsapp
@@ -227,12 +227,12 @@ def status_url(hotel_id: str, reservation_id: str, message_id: str) -> str | Non
     return f"https://{host}/api/twilio/status?" + urlencode({"h": hotel_id, "r": reservation_id, "m": message_id})
 
 
-def _rendered(hotel_id: str, step: workflow.Step, r: Reservation, cfg: dict):
+def _rendered(hotel_id: str, step: workflow.Step, r: Reservation, cfg: dict, extra: dict | None = None):
     test = test_mode(hotel_id)
     # Betaalknop alleen als er nog iets openstaat (volledig betaald, bv. niet annuleerbaar via de website: geen knop)
     open_now = r.paid is not True and (r.open_amount is None or r.open_amount > 0.004)
     pay = step.pay if open_now and (has_pay_link(r) or test) else "none"
-    data = {**message_data(hotel_id, r), **pay_data(hotel_id, r, cfg)}
+    data = {**message_data(hotel_id, r), **pay_data(hotel_id, r, cfg), **(extra or {})}
     if r.pay_link:
         data["betaal_link"] = r.pay_link
     notes = []
@@ -257,8 +257,9 @@ def _rendered(hotel_id: str, step: workflow.Step, r: Reservation, cfg: dict):
     return templates.render(hotel_id, step.step, r.guest.language, data, mail_content(step, r), pay), data
 
 
-def send_mail(hotel_id: str, step: workflow.Step, r: Reservation, cfg: dict, to: str | None = None) -> SendResult:
-    msg, _ = _rendered(hotel_id, step, r, cfg)
+def send_mail(hotel_id: str, step: workflow.Step, r: Reservation, cfg: dict, to: str | None = None,
+              extra: dict | None = None) -> SendResult:
+    msg, _ = _rendered(hotel_id, step, r, cfg, extra)
     reply_to = templates.load_hotel_config(hotel_id).get("hotel", {}).get("email")
     sender = hotel_setting(hotel_id, "VERZENDING_MAIL_AFZENDER", shared=False)
     return email.send_email(to=to or r.guest.email, subject=msg.subject, html_body=msg.html, sender=sender, hotel_id=hotel_id,
@@ -303,7 +304,8 @@ def _same(a: str, b: str) -> bool:
 
 
 def deliver(hotel_id: str, step: workflow.Step, r: Reservation, cfg: dict,
-            only: tuple[str, str] | None = None, note: str = "") -> list[tuple[str, SendResult]]:
+            only: tuple[str, str] | None = None, note: str = "", key: str = "",
+            extra: dict | None = None) -> list[tuple[str, SendResult]]:
     """Stuur één stap naar de gast via alle kanalen en adressen die nu aan de beurt zijn.
 
     Per adres (hoofdadres en extra adres uit het formulier): altijd per mail (tenzij het hotel
@@ -313,6 +315,9 @@ def deliver(hotel_id: str, step: workflow.Step, r: Reservation, cfg: dict,
 
     only=(kanaal, adres): opnieuw versturen vanuit de monitor, alleen dat kanaal en adres, ook als
     het al eens lukte. note komt in het berichtenlog.
+
+    key: voor een bericht dat meer dan eens kan (kamerwissel): elke wissel apart gevolgd (veld room).
+    extra: bijkomende velden voor de tekst (bv. oude en nieuwe kamer).
 
     Code-mail: per gsm-nummer één sms of WhatsApp per kamer ("Uw verblijf @ Hotel Lucca, kamer 16 verdiep 2,
     code: 2242 ↵"), elk apart gevolgd in het berichtenlog (veld room).
@@ -338,14 +343,14 @@ def deliver(hotel_id: str, step: workflow.Step, r: Reservation, cfg: dict,
     # Met de hand (monitor): precies dat kanaal en adres, ook een adres dat niet bij de reservatie hoort
     email_targets = [only[1]] if only and only[0] == "email" else ([] if only else recipients(r, "email"))
     for to in email_targets:
-        if wanted("email", to):
-            result = send_mail(hotel_id, step, r, cfg, to=to)
-            guests.log_message(hotel_id, r.reservation_id, step.step, result, note=note)
+        if wanted("email", to, key):
+            result = send_mail(hotel_id, step, r, cfg, to=to, extra=extra)
+            guests.log_message(hotel_id, r.reservation_id, step.step, result, note=note, room=key)
             out.append(("email", result))
     phones = [only[1]] if only and only[0] != "email" else ([] if only else recipients(r, "phone"))
     if not phones or not phone_enabled(hotel_id):
         return out
-    msg, data = _rendered(hotel_id, step, r, cfg)
+    msg, data = _rendered(hotel_id, step, r, cfg, extra)
     template = whatsapp_template(hotel_id, step.step, r.guest.language)
     values = {**data, "checkin_link": templates.checkin_link(hotel_id, r.token or "", normalize_language(r.guest.language))}
     for room, text, vals in phone_messages(hotel_id, step, r, msg.sms, values):
@@ -379,7 +384,7 @@ def phone_messages(hotel_id: str, step: workflow.Step, r: Reservation, sms_text:
     geeft één bericht per kamer met haar eigen code; andere stappen één bericht (kamer leeg)."""
     codes = room_codes(hotel_id, r) if step.step == "access_code" else []
     if not codes:
-        return [("", sms_text, values)]
+        return [(values.get("_key", ""), sms_text, values)]
     texts = templates.load_texts(hotel_id, normalize_language(r.guest.language))["access_code"]
     out = []
     for c in codes:
@@ -528,10 +533,47 @@ def run(hotel_id: str, today: date | None = None) -> int:
             for channel, result in deliver(hotel_id, step, r, cfg):
                 label = f"{step.step} {channel} {r.booking_number or r.reservation_id[:8]}"
                 (sent if result.ok else failed).append(label + ("" if result.ok else f" ({result.error})"))
+    for r in guests.list_reservations(hotel_id):  # kamerwissel na de code-mail: nieuwe kamer, zelfde code
+        for channel, result, label in notify_room_change(hotel_id, r, cfg, today):
+            (sent if result.ok else failed).append(label + ("" if result.ok else f" ({result.error})"))
     if sent or failed:
         note = ", ".join(sent) + (f". Mislukt: {'; '.join(failed)}" if failed else "")
         guests.log_robot_run(hotel_id, TASK, started, not failed, len(sent) + len(failed), len(sent), note[:1900])
     return len(sent)
+
+
+ROOM_CHANGE = "room_change"
+
+
+def room_change_data(hotel_id: str, r: Reservation, move: dict) -> dict:
+    """Velden voor het bericht over een kamerwissel: oude en nieuwe kamer (met verdieping of naam), de code
+    van de nieuwe kamer en, als die kamer een eigen ingang heeft, de uitleg."""
+    lang = normalize_language(r.guest.language)
+    texts = templates.load_texts(hotel_id, lang)["algemeen"]
+    code = next((c for c in room_codes(hotel_id, r) if c["room"] == move["to"]), None)
+    if code is None:
+        return {}
+    return {"oude_kamer": move["from"], "nieuwe_kamer": code["label"][0].lower() + code["label"][1:],
+            "kamer_kort": code["short"], "pincode": code["pin"], "toegang": code["access"],
+            "eigen_ingang_titel": texts["eigen_ingang"] if code["access"] else "",
+            "_key": f"{move['to']}@{move['at']}"}
+
+
+def notify_room_change(hotel_id: str, r: Reservation, cfg: dict, today: date) -> list[tuple[str, SendResult, str]]:
+    """Bericht aan de gast na een kamerwissel, alleen als hij zijn code al kreeg (anders staat de nieuwe kamer
+    gewoon in de code-mail). Eén keer per wissel; bij meer wissels kort na elkaar alleen de laatste."""
+    if not r.room_moves or r.status == ReservationStatus.CANCELLED or r.departure < today:
+        return []
+    if not guests.was_sent(hotel_id, r.reservation_id, "access_code"):
+        return []
+    move = r.room_moves[-1]
+    extra = room_change_data(hotel_id, r, move)
+    if not extra:
+        return []
+    step = workflow.Step(step=ROOM_CHANGE, when="after_booking")
+    label = f"{ROOM_CHANGE} {r.booking_number or r.reservation_id[:8]} {move['from']}>{move['to']}"
+    return [(channel, result, f"{label} {channel}")
+            for channel, result in deliver(hotel_id, step, r, cfg, key=extra["_key"], extra=extra)]
 
 
 def code_ready(hotel_id: str, r: Reservation, failed: list[str]) -> bool:

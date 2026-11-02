@@ -136,6 +136,29 @@ alineas = ["Haben Sie Fragen? Rufen Sie uns unter {hotel_telefoon} an oder antwo
 [at_the_door]
 sms = "{hotel_naam}: Willkommen, {voornaam}! Geben Sie {pincode} und danach die Pfeiltaste ein, zuerst an der Haustür, dann an Zimmer {kamernummer}. Probleme? Rufen Sie {nood_nummer} an."
 
+
+[room_change]
+# Kamerwissel na de code-mail (bv. probleem in de badkamer): zelfde code, andere kamer
+onderwerp = "Ihr Zimmer im {hotel_naam} hat sich geändert"
+voorvertoning = "Neues Zimmer, gleicher PIN-Code."
+aanhef = "Guten Tag {voornaam},"
+afsluiting = "Mit freundlichen Grüßen,"
+sms = "{hotel_naam}: Ihr Zimmer hat sich geändert, Sie wohnen jetzt in Zimmer {kamer_kort}. Ihr Code bleibt {pincode} ↵"
+
+[[room_change.blokken]]
+type = "text"
+alineas = ["Ihr Zimmer hat sich geändert: Sie wohnen jetzt in {nieuwe_kamer}, statt in Zimmer {oude_kamer}.", "Ihr PIN-Code bleibt gleich: {pincode} ↵. Er öffnet jetzt die Tür Ihres neuen Zimmers."]
+
+[[room_change.blokken]]   # alleen als de nieuwe kamer een eigen ingang heeft ([kamers.<nummer>] toegang_...)
+type = "text"
+alleen_als = "toegang"
+titel = "{eigen_ingang_titel}"
+alineas = ["{toegang}"]
+
+[[room_change.blokken]]
+type = "text"
+alineas = ["Bei Fragen rufen Sie uns gerne unter {hotel_telefoon} an."]
+
 [thank_you]
 onderwerp = "Vielen Dank für Ihren Aufenthalt im {hotel_naam}"
 voorvertoning = "Vielen Dank und bis zum nächsten Mal."

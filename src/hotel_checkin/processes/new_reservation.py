@@ -135,7 +135,7 @@ def _keep_known(reservation, existing) -> None:
     reservation.payout_registered_at = existing.payout_registered_at
     reservation.pay_link = existing.pay_link
     # Velden die de lijst niet kent (pincode, Salto, gastprofiel, folio): de bewaarde waarden
-    for name in ("guest_id", "access_codes", "access_valid_from", "access_valid_until", "open_amount", "folio", "folio_total",
+    for name in ("guest_id", "access_codes", "room_moves", "access_valid_from", "access_valid_until", "open_amount", "folio", "folio_total",
                  "stay_counted_at", "cancel_counted_at", "created_at"):
         setattr(reservation, name, getattr(existing, name))
     if existing.checkin_completed_at:

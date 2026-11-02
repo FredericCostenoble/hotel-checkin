@@ -160,6 +160,7 @@ def follow_changes(hotel_id: str, r: Reservation) -> list[str]:
             new = set(salto.lock_ids_for(hotel_id, [room], common=False))
             salto.change_locks(hotel_id, c["group_id"], sorted(new - old), sorted(old - new))
             changes.append(f"kamer {c['room']} naar {room}")
+            r.room_moves.append({"from": c["room"], "to": room, "at": datetime.now(clock.tz(hotel_id)).isoformat()})
             c["room"] = room
         for c in removed[len(added):]:  # kamer weg
             _cleanup(hotel_id, c.get("user_id"), c.get("group_id"))

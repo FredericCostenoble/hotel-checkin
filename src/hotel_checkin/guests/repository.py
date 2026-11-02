@@ -137,6 +137,7 @@ def _to_entity(r: Reservation) -> dict:
         "contact_checked_at": r.contact_checked_at.isoformat() if r.contact_checked_at else "",
         "guest_id": r.guest_id or "",
         "access_codes": json.dumps(r.access_codes),
+        "room_moves": json.dumps(r.room_moves),
         "access_valid_from": r.access_valid_from.isoformat() if r.access_valid_from else "",
         "access_valid_until": r.access_valid_until.isoformat() if r.access_valid_until else "",
         # vroegere velden (één code voor alle kamers): leeg, zodat _codes_from ze niet meer gebruikt
@@ -201,6 +202,7 @@ def _from_entity(e: dict) -> Reservation:
         contact_checked_at=datetime.fromisoformat(e["contact_checked_at"]) if e.get("contact_checked_at") else None,
         guest_id=e.get("guest_id") or None,
         access_codes=_codes_from(e),
+        room_moves=json.loads(e["room_moves"]) if e.get("room_moves") else [],
         access_valid_from=datetime.fromisoformat(e["access_valid_from"]) if e.get("access_valid_from") else None,
         access_valid_until=datetime.fromisoformat(e["access_valid_until"]) if e.get("access_valid_until") else None,
         open_amount=float(e["open_amount"]) if e.get("open_amount") not in (None, "") else None,
@@ -231,7 +233,7 @@ PAY_LINK_FIELDS = ("pay_link",)
 PMS_SYNC_FIELDS = ("pms_codes_line", "room_statuses")
 FORM_FIELDS = ("email", "phone", "language", "backup_email", "backup_phone", "relay_email", "channels",
                "checkin_completed_at")
-SALTO_FIELDS = ("access_codes", "access_valid_from", "access_valid_until", "access_pin", "salto_user_id",
+SALTO_FIELDS = ("access_codes", "room_moves", "access_valid_from", "access_valid_until", "access_pin", "salto_user_id",
                 "salto_group_id", "salto_schedule_id", "access_rooms")
 PROFILE_FIELDS = ("guest_id", "stay_counted_at", "cancel_counted_at")
 _KEYS = {"PartitionKey", "RowKey", "hotel_id", "reservation_id", "created_at", "updated_at"}
