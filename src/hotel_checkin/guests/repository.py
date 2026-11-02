@@ -114,6 +114,9 @@ def _to_entity(r: Reservation) -> dict:
         "departure": r.departure.isoformat(),
         "rooms": json.dumps(r.rooms),
         "room_type": r.room_type or "",
+        "rate_plan": r.rate_plan or "",
+        "non_refundable": "" if r.non_refundable is None else str(r.non_refundable),
+        "remarks": (r.remarks or "")[:4000],
         "status": r.status.value,
         "source": r.source or "",
         "paid": "" if r.paid is None else str(r.paid),
@@ -164,6 +167,9 @@ def _from_entity(e: dict) -> Reservation:
         source=e["source"] or None,
         paid=None if e["paid"] == "" else e["paid"] == "True",
         room_type=e["room_type"] or None,
+        rate_plan=e.get("rate_plan") or None,
+        non_refundable=None if e.get("non_refundable") in (None, "") else e["non_refundable"] == "True",
+        remarks=e.get("remarks") or None,
         token=e["token"] or None,
         checkin_completed_at=(
             datetime.fromisoformat(e["checkin_completed_at"]) if e["checkin_completed_at"] else None
@@ -198,11 +204,11 @@ _NOT_DATA = {"created_at", "updated_at", "contact_checked_at", "stay_counted_at"
 # aan save_reservation(fields=...): de andere velden blijven zoals ze nu in de tabel staan. Zo wist de
 # robot (lijst uit Lighthouse) nooit de pincode van Salto of de koppeling met het gastprofiel.
 LIST_FIELDS = ("first_name", "last_name", "arrival", "departure", "rooms", "room_type", "status", "source", "paid",
-               "booking_number", "pms_status", "guest_count", "booked_at")
+               "booking_number", "pms_status", "guest_count", "booked_at", "rate_plan", "non_refundable")
 CONTACT_FIELDS = ("email", "phone", "language", "country", "backup_email", "backup_phone", "relay_email",
                   "contact_checked_at")
 DETAIL_FIELDS = ("rooms", "arrival", "departure", "paid", "open_amount", "folio", "folio_total", "status",
-                 "pms_status", "email", "phone")
+                 "pms_status", "email", "phone", "rate_plan", "non_refundable", "remarks")
 FORM_FIELDS = ("email", "phone", "language", "backup_email", "backup_phone", "relay_email", "channels",
                "checkin_completed_at")
 SALTO_FIELDS = ("access_pin", "access_valid_from", "access_valid_until", "salto_user_id", "salto_group_id",

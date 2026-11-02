@@ -143,7 +143,7 @@ achtergrond = "#F4F5F8"
 # een later bericht nu al aan de beurt is (late boeking: meteen alleen de code-mail).
 
 [workflow_parameters]
-city_tax_amount = 5.0            # toeristenbelasting in euro
+city_tax_amount = 4.2            # toeristenbelasting in euro (Brugge, zoals Lighthouse ze aanrekent: 4,20 per persoon per nacht)
 city_tax_unit = "person_night"   # per persoon per nacht (person_night) of per persoon per verblijf (person_stay)
 currency = "EUR"
 

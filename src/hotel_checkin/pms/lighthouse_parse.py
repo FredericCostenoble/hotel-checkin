@@ -78,6 +78,26 @@ def split_name(full_name: str) -> tuple[str, str]:
     return parts[0], " ".join(parts[1:])
 
 
+# Niet annuleerbaar tarief: "NRF BREAKFAST EXCL", "Non-refundable", "Niet terugbetaalbaar", "Non remboursable"
+_NON_REFUNDABLE = re.compile(r"\bNRF\b|non[- ]?refundable|niet[- ]?terugbetaalbaar|non[- ]?remboursable|nicht erstattbar",
+                             re.IGNORECASE)
+
+
+def rate_plans_from(text: str) -> list[str]:
+    """Tarieven uit de kolom Accommodaties van de lijst ("NRF BREAKFAST EXCL, € 335,07") of uit
+    folio-lijnen ("Superior double - NRF BREAKFAST EXCL"). Zonder dubbels, in volgorde."""
+    found = re.findall(r"(?m)^\s*([A-Z][A-Z0-9 &/+.-]*?[A-Z0-9])\s*,\s*€", text)
+    found += re.findall(r"(?m)\s-\s+([A-Z][A-Z0-9 &/+.-]*?[A-Z0-9])\s*$", text)
+    return list(dict.fromkeys(x.strip() for x in found))
+
+
+def non_refundable(plans: list[str]) -> bool | None:
+    """True als alle tarieven niet annuleerbaar zijn, False als er een annuleerbaar bij is, None = geen tarief."""
+    if not plans:
+        return None
+    return all(_NON_REFUNDABLE.search(p) for p in plans)
+
+
 def rooms_from(text: str) -> list[str]:
     """Toegewezen kamers, bv. '30 DOUBLE ROOM' of '11 - SUPERIOR DOUBLE ROOM' geeft ['30'] en ['11']."""
     return re.findall(r"(?m)(?:^|\s)(\d{1,3})\s*-?\s*[A-Z]{3,}(?:\s+[A-Z]{2,})*\s*$", text)
@@ -100,6 +120,7 @@ def parse_list_row(hotel_id: str, general: str, contact: str, accommodations: st
     first_line = accommodations.strip().splitlines()[0] if accommodations.strip() else ""
     room_type = re.split(r"\s{2,}|\t|!", first_line)[0].strip() or None
     guests = re.search(r"\d+", f.get("Aantal gasten", ""))
+    plans = rate_plans_from(accommodations)
     return Reservation(
         hotel_id=hotel_id,
         reservation_id=uuid.group(0).lower(),
@@ -111,6 +132,8 @@ def parse_list_row(hotel_id: str, general: str, contact: str, accommodations: st
         status=status_from_pms(f.get("Status", "")),
         source=re.sub(r"\s*\(.*\)\s*$", "", via) or None,
         room_type=room_type,
+        rate_plan=", ".join(plans) or None,
+        non_refundable=non_refundable(plans),
         booking_number=f.get("ID") or None,
         pms_status=f.get("Status") or None,
         guest_count=int(guests.group(0)) if guests else None,
@@ -162,6 +185,7 @@ def parse_detail(hotel_id: str, reservation_id: str, d: dict) -> Reservation:
               else accommodation_status([r.get("status", "") for r in d.get("rooms", [])]))
     paid_text = d.get("paid_text", "").lower()
     folio = parse_folio(d.get("folio_text", "") or d.get("paid_text", ""))
+    plans = rate_plans_from("\n".join(x["label"] for x in folio["lines"]))
     return Reservation(
         hotel_id=hotel_id,
         reservation_id=reservation_id.lower(),
@@ -180,6 +204,9 @@ def parse_detail(hotel_id: str, reservation_id: str, d: dict) -> Reservation:
         source=_after("Via", general) or None,
         paid=True if "volledig betaald" in paid_text else (False if paid_text else None),
         open_amount=folio["open"],
+        rate_plan=", ".join(plans) or None,
+        non_refundable=non_refundable(plans),
+        remarks=(d.get("remarks") or "").strip() or None,
         folio=folio["lines"],
         folio_total=folio["total"],
         booking_number=number.group(0) if number else None,

@@ -85,6 +85,9 @@ def _apply_detail(r, d) -> None:
         r.open_amount, r.folio, r.folio_total = d.open_amount, d.folio, d.folio_total
     r.status = d.status
     r.pms_status = d.pms_status or r.pms_status
+    if d.rate_plan:  # tarief uit de folio; anders blijft dat uit de lijst
+        r.rate_plan, r.non_refundable = d.rate_plan, d.non_refundable
+    r.remarks = d.remarks if d.remarks is not None else r.remarks
     if not r.checkin_completed_at:
         r.guest.email = r.guest.email or d.guest.email
         r.guest.phone = r.guest.phone or d.guest.phone

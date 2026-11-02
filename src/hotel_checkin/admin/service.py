@@ -79,6 +79,8 @@ def reservations(hotel_id: str) -> list[dict]:
             "guests": r.guest_count,
             "room_type": r.room_type or "",
             "rooms": r.rooms,
+            "rate_plan": r.rate_plan or "",
+            "non_refundable": r.non_refundable,
             "source": r.source or "",
             "flow": workflow.flow_for(hotel_id, r, cfg),  # welke workflow: volgens "Via" (en betaalstatus)
             "pms_status": r.pms_status or "",

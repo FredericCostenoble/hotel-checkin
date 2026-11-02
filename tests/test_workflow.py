@@ -45,18 +45,18 @@ def test_flow_for():
 
 
 def test_city_tax_per_person_per_night():
-    assert workflow.city_tax("lucca", _r(guest_count=2)) == 20.0  # 5 x 2 personen x 2 nachten
+    assert workflow.city_tax("lucca", _r(guest_count=2)) == 16.8  # 4,20 x 2 personen x 2 nachten (Brugge)
 
 
 def test_save_and_reset():
     cfg = workflow.config("lucca")
     assert cfg["meta"]["source"] == "file"
     cfg["flows"]["booking"]["steps"][2]["days"] = 3
-    cfg["parameters"]["city_tax_amount"] = 4.2
+    cfg["parameters"]["city_tax_amount"] = 9.9  # telt niet: de toeristenbelasting staat bij de hotelinstellingen
     saved = workflow.save_config("lucca", cfg, "frederic@hotellucca.be")
     assert saved["meta"]["source"] == "monitor" and saved["meta"]["updated_by"] == "frederic@hotellucca.be"
     assert next(s for s in workflow.steps("lucca", "booking") if s.step == "access_code").days == 3
-    assert workflow.reset_config("lucca")["parameters"]["city_tax_amount"] == 5.0
+    assert workflow.reset_config("lucca")["parameters"]["city_tax_amount"] == 4.2
 
 
 def test_invalid_config_explained():

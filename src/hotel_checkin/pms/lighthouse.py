@@ -112,6 +112,12 @@ _DETAIL_JS = r"""() => {
     general: txt(widget('Algemene informatie')),
     rooms,
     paid_text: txt(trans && (trans.closest('.jarviswidget, .col-md-6, .col-lg-6') || trans.parentElement.parentElement)),
+    // Blok "Opmerkingen:" onder Algemene informatie (betaalinfo van Booking.com, wensen van de gast, ...)
+    remarks: (() => { const h = [...document.querySelectorAll('*')].find(e => e.childElementCount === 0
+                        && /^Opmerkingen:?$/.test(e.textContent.trim()));
+                      if (!h) return '';
+                      const box = h.closest('.alert, .well, .panel, .note, div') || h.parentElement;
+                      return txt(box.parentElement && txt(box).trim() === h.textContent.trim() ? box.parentElement : box); })(),
     // Hele folio (lijnen links, transacties rechts): eerste blok rond "Transacties" waar ook "Totaal" in staat
     folio_text: (() => { let b = trans; while (b && b !== document.body && !/\bTotaal\b/.test(b.innerText || '')) b = b.parentElement;
                          return b && b !== document.body ? txt(b) : ''; })(),

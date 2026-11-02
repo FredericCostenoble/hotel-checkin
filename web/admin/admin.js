@@ -68,7 +68,7 @@ const T = {
     m_confirm: "Deze twee gasten samenvoegen tot één?", reset: "Filter wissen",
     search: "Zoek op naam, nummer, e-mail", stay_from: "Verblijf van", stay_to: "tot", from_today: "Vanaf vandaag",
     c_arrival: "Aankomst", c_departure: "Vertrek", c_number: "Nummer", c_guest: "Gast", c_pers: "Pers.",
-    c_room: "Kamer", c_via: "Via", c_flow: "Workflow", c_booked: "Geboekt", c_added: "Toegevoegd", c_updated: "Bijgewerkt", c_form: "Formulier", c_contact: "Contact", c_messages: "Berichten",
+    c_room: "Kamer", c_rate: "Tarief", rate_nrf: "niet annuleerbaar", rate_flex: "annuleerbaar", c_via: "Via", c_flow: "Workflow", c_booked: "Geboekt", c_added: "Toegevoegd", c_updated: "Bijgewerkt", c_form: "Formulier", c_contact: "Contact", c_messages: "Berichten",
     yes: "ja", no: "nee", none: "geen", count: n => `${n} reservaties`, no_res: "Geen reservaties",
     hours_a: "Nieuwe reservaties van de laatste", hours_b: "uur", run: "Robot nu draaien",
     r_start: "Start", r_duration: "Duur", r_task: "Taak", r_result: "Resultaat", r_found: "Gevonden", r_new: "Nieuw", r_error: "Opmerking",
@@ -145,7 +145,7 @@ const T = {
     m_confirm: "Merge these two guests into one?", reset: "Clear filter",
     search: "Search name, number, e-mail", stay_from: "Stay from", stay_to: "to", from_today: "From today",
     c_arrival: "Arrival", c_departure: "Departure", c_number: "Number", c_guest: "Guest", c_pers: "Pers.",
-    c_room: "Room", c_via: "Via", c_flow: "Workflow", c_booked: "Booked", c_added: "Added", c_updated: "Updated", c_form: "Form", c_contact: "Contact", c_messages: "Messages",
+    c_room: "Room", c_rate: "Rate", rate_nrf: "non-refundable", rate_flex: "refundable", c_via: "Via", c_flow: "Workflow", c_booked: "Booked", c_added: "Added", c_updated: "Updated", c_form: "Form", c_contact: "Contact", c_messages: "Messages",
     yes: "yes", no: "no", none: "none", count: n => `${n} reservations`, no_res: "No reservations",
     hours_a: "New reservations of the last", hours_b: "hours", run: "Run robot now",
     r_start: "Start", r_duration: "Duration", r_task: "Task", r_result: "Result", r_found: "Found", r_new: "New", r_error: "Note",
@@ -658,7 +658,9 @@ let sortKey = "arrival", sortDir = 1;
 try { [sortKey, sortDir] = JSON.parse(localStorage.getItem("monitor-sort")) || [sortKey, sortDir]; } catch (e) { /* geen opslag */ }
 const sortValue = (r, k) => k === "room" ? (r.rooms.join(", ") || r.room_type)
   : k === "messages" ? r.messages.length : k === "guests" ? (r.guests ?? -1)
-  : k === "email" ? (r.email || r.phone) : (r[k] ?? "");
+  : k === "email" ? (r.email || r.phone)
+  : k === "rate" ? (r.non_refundable === true ? "0" : r.non_refundable === false ? "1" : "") + (r.rate_plan || "")
+  : (r[k] ?? "");
 function sortBy(k) {
   sortDir = k === sortKey ? -sortDir : 1;
   sortKey = k;
@@ -688,12 +690,13 @@ function render() {
       <td>${day(r.arrival)}</td><td>${day(r.departure)}</td>
       <td class="nowrap">${esc(r.booking_number)}${r.lighthouse_url ? ` <a class="lh" href="${esc(r.lighthouse_url)}" target="_blank" rel="noopener" title="${esc(t("open_lh"))}">${ICON_LH}</a>` : ""}</td><td>${r.guest_id && guestById(r.guest_id) ? `<a href="#" class="jump" data-guest="${esc(r.guest_id)}" title="${esc(t("show_guest"))}">${ICON_GUEST} ${esc(r.guest)}</a>` : esc(r.guest)}${r.guest_stays ? ` <span class="tag back">${esc(t("returning", r.guest_stays))}</span>` : ""}
         <div>${r.checkin_completed_at ? `<span class="tag form-yes" title="${esc(stamp(r.checkin_completed_at))}">${esc(t("form_yes"))}</span>` : `<span class="tag form-no">${esc(t("form_no"))}</span>`}</div></td><td>${esc(r.guests ?? "")}</td>
-      <td>${esc(r.rooms.join(", ") || r.room_type)}</td><td>${esc(r.source)}</td><td><span class="tag flow">${esc(t("flow_" + r.flow) || r.flow)}</span></td><td>${esc(r.pms_status)}</td>
+      <td>${esc(r.rooms.join(", ") || r.room_type)}</td>
+      <td>${r.non_refundable === true ? `<span class="tag nrf">${esc(t("rate_nrf"))}</span>` : r.non_refundable === false ? `<span class="tag flex">${esc(t("rate_flex"))}</span>` : ""}${r.rate_plan ? `<div class="muted small">${esc(r.rate_plan)}</div>` : ""}</td><td>${esc(r.source)}</td><td><span class="tag flow">${esc(t("flow_" + r.flow) || r.flow)}</span></td><td>${esc(r.pms_status)}</td>
       <td>${stamp(r.booked_at)}</td><td>${stamp(r.added_at)}</td><td>${stamp(r.updated_at)}</td>
       <td>${r.checkin_completed_at ? `<span class="ok">${t("yes")}</span> ${stamp(r.checkin_completed_at)}` : `<span class="muted">${t("no")}</span>`}</td>
       <td class="wrap">${contactLines(r)}</td>
       <td class="wrap">${msgSummary(r)}</td>
-    </tr>`).join("") || `<tr><td colspan="15" class="muted">${t("no_res")}</td></tr>`;
+    </tr>`).join("") || `<tr><td colspan="16" class="muted">${t("no_res")}</td></tr>`;
   document.querySelectorAll("#res a[data-guest]").forEach(a => a.onclick = e => { e.preventDefault(); openGuest(a.dataset.guest); });
   // Popup altijd met verse gegevens (bv. net ingevuld formulier, nieuw bericht)
   document.querySelectorAll("#res a[data-msgs]").forEach(a => a.onclick = async e => {

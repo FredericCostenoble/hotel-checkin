@@ -60,6 +60,9 @@ class Reservation:
     folio: list[dict] = field(default_factory=list)  # lijnen van de folio: {"label", "qty", "amount"}
     folio_total: float | None = None  # totaal van de folio
     room_type: str | None = None
+    rate_plan: str | None = None  # tarief in Lighthouse, bv. "NRF BREAKFAST EXCL" of "STANDARD RATE"
+    non_refundable: bool | None = None  # niet annuleerbaar (NRF); None = niet gekend
+    remarks: str | None = None  # blok Opmerkingen op de detailpagina (bv. betaalinfo van het boekingskanaal)
     token: str | None = None  # geheime sleutel in de link naar het check-in-formulier
     checkin_completed_at: datetime | None = None  # wanneer de gast het formulier invulde
     booking_number: str | None = None  # reservatienummer in Lighthouse, bv. CPB-4276-002731

@@ -144,3 +144,18 @@ def test_parse_folio_table_and_lines():
     assert f["lines"][1] == {"label": "Citytax", "qty": 4, "amount": 16.8}
     assert f["total"] == 1231.8 and f["open"] == 0.0
     assert parse_folio("") == {"lines": [], "total": None, "open": None}
+
+
+def test_rate_plan_and_non_refundable():
+    """Tarief uit de lijst en uit de folio; NRF = niet annuleerbaar (review 02/11)."""
+    from hotel_checkin.pms.lighthouse_parse import non_refundable, rate_plans_from
+
+    assert rate_plans_from("Superior double  ! Nog geen accommodatie.\nNRF BREAKFAST EXCL, € 335,07") == ["NRF BREAKFAST EXCL"]
+    assert rate_plans_from("Dubbel kamer\t30 DOUBLE ROOM\nSTANDARD RATE, € 202,73") == ["STANDARD RATE"]
+    assert rate_plans_from("Superior double - NRF BREAKFAST EXCL\nCitytax") == ["NRF BREAKFAST EXCL"]
+    assert non_refundable(["NRF BREAKFAST EXCL"]) is True
+    assert non_refundable(["STANDARD RATE"]) is False
+    assert non_refundable(["NRF BREAKFAST EXCL", "STANDARD RATE"]) is False  # één kamer annuleerbaar
+    assert non_refundable([]) is None
+    r = parse_list_row("lucca", GENERAL, "Jan Voorbeeld", "Superior double  ! Nog geen accommodatie.\nNRF BREAKFAST EXCL, € 335,07", HREF)
+    assert r.rate_plan == "NRF BREAKFAST EXCL" and r.non_refundable is True

@@ -128,6 +128,9 @@ def _keep_known(reservation, existing) -> None:
     reservation.contact_checked_at = existing.contact_checked_at
     reservation.paid = existing.paid if reservation.paid is None else reservation.paid
     reservation.rooms = reservation.rooms or existing.rooms  # kamer uit de detailpagina niet wissen
+    if not reservation.rate_plan:  # tarief uit de detailpagina niet wissen
+        reservation.rate_plan, reservation.non_refundable = existing.rate_plan, existing.non_refundable
+    reservation.remarks = existing.remarks
     # Velden die de lijst niet kent (pincode, Salto, gastprofiel, folio): de bewaarde waarden
     for name in ("guest_id", "access_pin", "access_valid_from", "access_valid_until", "salto_user_id",
                  "salto_group_id", "salto_schedule_id", "access_rooms", "open_amount", "folio", "folio_total",
