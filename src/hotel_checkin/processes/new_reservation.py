@@ -74,10 +74,22 @@ def run(hotel_id: str, since: datetime) -> int:
         guests.log_robot_run(hotel_id, TASK, started, False, found, new, f"{type(exc).__name__}: {exc}",
                              since=since, skipped=len(skipped), timings=timings | stats.timings())
         raise
-    parts = [stats.note()] if stats.read else []
+    # Te doen: reservaties in de lijst sinds `since`; gedaan: hoeveel daarvan nieuw waren en bewaard zijn.
+    # De notitie zegt altijd wat er met elke reservatie gebeurde.
+    from hotel_checkin.core import clock
+
+    when = since.astimezone(clock.tz(hotel_id)).strftime("%d/%m %H:%M")
+    known = found - new
+    detail = [f"{new} nieuw (bewaard)"] if new else ["geen nieuwe"]
+    if known:
+        detail.append(f"{known} al gekend (gegevens uit de lijst bijgewerkt, verder niets te doen)")
+    parts = [f"lijst van Lighthouse gelezen, geboekt sinds {when}: "
+             + (f"{found} reservatie(s): " + ", ".join(detail) if found else "geen reservaties")]
+    if stats.read:
+        parts.append("contactgegevens van de nieuwe: " + stats.note())
     if skipped:
         parts.append(f"{len(skipped)} overgeslagen: " + "; ".join(skipped[:5]))
-    note = ". ".join(parts) or None
+    note = ". ".join(parts)
     guests.log_robot_run(hotel_id, TASK, started, True, found, new, note, since=since, skipped=len(skipped), timings=timings | stats.timings())
     return new
 
