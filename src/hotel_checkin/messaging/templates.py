@@ -183,6 +183,10 @@ def _render_text(t: dict, common: dict, f: dict) -> str:
         elif kind == "highlight":
             lines.append(_fill(block["waarde"], f))
             lines += [_fill(p, f) for p in block.get("alineas", [])]
+        if kind == "highlight" and "{pincode}" in block.get("waarde", "") and f.get("_access"):
+            multi = len(f.get("_codes") or []) > 1
+            lines += ["", common["eigen_ingang"].upper()] + [f"{label}: {text}" if multi else text
+                                                             for label, text in f["_access"]]
         elif kind == "list":
             lines += [f"- {_fill(i, f)}" for i in block["items"]]
         elif kind == "prices":
@@ -227,6 +231,19 @@ def _gap(height: int) -> str:
     )
 
 
+def _access_box(common: dict, f: dict, c: dict) -> str:
+    """Kamer met een eigen ingang (bv. suite om de hoek, appartement naast het hotel): onder de code
+    duidelijk de weg, in een opvallend kader. Bij meer kamers met de kamer erbij."""
+    multi = len(f.get("_codes") or []) > 1
+    notes = "".join(
+        f'<p style="margin:6px 0 0 0;font-family:{FONT};font-size:15px;line-height:1.6;color:{c["tekst"]};">'
+        f'{"<strong>" + _e(label) + ":</strong> " if multi else ""}{_e(text)}</p>' for label, text in f["_access"])
+    return (f'<table role="presentation" width="100%" cellpadding="0" cellspacing="0">'
+            f'<tr><td style="padding:16px;background:#FFF6E5;border-left:4px solid #E59A3C;">'
+            f'<p style="margin:0;font-family:{FONT};font-size:12px;letter-spacing:2px;text-transform:uppercase;'
+            f'font-weight:bold;color:#7A4510;">{_e(common["eigen_ingang"])}</p>{notes}</td></tr></table>{_gap(22)}')
+
+
 def _render_html(t: dict, common: dict, f: dict, config: dict, language: str) -> str:
     c = config["kleuren"]
     p_style = f"margin:0 0 14px 0;font-family:{FONT};font-size:15px;line-height:1.6;color:{c['tekst']};"
@@ -240,7 +257,12 @@ def _render_html(t: dict, common: dict, f: dict, config: dict, language: str) ->
         parts.append(f'<p style="margin:0 0 16px 0;padding:10px 12px;background:#FDF0E1;border:1px solid #E59A3C;'
                      f'font-family:{FONT};font-size:13px;color:#7A4510;">{_e(f["_test_note"])}</p>')
     parts.append(f'<p style="{p_style}">{_e(_fill(t["aanhef"], f))}</p>')
+    after_code = False
     for block in t["blokken"]:
+        if after_code:
+            parts.append(_access_box(common, f, c))
+            after_code = False
+        after_code = bool(f.get("_access")) and "{pincode}" in block.get("waarde", "")
         if block.get("titel") and block["type"] != "highlight":
             parts.append(f'<p style="{h_style}">{_e(_fill(block["titel"], f))}</p>')
         kind = block["type"]
@@ -333,6 +355,8 @@ def _render_html(t: dict, common: dict, f: dict, config: dict, language: str) ->
                 f'font-weight:bold;color:#FFFFFF;text-decoration:none;">{text}</a><!--<![endif]-->'
                 f"</div>{_gap(26)}"
             )
+    if after_code:
+        parts.append(_access_box(common, f, c))
     parts.append(f'<p style="{p_style}margin-top:24px;">{_e(_fill(t["afsluiting"], f))}</p>')
     parts.append(f'<p style="{p_style}font-weight:bold;">{_e(_fill(common["team"], f))}</p>')
     body = "\n".join(parts)

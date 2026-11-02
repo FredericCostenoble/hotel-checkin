@@ -4,10 +4,10 @@
 # Meer kamers: één code per kamer (code-mail)
 codes_titel = "Vos codes PIN personnels"
 codes_uitleg = "Chaque code ouvre la porte d'entrée et cette chambre, du {code_geldig_van} au {code_geldig_tot}. Appuyez toujours sur la touche flèche ↵ après le code."
-kamer_code = "Chambre {kamer}{verdieping}"
-verdieping = ", étage {nr}"
-verdieping_kort = " étage {nr}"
-kamer_kort = "chambre {kamer}{verdieping_kort}"   # in sms en WhatsApp, bv. "kamer 16 verdiep 2"
+kamer_code = "Chambre {kamer}, {wat}"   # {wat} = verdieping of naam van de kamer
+verdieping = "{n}e étage"
+verdieping_kort = "étage {n}"
+eigen_ingang = "Attention, entrée séparée"   # titel boven de uitleg voor een kamer met een eigen ingang
 meerdere_kamers = "{aantal} chambres : {kamers}"   # kamer in de reservatiegegevens bij meer dan één kamer
 team = "L'équipe de l'{hotel_naam}"
 voettekst = "Vous recevez cet e-mail parce que vous avez une réservation à l'{hotel_naam}."
@@ -89,7 +89,7 @@ aanhef = "Bonjour {voornaam},"
 afsluiting = "À très bientôt,"
 sms = "{hotel_naam} : {voornaam}, à très bientôt ! Votre code PIN pour la porte d'entrée et la chambre {kamernummer} : {pincode}, puis la touche flèche. Valable du {code_geldig_van} au {code_geldig_tot}. Toutes les informations se trouvent dans votre e-mail."
 # Sms en WhatsApp met de code: één bericht per kamer
-sms_kamer = "Votre séjour @ {hotel_naam}, chambre {kamer}{verdieping_kort}, code : {pincode} ↵"
+sms_kamer = "Votre séjour @ {hotel_naam}, chambre {kamer_kort}, code : {pincode} ↵"
 
 [[access_code.blokken]]
 type = "text"

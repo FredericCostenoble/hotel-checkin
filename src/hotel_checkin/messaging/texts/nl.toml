@@ -6,10 +6,10 @@
 # Meer kamers: één code per kamer (code-mail)
 codes_titel = "Uw persoonlijke pincodes"
 codes_uitleg = "Elke code opent de voordeur en die kamer, van {code_geldig_van} tot {code_geldig_tot}. Druk na de code altijd op de pijltoets ↵."
-kamer_code = "Kamer {kamer}{verdieping}"
-verdieping = ", verdieping {nr}"
-verdieping_kort = " verdiep {nr}"
-kamer_kort = "kamer {kamer}{verdieping_kort}"   # in sms en WhatsApp, bv. "kamer 16 verdiep 2"
+kamer_code = "Kamer {kamer}, {wat}"   # {wat} = verdieping of naam van de kamer
+verdieping = "{n}e verdieping"
+verdieping_kort = "verdiep {n}"
+eigen_ingang = "Let op, eigen ingang"   # titel boven de uitleg voor een kamer met een eigen ingang
 meerdere_kamers = "{aantal} kamers: {kamers}"   # kamer in de reservatiegegevens bij meer dan één kamer
 team = "Het team van {hotel_naam}"
 voettekst = "U ontvangt deze mail omdat u een reservatie hebt bij {hotel_naam}."
@@ -91,7 +91,7 @@ aanhef = "Beste {voornaam},"
 afsluiting = "Tot binnenkort,"
 sms = "{hotel_naam}: beste {voornaam}, tot binnenkort! Uw pincode voor de voordeur en kamer {kamernummer}: {pincode}, daarna de pijltoets. Geldig van {code_geldig_van} tot {code_geldig_tot}. Alle info staat in uw mail."
 # Sms en WhatsApp met de code: één bericht per kamer
-sms_kamer = "Uw verblijf @ {hotel_naam}, kamer {kamer}{verdieping_kort}, code: {pincode} ↵"
+sms_kamer = "Uw verblijf @ {hotel_naam}, kamer {kamer_kort}, code: {pincode} ↵"
 
 [[access_code.blokken]]
 type = "text"

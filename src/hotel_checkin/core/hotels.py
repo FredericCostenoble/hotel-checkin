@@ -94,7 +94,7 @@ def load_hotel(hotel_id: str) -> dict:
 
 
 # Secties zonder vaste sleutels: kamer -> Salto-deur, WhatsApp-sjablonen per bericht en taal
-FREE_SECTIONS = ("salto.rooms", "whatsapp", "verdiepingen")
+FREE_SECTIONS = ("salto.rooms", "whatsapp")
 
 
 def list_hotels() -> list[str]:

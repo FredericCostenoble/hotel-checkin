@@ -133,17 +133,35 @@ def has_pay_link(r: Reservation) -> bool:
     return bool(r.pay_link)
 
 
-def floor_of(hotel_id: str, room: str) -> str:
-    """Verdieping van een kamer ([verdiepingen] "16" = 2 in het hotelbestand), of leeg."""
+def room_info(hotel_id: str, room: str, language: str) -> dict:
+    """Hoe een kamer heet in de berichten, volgens [kamers] in het hotelbestand (of de monitor):
+    floor: verdieping (standaard het eerste cijfer van het kamernummer: 12 = 1, 23 = 2; leeg = geen);
+    name, short, access: eigen naam, korte uitleg voor de sms en uitleg over de ingang ([kamers.<nummer>],
+    per taal naam_nl, kort_nl, toegang_nl, ...; leeg als de kamer gewoon via de voordeur bereikbaar is)."""
     from hotel_checkin.core.hotels import load_hotel
 
-    return str(load_hotel(hotel_id).get("verdiepingen", {}).get(str(room), "") or "")
+    cfg = load_hotel(hotel_id).get("kamers", {})
+    own = cfg.get(str(room)) if isinstance(cfg.get(str(room)), dict) else {}
+    lang = language if language in templates.LANGUAGES else "en"
+
+    def text(key: str) -> str:
+        return str(own.get(f"{key}_{lang}") or own.get(f"{key}_en") or own.get(f"{key}_nl") or "").strip()
+
+    if "verdieping" in own:
+        floor = str(own["verdieping"]).strip()
+    elif cfg.get("verdieping_regel", "eerste_cijfer") == "eerste_cijfer" and str(room).isdigit() and len(str(room)) >= 2:
+        floor = str(room)[:-1]  # 12 -> 1, 23 -> 2, 105 -> 10
+    else:
+        floor = ""
+    return {"floor": floor, "name": text("naam"), "short": text("kort"), "access": text("toegang")}
 
 
 def room_codes(hotel_id: str, r: Reservation) -> list[dict]:
-    """Pincodes per kamer voor de berichten: kamer, pincode, tekst "Kamer 16, verdieping 2" en de korte
-    vorm voor sms en WhatsApp ("kamer 16 verdiep 2"). Buiten PRD zonder Salto: XXXXXX per kamer."""
-    texts = templates.load_texts(hotel_id, normalize_language(r.guest.language))["algemeen"]
+    """Pincodes per kamer voor de berichten: kamer, pincode, tekst voor de mail ("Kamer 16, 1e verdieping",
+    "Kamer 2, historische suite"), korte vorm voor sms en WhatsApp ("16 verdiep 1", "2 (eigen ingang ...)")
+    en de uitleg over een eigen ingang. Buiten PRD zonder Salto: XXXXXX per kamer."""
+    lang = normalize_language(r.guest.language)
+    texts = templates.load_texts(hotel_id, lang)["algemeen"]
     if r.access_codes:
         codes = [(c["room"], c["pin"]) for c in r.access_codes]
     elif test_mode(hotel_id) and not salto_ready(hotel_id):
@@ -152,11 +170,12 @@ def room_codes(hotel_id: str, r: Reservation) -> list[dict]:
         return []
     out = []
     for room, pin in codes:
-        floor = floor_of(hotel_id, room)
-        out.append({"room": room, "pin": pin,
-                    "label": texts["kamer_code"].format(kamer=room, verdieping=texts["verdieping"].format(nr=floor) if floor else ""),
-                    "short_floor": texts["verdieping_kort"].format(nr=floor) if floor else "",
-                    "short": texts["kamer_kort"].format(kamer=room, verdieping_kort=texts["verdieping_kort"].format(nr=floor) if floor else "")})
+        info = room_info(hotel_id, room, lang)
+        what = info["name"] or (texts["verdieping"].format(n=info["floor"]) if info["floor"] else "")
+        label = texts["kamer_code"].format(kamer=room, wat=what) if what else texts["kamer_code"].split(",")[0].format(kamer=room)
+        short = (f"{room} ({info['short']})" if info["short"]
+                 else f"{room} {texts['verdieping_kort'].format(n=info['floor'])}" if info["floor"] else str(room))
+        out.append({"room": room, "pin": pin, "label": label, "short": short, "access": info["access"]})
     return out
 
 
@@ -165,7 +184,8 @@ def message_data(hotel_id: str, r: Reservation) -> dict[str, str]:
     code = {}
     codes = room_codes(hotel_id, r)
     if codes:
-        code = {"_codes": [(c["label"], c["pin"]) for c in codes]}
+        code = {"_codes": [(c["label"], c["pin"]) for c in codes],
+                "_access": [(c["label"], c["access"]) for c in codes if c["access"]]}
     if r.access_pin:
         code |= {"pincode": r.access_pin,
                 "code_geldig_van": templates.format_moment(r.access_valid_from, lang) if r.access_valid_from else "",
@@ -184,7 +204,7 @@ MAX_ATTEMPTS = 3  # per stap en kanaal; daarna niet meer opnieuw (staat rood in 
 WHATSAPP_VARIABLES = {
     "confirmation": ("voornaam", "checkin_link"),
     "reminder": ("voornaam", "checkin_link"),
-    "access_code": ("kamer_tekst", "pincode"),  # per kamer: "Uw verblijf @ Hotel Lucca, {{1}}, code: {{2}} ↵"
+    "access_code": ("kamer_kort", "pincode"),  # per kamer: "Uw verblijf @ Hotel Lucca, kamer {{1}}, code: {{2}} ↵"
 }
 
 
@@ -219,6 +239,7 @@ def _rendered(hotel_id: str, step: workflow.Step, r: Reservation, cfg: dict):
     if test and step.mail_content().get("code") and not salto_ready(hotel_id):
         data.setdefault("pincode", PLACEHOLDER_PIN)
         data.setdefault("_codes", [(c["label"], c["pin"]) for c in room_codes(hotel_id, r)])
+        data.setdefault("_access", [(c["label"], c["access"]) for c in room_codes(hotel_id, r) if c["access"]])
         if not r.access_valid_from:
             from hotel_checkin.processes import grant_access
 
@@ -362,9 +383,9 @@ def phone_messages(hotel_id: str, step: workflow.Step, r: Reservation, sms_text:
     texts = templates.load_texts(hotel_id, normalize_language(r.guest.language))["access_code"]
     out = []
     for c in codes:
-        fields = {**values, "kamer": c["room"], "verdieping_kort": c["short_floor"], "pincode": c["pin"]}
+        fields = {**values, "kamer": c["room"], "kamer_kort": c["short"], "pincode": c["pin"]}
         text = templates._fill(texts["sms_kamer"], templates._Fields(fields))
-        out.append((c["room"], text, {**fields, "kamer_tekst": c["short"]}))
+        out.append((c["room"], text, fields))
     return out
 
 

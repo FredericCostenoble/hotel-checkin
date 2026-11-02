@@ -205,24 +205,46 @@ def test_old_single_code_is_read_as_one_entry():
     assert repo._codes_from(e) == [{"room": "12, 14", "pin": "1234", "user_id": "u", "group_id": "g", "schedule_id": "s"}]
 
 
-def test_code_mail_and_sms_per_room(monkeypatch):
+def test_code_mail_and_sms_per_room():
     """Code-mail: één regel per kamer met de pijl achter de code; sms en WhatsApp: één bericht per kamer;
-    één kamer: de pijl staat achter de code zelf (review 02/11)."""
-    from hotel_checkin.core import hotels, workflow
+    verdieping = eerste cijfer van het kamernummer; één kamer: de pijl meteen achter de code (review 02/11)."""
+    from hotel_checkin.core import workflow
     from hotel_checkin.processes import send_messages
 
-    real = hotels.load_hotel
-    monkeypatch.setattr(hotels, "load_hotel", lambda h: {**real(h), "verdiepingen": {"16": 2}})
     r = Reservation("lucca", "m1", Guest("Ann", "Peeters", language="nl"), date(2099, 1, 1), date(2099, 1, 3),
                     rooms=["16", "21"])
     r.access_codes = [{"room": "16", "pin": "2242"}, {"room": "21", "pin": "9911"}]
     step = next(s for s in workflow.steps("lucca", "booking") if s.step == "access_code")
     msg, _ = send_messages._rendered("lucca", step, r, workflow.config("lucca"))
-    assert "Kamer 16, verdieping 2: " in msg.html and "2242&nbsp;↵" in msg.html and "9911&nbsp;↵" in msg.html
-    assert "Kamer 16, verdieping 2: 2242 ↵" in msg.text and "Uw persoonlijke pincodes".upper() in msg.text
+    assert "Kamer 16, 1e verdieping: " in msg.html and "2242&nbsp;↵" in msg.html and "9911&nbsp;↵" in msg.html
+    assert "Kamer 21, 2e verdieping: 9911 ↵" in msg.text and "eigen ingang" not in msg.html.lower()
     texts = [t for _, t, _ in send_messages.phone_messages("lucca", step, r, "x", {"hotel_naam": "Hotel Lucca"})]
-    assert texts == ["Uw verblijf @ Hotel Lucca, kamer 16 verdiep 2, code: 2242 ↵",
-                     "Uw verblijf @ Hotel Lucca, kamer 21, code: 9911 ↵"]
+    assert texts == ["Uw verblijf @ Hotel Lucca, kamer 16 verdiep 1, code: 2242 ↵",
+                     "Uw verblijf @ Hotel Lucca, kamer 21 verdiep 2, code: 9911 ↵"]
     r.rooms, r.access_codes = ["16"], [{"room": "16", "pin": "2242"}]
     one, _ = send_messages._rendered("lucca", step, r, workflow.config("lucca"))
     assert "2242 ↵" in one.html and "Uw persoonlijke pincode<" in one.html
+
+
+def test_rooms_with_own_entrance():
+    """Kamer 2 (suite om de hoek) en 20 (appartement naast het hotel): eigen naam, geen verdieping,
+    uitleg over de ingang onder de code, in de taal van de gast."""
+    from hotel_checkin.core import workflow
+    from hotel_checkin.processes import send_messages
+
+    assert send_messages.room_info("lucca", "12", "nl")["floor"] == "1"
+    assert send_messages.room_info("lucca", "2", "nl") | {"access": ""} == {
+        "floor": "", "name": "historische suite", "short": "eigen ingang Kuipersstraat", "access": ""}
+    r = Reservation("lucca", "m2", Guest("Ann", "Peeters", language="en"), date(2099, 1, 1), date(2099, 1, 3),
+                    rooms=["2"])
+    r.access_codes = [{"room": "2", "pin": "1111"}]
+    step = next(s for s in workflow.steps("lucca", "booking") if s.step == "access_code")
+    msg, _ = send_messages._rendered("lucca", step, r, workflow.config("lucca"))
+    assert "Please note: own entrance".upper() in msg.text and "turn left into Kuipersstraat" in msg.html
+    assert send_messages.phone_messages("lucca", step, r, "x", {"hotel_naam": "Hotel Lucca"})[0][1] == \
+        "Your stay @ Hotel Lucca, room 2 (own entrance Kuipersstraat), code: 1111 ↵"
+    r.guest.language, r.rooms = "nl", ["20", "14"]
+    r.access_codes = [{"room": "20", "pin": "2020"}, {"room": "14", "pin": "1414"}]
+    msg, _ = send_messages._rendered("lucca", step, r, workflow.config("lucca"))
+    assert "Kamer 20, appartement naast het hotel: 2020 ↵" in msg.text and "Kamer 14, 1e verdieping: 1414 ↵" in msg.text
+    assert "<strong>Kamer 20, appartement naast het hotel:</strong> Uw appartement is in het gebouw rechts" in msg.html

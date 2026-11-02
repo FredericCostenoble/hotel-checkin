@@ -116,9 +116,43 @@ common_lock_ids = []               # TODO: voordeur en andere gemeenschappelijke
 [salto.rooms]
 # kamernummer = id van de deur bij Salto (of een lijst van ids), bv. "12" = "a1b2c3..."
 
-[verdiepingen]
-# kamernummer = verdieping, voor de code per kamer ("Kamer 16, verdieping 2"). Leeg = alleen het kamernummer.
-# bv. "16" = 2
+[kamers]
+# Verdieping van een kamer in de code-mail en de sms: het eerste cijfer van het kamernummer (12 = 1e verdieping,
+# 23 = 2e verdieping). Kamers die daar niet in passen (eigen naam, eigen ingang), staan hieronder in [kamers.<nummer>].
+verdieping_regel = "eerste_cijfer"   # eerste_cijfer of geen (geen verdieping tonen)
+
+[kamers.2]
+# Historische suite op de benedenverdieping, met een eigen ingang om de hoek (Kuipersstraat), niet via de voordeur.
+# naam: in de code-mail ("Kamer 2, historische suite"); kort: in de sms; toegang: uitleg onder de code in de mail.
+verdieping = ""   # leeg = geen verdieping tonen (anders bv. 0 voor de benedenverdieping)
+naam_nl = "historische suite"
+naam_fr = "suite historique"
+naam_en = "historic suite"
+naam_de = "historische Suite"
+kort_nl = "eigen ingang Kuipersstraat"
+kort_fr = "entrée propre Kuipersstraat"
+kort_en = "own entrance Kuipersstraat"
+kort_de = "eigener Eingang Kuipersstraat"
+toegang_nl = "Uw suite heeft een eigen ingang: u gaat niet via de voordeur van het hotel. Sta met uw gezicht naar de voordeur van het hotel en ga naar links, de Kuipersstraat in. De deur is naast de garagepoort; het klavier voor uw pincode hangt naast de deur."
+toegang_fr = "Votre suite a sa propre entrée : vous ne passez pas par la porte d'entrée de l'hôtel. Face à la porte d'entrée de l'hôtel, tournez à gauche dans la Kuipersstraat. La porte se trouve à côté de la porte de garage ; le clavier pour votre code PIN est à côté de la porte."
+toegang_en = "Your suite has its own entrance: you do not use the front door of the hotel. Facing the hotel's front door, turn left into Kuipersstraat. The door is next to the garage door; the keypad for your PIN code is next to the door."
+toegang_de = "Ihre Suite hat einen eigenen Eingang: Sie gehen nicht durch die Haustür des Hotels. Stellen Sie sich mit Blick auf die Haustür des Hotels und gehen Sie nach links in die Kuipersstraat. Die Tür ist neben dem Garagentor; das Tastenfeld für Ihren PIN-Code hängt neben der Tür."
+
+[kamers.20]
+# Appartement in het gebouw rechts naast het hotel, met een eigen klavier; niet op de 2e verdieping.
+verdieping = ""
+naam_nl = "appartement naast het hotel"
+naam_fr = "appartement à côté de l'hôtel"
+naam_en = "apartment next to the hotel"
+naam_de = "Apartment neben dem Hotel"
+kort_nl = "appartement rechts naast het hotel"
+kort_fr = "appartement à droite de l'hôtel"
+kort_en = "apartment right next to the hotel"
+kort_de = "Apartment rechts neben dem Hotel"
+toegang_nl = "Uw appartement is in het gebouw rechts naast het hotel: u gaat niet via de voordeur van het hotel. Sta met uw gezicht naar de voordeur van het hotel; het gebouw rechts ervan heeft een eigen klavier voor uw pincode."
+toegang_fr = "Votre appartement se trouve dans le bâtiment à droite de l'hôtel : vous ne passez pas par la porte d'entrée de l'hôtel. Face à la porte d'entrée de l'hôtel, le bâtiment à sa droite a son propre clavier pour votre code PIN."
+toegang_en = "Your apartment is in the building to the right of the hotel: you do not use the front door of the hotel. Facing the hotel's front door, the building to its right has its own keypad for your PIN code."
+toegang_de = "Ihr Apartment befindet sich im Gebäude rechts neben dem Hotel: Sie gehen nicht durch die Haustür des Hotels. Mit Blick auf die Haustür des Hotels hat das Gebäude rechts davon ein eigenes Tastenfeld für Ihren PIN-Code."
 
 [lighthouse]
 # Reservation Manager. Aanmelden met robotgebruiker uit Key Vault: lucca-lighthouse-username / -password
