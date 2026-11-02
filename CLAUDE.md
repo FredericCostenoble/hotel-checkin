@@ -13,8 +13,9 @@
 - Technische namen (paden, bronnen, variabelen, berichttypes) in het Engels; teksten voor gasten
   en gebruikers in hun eigen taal.
 - Lighthouse: browserautomatisatie (Playwright) met een eigen robotgebruiker per hotel (zonder MFA).
-  Alleen lezen, behalve in PRD: de code wegschrijven, de overschrijving van Booking.com registreren
-  (processes/booking_payout.py) en betaalverzoeken maken. Buiten PRD alleen schrijven op reservaties van een
+  Alleen lezen, behalve in PRD: de pincode bovenaan de opmerking zetten en de kamers op KLAAR OM IN TE CHECKEN
+  (processes/pms_sync.py), de overschrijving van Booking.com registreren (processes/booking_payout.py) en
+  betaalverzoeken maken. Bestaande tekst in Lighthouse nooit overschrijven, alleen aanvullen. Buiten PRD alleen schrijven op reservaties van een
   testgast ([test] guest_names, Lucca: Seppe Meersseman; core/safety.py, may_write_pms).
   Pagina's altijd volledig laten laden (folio/transacties laden asynchroon), en niet met vaste wachttijden
   maar door na te gaan of wat nodig is er staat. Nooit klikken op Bevestigen, Annuleren of Nieuwe reservering.

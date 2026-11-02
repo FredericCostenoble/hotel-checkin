@@ -120,6 +120,8 @@ def _to_entity(r: Reservation) -> dict:
         "transactions": json.dumps(r.transactions),
         "payout_registered_at": r.payout_registered_at.isoformat() if r.payout_registered_at else "",
         "pay_link": r.pay_link or "",
+        "room_statuses": json.dumps(r.room_statuses),
+        "pms_codes_line": r.pms_codes_line or "",
         "status": r.status.value,
         "source": r.source or "",
         "paid": "" if r.paid is None else str(r.paid),
@@ -186,6 +188,8 @@ def _from_entity(e: dict) -> Reservation:
         transactions=json.loads(e["transactions"]) if e.get("transactions") else [],
         payout_registered_at=datetime.fromisoformat(e["payout_registered_at"]) if e.get("payout_registered_at") else None,
         pay_link=e.get("pay_link") or None,
+        room_statuses=json.loads(e["room_statuses"]) if e.get("room_statuses") else [],
+        pms_codes_line=e.get("pms_codes_line") or None,
         token=e["token"] or None,
         checkin_completed_at=(
             datetime.fromisoformat(e["checkin_completed_at"]) if e["checkin_completed_at"] else None
@@ -220,9 +224,11 @@ LIST_FIELDS = ("first_name", "last_name", "arrival", "departure", "rooms", "room
 CONTACT_FIELDS = ("email", "phone", "language", "country", "backup_email", "backup_phone", "relay_email",
                   "contact_checked_at")
 DETAIL_FIELDS = ("rooms", "arrival", "departure", "paid", "open_amount", "folio", "folio_total", "status",
-                 "pms_status", "email", "phone", "rate_plan", "non_refundable", "remarks", "transactions")
+                 "pms_status", "email", "phone", "rate_plan", "non_refundable", "remarks", "transactions",
+                 "room_statuses")
 PAYOUT_FIELDS = ("payout_registered_at",)
 PAY_LINK_FIELDS = ("pay_link",)
+PMS_SYNC_FIELDS = ("pms_codes_line", "room_statuses")
 FORM_FIELDS = ("email", "phone", "language", "backup_email", "backup_phone", "relay_email", "channels",
                "checkin_completed_at")
 SALTO_FIELDS = ("access_codes", "access_valid_from", "access_valid_until", "access_pin", "salto_user_id",

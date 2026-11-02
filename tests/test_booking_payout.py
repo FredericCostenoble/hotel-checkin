@@ -109,3 +109,41 @@ def test_payment_mail_link_saved_and_moved(monkeypatch):
     assert mail_trigger._payment_links("lucca", [{"id": "m1", "subject": "x", "text": MAIL}]) == 1
     assert repo.get_reservation("lucca", r.reservation_id).pay_link.endswith("e431bb8e22ef")
     assert moved == ["Betaalverzoeken"]
+
+
+def test_door_code_line_on_top_keeps_rest():
+    """Lighthouse: "Deur Pin code: ..." bovenaan de opmerking, de rest blijft staan (review 02/11)."""
+    from hotel_checkin.pms.lighthouse_parse import door_code_line, with_door_codes
+
+    booking = "\nResGlobalInfo\n Booking.com\n PrePay:payment_on_Booking.com (Payout type: BankTransfer)362 EUR"
+    one = door_code_line([("16", "2242")])
+    assert one == "Deur Pin code: 2242"
+    assert with_door_codes(booking, one) == "Deur Pin code: 2242\n" + booking
+    assert with_door_codes("", one) == "Deur Pin code: 2242"
+    two = door_code_line([("16", "2242"), ("21", "9911")])
+    assert two == "Deur Pin code: kamer 16: 2242, kamer 21: 9911"
+    # nieuwe codes (bv. kamer erbij): onze vorige regel vervangen, niet verdubbelen
+    assert with_door_codes(with_door_codes(booking, one), two) == two + "\n" + booking
+
+
+def test_pms_sync_only_with_codes_and_allowed(monkeypatch):
+    from hotel_checkin.processes import pms_sync
+
+    monkeypatch.setenv("APP_ENV", "tst")
+    r = _r(None, 5, last="meersseman")
+    assert not pms_sync.candidate(r)  # nog geen code
+    r.access_codes = [{"room": "16", "pin": "2242"}]
+    assert pms_sync.candidate(r)
+    written, statuses = [], []
+    monkeypatch.setattr(pms_sync.lighthouse, "set_comments", lambda h, rid, compose, lh: written.append(compose("oud")))
+    detail = _r(None, 5, last="meersseman")
+    detail.room_statuses = ["none"]
+    monkeypatch.setattr(pms_sync.lighthouse, "get_reservation", lambda h, rid, lh: detail)
+    monkeypatch.setattr(pms_sync.lighthouse, "set_room_status", lambda h, rid, s, lh: statuses.append(s) or [s])
+    repo.save_reservation(r)
+    assert "KLAAR OM IN TE CHECKEN" in pms_sync.handle("lucca", r, None)
+    assert written == ["Deur Pin code: 2242\noud"] and statuses == ["readyforcheckin"]
+    assert not pms_sync.candidate(repo.get_reservation("lucca", r.reservation_id))  # klaar, niet opnieuw
+    other = _r(None, 6)
+    other.access_codes = [{"room": "16", "pin": "1"}]
+    assert not pms_sync.candidate(other)  # echte gast in TST: alleen lezen

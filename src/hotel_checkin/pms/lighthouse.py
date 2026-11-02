@@ -100,7 +100,7 @@ _DETAIL_JS = r"""() => {
   };
   const rooms = [...document.querySelectorAll('select')]
     .filter(s => [...s.options].some(o => o.text === 'INGECHECKT'))
-    .map(s => ({ status: s.selectedOptions[0]?.text || '', text: txt(s.closest('tr') || s.parentElement.parentElement) }));
+    .map(s => ({ status: s.selectedOptions[0]?.text || '', value: s.value || '', text: txt(s.closest('tr') || s.parentElement.parentElement) }));
   const contactName = document.querySelector('#contact-name');
   const trans = [...document.querySelectorAll('*')].find(e => e.childElementCount === 0 && e.textContent.trim() === 'Transacties');
   return {
@@ -198,6 +198,58 @@ def connect(hotel_id: str) -> LighthouseSession:
             detail = lighthouse.get_reservation("lucca", r.reservation_id, lh)
     """
     return LighthouseSession(hotel_id)
+
+
+ROOM_STATUSES = ("none", "readyforcheckin", "checkin", "checkout")  # keuzelijst per kamer (kleur in Lighthouse)
+
+
+def set_room_status(hotel_id: str, reservation_id: str, status: str, session: LighthouseSession) -> list[str]:
+    """Status van elke kamer van de reservatie zetten, zoals de keuzelijst per kamer het doet (Lighthouse
+    bewaart meteen). Kamers die al op die status staan, blijven zo. Bij INGECHECKT opent Lighthouse een
+    venster voor zijn eigen sleutelsysteem: dat wordt gesloten zonder iets te bevestigen.
+    Geeft de status per kamer terug zoals ze daarna is. Fout als Lighthouse iets anders dan Success meldt
+    (bv. GuestsMissingInfo: gegevens van de gasten ontbreken)."""
+    if status not in ROOM_STATUSES:
+        raise ValueError(status)
+    page = session.goto(DETAIL_PATH.format(id=reservation_id), ready=_TRANSACTIONS_LOADED, timeout=10_000)
+    session.close_popups()
+    selects = page.locator("select.btn_checkinout")
+    for i in range(selects.count()):
+        sel = selects.nth(i)
+        if sel.input_value() == status:
+            continue
+        with page.expect_response(lambda r: "EditAccommodationCheckInOut" in r.url, timeout=20_000) as resp:
+            sel.select_option(status)
+        answer = resp.value.json() if resp.value.ok else {"status": f"HTTP {resp.value.status}"}
+        if answer.get("status") != "Success":
+            raise RuntimeError(f"Lighthouse weigerde status {status}: {answer.get('status')}")
+        if status in ("checkin", "checkout"):
+            session.close_popups()  # venster van het sleutelsysteem van Lighthouse: niets bevestigen
+    return [selects.nth(i).input_value() for i in range(selects.count())]
+
+
+def set_comments(hotel_id: str, reservation_id: str, compose, session: LighthouseSession) -> str:
+    """De opmerking van de reservatie aanpassen (venster Bewerken bij Algemene informatie, veld Comments).
+    compose(huidige tekst) geeft de nieuwe tekst; de huidige tekst wordt altijd vlak ervoor gelezen.
+    Geeft de bewaarde tekst terug."""
+    page = session.goto(DETAIL_PATH.format(id=reservation_id), ready=_TRANSACTIONS_LOADED, timeout=10_000)
+    session.close_popups()
+    page.locator("a.btnEditGeneralSettings").first.click()
+    box = page.locator("#txtComments")
+    box.wait_for(state="visible")
+    new = compose(box.input_value())
+    box.fill(new)
+    with page.expect_response(lambda r: "EditGeneralSettings" in r.url and r.request.method == "POST", timeout=20_000):
+        page.locator("input[type=submit][value=Bewaren]").first.click()
+    # Nakijken: de opmerking zoals Lighthouse ze nu bewaard heeft
+    saved = page.evaluate(
+        """async id => { const h = await fetch('/Customer/Reservations/EditGeneralSettings/' + id,
+                                               {headers: {'X-Requested-With': 'XMLHttpRequest'}}).then(r => r.text());
+                         const d = new DOMParser().parseFromString(h, 'text/html');
+                         return (d.querySelector('#txtComments') || {}).value || ''; }""", reservation_id)
+    if saved.strip() != new.strip():
+        raise RuntimeError("Opmerking niet bewaard in Lighthouse")
+    return saved
 
 
 PAYMENT_METHODS = {"bank_transfer": "Overschrijving"}  # naam in de keuzelijst "Selecteer een betaalmethode"

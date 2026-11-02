@@ -130,8 +130,11 @@ def _refresh_due(hotel_id: str) -> bool:
     from hotel_checkin.processes import booking_payout
 
     cfg, today = workflow.config(hotel_id), clock.today(hotel_id)
-    if any(booking_payout.candidate(r, cfg, today) for r in guests.list_reservations(hotel_id)):
-        return True  # overschrijving van Booking.com te registreren: niet wachten op het interval
+    from hotel_checkin.processes import pms_sync
+
+    stored = guests.list_reservations(hotel_id)
+    if any(booking_payout.candidate(r, cfg, today) or pms_sync.candidate(r) for r in stored):
+        return True  # iets te schrijven in Lighthouse (overschrijving, pincode, status): niet wachten
     hours = float(hotel_setting(hotel_id, "ROBOT_CONTACT_REFRESH_HOURS", default="2", shared=False))
     runs = [r for r in guests.robot_runs(hotel_id, task=refresh_contacts.TASK) if r.get("ok")]
     if not runs:
