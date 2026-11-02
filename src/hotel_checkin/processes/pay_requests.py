@@ -52,13 +52,16 @@ def pay_step_soon(hotel_id: str, r: Reservation, today: date, cfg: dict) -> str 
     return None
 
 
-def candidate(r: Reservation, today: date, cfg: dict) -> str | None:
-    """Moet er nu een betaalverzoek gemaakt worden? Geeft het bericht terug waarvoor, anders None."""
+def candidate(r: Reservation, today: date, cfg: dict, unknown_open: bool = False) -> str | None:
+    """Moet er nu een betaalverzoek gemaakt worden? Geeft het bericht terug waarvoor, anders None.
+    unknown_open: ook als het saldo nog niet gelezen is (de taak leest het dan eerst)."""
     if r.status == ReservationStatus.CANCELLED or r.pay_requested_at:
         return None
     if r.pay_link and not safety.is_test_guest(r.hotel_id, r.guest.first_name, r.guest.last_name):
         return None  # link bestaat al (bv. met de hand gemaakt). Testgast: toch één keer zelf maken, om te testen
-    if r.open_amount is None or r.open_amount <= 0.01:
+    if r.open_amount is None and not unknown_open:
+        return None
+    if r.open_amount is not None and r.open_amount <= 0.01:
         return None
     if not safety.may_write_pms(r.hotel_id, r.guest.first_name, r.guest.last_name):
         return None
@@ -91,7 +94,7 @@ def due(hotel_id: str, today: date | None = None) -> list[Reservation]:
         return []
     today = today or clock.today(hotel_id)
     cfg = workflow.config(hotel_id)
-    return [r for r in guests.list_reservations(hotel_id) if candidate(r, today, cfg)]
+    return [r for r in guests.list_reservations(hotel_id) if candidate(r, today, cfg, unknown_open=True)]
 
 
 def waiting_too_long(hotel_id: str) -> list[Reservation]:
@@ -120,7 +123,24 @@ def run(hotel_id: str, lh, today: date | None = None) -> dict:
             result["left"] = len(todo) - n + 1
             break
         label = r.booking_number or r.reservation_id[:8]
+        if r.open_amount is None:  # saldo nog niet gekend: eerst de pagina lezen
+            progress.step(hotel_id, TASK, f"{n} van {len(todo)}: {label}, openstaand saldo lezen")
+            try:
+                d = lighthouse.get_reservation(hotel_id, r.reservation_id, lh, contact=False)
+            except Exception as exc:  # noqa: BLE001
+                result["errors"].append(f"{label}: saldo niet gelezen ({type(exc).__name__}: {str(exc)[:120]})")
+                continue
+            if d.open_amount is None:
+                result["errors"].append(f"{label}: openstaand saldo niet gevonden op de pagina")
+                continue
+            r.open_amount, r.folio, r.folio_total = d.open_amount, d.folio, d.folio_total
+            guests.save_reservation(r, fields=("open_amount", "folio", "folio_total"))
+            if r.open_amount <= 0.01:
+                result["nothing_open"] = result.get("nothing_open", 0) + 1
+                continue
         step = candidate(r, today, cfg)
+        if not step:
+            continue
         progress.step(hotel_id, TASK, f"{n} van {len(todo)}: {label} (voor {step})")
         try:
             amount = lighthouse.create_payment_request(hotel_id, r.reservation_id, send_to, template(hotel_id),

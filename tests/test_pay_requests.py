@@ -61,3 +61,14 @@ def test_test_guest_gets_own_request_even_with_manual_link(monkeypatch):
     assert pr.candidate(r, TODAY, cfg)  # testgast: één keer zelf maken
     r.pay_requested_at = pr.datetime.now(pr.UTC)
     assert pr.candidate(r, TODAY, cfg) is None  # daarna niet meer
+
+
+def test_reads_open_amount_first_when_unknown(monkeypatch):
+    r = _r(arrival_in=1, open_amount=None)
+    repo.save_reservation(r)
+    detail = _r(arrival_in=1, open_amount=8.4)
+    monkeypatch.setattr(pr.lighthouse, "get_reservation", lambda h, rid, lh, contact=True: detail)
+    made = []
+    monkeypatch.setattr(pr.lighthouse, "create_payment_request", lambda *a: made.append(a[1]) or 8.4)
+    monkeypatch.setattr("hotel_checkin.messaging.mailbox.mailbox_address", lambda h: "checkin@hotellucca.be")
+    assert pr.run("lucca", None, TODAY)["made"] and made == ["r1"]
