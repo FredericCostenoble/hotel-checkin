@@ -163,14 +163,16 @@ def test_robot_check_interval_per_hotel(monkeypatch):
     from hotel_checkin import robot
 
     monkeypatch.delenv("ROBOT_MANUAL", raising=False)
-    assert robot._check_due("lucca") is None  # None = tijd voor een run
+    assert robot._check_due("lucca") is None  # Lucca: check_minutes = 0, elke run op schema
+    monkeypatch.setenv("LUCCA_ROBOT_CHECK_MINUTES", "60")  # een trager hotel
+    assert robot._check_due("lucca") is None  # None = tijd voor een run (nog geen run)
     now = datetime.now(UTC)
     repo.log_robot_run("lucca", new_reservation.TASK, now - timedelta(minutes=5), True)
-    why = robot._check_due("lucca")  # check_minutes = 60
+    why = robot._check_due("lucca")  # om de 60 minuten
     assert why and "overgeslagen" in why and "60 minuten" in why
     monkeypatch.setenv("LUCCA_ROBOT_CHECK_MINUTES", "5")
     assert robot._check_due("lucca") is None  # per omgeving overschreven
-    monkeypatch.delenv("LUCCA_ROBOT_CHECK_MINUTES")
+    monkeypatch.setenv("LUCCA_ROBOT_CHECK_MINUTES", "60")
     monkeypatch.setenv("ROBOT_MANUAL", "1")
     assert robot._check_due("lucca") is None  # knop in de monitor
 

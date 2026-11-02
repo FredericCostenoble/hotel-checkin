@@ -113,7 +113,9 @@ def _check_due(hotel_id: str) -> str | None:
     waarom niet (voor het robotlog)."""
     if os.environ.get("ROBOT_MANUAL"):
         return None
-    minutes = float(hotel_setting(hotel_id, "ROBOT_CHECK_MINUTES", default="60", shared=False))
+    minutes = float(hotel_setting(hotel_id, "ROBOT_CHECK_MINUTES", default="0", shared=False) or 0)
+    if minutes <= 0:
+        return None  # elke run op schema gaat door
     runs = [r for r in guests.robot_runs(hotel_id, task=new_reservation.TASK) if r.get("ok")]
     if not runs:
         return None
