@@ -31,7 +31,7 @@ const T = {
     wf_params: "Parameters (alle flows)", wf_params_moved: "Toeristenbelasting en munt staan bij Instellingen > Hotel.",
     wf_seen: "Waarden van Via (Lighthouse) die nu bij deze flow horen:", wf_seen_none: "Nog geen reservaties in deze flow.", p_city_tax: "Toeristenbelasting", p_unit: "Per", unit_person_night: "persoon per nacht",
     unit_person_stay: "persoon per verblijf", p_currency: "Munt", wf_not_ready: "nog niet gebouwd (Salto)", wf_off: "uit",
-    returning: n => `terugkerend (${n}×)`, mg_message: "Bericht", mg_time: "Tijdstip", short_confirmation: "Bevestiging", short_checkin_form: "Formulier ingevuld", ch_lighthouse: "Lighthouse", short_booking_payout: "Overschrijving Booking.com", short_pms_sync: "Code en status in Lighthouse", short_room_change: "Kamerwissel", ch_form: "formulier", short_reminder: "Herinnering", short_access_code: "Code-mail", mg_channel: "Kanaal", mg_to: "Naar",
+    returning: n => `terugkerend (${n}×)`, mg_message: "Bericht", mg_time: "Tijdstip", short_confirmation: "Bevestiging", short_checkin_form: "Formulier ingevuld", ch_lighthouse: "Lighthouse", short_booking_payout: "Overschrijving Booking.com", short_pay_request: "Betaalverzoek in Lighthouse", short_pms_sync: "Code en status in Lighthouse", short_room_change: "Kamerwissel", ch_form: "formulier", short_reminder: "Herinnering", short_access_code: "Code-mail", mg_channel: "Kanaal", mg_to: "Naar",
     mg_title: (num, guest) => `Berichten voor ${guest} (${num})`, mg_click: "Klik voor alle details",
     mg_plan: "Tijdlijn", mg_attempts: "Alle pogingen", mg_next: "volgt",
     pl_sent: "verstuurd op", pl_failed: "mislukt op", pl_planned: "gepland", pl_due: "wordt nu verstuurd", pl_will: "wordt verstuurd op", pl_wont: "wordt niet verstuurd", pl_was: "gepland", pl_skipped: "valt weg", pl_off: "niet actief", pl_missed: "niet verstuurd, te laat", lg_sent: "verstuurd", lg_failed: "mislukt", lg_planned: "komt nog", lg_missed: "te laat, niet verstuurd", lg_cond: "voorwaarde niet voldaan", lg_off: "niet actief", pl_cond: "niet verstuurd, voorwaarde", form_yes: "✓ formulier ingevuld", form_no: "formulier niet ingevuld", sb_open: "Versturen", sb_again: "Opnieuw versturen",
@@ -44,7 +44,7 @@ const T = {
     hs_default: "standaard", hs_env: "In deze omgeving vastgelegd in Key Vault of de Function App: die waarde gaat voor.",
     hs_add: "Toevoegen", hs_key: "naam", hs_value: "waarde", hs_reset_confirm: "Alle instellingen terug naar het hotelbestand? Alle wijzigingen gaan verloren.",
     hs_list: "komma's ertussen",
-    sec_schakelaars: "Hoofdschakelaars", sec_hotel: "Hotel", sec_test: "Testomgeving", sec_workflow_parameters: "Toeristenbelasting en munt", sec_reviews: "Reviews", sec_verzending: "Afzender van de mails", sec_receptie: "Receptie", sec_checkout: "Check-out", sec_ontbijt: "Ontbijt",
+    sec_schakelaars: "Hoofdschakelaars", sec_hotel: "Hotel", sec_test: "Testomgeving", sec_workflow_parameters: "Toeristenbelasting en munt", sec_reviews: "Reviews", sec_verzending: "Afzender van de mails", sec_receptie: "Receptie", sec_checkout: "Check-out", sec_ontbijt: "Ontbijt", sec_betaalverzoek: "Betaalverzoeken",
     sec_wifi: "Wifi", sec_parking: "Parking", sec_nood: "Noodnummer", sec_twilio: "Twilio (sms en WhatsApp)", sec_robot: "Robot",
     sec_messaging: "Berichten", sec_whatsapp: "WhatsApp-sjablonen", sec_retention: "Bewaartermijnen", sec_salto: "Salto",
     sec_salto_rooms: "Salto: kamers en deuren", sec_lighthouse: "Lighthouse", sec_checkin: "Check-in-formulier",
@@ -73,7 +73,7 @@ const T = {
     hours_a: "Nieuwe reservaties van de laatste", hours_b: "uur", run: "Robot nu draaien",
     r_start: "Start", r_duration: "Duur", r_task: "Taak", r_result: "Resultaat", r_found: "Te doen", r_new: "Gedaan", r_error: "Opmerking",
     all_tasks: "Alle", sub_log: "Logboek robot", del: "Verwijderen", del_confirm: "Deze regel uit het logboek verwijderen?", del_all: "Alles verwijderen",
-    del_all_confirm: (n, task) => `${n} regels${task ? ` van "${task}"` : ""} uit het logboek verwijderen?`, t_azure: "Azure start", t_container: "container", t_ready: s => `klaar om te lezen na ${s} s`, t_login: "aanmelden", t_browser: "browser starten", t_reused: "sessie hergebruikt", t_new: "opnieuw aangemeld", t_list: "lijst", t_contact: (n, sec) => `${n} contact${n > 1 ? "en" : ""} à ${sec} s`, task_nieuwe_reservaties: "Nieuwe reservaties", task_contactgegevens_nalezen: "Reservaties bijwerken", task_overschrijving_booking: "Overschrijvingen", task_lighthouse_bijwerken: "Pincode en status in Lighthouse", task_meldingen: "Meldingen per mail", task_onderhoud: "Gasten synchroniseren", task_berichten: "Berichten", task_bewaking: "Bewaking", task_robot: "Run", task_ontbijt_labels: "Ontbijt labels", task_oude_boekingen: "Oudere boekingen", sw_not_built: "nog niet gebouwd",
+    del_all_confirm: (n, task) => `${n} regels${task ? ` van "${task}"` : ""} uit het logboek verwijderen?`, t_azure: "Azure start", t_container: "container", t_ready: s => `klaar om te lezen na ${s} s`, t_login: "aanmelden", t_browser: "browser starten", t_reused: "sessie hergebruikt", t_new: "opnieuw aangemeld", t_list: "lijst", t_contact: (n, sec) => `${n} contact${n > 1 ? "en" : ""} à ${sec} s`, task_nieuwe_reservaties: "Nieuwe reservaties", task_contactgegevens_nalezen: "Reservaties bijwerken", task_overschrijving_booking: "Overschrijvingen", task_lighthouse_bijwerken: "Pincode en status in Lighthouse", task_meldingen: "Meldingen per mail", task_onderhoud: "Gasten synchroniseren", task_berichten: "Berichten", task_bewaking: "Bewaking", task_robot: "Run", task_ontbijt_labels: "Ontbijt labels", task_oude_boekingen: "Oudere boekingen", task_betaalverzoeken: "Betaalverzoeken", sw_not_built: "nog niet gebouwd",
     ok: "ok", fail: "fout", partial: "deels", busy: "De robot is bezig...", live_now: "nu bezig", run_open: "klik om de taken te tonen", run_close: "klik om te verbergen", run_label: "Robotrun", run_tasks: n => `${n} ${n === 1 ? "taak" : "taken"}`, run_failed: n => `fout in ${n} ${n === 1 ? "taak" : "taken"}`, live_done: "afsluiten", live_since: s => `sinds ${s} s`, live_quiet: s => `geen teken van leven sinds ${s} s`, live_run: "run gestart om", scheduled: "Draait ook automatisch op schema.",
     not_installed: "De robot is in deze omgeving nog niet geïnstalleerd.", no_runs: "Nog geen afgeronde run",
     load_error: "Fout bij laden",
@@ -108,7 +108,7 @@ const T = {
     wf_params: "Parameters (all flows)", wf_params_moved: "City tax and currency are under Settings > Hotel.",
     wf_seen: "Values of Via (Lighthouse) that now fall in this flow:", wf_seen_none: "No reservations in this flow yet.", p_city_tax: "City tax", p_unit: "Per", unit_person_night: "person per night",
     unit_person_stay: "person per stay", p_currency: "Currency", wf_not_ready: "not built yet (Salto)", wf_off: "off",
-    returning: n => `returning (${n}×)`, mg_message: "Message", mg_time: "Time", short_confirmation: "Confirmation", short_checkin_form: "Form filled in", ch_lighthouse: "Lighthouse", short_booking_payout: "Booking.com bank transfer", short_pms_sync: "Code and status in Lighthouse", short_room_change: "Room change", ch_form: "form", short_reminder: "Reminder", short_access_code: "Code mail", mg_channel: "Channel", mg_to: "To",
+    returning: n => `returning (${n}×)`, mg_message: "Message", mg_time: "Time", short_confirmation: "Confirmation", short_checkin_form: "Form filled in", ch_lighthouse: "Lighthouse", short_booking_payout: "Booking.com bank transfer", short_pay_request: "Payment request in Lighthouse", short_pms_sync: "Code and status in Lighthouse", short_room_change: "Room change", ch_form: "form", short_reminder: "Reminder", short_access_code: "Code mail", mg_channel: "Channel", mg_to: "To",
     mg_title: (num, guest) => `Messages for ${guest} (${num})`, mg_click: "Click for all details",
     mg_plan: "Timeline", mg_attempts: "All attempts", mg_next: "next",
     pl_sent: "sent on", pl_failed: "failed on", pl_planned: "planned", pl_due: "being sent now", pl_will: "will be sent on", pl_wont: "will not be sent", pl_was: "planned", pl_skipped: "skipped", pl_off: "not active", pl_missed: "not sent, too late", lg_sent: "sent", lg_failed: "failed", lg_planned: "still to come", lg_missed: "too late, not sent", lg_cond: "condition not met", lg_off: "not active", pl_cond: "not sent, condition", form_yes: "✓ form filled in", form_no: "form not filled in", sb_open: "Send", sb_again: "Send again",
@@ -121,7 +121,7 @@ const T = {
     hs_default: "default", hs_env: "Set for this environment in Key Vault or the Function App: that value takes precedence.",
     hs_add: "Add", hs_key: "name", hs_value: "value", hs_reset_confirm: "Reset all settings to the hotel file? All changes will be lost.",
     hs_list: "comma separated",
-    sec_schakelaars: "Main switches", sec_hotel: "Hotel", sec_test: "Test environment", sec_workflow_parameters: "City tax and currency", sec_reviews: "Reviews", sec_verzending: "Mail sender", sec_receptie: "Reception", sec_checkout: "Check-out", sec_ontbijt: "Breakfast",
+    sec_schakelaars: "Main switches", sec_hotel: "Hotel", sec_test: "Test environment", sec_workflow_parameters: "City tax and currency", sec_reviews: "Reviews", sec_verzending: "Mail sender", sec_receptie: "Reception", sec_checkout: "Check-out", sec_ontbijt: "Breakfast", sec_betaalverzoek: "Payment requests",
     sec_wifi: "Wi-Fi", sec_parking: "Parking", sec_nood: "Emergency number", sec_twilio: "Twilio (SMS and WhatsApp)", sec_robot: "Robot",
     sec_messaging: "Messages", sec_whatsapp: "WhatsApp templates", sec_retention: "Retention", sec_salto: "Salto",
     sec_salto_rooms: "Salto: rooms and doors", sec_lighthouse: "Lighthouse", sec_checkin: "Check-in form",
@@ -150,7 +150,7 @@ const T = {
     hours_a: "New reservations of the last", hours_b: "hours", run: "Run robot now",
     r_start: "Start", r_duration: "Duration", r_task: "Task", r_result: "Result", r_found: "To do", r_new: "Done", r_error: "Note",
     all_tasks: "All", sub_log: "Robot log", del: "Delete", del_confirm: "Delete this line from the log?", del_all: "Delete all",
-    del_all_confirm: (n, task) => `Delete ${n} lines${task ? ` of "${task}"` : ""} from the log?`, t_azure: "Azure start", t_container: "container", t_ready: s => `ready to read after ${s} s`, t_login: "login", t_browser: "start browser", t_reused: "session reused", t_new: "logged in again", t_list: "list", t_contact: (n, sec) => `${n} contact${n > 1 ? "s" : ""} × ${sec} s`, task_nieuwe_reservaties: "New reservations", task_contactgegevens_nalezen: "Update reservations", task_overschrijving_booking: "Bank transfers", task_lighthouse_bijwerken: "PIN and status in Lighthouse", task_meldingen: "Mail notifications", task_onderhoud: "Synchronize guests", task_berichten: "Messages", task_bewaking: "Monitoring", task_robot: "Run", task_ontbijt_labels: "Breakfast labels", task_oude_boekingen: "Older bookings", sw_not_built: "not built yet",
+    del_all_confirm: (n, task) => `Delete ${n} lines${task ? ` of "${task}"` : ""} from the log?`, t_azure: "Azure start", t_container: "container", t_ready: s => `ready to read after ${s} s`, t_login: "login", t_browser: "start browser", t_reused: "session reused", t_new: "logged in again", t_list: "list", t_contact: (n, sec) => `${n} contact${n > 1 ? "s" : ""} × ${sec} s`, task_nieuwe_reservaties: "New reservations", task_contactgegevens_nalezen: "Update reservations", task_overschrijving_booking: "Bank transfers", task_lighthouse_bijwerken: "PIN and status in Lighthouse", task_meldingen: "Mail notifications", task_onderhoud: "Synchronize guests", task_berichten: "Messages", task_bewaking: "Monitoring", task_robot: "Run", task_ontbijt_labels: "Breakfast labels", task_oude_boekingen: "Older bookings", task_betaalverzoeken: "Payment requests", sw_not_built: "not built yet",
     ok: "ok", fail: "failed", partial: "partly", busy: "The robot is running...", live_now: "running now", run_open: "click to show the tasks", run_close: "click to hide", run_label: "Robot run", run_tasks: n => `${n} ${n === 1 ? "task" : "tasks"}`, run_failed: n => `error in ${n} ${n === 1 ? "task" : "tasks"}`, live_done: "closing", live_since: s => `for ${s} s`, live_quiet: s => `no sign of life for ${s} s`, live_run: "run started at", scheduled: "Also runs automatically on a schedule.",
     not_installed: "The robot is not installed in this environment yet.", no_runs: "No finished run yet",
     load_error: "Loading failed",
@@ -166,7 +166,7 @@ const day = iso => iso ? new Date(iso + (iso.length === 10 ? "T00:00" : "")).toL
 const stamp = iso => iso ? new Date(iso).toLocaleString(locale(), { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) : "";
 let rows = [], runsData = null, timer = null, waitTries = 0;
 const runOpen = {};  // robotlog: welke runs zelf open- of dichtgeklapt werden (blijft zo bij het verversen)
-const TASKS = ["nieuwe_reservaties", "contactgegevens_nalezen", "overschrijving_booking", "lighthouse_bijwerken", "ontbijt_labels", "meldingen", "onderhoud", "berichten"];
+const TASKS = ["nieuwe_reservaties", "contactgegevens_nalezen", "overschrijving_booking", "lighthouse_bijwerken", "betaalverzoeken", "ontbijt_labels", "meldingen", "onderhoud", "berichten"];
 // Taken zonder Te doen/Gedaan (alleen een notitie, bv. de bewaking: welke mail verstuurd werd)
 const NO_COUNTS = ["bewaking", "onderhoud", "robot"];  // onderhoud: de aantallen staan in de notitie
 const taskName = k => T[lang]["task_" + k] || k;
@@ -1166,6 +1166,14 @@ const HS_TEXT = {
     "Tot",
     ""
    ],
+   "betaalverzoek.template": [
+    "Template in Lighthouse",
+    "Naam van de e-mail template voor betaalverzoeken in Lighthouse."
+   ],
+   "betaalverzoek.dagen_vooraf": [
+    "Dagen vooraf",
+    "Zoveel dagen voor een mail met betaalknop maakt de robot het betaalverzoek (mail naar de eigen mailbox)."
+   ],
    "ontbijt.label": [
     "Label op het planbord",
     "Naam van het label in Lighthouse dat de robot zet bij wie ontbijt heeft (hoofdschakelaar Ontbijt labels)."
@@ -1396,6 +1404,14 @@ const HS_TEXT = {
    "ontbijt.tot": [
     "Until",
     ""
+   ],
+   "betaalverzoek.template": [
+    "Template in Lighthouse",
+    "Name of the e-mail template for payment requests in Lighthouse."
+   ],
+   "betaalverzoek.dagen_vooraf": [
+    "Days ahead",
+    "This many days before a mail with a pay button the robot creates the payment request (mail to our own mailbox)."
    ],
    "ontbijt.label": [
     "Label on the planboard",

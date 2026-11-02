@@ -176,6 +176,10 @@ def _refresh_due(hotel_id: str) -> bool:
 
     if breakfast_labels.due(hotel_id, today):
         return True  # label ONTBIJT te zetten
+    from hotel_checkin.processes import pay_requests
+
+    if pay_requests.due(hotel_id, today):
+        return True  # betaalverzoek te maken
     hours = float(hotel_setting(hotel_id, "ROBOT_CONTACT_REFRESH_HOURS", default="2", shared=False))
     runs = [r for r in guests.robot_runs(hotel_id, task=refresh_contacts.TASK)
             if r.get("ok") and not (r.get("error") or "").startswith(IDLE_PREFIX)]  # alleen echte nalezingen
@@ -260,9 +264,10 @@ def main() -> int:
                 logging.info("%s: %s e-mailadressen gevonden bij nalezen", hotel_id, found)
             else:
                 # Niets te schrijven en nalezen nog niet aan de beurt: toch per taak zeggen waarom niets gebeurde
-                from hotel_checkin.processes import booking_payout, breakfast_labels
+                from hotel_checkin.processes import booking_payout, breakfast_labels, pay_requests
 
                 booking_payout.log_idle(hotel_id)
+                pay_requests.log_run(hotel_id, datetime.now(UTC), {"todo": 0, "made": [], "errors": [], "left": 0})
                 breakfast_labels.log_idle(hotel_id)
                 guests.log_robot_run(hotel_id, refresh_contacts.TASK, datetime.now(UTC), True, 0, 0,
                                      _refresh_idle_note(hotel_id))

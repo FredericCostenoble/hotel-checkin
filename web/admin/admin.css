@@ -294,3 +294,4 @@ td.warn, .wrap.warn { color: #A85C12; }
 tr.run-head { cursor: pointer; }
 tr.run-head:hover td { background: #E7EBF4; }
 .caret-run { display: inline-block; width: 12px; color: #5C6478; }
+.task-betaalverzoeken { background: #F0EDFF; color: #3F2E8C; }

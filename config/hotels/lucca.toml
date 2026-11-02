@@ -104,6 +104,13 @@ controle_uren = []                            # extra controles op die uren met 
 robot_max_uren = 3                            # in het overzicht: robot zo lang niet gelukt = probleem
 robot_waarschuwing = false                    # aparte mail als de robot stilvalt (uit: staat in het overzicht)
 
+[betaalverzoek]
+# De robot maakt in Lighthouse een betaalverzoek (online transactie, Betaling, Stuur verzoek) voor het
+# openstaande saldo; de mail gaat naar de eigen mailbox ([verzending] afzender), nooit naar de gast. De link
+# daaruit komt als betaalknop in de mails (processes/pay_requests.py).
+template = "Betaalverzoek"   # naam van de e-mail template in Lighthouse
+dagen_vooraf = 2             # zoveel dagen voor een bericht met betaalknop
+
 [messaging]
 # Berichten uit de workflow (processes/send_messages.py). Aan of uit met de hoofdschakelaar [schakelaars] berichten.
 # Buiten PRD gaat alles naar het testadres ([test] hierboven).

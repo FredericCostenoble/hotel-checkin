@@ -328,6 +328,52 @@ def add_payment(hotel_id: str, reservation_id: str, method: str, amount: float, 
     return _read_detail(session, hotel_id, reservation_id)
 
 
+_PAY_MODAL = 'a[data-loadingmodal*="/Customer/PaymentRequest/index/"]'  # kaarticoon "Online transactie toevoegen"
+
+
+def create_payment_request(hotel_id: str, reservation_id: str, send_to: str, template: str, language: str,
+                           session: LighthouseSession) -> float:
+    """Een betaalverzoek (online transactie, type Betaling, Stuur verzoek) voor het openstaande saldo maken,
+    zoals het kaarticoontje bij de folio. De mail gaat naar `send_to` (de eigen mailbox, nooit de gast): het
+    veld "Stuur e-mail naar" wordt op "Een ander e-mailadres" gezet en vlak voor het versturen nagekeken.
+    Geeft het bedrag terug. Fout zonder iets te versturen als iets niet klopt. Of en wanneer: het proces."""
+    page = session.goto(DETAIL_PATH.format(id=reservation_id), ready=_TRANSACTIONS_LOADED, timeout=10_000)
+    session.close_popups()
+    page.locator(_PAY_MODAL).first.click()
+    form = page.locator("#SaveFormPaymentRequest")
+    form.wait_for(state="attached", timeout=15_000)
+    modal = page.locator(".modal:has(#SaveFormPaymentRequest)").first
+    modal.locator('a[data-fieldvalue="Payment"]').first.click()
+    modal.locator('a[data-fieldvalue="SendRequest"]').first.click()
+    page.wait_for_function("() => document.querySelector('#SaveFormPaymentRequest [name=ActionType]')?.value === 'Payment'"
+                           " && document.querySelector('#SaveFormPaymentRequest [name=ActionSubType]')?.value === 'SendRequest'",
+                           timeout=5_000)
+    modal.locator('input[name=requestChargesType][value="0"]').first.check()  # openstaand saldo
+    # Ontvanger: altijd "een ander e-mailadres" (lege waarde) met de eigen mailbox
+    modal.locator("select.js-sendtoselect").first.select_option(value="")
+    modal.locator("input[name=SendToCustom]").first.fill(send_to)
+    modal.locator("select.js-templateselect:visible").first.select_option(label=template)
+    langs = modal.locator("select.js-languageselect").first
+    if language in [o.get_attribute("value") for o in langs.locator("option").all()]:
+        langs.select_option(value=language)
+    check = page.evaluate("""() => { const m = document.querySelector('#SaveFormPaymentRequest');
+        const sel = m.querySelector('select.js-sendtoselect');
+        const amount = [...m.querySelectorAll('input[type=number]')].find(i => i.offsetParent !== null);
+        return { to: m.querySelector('[name=SendToCustom]').value, choice: sel ? sel.value : null,
+                 type: m.querySelector('[name=ActionType]').value, sub: m.querySelector('[name=ActionSubType]').value,
+                 amount: amount ? parseFloat(amount.value) : null }; }""")
+    if check["to"] != send_to or check["choice"] not in ("", None) or check["type"] != "Payment" \
+            or check["sub"] != "SendRequest" or not check["amount"] or check["amount"] <= 0:
+        modal.locator('input[value="Sluiten"]').first.click()
+        raise RuntimeError(f"betaalverzoek niet verstuurd, venster niet zoals verwacht: {check}")
+    modal.locator("#SaveFormPaymentRequestSubmit").first.click()
+    # Klaar zodra het venster dicht is (Lighthouse bewaart en verstuurt de mail)
+    page.wait_for_function("() => { const m = document.querySelector('#SaveFormPaymentRequest');"
+                           " return !m || !m.closest('.modal') || m.closest('.modal').offsetParent === null; }",
+                           timeout=20_000)
+    return float(check["amount"])
+
+
 PLANBOARD_PATH = "/Customer/Planboard/{start}/{end}"  # planbord voor een periode (HTML, zonder te klikken)
 LABELS_PATH = "/Customer/Planboard/UpdateLabelsAccomodation"  # wat het menu Labels op het planbord doet
 

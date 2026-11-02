@@ -112,6 +112,9 @@ def run(hotel_id: str) -> int:
     from hotel_checkin.processes import breakfast_labels
 
     breakfasts = breakfast_labels.due(hotel_id, today)
+    from hotel_checkin.processes import pay_requests
+
+    pay_todo = pay_requests.due(hotel_id, today)
 
     details_read = 0
     access_changes: list[str] = []
@@ -119,7 +122,7 @@ def run(hotel_id: str) -> int:
     skipped: list[str] = []
     timings: dict[str, float] = {}  # gemeten duur per onderdeel (seconden), voor de monitor
     try:
-        if todo or arrivals or payouts or syncs or breakfasts:
+        if todo or arrivals or payouts or syncs or breakfasts or pay_todo:
             t0 = time.monotonic()
             with lighthouse.connect(hotel_id) as lh:
                 timings["login"] = round(time.monotonic() - t0, 1)
@@ -186,6 +189,11 @@ def run(hotel_id: str) -> int:
                     progress.step(hotel_id, pms_sync.TASK, f"{len(syncs)} reservaties met een code nakijken", force=True)
                     sync_started = datetime.now(UTC)
                     pms_sync.log_run(hotel_id, sync_started, len(syncs), pms_sync.run(hotel_id, lh))
+                # Betaalverzoeken (mail naar de eigen mailbox, link voor de betaalknop), na het nalezen: dan is het
+                # openstaande saldo bijgewerkt
+                if time.monotonic() <= deadline:
+                    pay_started = datetime.now(UTC)
+                    pay_requests.log_run(hotel_id, pay_started, pay_requests.run(hotel_id, lh, today))
                 # Label ONTBIJT op het planbord (hoofdschakelaar), na het nalezen: dan is de folio bijgewerkt
                 if breakfasts and time.monotonic() <= deadline:
                     breakfast_started = datetime.now(UTC)
