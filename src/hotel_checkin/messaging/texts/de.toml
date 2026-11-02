@@ -1,6 +1,13 @@
 # Texte der Nachrichten an Gäste, Deutsch. Gleiche Struktur wie nl.toml.
 
 [algemeen]
+# Meer kamers: één code per kamer (code-mail)
+codes_titel = "Ihre persönlichen PIN-Codes"
+codes_uitleg = "Jeder Code öffnet die Haustür und dieses Zimmer, von {code_geldig_van} bis {code_geldig_tot}. Drücken Sie nach dem Code immer die Pfeiltaste ↵."
+kamer_code = "Zimmer {kamer}{verdieping}"
+verdieping = ", Etage {nr}"
+verdieping_kort = " Etage {nr}"
+kamer_kort = "Zimmer {kamer}{verdieping_kort}"   # in sms en WhatsApp, bv. "kamer 16 verdiep 2"
 meerdere_kamers = "{aantal} Zimmer: {kamers}"   # kamer in de reservatiegegevens bij meer dan één kamer
 team = "Ihr Team vom {hotel_naam}"
 voettekst = "Sie erhalten diese E-Mail, weil Sie eine Reservierung im {hotel_naam} haben."
@@ -81,6 +88,8 @@ voorvertoning = "Ihr persönlicher PIN-Code und alles, was Sie für Ihren Aufent
 aanhef = "Guten Tag {voornaam} {achternaam},"
 afsluiting = "Bis bald,"
 sms = "{hotel_naam}: bis bald, {voornaam}! Ihr PIN-Code für die Haustür und Zimmer {kamernummer}: {pincode}, danach die Pfeiltaste. Gültig von {code_geldig_van} bis {code_geldig_tot}. Alle Informationen finden Sie in Ihrer E-Mail."
+# Sms en WhatsApp met de code: één bericht per kamer
+sms_kamer = "Ihr Aufenthalt @ {hotel_naam}, Zimmer {kamer}{verdieping_kort}, Code: {pincode} ↵"
 
 [[access_code.blokken]]
 type = "text"
@@ -90,7 +99,7 @@ alineas = ["Ihr Aufenthalt steht bevor. Unten finden Sie alles, was Sie für Ihr
 module = "code"
 type = "highlight"
 titel = "Ihr persönlicher PIN-Code"
-waarde = "{pincode}"
+waarde = "{pincode} ↵"
 alineas = ["Mit diesem Code öffnen Sie die Haustür und Ihre Zimmertür, von {code_geldig_van} bis {code_geldig_tot}.", "Drücken Sie nach dem Code immer die Pfeiltaste ↵.", "Ihr Zimmer: {kamernummer}"]
 
 [[access_code.blokken]]
@@ -218,7 +227,7 @@ link = "{checkin_link}"
 [[modules.code]]
 type = "highlight"
 titel = "Ihr persönlicher PIN-Code"
-waarde = "{pincode}"
+waarde = "{pincode} ↵"
 alineas = [
   "Mit diesem Code öffnen Sie die Haustür und Ihre Zimmertür, von {code_geldig_van} bis {code_geldig_tot}.", "Drücken Sie nach dem Code immer die Pfeiltaste ↵.",
   "Ihr Zimmer: {kamernummer}",

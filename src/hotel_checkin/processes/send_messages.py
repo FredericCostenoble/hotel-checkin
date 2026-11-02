@@ -133,11 +133,41 @@ def has_pay_link(r: Reservation) -> bool:
     return bool(r.pay_link)
 
 
+def floor_of(hotel_id: str, room: str) -> str:
+    """Verdieping van een kamer ([verdiepingen] "16" = 2 in het hotelbestand), of leeg."""
+    from hotel_checkin.core.hotels import load_hotel
+
+    return str(load_hotel(hotel_id).get("verdiepingen", {}).get(str(room), "") or "")
+
+
+def room_codes(hotel_id: str, r: Reservation) -> list[dict]:
+    """Pincodes per kamer voor de berichten: kamer, pincode, tekst "Kamer 16, verdieping 2" en de korte
+    vorm voor sms en WhatsApp ("kamer 16 verdiep 2"). Buiten PRD zonder Salto: XXXXXX per kamer."""
+    texts = templates.load_texts(hotel_id, normalize_language(r.guest.language))["algemeen"]
+    if r.access_codes:
+        codes = [(c["room"], c["pin"]) for c in r.access_codes]
+    elif test_mode(hotel_id) and not salto_ready(hotel_id):
+        codes = [(room, PLACEHOLDER_PIN) for room in (r.rooms or ["?"])]
+    else:
+        return []
+    out = []
+    for room, pin in codes:
+        floor = floor_of(hotel_id, room)
+        out.append({"room": room, "pin": pin,
+                    "label": texts["kamer_code"].format(kamer=room, verdieping=texts["verdieping"].format(nr=floor) if floor else ""),
+                    "short_floor": texts["verdieping_kort"].format(nr=floor) if floor else "",
+                    "short": texts["kamer_kort"].format(kamer=room, verdieping_kort=texts["verdieping_kort"].format(nr=floor) if floor else "")})
+    return out
+
+
 def message_data(hotel_id: str, r: Reservation) -> dict[str, str]:
     lang = r.guest.language
     code = {}
+    codes = room_codes(hotel_id, r)
+    if codes:
+        code = {"_codes": [(c["label"], c["pin"]) for c in codes]}
     if r.access_pin:
-        code = {"pincode": r.access_pin,
+        code |= {"pincode": r.access_pin,
                 "code_geldig_van": templates.format_moment(r.access_valid_from, lang) if r.access_valid_from else "",
                 "code_geldig_tot": templates.format_moment(r.access_valid_until, lang) if r.access_valid_until else ""}
     return {**code,
@@ -154,7 +184,7 @@ MAX_ATTEMPTS = 3  # per stap en kanaal; daarna niet meer opnieuw (staat rood in 
 WHATSAPP_VARIABLES = {
     "confirmation": ("voornaam", "checkin_link"),
     "reminder": ("voornaam", "checkin_link"),
-    "access_code": ("voornaam", "pincode", "kamernummer"),
+    "access_code": ("kamer_tekst", "pincode"),  # per kamer: "Uw verblijf @ Hotel Lucca, {{1}}, code: {{2}} ↵"
 }
 
 
@@ -188,6 +218,7 @@ def _rendered(hotel_id: str, step: workflow.Step, r: Reservation, cfg: dict):
     notes = []
     if test and step.mail_content().get("code") and not salto_ready(hotel_id):
         data.setdefault("pincode", PLACEHOLDER_PIN)
+        data.setdefault("_codes", [(c["label"], c["pin"]) for c in room_codes(hotel_id, r)])
         if not r.access_valid_from:
             from hotel_checkin.processes import grant_access
 
@@ -261,20 +292,26 @@ def deliver(hotel_id: str, step: workflow.Step, r: Reservation, cfg: dict,
 
     only=(kanaal, adres): opnieuw versturen vanuit de monitor, alleen dat kanaal en adres, ook als
     het al eens lukte. note komt in het berichtenlog.
+
+    Code-mail: per gsm-nummer één sms of WhatsApp per kamer ("Uw verblijf @ Hotel Lucca, kamer 16 verdiep 2,
+    code: 2242 ↵"), elk apart gevolgd in het berichtenlog (veld room).
     """
     rows = [m for m in guests.messages_for(hotel_id, r.reservation_id) if m["message_type"] == step.step]
     muted = muted_channels(hotel_id, r)
 
-    def done(channel: str, to: str) -> bool:
-        return any(m["ok"] and m["channel"] == channel and _same(m.get("recipient", ""), to) for m in rows)
+    def mine(m: dict, channel: str, to: str, room: str) -> bool:
+        return m["channel"] == channel and _same(m.get("recipient", ""), to) and (m.get("room") or "") == room
 
-    def tries(channel: str, to: str) -> int:
-        return sum(1 for m in rows if m["channel"] == channel and _same(m.get("recipient", ""), to))
+    def done(channel: str, to: str, room: str = "") -> bool:
+        return any(m["ok"] and mine(m, channel, to, room) for m in rows)
 
-    def wanted(channel: str, to: str) -> bool:
+    def tries(channel: str, to: str, room: str = "") -> int:
+        return sum(1 for m in rows if mine(m, channel, to, room))
+
+    def wanted(channel: str, to: str, room: str = "") -> bool:
         if only:
             return only[0] == channel and _same(only[1], to)
-        return channel not in muted and not done(channel, to) and tries(channel, to) < MAX_ATTEMPTS
+        return channel not in muted and not done(channel, to, room) and tries(channel, to, room) < MAX_ATTEMPTS
 
     out: list[tuple[str, SendResult]] = []
     # Met de hand (monitor): precies dat kanaal en adres, ook een adres dat niet bij de reservatie hoort
@@ -290,27 +327,44 @@ def deliver(hotel_id: str, step: workflow.Step, r: Reservation, cfg: dict,
     msg, data = _rendered(hotel_id, step, r, cfg)
     template = whatsapp_template(hotel_id, step.step, r.guest.language)
     values = {**data, "checkin_link": templates.checkin_link(hotel_id, r.token or "", normalize_language(r.guest.language))}
-    variables = {str(i): str(values.get(k, "")) for i, k in enumerate(WHATSAPP_VARIABLES.get(step.step, ()), 1)}
-    for to in phones:
-        if not only and (done("whatsapp", to) or done("sms", to)):
-            continue
-        wa_ok = False
-        if template and ((only and wanted("whatsapp", to)) or
-                         (not only and "whatsapp" not in muted and tries("whatsapp", to) == 0)):
+    for room, text, vals in phone_messages(hotel_id, step, r, msg.sms, values):
+        variables = {str(i): str(vals.get(k, "")) for i, k in enumerate(WHATSAPP_VARIABLES.get(step.step, ()), 1)}
+        for to in phones:
+            if not only and (done("whatsapp", to, room) or done("sms", to, room)):
+                continue
+            wa_ok = False
+            if template and ((only and wanted("whatsapp", to)) or
+                             (not only and "whatsapp" not in muted and tries("whatsapp", to, room) == 0)):
+                mid = guests.new_message_id()
+                result = whatsapp.send_whatsapp_template(hotel_id, to, template, variables,
+                                                         status_callback=status_url(hotel_id, r.reservation_id, mid))
+                guests.log_message(hotel_id, r.reservation_id, step.step, result, message_id=mid, note=note, room=room)
+                out.append(("whatsapp", result))
+                wa_ok = result.ok
+            if wa_ok or not text or not wanted("sms", to, room):
+                continue  # sms alleen als WhatsApp mislukt (meteen of later gemeld door Twilio)
             mid = guests.new_message_id()
-            result = whatsapp.send_whatsapp_template(hotel_id, to, template, variables,
-                                                     status_callback=status_url(hotel_id, r.reservation_id, mid))
-            guests.log_message(hotel_id, r.reservation_id, step.step, result, message_id=mid, note=note)
-            out.append(("whatsapp", result))
-            wa_ok = result.ok
-        if wa_ok or not msg.sms or not wanted("sms", to):
-            continue  # sms alleen als WhatsApp mislukt (meteen of later gemeld door Twilio)
-        mid = guests.new_message_id()
-        result = sms.send_sms(hotel_id, to, msg.sms, status_callback=status_url(hotel_id, r.reservation_id, mid))
-        fallback = "terugval: geen WhatsApp" if template and not only else ""
-        guests.log_message(hotel_id, r.reservation_id, step.step, result, message_id=mid,
-                           note=", ".join(x for x in (note, fallback) if x))
-        out.append(("sms", result))
+            result = sms.send_sms(hotel_id, to, text, status_callback=status_url(hotel_id, r.reservation_id, mid))
+            fallback = "terugval: geen WhatsApp" if template and not only else ""
+            guests.log_message(hotel_id, r.reservation_id, step.step, result, message_id=mid,
+                               note=", ".join(x for x in (note, fallback) if x), room=room)
+            out.append(("sms", result))
+    return out
+
+
+def phone_messages(hotel_id: str, step: workflow.Step, r: Reservation, sms_text: str,
+                   values: dict) -> list[tuple[str, str, dict]]:
+    """Sms en WhatsApp voor een stap: (kamer, tekst, waarden voor het WhatsApp-sjabloon). De code-mail
+    geeft één bericht per kamer met haar eigen code; andere stappen één bericht (kamer leeg)."""
+    codes = room_codes(hotel_id, r) if step.step == "access_code" else []
+    if not codes:
+        return [("", sms_text, values)]
+    texts = templates.load_texts(hotel_id, normalize_language(r.guest.language))["access_code"]
+    out = []
+    for c in codes:
+        fields = {**values, "kamer": c["room"], "verdieping_kort": c["short_floor"], "pincode": c["pin"]}
+        text = templates._fill(texts["sms_kamer"], templates._Fields(fields))
+        out.append((c["room"], text, {**fields, "kamer_tekst": c["short"]}))
     return out
 
 

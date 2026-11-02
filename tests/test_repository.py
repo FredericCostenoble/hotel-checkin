@@ -188,12 +188,12 @@ def test_partial_save_keeps_fields_of_other_writers():
     repo.save_reservation(_reservation("p1"))
     stale = repo.get_reservation("lucca", "p1")
     fresh = repo.get_reservation("lucca", "p1")
-    fresh.access_pin, fresh.salto_user_id = "654321", "user-1"
+    fresh.access_codes = [{"room": "14", "pin": "654321", "user_id": "user-1", "group_id": "g"}]
     repo.save_reservation(fresh, fields=repo.SALTO_FIELDS)
     stale.rooms = ["21"]
     repo.save_reservation(stale, fields=repo.DETAIL_FIELDS)
     r = repo.get_reservation("lucca", "p1")
-    assert r.rooms == ["21"] and r.access_pin == "654321" and r.salto_user_id == "user-1"
+    assert r.rooms == ["21"] and r.access_pin == "654321" and r.access_codes[0]["user_id"] == "user-1"
 
 
 def test_save_retries_on_etag_conflict(monkeypatch):
@@ -206,7 +206,7 @@ def test_save_retries_on_etag_conflict(monkeypatch):
         if not calls:  # iemand anders schrijft net de pincode
             calls.append(1)
             other = dict(table.get_entity(entity["PartitionKey"], entity["RowKey"]))
-            other["access_pin"] = "111111"
+            other["access_codes"] = '[{"room": "3", "pin": "111111"}]'
             table.upsert_entity(other)
         return real_update(entity, **kw)
 

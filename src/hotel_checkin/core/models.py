@@ -75,17 +75,28 @@ class Reservation:
     booked_at: datetime | None = None  # "Gemaakt op" in Lighthouse
     contact_checked_at: datetime | None = None  # wanneer de contactgegevens in Lighthouse gelezen werden
     guest_id: str | None = None  # gastprofiel (tabel Guests), zie processes/guest_profiles.py
-    access_pin: str | None = None  # pincode van Salto (processes/grant_access.py)
-    access_valid_from: datetime | None = None
+    # Pincodes van Salto, één per kamer (processes/grant_access.py): {"room", "pin", "user_id", "group_id",
+    # "schedule_id"}. De ids bij Salto zijn nodig om op te ruimen na vertrek of bij annulering.
+    access_codes: list[dict] = field(default_factory=list)
+    access_valid_from: datetime | None = None  # zelfde periode voor alle kamers
     access_valid_until: datetime | None = None
-    salto_user_id: str | None = None  # om op te ruimen na vertrek of bij annulering
-    salto_group_id: str | None = None
-    salto_schedule_id: str | None = None
-    access_rooms: list[str] = field(default_factory=list)  # kamers waarvoor de pincode nu geldt
     stay_counted_at: datetime | None = None  # wanneer het verblijf meegeteld werd in het gastprofiel
     cancel_counted_at: datetime | None = None  # wanneer de annulering meegeteld werd in het gastprofiel
     created_at: datetime | None = None  # wanneer de robot de reservatie voor het eerst bewaarde (alleen lezen)
     updated_at: datetime | None = None  # laatste keer dat er iets aan de gegevens veranderde (alleen lezen)
+
+
+def _first_pin(self) -> str | None:
+    return self.access_codes[0]["pin"] if self.access_codes else None
+
+
+def _code_rooms(self) -> list[str]:
+    return [c["room"] for c in self.access_codes]
+
+
+# Gemakshalve: de pincode als er maar één kamer is (eerste code), en de kamers met een code
+Reservation.access_pin = property(_first_pin)
+Reservation.access_rooms = property(_code_rooms)
 
 
 @dataclass

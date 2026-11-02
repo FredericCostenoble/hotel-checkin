@@ -3,6 +3,13 @@
 # Bloktypes: text (alinea's), details (tabel), highlight (opvallend vak), list (opsomming), button.
 
 [algemeen]
+# Meer kamers: één code per kamer (code-mail)
+codes_titel = "Uw persoonlijke pincodes"
+codes_uitleg = "Elke code opent de voordeur en die kamer, van {code_geldig_van} tot {code_geldig_tot}. Druk na de code altijd op de pijltoets ↵."
+kamer_code = "Kamer {kamer}{verdieping}"
+verdieping = ", verdieping {nr}"
+verdieping_kort = " verdiep {nr}"
+kamer_kort = "kamer {kamer}{verdieping_kort}"   # in sms en WhatsApp, bv. "kamer 16 verdiep 2"
 meerdere_kamers = "{aantal} kamers: {kamers}"   # kamer in de reservatiegegevens bij meer dan één kamer
 team = "Het team van {hotel_naam}"
 voettekst = "U ontvangt deze mail omdat u een reservatie hebt bij {hotel_naam}."
@@ -83,6 +90,8 @@ voorvertoning = "Uw persoonlijke pincode en alles wat u nodig hebt voor uw verbl
 aanhef = "Beste {voornaam},"
 afsluiting = "Tot binnenkort,"
 sms = "{hotel_naam}: beste {voornaam}, tot binnenkort! Uw pincode voor de voordeur en kamer {kamernummer}: {pincode}, daarna de pijltoets. Geldig van {code_geldig_van} tot {code_geldig_tot}. Alle info staat in uw mail."
+# Sms en WhatsApp met de code: één bericht per kamer
+sms_kamer = "Uw verblijf @ {hotel_naam}, kamer {kamer}{verdieping_kort}, code: {pincode} ↵"
 
 [[access_code.blokken]]
 type = "text"
@@ -92,7 +101,7 @@ alineas = ["Uw verblijf komt eraan. Hieronder vindt u alles wat u nodig hebt voo
 module = "code"
 type = "highlight"
 titel = "Uw persoonlijke pincode"
-waarde = "{pincode}"
+waarde = "{pincode} ↵"
 alineas = ["Met deze code opent u de voordeur en uw kamerdeur, van {code_geldig_van} tot {code_geldig_tot}.", "Druk na de code altijd op de pijltoets ↵.", "Uw kamer: {kamernummer}"]
 
 [[access_code.blokken]]
@@ -220,7 +229,7 @@ link = "{checkin_link}"
 [[modules.code]]
 type = "highlight"
 titel = "Uw persoonlijke pincode"
-waarde = "{pincode}"
+waarde = "{pincode} ↵"
 alineas = [
   "Met deze code opent u de voordeur en uw kamerdeur, van {code_geldig_van} tot {code_geldig_tot}.", "Druk na de code altijd op de pijltoets ↵.",
   "Uw kamer: {kamernummer}",

@@ -68,7 +68,7 @@ def arrivals_due(hotel_id: str, requested: set[str] | None = None) -> list:
     todo = [r for r in guests.list_reservations(hotel_id)
             if (not r.access_pin and r.status != ReservationStatus.CANCELLED
                 and today <= r.arrival <= today + timedelta(days=days))
-            or (r.salto_group_id and r.departure >= today)
+            or (r.access_codes and r.departure >= today)
             or (r.status != ReservationStatus.CANCELLED and today - timedelta(days=2) <= r.departure <= today)
             or message_due_soon(hotel_id, r, cfg, sent.get(r.reservation_id, set()), today)
             or (r.status != ReservationStatus.CANCELLED and r.departure >= today
@@ -149,7 +149,7 @@ def run(hotel_id: str) -> int:
                     _apply_detail(reservation, detail)
                     guests.save_reservation(reservation, fields=guests.DETAIL_FIELDS)
                     details_read += 1
-                    if reservation.salto_group_id:
+                    if reservation.access_codes:
                         try:
                             changes = grant_access.follow_changes(hotel_id, reservation)
                         except Exception as exc:  # noqa: BLE001 - volgende keer opnieuw

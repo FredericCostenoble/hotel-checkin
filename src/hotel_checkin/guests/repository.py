@@ -134,17 +134,27 @@ def _to_entity(r: Reservation) -> dict:
         "booked_at": r.booked_at.isoformat() if r.booked_at else "",
         "contact_checked_at": r.contact_checked_at.isoformat() if r.contact_checked_at else "",
         "guest_id": r.guest_id or "",
-        "access_pin": r.access_pin or "",
+        "access_codes": json.dumps(r.access_codes),
         "access_valid_from": r.access_valid_from.isoformat() if r.access_valid_from else "",
         "access_valid_until": r.access_valid_until.isoformat() if r.access_valid_until else "",
-        "salto_user_id": r.salto_user_id or "",
-        "salto_group_id": r.salto_group_id or "",
-        "salto_schedule_id": r.salto_schedule_id or "",
-        "access_rooms": json.dumps(r.access_rooms),
+        # vroegere velden (één code voor alle kamers): leeg, zodat _codes_from ze niet meer gebruikt
+        "access_pin": "", "salto_user_id": "", "salto_group_id": "", "salto_schedule_id": "", "access_rooms": "",
         "stay_counted_at": r.stay_counted_at.isoformat() if r.stay_counted_at else "",
         "cancel_counted_at": r.cancel_counted_at.isoformat() if r.cancel_counted_at else "",
         "updated_at": _now().isoformat(),
     }
+
+
+def _codes_from(e: dict) -> list[dict]:
+    """Pincodes per kamer. Vroeger (tot 02/11/2026) één code voor alle kamers in aparte velden:
+    die wordt één regel met alle kamers, zodat ze nog opgeruimd en gevolgd kan worden."""
+    if e.get("access_codes"):
+        return json.loads(e["access_codes"])
+    if e.get("access_pin") or e.get("salto_user_id") or e.get("salto_group_id"):
+        rooms = json.loads(e["access_rooms"]) if e.get("access_rooms") else []
+        return [{"room": ", ".join(rooms), "pin": e.get("access_pin") or "", "user_id": e.get("salto_user_id") or None,
+                 "group_id": e.get("salto_group_id") or None, "schedule_id": e.get("salto_schedule_id") or None}]
+    return []
 
 
 def _from_entity(e: dict) -> Reservation:
@@ -186,13 +196,9 @@ def _from_entity(e: dict) -> Reservation:
         booked_at=datetime.fromisoformat(e["booked_at"]) if e.get("booked_at") else None,
         contact_checked_at=datetime.fromisoformat(e["contact_checked_at"]) if e.get("contact_checked_at") else None,
         guest_id=e.get("guest_id") or None,
-        access_pin=e.get("access_pin") or None,
+        access_codes=_codes_from(e),
         access_valid_from=datetime.fromisoformat(e["access_valid_from"]) if e.get("access_valid_from") else None,
         access_valid_until=datetime.fromisoformat(e["access_valid_until"]) if e.get("access_valid_until") else None,
-        salto_user_id=e.get("salto_user_id") or None,
-        salto_group_id=e.get("salto_group_id") or None,
-        salto_schedule_id=e.get("salto_schedule_id") or None,
-        access_rooms=json.loads(e["access_rooms"]) if e.get("access_rooms") else [],
         open_amount=float(e["open_amount"]) if e.get("open_amount") not in (None, "") else None,
         folio=json.loads(e["folio"]) if e.get("folio") else [],
         folio_total=float(e["folio_total"]) if e.get("folio_total") not in (None, "") else None,
@@ -219,8 +225,8 @@ PAYOUT_FIELDS = ("payout_registered_at",)
 PAY_LINK_FIELDS = ("pay_link",)
 FORM_FIELDS = ("email", "phone", "language", "backup_email", "backup_phone", "relay_email", "channels",
                "checkin_completed_at")
-SALTO_FIELDS = ("access_pin", "access_valid_from", "access_valid_until", "salto_user_id", "salto_group_id",
-                "salto_schedule_id", "access_rooms")
+SALTO_FIELDS = ("access_codes", "access_valid_from", "access_valid_until", "access_pin", "salto_user_id",
+                "salto_group_id", "salto_schedule_id", "access_rooms")
 PROFILE_FIELDS = ("guest_id", "stay_counted_at", "cancel_counted_at")
 _KEYS = {"PartitionKey", "RowKey", "hotel_id", "reservation_id", "created_at", "updated_at"}
 T_TOKENS = "TokenIndex"  # token van de formulierlink -> hotel en reservatie (geen tabelscan per aanvraag)
@@ -460,7 +466,7 @@ def new_message_id() -> str:
 
 
 def log_message(hotel_id: str, reservation_id: str, message_type: str, result: SendResult,
-                message_id: str | None = None, note: str = "") -> str:
+                message_id: str | None = None, note: str = "", room: str = "") -> str:
     """Noteer een verstuurd (of mislukt) bericht. Geeft de sleutel terug.
     status: sent of failed; later bijgewerkt door Twilio (delivered, undelivered, ...)."""
     sent_at = _now()
@@ -481,6 +487,7 @@ def log_message(hotel_id: str, reservation_id: str, message_type: str, result: S
             "sent_at": sent_at.isoformat(),
             "status": "sent" if result.ok else "failed",
             "note": note,
+            "room": room,  # code per kamer: één sms of WhatsApp per kamer
         }
     )
     return row

@@ -63,8 +63,8 @@ def test_grant_full_sequence(monkeypatch):
         fn = getattr(salto, name)
         monkeypatch.setattr(grant_access.salto, name, lambda *a, _fn=fn, **k: _fn(*a, client=client, **k))
     r = _res()
-    pin = grant_access.grant("lucca", r)
-    assert pin == "482916"
+    codes = grant_access.grant("lucca", r)
+    assert [c["pin"] for c in codes] == ["482916"]
     paths = [(m, p.replace("/v1.2/sites/site1", "").replace("/v1.1/sites/site1", "")) for m, p, _ in calls if not p.endswith("token")]
     assert paths == [("POST", "/users"), ("POST", "/access_groups"), ("POST", "/access_groups/group1/locks"),
                      ("POST", "/access_groups/group1/locks"), ("POST", "/access_groups/group1/time_schedules"),
@@ -72,8 +72,10 @@ def test_grant_full_sequence(monkeypatch):
     schedule = next(b for m, p, b in calls if p.endswith("time_schedules"))
     assert schedule["start_date"] == "2099-01-10T14:00:00" and schedule["end_date"] == "2099-01-12T11:00:00"
     saved = repo.get_reservation("lucca", "r1")
-    assert (saved.access_pin, saved.salto_user_id, saved.salto_group_id) == ("482916", "user1", "group1")
-    assert grant_access.grant("lucca", saved) == "482916" and len(calls) == len([c for c in calls])  # geen nieuwe oproepen
+    assert saved.access_codes == [{"room": "12", "pin": "482916", "user_id": "user1", "group_id": "group1",
+                                   "schedule_id": saved.access_codes[0]["schedule_id"]}]
+    before = len(calls)
+    assert grant_access.grant("lucca", saved)[0]["pin"] == "482916" and len(calls) == before  # geen nieuwe oproepen
 
 
 def test_grant_cleans_up_on_failure(monkeypatch):
@@ -107,11 +109,11 @@ def test_code_mail_sends_pin(monkeypatch):
                         lambda to, subject, html_body, **k: sent.append(html_body) or SendResult(Channel.EMAIL, to, True))
 
     def fake_grant(h, r):
-        r.access_pin, r.salto_user_id = "482916", "user1"
+        r.access_codes = [{"room": "12", "pin": "482916", "user_id": "user1", "group_id": "g1", "schedule_id": None}]
         r.access_valid_from = datetime(2099, 1, 1, 14, 0)
         r.access_valid_until = datetime(2099, 1, 3, 11, 0)
         repo.save_reservation(r)
-        return "482916"
+        return r.access_codes
     monkeypatch.setattr(grant_access, "grant", fake_grant)
     arrival = date.today() + timedelta(days=2)
     r = Reservation("lucca", "c1", Guest("Jan", "Voorbeeld", email="jan@example.com", language="nl"), arrival,
@@ -128,10 +130,10 @@ def test_maintenance_revokes_after_departure(monkeypatch):
     revoked = []
     monkeypatch.setattr(grant_access, "_cleanup", lambda h, u, g: revoked.append((u, g)))
     r = Reservation("lucca", "d1", Guest("A", "B"), date.today() - timedelta(days=3), date.today() - timedelta(days=1),
-                    salto_user_id="u", salto_group_id="g", access_pin="1")
+                    access_codes=[{"room": "12", "pin": "1", "user_id": "u", "group_id": "g"}])
     repo.save_reservation(r)
     c = Reservation("lucca", "d2", Guest("C", "D"), date.today() + timedelta(days=9), date.today() + timedelta(days=10),
-                    status=ReservationStatus.CANCELLED, salto_user_id="u2", salto_group_id="g2")
+                    status=ReservationStatus.CANCELLED, access_codes=[{"room": "14", "pin": "2", "user_id": "u2", "group_id": "g2"}])
     repo.save_reservation(c)
     assert maintenance.run("lucca")["access_revoked"] == 2
     assert sorted(revoked) == [("u", "g"), ("u2", "g2")]
@@ -143,8 +145,7 @@ def test_room_change_keeps_user_and_pin(monkeypatch):
     monkeypatch.setattr(grant_access.salto, "change_locks", lambda h, g, add, remove: calls.append(("locks", g, add, remove)))
     monkeypatch.setattr(grant_access.salto, "update_time_schedule", lambda h, g, s, a, b: calls.append(("schedule", s, a, b)))
     r = _res(rooms=("12",))
-    r.salto_user_id, r.salto_group_id, r.salto_schedule_id, r.access_pin = "u", "g", "s", "482916"
-    r.access_rooms = ["12"]
+    r.access_codes = [{"room": "12", "pin": "482916", "user_id": "u", "group_id": "g", "schedule_id": "s"}]
     r.access_valid_from, r.access_valid_until = grant_access.period("lucca", r)
     repo.save_reservation(r)
     r.rooms = ["14"]
@@ -154,13 +155,74 @@ def test_room_change_keeps_user_and_pin(monkeypatch):
     assert grant_access.follow_changes("lucca", r)[0].startswith("periode")
     assert calls[-1][0] == "schedule" and calls[-1][3].day == 13
     saved = repo.get_reservation("lucca", "r1")
-    assert saved.access_pin == "482916" and saved.access_rooms == ["14"] and saved.salto_user_id == "u"
+    assert saved.access_pin == "482916" and saved.access_rooms == ["14"] and saved.access_codes[0]["user_id"] == "u"
 
 
 def test_cancel_revokes_immediately(monkeypatch):
     removed = []
     monkeypatch.setattr(grant_access, "_cleanup", lambda h, u, g: removed.append((u, g)))
     r = _res()
-    r.salto_user_id, r.salto_group_id, r.access_pin = "u", "g", "1"
+    r.access_codes = [{"room": "12", "pin": "1", "user_id": "u", "group_id": "g"}]
     r.status = ReservationStatus.CANCELLED
     assert grant_access.follow_changes("lucca", r) == ["geannuleerd: toegang ingetrokken"] and removed == [("u", "g")]
+
+
+def test_one_code_per_room_and_room_changes(monkeypatch):
+    """Meer kamers: elke kamer haar eigen code. Kamer gewisseld: zelfde code; kamer erbij: nieuwe code;
+    kamer weg: die code weg (review 02/11)."""
+    made, cleaned, locks = [], [], []
+
+    def fake_room(h, r, room, a, b):
+        made.append(room)
+        return {"room": room, "pin": f"pin{room}", "user_id": f"u{room}", "group_id": f"g{room}", "schedule_id": None}
+
+    monkeypatch.setattr(grant_access, "_grant_room", fake_room)
+    monkeypatch.setattr(grant_access, "_cleanup", lambda h, u, g: cleaned.append(g))
+    monkeypatch.setattr(grant_access.salto, "change_locks", lambda h, g, add, remove: locks.append((g, add, remove)))
+    monkeypatch.setattr(grant_access.salto, "add_time_schedule", lambda *a: "s")
+    r = _res(rooms=("12", "14"))
+    codes = grant_access.grant("lucca", r)
+    assert [(c["room"], c["pin"]) for c in codes] == [("12", "pin12"), ("14", "pin14")] and made == ["12", "14"]
+    r.rooms = ["12", "16"]  # 14 werd 16: deur wisselen, zelfde code
+    monkeypatch.setattr(salto, "load_hotel", lambda h: {"salto": {"common_lock_ids": ["front"], "rooms": {
+        "12": "lock12", "14": ["lock14a", "lock14b"], "16": "lock16"}}}, raising=False)
+    assert grant_access.follow_changes("lucca", r)[0] == "kamer 14 naar 16"
+    assert locks == [("g14", ["lock16"], ["lock14a", "lock14b"])]
+    r.rooms = ["12"]  # kamer weg
+    assert "kamer 16: code ingetrokken" in grant_access.follow_changes("lucca", r) and cleaned == ["g14"]
+    r.rooms = ["12", "21"]  # kamer erbij
+    monkeypatch.setattr(salto, "load_hotel", lambda h: {"salto": {"common_lock_ids": ["front"], "rooms": {
+        "12": "lock12", "21": "lock21"}}}, raising=False)
+    assert "kamer 21: nieuwe code" in grant_access.follow_changes("lucca", r)
+    saved = repo.get_reservation("lucca", "r1")
+    assert [(c["room"], c["pin"]) for c in saved.access_codes] == [("12", "pin12"), ("21", "pin21")]
+
+
+def test_old_single_code_is_read_as_one_entry():
+    """Codes bewaard voor 02/11 (één code voor alle kamers) blijven bruikbaar en op te ruimen."""
+    e = {"access_pin": "1234", "salto_user_id": "u", "salto_group_id": "g", "salto_schedule_id": "s",
+         "access_rooms": '["12", "14"]'}
+    assert repo._codes_from(e) == [{"room": "12, 14", "pin": "1234", "user_id": "u", "group_id": "g", "schedule_id": "s"}]
+
+
+def test_code_mail_and_sms_per_room(monkeypatch):
+    """Code-mail: één regel per kamer met de pijl achter de code; sms en WhatsApp: één bericht per kamer;
+    één kamer: de pijl staat achter de code zelf (review 02/11)."""
+    from hotel_checkin.core import hotels, workflow
+    from hotel_checkin.processes import send_messages
+
+    real = hotels.load_hotel
+    monkeypatch.setattr(hotels, "load_hotel", lambda h: {**real(h), "verdiepingen": {"16": 2}})
+    r = Reservation("lucca", "m1", Guest("Ann", "Peeters", language="nl"), date(2099, 1, 1), date(2099, 1, 3),
+                    rooms=["16", "21"])
+    r.access_codes = [{"room": "16", "pin": "2242"}, {"room": "21", "pin": "9911"}]
+    step = next(s for s in workflow.steps("lucca", "booking") if s.step == "access_code")
+    msg, _ = send_messages._rendered("lucca", step, r, workflow.config("lucca"))
+    assert "Kamer 16, verdieping 2: " in msg.html and "2242&nbsp;↵" in msg.html and "9911&nbsp;↵" in msg.html
+    assert "Kamer 16, verdieping 2: 2242 ↵" in msg.text and "Uw persoonlijke pincodes".upper() in msg.text
+    texts = [t for _, t, _ in send_messages.phone_messages("lucca", step, r, "x", {"hotel_naam": "Hotel Lucca"})]
+    assert texts == ["Uw verblijf @ Hotel Lucca, kamer 16 verdiep 2, code: 2242 ↵",
+                     "Uw verblijf @ Hotel Lucca, kamer 21, code: 9911 ↵"]
+    r.rooms, r.access_codes = ["16"], [{"room": "16", "pin": "2242"}]
+    one, _ = send_messages._rendered("lucca", step, r, workflow.config("lucca"))
+    assert "2242 ↵" in one.html and "Uw persoonlijke pincode<" in one.html

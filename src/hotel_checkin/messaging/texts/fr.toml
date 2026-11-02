@@ -1,6 +1,13 @@
 # Textes des messages aux clients, français. Même structure que nl.toml.
 
 [algemeen]
+# Meer kamers: één code per kamer (code-mail)
+codes_titel = "Vos codes PIN personnels"
+codes_uitleg = "Chaque code ouvre la porte d'entrée et cette chambre, du {code_geldig_van} au {code_geldig_tot}. Appuyez toujours sur la touche flèche ↵ après le code."
+kamer_code = "Chambre {kamer}{verdieping}"
+verdieping = ", étage {nr}"
+verdieping_kort = " étage {nr}"
+kamer_kort = "chambre {kamer}{verdieping_kort}"   # in sms en WhatsApp, bv. "kamer 16 verdiep 2"
 meerdere_kamers = "{aantal} chambres : {kamers}"   # kamer in de reservatiegegevens bij meer dan één kamer
 team = "L'équipe de l'{hotel_naam}"
 voettekst = "Vous recevez cet e-mail parce que vous avez une réservation à l'{hotel_naam}."
@@ -81,6 +88,8 @@ voorvertoning = "Votre code PIN personnel et tout ce dont vous avez besoin pour 
 aanhef = "Bonjour {voornaam},"
 afsluiting = "À très bientôt,"
 sms = "{hotel_naam} : {voornaam}, à très bientôt ! Votre code PIN pour la porte d'entrée et la chambre {kamernummer} : {pincode}, puis la touche flèche. Valable du {code_geldig_van} au {code_geldig_tot}. Toutes les informations se trouvent dans votre e-mail."
+# Sms en WhatsApp met de code: één bericht per kamer
+sms_kamer = "Votre séjour @ {hotel_naam}, chambre {kamer}{verdieping_kort}, code : {pincode} ↵"
 
 [[access_code.blokken]]
 type = "text"
@@ -90,7 +99,7 @@ alineas = ["Votre séjour approche. Vous trouverez ci-dessous tout ce dont vous 
 module = "code"
 type = "highlight"
 titel = "Votre code PIN personnel"
-waarde = "{pincode}"
+waarde = "{pincode} ↵"
 alineas = ["Ce code ouvre la porte d'entrée et la porte de votre chambre du {code_geldig_van} au {code_geldig_tot}.", "Appuyez toujours sur la touche flèche ↵ après le code.", "Votre chambre : {kamernummer}"]
 
 [[access_code.blokken]]
@@ -218,7 +227,7 @@ link = "{checkin_link}"
 [[modules.code]]
 type = "highlight"
 titel = "Votre code PIN personnel"
-waarde = "{pincode}"
+waarde = "{pincode} ↵"
 alineas = [
   "Ce code ouvre la porte d'entrée et la porte de votre chambre du {code_geldig_van} au {code_geldig_tot}.", "Appuyez toujours sur la touche flèche ↵ après le code.",
   "Votre chambre : {kamernummer}",

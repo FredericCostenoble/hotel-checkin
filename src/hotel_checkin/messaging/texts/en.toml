@@ -1,6 +1,13 @@
 # Guest message texts, English. Same structure as nl.toml.
 
 [algemeen]
+# Meer kamers: één code per kamer (code-mail)
+codes_titel = "Your personal PIN codes"
+codes_uitleg = "Each code opens the front door and that room, from {code_geldig_van} to {code_geldig_tot}. Always press the arrow key ↵ after the code."
+kamer_code = "Room {kamer}{verdieping}"
+verdieping = ", floor {nr}"
+verdieping_kort = " floor {nr}"
+kamer_kort = "room {kamer}{verdieping_kort}"   # in sms en WhatsApp, bv. "kamer 16 verdiep 2"
 meerdere_kamers = "{aantal} rooms: {kamers}"   # kamer in de reservatiegegevens bij meer dan één kamer
 team = "The {hotel_naam} team"
 voettekst = "You are receiving this email because you have a reservation at {hotel_naam}."
@@ -81,6 +88,8 @@ voorvertoning = "Your personal PIN code and everything you need for your stay."
 aanhef = "Dear {voornaam},"
 afsluiting = "See you soon,"
 sms = "{hotel_naam}: dear {voornaam}, see you soon! Your PIN code for the front door and room {kamernummer}: {pincode}, then the arrow key. Valid from {code_geldig_van} to {code_geldig_tot}. All details are in your email."
+# Sms en WhatsApp met de code: één bericht per kamer
+sms_kamer = "Your stay @ {hotel_naam}, room {kamer}{verdieping_kort}, code: {pincode} ↵"
 
 [[access_code.blokken]]
 type = "text"
@@ -90,7 +99,7 @@ alineas = ["Your stay is coming up. Below you will find everything you need for 
 module = "code"
 type = "highlight"
 titel = "Your personal PIN code"
-waarde = "{pincode}"
+waarde = "{pincode} ↵"
 alineas = ["This code opens the front door and your room door from {code_geldig_van} to {code_geldig_tot}.", "Always press the arrow key ↵ after the code.", "Your room: {kamernummer}"]
 
 [[access_code.blokken]]
@@ -218,7 +227,7 @@ link = "{checkin_link}"
 [[modules.code]]
 type = "highlight"
 titel = "Your personal PIN code"
-waarde = "{pincode}"
+waarde = "{pincode} ↵"
 alineas = [
   "This code opens the front door and your room door from {code_geldig_van} to {code_geldig_tot}.", "Always press the arrow key ↵ after the code.",
   "Your room: {kamernummer}",

@@ -176,15 +176,15 @@ def list_locks(hotel_id: str, client: httpx.Client | None = None) -> list[dict]:
     return (data or {}).get("items", data if isinstance(data, list) else [])
 
 
-def lock_ids_for(hotel_id: str, rooms: list[str]) -> list[str]:
-    """Deuren voor deze kamers: gemeenschappelijke deuren ([salto] common_lock_ids) plus per kamer
-    ([salto.rooms] "12" = "lock-id"). Fout als een kamer niet gekoppeld is."""
+def lock_ids_for(hotel_id: str, rooms: list[str], common: bool = True) -> list[str]:
+    """Deuren voor deze kamers: gemeenschappelijke deuren ([salto] common_lock_ids, niet als
+    common=False) plus per kamer ([salto.rooms] "12" = "lock-id"). Fout als een kamer niet gekoppeld is."""
     cfg = load_hotel(hotel_id).get("salto", {})
     rooms_map = {str(k): v for k, v in cfg.get("rooms", {}).items()}
     missing = [r for r in rooms if r not in rooms_map]
     if missing:
         raise SaltoError(f"Kamer(s) {', '.join(missing)} niet gekoppeld aan een Salto-deur ([salto.rooms])")
-    ids = list(cfg.get("common_lock_ids", []))
+    ids = list(cfg.get("common_lock_ids", [])) if common else []
     for r in rooms:
         v = rooms_map[r]
         ids += v if isinstance(v, list) else [v]

@@ -162,6 +162,11 @@ def render(hotel_id: str, message: str, language: str, data: dict[str, str],
 # ---------------------------------------------------------------- tekstversie
 
 
+def _multi_codes(block: dict, f: dict) -> bool:
+    """Codeblok met meer dan één kamer (elke kamer haar eigen code)."""
+    return "{pincode}" in block.get("waarde", "") and len(f.get("_codes") or []) > 1
+
+
 def _render_text(t: dict, common: dict, f: dict) -> str:
     lines = ([f["_test_note"], ""] if f.get("_test_note") else []) + [_fill(t["aanhef"], f), ""]
     for block in t["blokken"]:
@@ -172,6 +177,9 @@ def _render_text(t: dict, common: dict, f: dict) -> str:
             lines += [_fill(p, f) for p in block["alineas"]]
         elif kind == "details":
             lines += [f"{_fill(k, f)}: {_fill(v, f)}" for k, v in block["rijen"]]
+        elif kind == "highlight" and _multi_codes(block, f):
+            lines[-1] = _fill(common["codes_titel"], f).upper()
+            lines += [f"{label}: {pin} ↵" for label, pin in f["_codes"]] + [_fill(common["codes_uitleg"], f)]
         elif kind == "highlight":
             lines.append(_fill(block["waarde"], f))
             lines += [_fill(p, f) for p in block.get("alineas", [])]
@@ -250,6 +258,22 @@ def _render_html(t: dict, common: dict, f: dict, config: dict, language: str) ->
                 f'<table role="presentation" width="100%" cellpadding="0" cellspacing="0" '
                 f'style="border-collapse:collapse;background:{c["achtergrond"]};">{rows}</table>'
                 f"{_gap(18)}"
+            )
+        elif kind == "highlight" and _multi_codes(block, f):
+            # Meer kamers: één regel per kamer, "Kamer 16, verdieping 2: 2242 ↵"
+            rows = "".join(
+                f'<p style="margin:0 0 6px 0;font-family:{FONT};font-size:15px;color:{c["tekst"]};">{_e(label)}: '
+                f'<span style="font-size:26px;letter-spacing:4px;font-weight:bold;white-space:nowrap;">{_e(pin)}&nbsp;↵</span></p>'
+                for label, pin in f["_codes"])
+            parts.append(
+                f"{_gap(8)}"
+                f'<table role="presentation" width="100%" cellpadding="0" cellspacing="0">'
+                f'<tr><td align="center" style="padding:22px 16px;background:{c["achtergrond"]};'
+                f'border:2px solid {c["accent"]};">'
+                f'<p style="margin:0 0 12px 0;font-family:{FONT};font-size:12px;letter-spacing:2px;'
+                f'text-transform:uppercase;color:{c["accent_donker"]};">{_e(_fill(common["codes_titel"], f))}</p>'
+                f'{rows}<p style="margin:10px 0 0 0;font-family:{FONT};font-size:14px;color:{c["tekst"]};">'
+                f'{_e(_fill(common["codes_uitleg"], f))}</p></td></tr></table>{_gap(22)}'
             )
         elif kind == "highlight":
             extra = "".join(

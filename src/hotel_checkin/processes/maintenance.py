@@ -66,7 +66,7 @@ def run(hotel_id: str, today: date | None = None) -> dict:
         from hotel_checkin.processes import grant_access
 
         for r in guests.list_reservations(hotel_id):
-            if (r.salto_user_id or r.salto_group_id) and (r.status == ReservationStatus.CANCELLED or r.departure < today):
+            if r.access_codes and (r.status == ReservationStatus.CANCELLED or r.departure < today):
                 try:
                     if grant_access.revoke(hotel_id, r):
                         done["access_revoked"] += 1

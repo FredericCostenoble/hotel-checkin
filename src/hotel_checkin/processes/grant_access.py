@@ -1,8 +1,9 @@
 """Proces: toegang geven via Salto voor een reservatie, en weer intrekken.
 
-Combineert de bouwblokken van access/salto.py zoals Salto het aanraadt, per boeking:
-  gebruiker, access group (deuren van de kamers plus de gemeenschappelijke deuren, periode van
-  check-in tot check-out), gebruiker in de group, pincode.
+Combineert de bouwblokken van access/salto.py zoals Salto het aanraadt, per kamer van de boeking:
+  gebruiker, access group (deur van die kamer plus de gemeenschappelijke deuren, periode van
+  check-in tot check-out), gebruiker in de group, pincode. Meer kamers = meer codes: elke kamer
+  (bv. een ander gezin van dezelfde groep) heeft haar eigen code.
 De pincode en de ids bij Salto worden bij de reservatie bewaard (opnieuw versturen, opruimen).
 Lukt een stap niet, dan wordt wat al aangemaakt was weer verwijderd.
 
@@ -32,19 +33,18 @@ def period(hotel_id: str, r: Reservation) -> tuple[datetime, datetime]:
             _at(r.departure, cfg.get("checkout", {}).get("tot", "11:00"), tz))
 
 
-def grant(hotel_id: str, r: Reservation) -> str:
-    """Geeft de pincode terug (bestaande als ze er al is). Fout als er geen kamer is of Salto faalt."""
-    if r.access_pin and r.salto_user_id:
-        return r.access_pin
-    if not r.rooms:
-        raise salto.SaltoError("nog geen kamer toegewezen")
-    lock_ids = salto.lock_ids_for(hotel_id, r.rooms)
-    valid_from, valid_until = period(hotel_id, r)
-    name = f"{r.booking_number or r.reservation_id[:8]} {r.arrival:%d/%m}"
+def _name(r: Reservation, room: str) -> str:
+    return f"{r.booking_number or r.reservation_id[:8]} {room} {r.arrival:%d/%m}"
+
+
+def _grant_room(hotel_id: str, r: Reservation, room: str, valid_from: datetime, valid_until: datetime) -> dict:
+    """Gebruiker, access group (voordeur en deze kamer), schema en pincode voor één kamer.
+    Lukt een stap niet, dan wordt wat al aangemaakt was weer verwijderd."""
+    lock_ids = salto.lock_ids_for(hotel_id, [room])
     user_id = group_id = None
     try:
-        user_id = salto.create_user(hotel_id, r.guest.first_name, r.guest.last_name, alias=name)
-        group_id = salto.create_access_group(hotel_id, name)
+        user_id = salto.create_user(hotel_id, r.guest.first_name, r.guest.last_name, alias=_name(r, room))
+        group_id = salto.create_access_group(hotel_id, _name(r, room))
         salto.add_locks(hotel_id, group_id, lock_ids)
         schedule_id = salto.add_time_schedule(hotel_id, group_id, valid_from, valid_until)
         salto.add_user_to_group(hotel_id, group_id, user_id)
@@ -52,51 +52,82 @@ def grant(hotel_id: str, r: Reservation) -> str:
     except Exception:
         _cleanup(hotel_id, user_id, group_id)
         raise
-    r.access_pin, r.salto_user_id, r.salto_group_id = pin, user_id, group_id
-    r.access_valid_from, r.access_valid_until = valid_from, valid_until
-    r.salto_schedule_id, r.access_rooms = schedule_id, list(r.rooms)
-    guests.save_reservation(r, fields=guests.SALTO_FIELDS)
-    return pin
+    return {"room": room, "pin": pin, "user_id": user_id, "group_id": group_id, "schedule_id": schedule_id}
+
+
+def grant(hotel_id: str, r: Reservation) -> list[dict]:
+    """Eén pincode per kamer (gebruiker en access group per kamer: voordeur en die kamer). Kamers die al
+    een code hebben, blijven zoals ze zijn. Geeft de codes terug. Fout als er geen kamer is of Salto faalt;
+    codes die al gemaakt waren, blijven bewaard (de volgende poging maakt alleen de rest)."""
+    if not r.rooms:
+        raise salto.SaltoError("nog geen kamer toegewezen")
+    have = set(r.access_rooms)
+    todo = [room for room in r.rooms if room not in have]
+    if not todo:
+        return r.access_codes
+    valid_from, valid_until = period(hotel_id, r)
+    try:
+        for room in todo:
+            r.access_codes.append(_grant_room(hotel_id, r, room, valid_from, valid_until))
+    finally:
+        if len(r.access_codes) > len(have):
+            r.access_valid_from, r.access_valid_until = valid_from, valid_until
+            guests.save_reservation(r, fields=guests.SALTO_FIELDS)
+    return r.access_codes
 
 
 def follow_changes(hotel_id: str, r: Reservation) -> list[str]:
-    """De pincode volgt de gast: andere kamer = andere deuren in dezelfde access group (zelfde
-    gebruiker, zelfde pincode); andere data = schema aangepast; geannuleerd = toegang weg.
-    Geeft een korte beschrijving van wat veranderde (leeg = niets)."""
+    """De pincodes volgen de gast: andere kamer = andere deur in dezelfde access group (zelfde gebruiker,
+    zelfde pincode); kamer erbij = nieuwe code; kamer weg = die code weg; andere data = schema aangepast;
+    geannuleerd = alle toegang weg. Geeft een korte beschrijving van wat veranderde (leeg = niets)."""
     from hotel_checkin.core.models import ReservationStatus
 
-    if not r.salto_group_id:
+    if not r.access_codes:
         return []
     if r.status == ReservationStatus.CANCELLED:
         revoke(hotel_id, r)
         return ["geannuleerd: toegang ingetrokken"]
     changes: list[str] = []
-    if r.rooms and sorted(r.rooms) != sorted(r.access_rooms):
-        old = set(salto.lock_ids_for(hotel_id, r.access_rooms)) if r.access_rooms else set()
-        new = set(salto.lock_ids_for(hotel_id, r.rooms))
-        salto.change_locks(hotel_id, r.salto_group_id, sorted(new - old), sorted(old - new))
-        changes.append(f"kamer {', '.join(r.access_rooms) or '?'} naar {', '.join(r.rooms)}")
-        r.access_rooms = list(r.rooms)
+    wanted = list(r.rooms)
+    if wanted:
+        removed = [c for c in r.access_codes if c["room"] not in wanted]
+        added = [room for room in wanted if room not in r.access_rooms]
+        # Andere kamer: de deur wisselen in dezelfde access group, de gast houdt zijn code
+        for c, room in zip(removed, added):
+            old = set(salto.lock_ids_for(hotel_id, [x.strip() for x in c["room"].split(",") if x.strip()], common=False))
+            new = set(salto.lock_ids_for(hotel_id, [room], common=False))
+            salto.change_locks(hotel_id, c["group_id"], sorted(new - old), sorted(old - new))
+            changes.append(f"kamer {c['room']} naar {room}")
+            c["room"] = room
+        for c in removed[len(added):]:  # kamer weg
+            _cleanup(hotel_id, c.get("user_id"), c.get("group_id"))
+            r.access_codes.remove(c)
+            changes.append(f"kamer {c['room']}: code ingetrokken")
     valid_from, valid_until = period(hotel_id, r)
     if (valid_from, valid_until) != (r.access_valid_from, r.access_valid_until):
-        if r.salto_schedule_id:
-            salto.update_time_schedule(hotel_id, r.salto_group_id, r.salto_schedule_id, valid_from, valid_until)
-        else:
-            r.salto_schedule_id = salto.add_time_schedule(hotel_id, r.salto_group_id, valid_from, valid_until)
+        for c in r.access_codes:
+            if c.get("schedule_id"):
+                salto.update_time_schedule(hotel_id, c["group_id"], c["schedule_id"], valid_from, valid_until)
+            else:
+                c["schedule_id"] = salto.add_time_schedule(hotel_id, c["group_id"], valid_from, valid_until)
         changes.append(f"periode {valid_from:%d/%m %H:%M} tot {valid_until:%d/%m %H:%M}")
         r.access_valid_from, r.access_valid_until = valid_from, valid_until
     if changes:
         guests.save_reservation(r, fields=guests.SALTO_FIELDS)
+    if wanted and [room for room in wanted if room not in r.access_rooms]:  # kamer erbij: nieuwe code
+        before = set(r.access_rooms)
+        grant(hotel_id, r)
+        changes += [f"kamer {c['room']}: nieuwe code" for c in r.access_codes if c["room"] not in before]
     return changes
 
 
 def revoke(hotel_id: str, r: Reservation) -> bool:
-    """Gebruiker en access group bij Salto verwijderen (na vertrek of bij annulering)."""
-    if not (r.salto_user_id or r.salto_group_id):
+    """Alle gebruikers en access groups bij Salto verwijderen (na vertrek of bij annulering)."""
+    if not r.access_codes:
         return False
-    _cleanup(hotel_id, r.salto_user_id, r.salto_group_id)
-    r.salto_user_id = r.salto_group_id = r.salto_schedule_id = None
-    r.access_pin, r.access_rooms = None, []
+    for c in r.access_codes:
+        _cleanup(hotel_id, c.get("user_id"), c.get("group_id"))
+    r.access_codes = []
     guests.save_reservation(r, fields=guests.SALTO_FIELDS)
     return True
 

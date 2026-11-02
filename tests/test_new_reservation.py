@@ -181,10 +181,10 @@ def test_relisted_reservation_keeps_pin_salto_and_profile(monkeypatch):
     monkeypatch.setattr(new_reservation.lighthouse, "get_new_reservations", lambda *a, **k: [_res()])
     new_reservation.run("lucca", datetime(2000, 1, 1))
     r = repo.get_reservation("lucca", "u1")
-    r.access_pin, r.salto_user_id, r.salto_group_id, r.rooms = "123456", "su", "sg", ["14"]
+    r.access_codes, r.rooms = [{"room": "14", "pin": "123456", "user_id": "su", "group_id": "sg"}], ["14"]
     r.open_amount, r.folio = 10.0, [{"label": "Citytax", "qty": 2, "amount": 10.0}]
     repo.save_reservation(r)
     new_reservation.run("lucca", datetime(2000, 1, 1))  # dezelfde rij, zonder kamer in de lijst
     after = repo.get_reservation("lucca", "u1")
-    assert (after.access_pin, after.salto_user_id, after.salto_group_id) == ("123456", "su", "sg")
+    assert (after.access_pin, after.access_codes[0]["user_id"], after.access_codes[0]["group_id"]) == ("123456", "su", "sg")
     assert after.rooms == ["14"] and after.open_amount == 10.0 and after.guest_id
