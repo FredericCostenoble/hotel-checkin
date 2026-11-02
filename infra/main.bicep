@@ -19,9 +19,10 @@ param env string
 @description('Regio voor alle gegevens en verwerking (opslag, Function App, Key Vault, logging).')
 param location string
 
-// Waarschuwingsregels (scheduledQueryRules) bestaan niet in Belgium Central: daarom West Europe.
-// Ze lezen gewoon Application Insights in Belgium Central.
-param alertLocation string = 'westeurope'
+// Waarschuwingsregels (scheduledQueryRules) bestaan niet in Belgium Central, en West Europe neemt geen
+// nieuwe klanten meer aan: daarom Sweden Central. De regel bevat alleen de zoekopdracht en de ontvangers,
+// geen gastgegevens; ze leest Application Insights in Belgium Central.
+param alertLocation string = 'swedencentral'
 
 @description('Regio van de Static Web App (alleen pagina\'s, geen gegevens; beperkt aantal regio\'s).')
 param swaLocation string
