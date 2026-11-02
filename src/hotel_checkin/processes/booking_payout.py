@@ -19,7 +19,6 @@ Controles, vlak ervoor op de detailpagina (altijd opnieuw gelezen):
 - staat er al een overschrijving bij de transacties, dan niets (nooit dubbel). Wat geregistreerd is,
   wordt bij de reservatie onthouden (payout_registered_at) en niet meer bekeken.
 Schrijven in Lighthouse alleen in PRD, of op reservaties van een testgast ([test] guest_names).
-Een testgast zonder opmerking van Booking.com: de kamerprijs uit de folio, om te oefenen.
 """
 
 from __future__ import annotations
@@ -72,12 +71,8 @@ def virtual_card(remarks: str | None) -> bool:
 
 
 def paid_by_booking(r: Reservation) -> bool:
-    """Betaalt Booking.com de kamer (overschrijving of virtuele kaart)? Een testgast altijd (om te oefenen)."""
-    return booking_prepay(r.remarks) is not None or virtual_card(r.remarks) or is_test(r)
-
-
-def is_test(r: Reservation) -> bool:
-    return safety.is_test_guest(r.hotel_id, r.guest.first_name, r.guest.last_name)
+    """Betaalt Booking.com de kamer (overschrijving of virtuele kaart)?"""
+    return booking_prepay(r.remarks) is not None or virtual_card(r.remarks)
 
 
 def already_registered(r: Reservation) -> bool:
@@ -91,7 +86,7 @@ def candidate(r: Reservation, cfg: dict, today: date) -> bool:
         return False  # alleen toekomstige reservaties (aankomst vandaag of later)
     if not switch(r.hotel_id, "overschrijvingen"):
         return False
-    if not (workflow.flow_for(r.hotel_id, r, cfg) == "booking" or is_test(r)):
+    if workflow.flow_for(r.hotel_id, r, cfg) != "booking":
         return False
     if not safety.may_write_pms(r.hotel_id, r.guest.first_name, r.guest.last_name):
         return False
@@ -117,7 +112,7 @@ def amount_for(r: Reservation) -> float | None:
     prepay = booking_prepay(r.remarks)
     if prepay is not None:
         return prepay
-    if virtual_card(r.remarks) or is_test(r):
+    if virtual_card(r.remarks):
         return room_price(r)
     return None
 

@@ -56,8 +56,8 @@ def test_when_and_how_much():
     assert booking_payout.due(_r(FLEX, 2), today)  # 2 dagen voor aankomst
     assert booking_payout.room_price(_r(NRF, 5)) == 362.0  # zonder toeristenbelasting
     assert booking_payout.amount_for(_r(NRF, 5)) == 362.0
-    # testgast zonder opmerking van Booking.com: de kamerprijs, om te oefenen
-    assert booking_payout.amount_for(_r(None, 5, folio_room=110.0, last="meersseman")) == 110.0
+    # ook een testgast volgt de gewone regel: zonder opmerking van Booking.com niets
+    assert booking_payout.amount_for(_r(None, 5, folio_room=110.0, last="meersseman")) is None
     assert booking_payout.amount_for(_r(None, 5, folio_room=110.0)) is None
 
 

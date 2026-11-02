@@ -331,19 +331,7 @@ def recipients(r: Reservation, kind: str, own_from_profile=_LOOKUP) -> list[str]
     for v in values:
         if v and v.strip().lower() not in [o.lower() for o in out]:
             out.append(v.strip())
-    if not out and kind == "email" and _test_guest_without_address(r):
-        # Testgast zonder e-mailadres, buiten PRD: toch naar het testadres, zodat de hele flow te testen is
-        from hotel_checkin.core import safety
-
-        out = [a for a in [safety.test_address("email", r.hotel_id)] if a]
     return out
-
-
-def _test_guest_without_address(r: Reservation) -> bool:
-    from hotel_checkin.core import safety
-
-    return (environment() != "prd" and not r.guest.email
-            and safety.is_test_guest(r.hotel_id, r.guest.first_name, r.guest.last_name))
 
 
 def _same(a: str, b: str) -> bool:
@@ -559,7 +547,7 @@ def run(hotel_id: str, today: date | None = None) -> int:
     ready = ready_steps(hotel_id)
     sent, failed = [], []
     for r in guests.list_reservations(hotel_id):
-        if before_start(r, begin) or not (r.guest.email or r.guest.phone or _test_guest_without_address(r)):
+        if before_start(r, begin) or not (r.guest.email or r.guest.phone):
             continue
         flow = workflow.flow_for(hotel_id, r, cfg)  # kanaal en betaalstatus
         all_steps = [s for s in workflow._steps_from(cfg, flow) if s.enabled]
