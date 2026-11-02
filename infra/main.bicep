@@ -19,6 +19,10 @@ param env string
 @description('Regio voor alle gegevens en verwerking (opslag, Function App, Key Vault, logging).')
 param location string
 
+// Waarschuwingsregels (scheduledQueryRules) bestaan niet in Belgium Central: daarom West Europe.
+// Ze lezen gewoon Application Insights in Belgium Central.
+param alertLocation string = 'westeurope'
+
 @description('Regio van de Static Web App (alleen pagina\'s, geen gegevens; beperkt aantal regio\'s).')
 param swaLocation string
 
@@ -510,7 +514,7 @@ resource alertGroup 'Microsoft.Insights/actionGroups@2023-01-01' = if (appAlerts
 
 resource alertSilent 'Microsoft.Insights/scheduledQueryRules@2023-03-15-preview' = if (appAlerts) {
   name: 'alert-checkin-${env}-stil'
-  location: location
+  location: alertLocation
   tags: tags
   properties: {
     displayName: 'Check-in ${env}: Function App doet niets meer'
@@ -538,7 +542,7 @@ resource alertSilent 'Microsoft.Insights/scheduledQueryRules@2023-03-15-preview'
 
 resource alertFailing 'Microsoft.Insights/scheduledQueryRules@2023-03-15-preview' = if (appAlerts) {
   name: 'alert-checkin-${env}-fouten'
-  location: location
+  location: alertLocation
   tags: tags
   properties: {
     displayName: 'Check-in ${env}: Function App faalt herhaaldelijk'
