@@ -73,7 +73,7 @@ const T = {
     hours_a: "Nieuwe reservaties van de laatste", hours_b: "uur", run: "Robot nu draaien",
     r_start: "Start", r_duration: "Duur", r_task: "Taak", r_result: "Resultaat", r_found: "Te doen", r_new: "Gedaan", r_error: "Opmerking",
     all_tasks: "Alle", sub_log: "Logboek robot", del: "Verwijderen", del_confirm: "Deze regel uit het logboek verwijderen?", del_all: "Alles verwijderen",
-    del_all_confirm: (n, task) => `${n} regels${task ? ` van "${task}"` : ""} uit het logboek verwijderen?`, t_azure: "Azure start", t_container: "container", t_ready: s => `klaar om te lezen na ${s} s`, t_login: "aanmelden", t_browser: "browser starten", t_reused: "sessie hergebruikt", t_new: "opnieuw aangemeld", t_list: "lijst", t_contact: (n, sec) => `${n} contact${n > 1 ? "en" : ""} à ${sec} s`, task_nieuwe_reservaties: "Nieuwe reservaties", task_contactgegevens_nalezen: "Reservaties bijwerken", task_overschrijving_booking: "Overschrijvingen", task_lighthouse_bijwerken: "Pincode en status in Lighthouse", task_meldingen: "Meldingen per mail", task_onderhoud: "Gasten synchroniseren", task_berichten: "Berichten", task_bewaking: "Bewaking", task_robot: "Run",
+    del_all_confirm: (n, task) => `${n} regels${task ? ` van "${task}"` : ""} uit het logboek verwijderen?`, t_azure: "Azure start", t_container: "container", t_ready: s => `klaar om te lezen na ${s} s`, t_login: "aanmelden", t_browser: "browser starten", t_reused: "sessie hergebruikt", t_new: "opnieuw aangemeld", t_list: "lijst", t_contact: (n, sec) => `${n} contact${n > 1 ? "en" : ""} à ${sec} s`, task_nieuwe_reservaties: "Nieuwe reservaties", task_contactgegevens_nalezen: "Reservaties bijwerken", task_overschrijving_booking: "Overschrijvingen", task_lighthouse_bijwerken: "Pincode en status in Lighthouse", task_meldingen: "Meldingen per mail", task_onderhoud: "Gasten synchroniseren", task_berichten: "Berichten", task_bewaking: "Bewaking", task_robot: "Run", task_ontbijt_labels: "Ontbijt labels", sw_not_built: "nog niet gebouwd",
     ok: "ok", fail: "fout", busy: "De robot is bezig...", live_now: "nu bezig", live_done: "afsluiten", live_since: s => `sinds ${s} s`, live_quiet: s => `geen teken van leven sinds ${s} s`, live_run: "run gestart om", scheduled: "Draait ook automatisch op schema.",
     not_installed: "De robot is in deze omgeving nog niet geïnstalleerd.", no_runs: "Nog geen afgeronde run",
     load_error: "Fout bij laden",
@@ -150,7 +150,7 @@ const T = {
     hours_a: "New reservations of the last", hours_b: "hours", run: "Run robot now",
     r_start: "Start", r_duration: "Duration", r_task: "Task", r_result: "Result", r_found: "To do", r_new: "Done", r_error: "Note",
     all_tasks: "All", sub_log: "Robot log", del: "Delete", del_confirm: "Delete this line from the log?", del_all: "Delete all",
-    del_all_confirm: (n, task) => `Delete ${n} lines${task ? ` of "${task}"` : ""} from the log?`, t_azure: "Azure start", t_container: "container", t_ready: s => `ready to read after ${s} s`, t_login: "login", t_browser: "start browser", t_reused: "session reused", t_new: "logged in again", t_list: "list", t_contact: (n, sec) => `${n} contact${n > 1 ? "s" : ""} × ${sec} s`, task_nieuwe_reservaties: "New reservations", task_contactgegevens_nalezen: "Update reservations", task_overschrijving_booking: "Bank transfers", task_lighthouse_bijwerken: "PIN and status in Lighthouse", task_meldingen: "Mail notifications", task_onderhoud: "Synchronize guests", task_berichten: "Messages", task_bewaking: "Monitoring", task_robot: "Run",
+    del_all_confirm: (n, task) => `Delete ${n} lines${task ? ` of "${task}"` : ""} from the log?`, t_azure: "Azure start", t_container: "container", t_ready: s => `ready to read after ${s} s`, t_login: "login", t_browser: "start browser", t_reused: "session reused", t_new: "logged in again", t_list: "list", t_contact: (n, sec) => `${n} contact${n > 1 ? "s" : ""} × ${sec} s`, task_nieuwe_reservaties: "New reservations", task_contactgegevens_nalezen: "Update reservations", task_overschrijving_booking: "Bank transfers", task_lighthouse_bijwerken: "PIN and status in Lighthouse", task_meldingen: "Mail notifications", task_onderhoud: "Synchronize guests", task_berichten: "Messages", task_bewaking: "Monitoring", task_robot: "Run", task_ontbijt_labels: "Breakfast labels", sw_not_built: "not built yet",
     ok: "ok", fail: "failed", busy: "The robot is running...", live_now: "running now", live_done: "closing", live_since: s => `for ${s} s`, live_quiet: s => `no sign of life for ${s} s`, live_run: "run started at", scheduled: "Also runs automatically on a schedule.",
     not_installed: "The robot is not installed in this environment yet.", no_runs: "No finished run yet",
     load_error: "Loading failed",
@@ -167,7 +167,7 @@ const stamp = iso => iso ? new Date(iso).toLocaleString(locale(), { day: "2-digi
 let rows = [], runsData = null, timer = null, waitTries = 0;
 const TASKS = ["nieuwe_reservaties", "contactgegevens_nalezen", "overschrijving_booking", "lighthouse_bijwerken", "meldingen", "onderhoud", "berichten"];
 // Taken zonder Te doen/Gedaan (alleen een notitie, bv. de bewaking: welke mail verstuurd werd)
-const NO_COUNTS = ["bewaking", "onderhoud", "robot"];  // onderhoud: de aantallen staan in de notitie
+const NO_COUNTS = ["bewaking", "onderhoud", "robot", "ontbijt_labels"];  // onderhoud: de aantallen staan in de notitie
 const taskName = k => T[lang]["task_" + k] || k;
 let taskFilter = "";
 try { taskFilter = localStorage.getItem("monitor-task") || ""; } catch (e) { /* geen opslag */ }
@@ -204,6 +204,9 @@ function setLang(l) {
 }
 
 // Hoofdschakelaars van het gekozen hotel, altijd zichtbaar bovenaan (groen = aan, grijs = uit)
+// Schakelaars waarvan de taak nog niet bestaat: aan zetten doet nog niets, en dat staat erbij
+const NOT_BUILT = ["ontbijt_labels"];
+
 function renderSwitches() {
   const el = $("#switches");
   if (!el) return;
@@ -212,7 +215,7 @@ function renderSwitches() {
   if (!sw) return;
   el.title = t("sw_title");
   el.innerHTML = [["overschrijvingen", "sw_payout"], ["berichten", "sw_messages"], ["ontbijt_labels", "sw_breakfast"]].map(([k, label]) =>
-    `<span class="sw ${sw[k] ? "on" : "off"}">${esc(t(label))}: <b>${t(sw[k] ? "sw_on" : "sw_off")}</b></span>`).join("");
+    `<span class="sw ${sw[k] ? "on" : "off"}${NOT_BUILT.includes(k) ? " todo" : ""}">${esc(t(label))}: <b>${t(sw[k] ? "sw_on" : "sw_off")}</b>${NOT_BUILT.includes(k) ? ` (${t("sw_not_built")})` : ""}</span>`).join("");
 }
 
 async function refreshSwitches() {
@@ -1152,7 +1155,7 @@ const HS_TEXT = {
    ],
    "schakelaars.ontbijt_labels": [
     "Ontbijt labels plaatsen",
-    "De robot zet het label ONTBIJT op het planbord bij wie ontbijt heeft (tarief met ontbijt, of ontbijt voor alle personen en nachten in de folio). Geldt alleen voor deze omgeving."
+    "NOG NIET GEBOUWD: aan zetten doet nog niets. De robot zal het label ONTBIJT op het planbord zetten bij wie ontbijt heeft (tarief met ontbijt, of ontbijt voor alle personen en nachten in de folio). Geldt alleen voor deze omgeving."
    ],
    "schakelaars.berichten": [
     "Berichten en Salto",
@@ -1375,7 +1378,7 @@ const HS_TEXT = {
    ],
    "schakelaars.ontbijt_labels": [
     "Place breakfast labels",
-    "The robot puts the ONTBIJT label on the planboard for guests with breakfast (rate with breakfast, or breakfast for all persons and nights in the folio). Applies to this environment only."
+    "NOT BUILT YET: switching it on does nothing yet. The robot will put the ONTBIJT label on the planboard for guests with breakfast (rate with breakfast, or breakfast for all persons and nights in the folio). Applies to this environment only."
    ],
    "schakelaars.berichten": [
     "Messages and Salto",

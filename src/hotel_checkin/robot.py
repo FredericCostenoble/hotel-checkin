@@ -226,6 +226,13 @@ def main() -> int:
             if _refresh_due(hotel_id):
                 found = refresh_contacts.run(hotel_id)
                 logging.info("%s: %s e-mailadressen gevonden bij nalezen", hotel_id, found)
+            # Ontbijt labels: de schakelaar bestaat al, de taak nog niet. Zeggen dat er niets gebeurt.
+            from hotel_checkin.processes.send_messages import switch
+
+            if switch(hotel_id, "ontbijt_labels"):
+                guests.log_robot_run(hotel_id, "ontbijt_labels", datetime.now(UTC), True, 0, 0,
+                                     "schakelaar Ontbijt labels staat aan, maar deze taak is nog niet gebouwd: "
+                                     "er worden nog geen labels gezet")
             # Log van de robot opruimen (standaard 30 dagen, instelling ROBOT_LOG_DAYS)
             progress.step(hotel_id, SKIP_TASK, "afronden: robotlog opruimen, sessie van Lighthouse bewaren", force=True)
             guests.prune_robot_runs(hotel_id, int(os.environ.get("ROBOT_LOG_DAYS") or 30))

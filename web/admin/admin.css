@@ -281,3 +281,5 @@ td.running { color: #1F4E8C; white-space: nowrap; }
 .spin { display: inline-block; width: 10px; height: 10px; margin-right: 6px; border: 2px solid currentColor;
         border-right-color: transparent; border-radius: 50%; animation: spin 0.8s linear infinite; vertical-align: -1px; }
 @keyframes spin { to { transform: rotate(360deg); } }
+.switches .sw.todo { border-style: dashed; background: #FFF8E6; color: #8A5A00; }
+.task-ontbijt_labels { background: #FFF7D6; color: #7A5C00; }
