@@ -138,6 +138,12 @@ def door_code_line(codes: list[tuple[str, str]]) -> str:
     return f"{DOOR_CODE_PREFIX} " + ", ".join(f"kamer {room}: {pin}" for room, pin in codes)
 
 
+# Scheiding tussen onze regel en de rest: een pijp en een nieuwe regel. Lighthouse toont een gewone nieuwe
+# regel op de reservatiepagina als een spatie; met de pijp blijft het daar leesbaar ("Deur Pin code: 320 | ..."),
+# in het venster Bewerken staat de code op een eigen regel.
+SEPARATOR = " |\n"
+
+
 def with_door_codes(comments: str | None, line: str) -> str:
     """De opmerking met de coderegel bovenaan. De rest blijft precies staan; een vorige coderegel van ons
     (bv. na een kamerwissel) wordt vervangen, niet verdubbeld."""
@@ -145,7 +151,7 @@ def with_door_codes(comments: str | None, line: str) -> str:
     first, _sep, after = rest.lstrip("\n").partition("\n")
     if first.strip().startswith(DOOR_CODE_PREFIX):
         rest = after
-    return line + ("\n" + rest if rest else "")
+    return line + (SEPARATOR + rest if rest else "")
 
 
 def rooms_from(text: str) -> list[str]:

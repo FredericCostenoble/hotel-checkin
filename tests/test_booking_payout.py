@@ -118,12 +118,12 @@ def test_door_code_line_on_top_keeps_rest():
     booking = "\nResGlobalInfo\n Booking.com\n PrePay:payment_on_Booking.com (Payout type: BankTransfer)362 EUR"
     one = door_code_line([("16", "2242")])
     assert one == "Deur Pin code: 2242"
-    assert with_door_codes(booking, one) == "Deur Pin code: 2242\n" + booking
+    assert with_door_codes(booking, one) == "Deur Pin code: 2242 |\n" + booking
     assert with_door_codes("", one) == "Deur Pin code: 2242"
     two = door_code_line([("16", "2242"), ("21", "9911")])
     assert two == "Deur Pin code: kamer 16: 2242, kamer 21: 9911"
     # nieuwe codes (bv. kamer erbij): onze vorige regel vervangen, niet verdubbelen
-    assert with_door_codes(with_door_codes(booking, one), two) == two + "\n" + booking
+    assert with_door_codes(with_door_codes(booking, one), two) == two + " |\n" + booking
 
 
 def test_pms_sync_only_with_codes_and_allowed(monkeypatch):
@@ -142,7 +142,7 @@ def test_pms_sync_only_with_codes_and_allowed(monkeypatch):
     monkeypatch.setattr(pms_sync.lighthouse, "set_room_status", lambda h, rid, s, lh: statuses.append(s) or [s])
     repo.save_reservation(r)
     assert "KLAAR OM IN TE CHECKEN" in pms_sync.handle("lucca", r, None)
-    assert written == ["Deur Pin code: 2242\noud"] and statuses == ["readyforcheckin"]
+    assert written == ["Deur Pin code: 2242 |\noud"] and statuses == ["readyforcheckin"]
     assert not pms_sync.candidate(repo.get_reservation("lucca", r.reservation_id))  # klaar, niet opnieuw
     other = _r(None, 6)
     other.access_codes = [{"room": "16", "pin": "1"}]

@@ -18,7 +18,9 @@ Testen in de codespace (toont geen gastnamen):
 from __future__ import annotations
 
 import argparse
+import html
 import re
+import time
 from datetime import datetime, timedelta
 
 from hotel_checkin.core.models import AccessCode, Guest, Reservation, ReservationStatus
@@ -239,19 +241,21 @@ def set_comments(hotel_id: str, reservation_id: str, compose, session: Lighthous
     box.wait_for(state="visible")
     new = compose(box.input_value())
     box.fill(new)
-    # Lighthouse kijkt eerst na of de tekst een kredietkaartnummer bevat (CheckTextContainsCreditCard) en
-    # bewaart dan. Klaar zodra Lighthouse de nieuwe tekst teruggeeft (opnieuw gelezen, geen vaste wachttijd).
+    # Lighthouse kijkt eerst na of de tekst een kredietkaartnummer bevat (CheckTextContainsCreditCard),
+    # bewaart dan en laadt de pagina opnieuw. Nakijken met een aparte aanvraag (niet via de pagina, die
+    # herlaadt): klaar zodra Lighthouse de nieuwe tekst teruggeeft, geen vaste wachttijd.
     page.locator("input[type=submit][value=Bewaren]").first.click()
-    saved = page.evaluate(
-        """async ([id, want]) => {
-             for (let i = 0; i < 40; i++) {
-               const h = await fetch('/Customer/Reservations/EditGeneralSettings/' + id,
-                                     {headers: {'X-Requested-With': 'XMLHttpRequest'}}).then(r => r.text());
-               const v = (new DOMParser().parseFromString(h, 'text/html').querySelector('#txtComments') || {}).value || '';
-               if (v.trim() === want.trim()) return v;
-               await new Promise(r => setTimeout(r, 500));
-             }
-             return null; }""", [reservation_id, new])
+    saved = None
+    deadline = time.monotonic() + 20
+    while time.monotonic() < deadline:
+        resp = session.page.request.get(session.base + f"/Customer/Reservations/EditGeneralSettings/{reservation_id}",
+                                        headers={"X-Requested-With": "XMLHttpRequest"})
+        m = re.search(r'<textarea[^>]*id="txtComments"[^>]*>(.*?)</textarea>', resp.text(), re.DOTALL)
+        value = html.unescape(m.group(1)).replace("\r\n", "\n") if m else None
+        if value is not None and value.strip() == new.strip():
+            saved = value
+            break
+        time.sleep(0.5)  # opnieuw vragen tot Lighthouse de nieuwe tekst heeft
     if saved is None:
         raise RuntimeError("Opmerking niet bewaard in Lighthouse (bv. geweigerd als kredietkaartnummer)")
     return saved
