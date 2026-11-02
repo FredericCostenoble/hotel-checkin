@@ -225,7 +225,9 @@ def log_run(hotel_id: str, started: datetime, result: dict) -> None:
         parts.append(f"{c['error']} fout bij lezen: " + "; ".join(result["errors"][:5]))
     if result["left"]:
         parts.append(f"nog {result['left']} te lezen in een volgende run (tijd op)")
-    guests.log_robot_run(hotel_id, TASK, started, not c.get("error"), result["read"], c.get("registered", 0),
+    # Te doen: reservaties die nagekeken moesten worden; gedaan: geregistreerde overschrijvingen
+    guests.log_robot_run(hotel_id, TASK, started, not c.get("error"), result["read"] + result["left"],
+                         c.get("registered", 0),
                          ". ".join(parts))
 
 

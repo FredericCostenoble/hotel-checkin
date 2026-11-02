@@ -184,13 +184,16 @@ def run(hotel_id: str) -> int:
     if details_read:
         parts.append(f"{details_read} aankomsten en verblijven nagekeken (kamer, data, betaling)")
     if not finished:
-        parts.append("tijd op: de rest in een volgende run")
+        left = len(todo) + len(arrivals) - stats.read - details_read - len(skipped)
+        parts.append(f"tijd op: nog {left} na te lezen in een volgende run")
     if access_changes:
         parts.append("Salto aangepast: " + ", ".join(access_changes))
     if skipped:
         parts.append(f"{len(skipped)} niet gelezen: " + "; ".join(skipped[:5]))
     if not parts:
         parts.append("niets nagelezen: alle aankomsten van de komende dagen zijn al bijgewerkt")
-    guests.log_robot_run(hotel_id, TASK, started, True, stats.read + details_read, stats.with_email, ". ".join(parts),
+    # Te doen: reservaties die nagelezen moesten worden; gedaan: hoeveel daarvan nagelezen zijn
+    guests.log_robot_run(hotel_id, TASK, started, True, len(todo) + len(arrivals), stats.read + details_read,
+                         ". ".join(parts),
                          skipped=len(skipped), timings=timings | stats.timings())
     return stats.with_email
