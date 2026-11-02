@@ -127,7 +127,7 @@ def run(hotel_id: str) -> int:
                 ready = run_context.seconds_since_start()  # sinds de container startte, aangemeld en klaar om te lezen
                 if ready is not None:
                     timings["ready"] = ready
-                deadline = time.monotonic() + MAX_SECONDS
+                deadline = run_context.stop_at(MAX_SECONDS)
                 # Eerst de overschrijving van Booking.com (PRD of testgast, hoofdschakelaar), zodat een nieuwe
                 # reservatie die in aanmerking komt meteen in deze run geregistreerd wordt. Zie booking_payout.py
                 # Eigen taak in het robotlog, met een eigen tijdslimiet: de rest van deze run komt altijd aan bod.
@@ -192,6 +192,10 @@ def run(hotel_id: str) -> int:
                     breakfast_labels.log_run(hotel_id, breakfast_started, breakfast_labels.run(hotel_id, lh, today))
                 elif not breakfasts:
                     breakfast_labels.log_idle(hotel_id, today)
+                else:  # wel werk, maar de tijd van deze run is op: zeggen, de volgende run doet het
+                    guests.log_robot_run(hotel_id, breakfast_labels.TASK, datetime.now(UTC), True, len(breakfasts), 0,
+                                         f"{len(breakfasts)} reservaties na te kijken, maar de tijd van deze run "
+                                         "is op: de volgende run doet het")
     except Exception as exc:
         guests.log_robot_run(hotel_id, TASK, started, False, len(todo), 0, f"{type(exc).__name__}: {exc}", timings=timings)
         raise

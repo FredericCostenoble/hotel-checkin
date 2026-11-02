@@ -112,7 +112,9 @@ def run(hotel_id: str, lh, today: date | None = None) -> dict:
             if candidate(r, today, days_ahead(hotel_id))]
     progress.step(hotel_id, TASK, f"{len(todo)} reservaties nakijken (tarief en folio)", force=True)
     name = label_name(hotel_id)
-    stop = time.monotonic() + MAX_SECONDS
+    from hotel_checkin.core import run_context
+
+    stop = run_context.stop_at(MAX_SECONDS)
     for n, r in enumerate(todo, 1):
         if time.monotonic() > stop:
             result["left"] = len(todo) - n + 1

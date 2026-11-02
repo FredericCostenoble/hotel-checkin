@@ -32,6 +32,19 @@ def fields() -> dict:
             "execution": _ctx["execution"]}
 
 
+RUN_BUDGET = 25 * 60  # een hele robotrun; Azure stopt de container hard na 30 minuten (replicaTimeout)
+
+
+def stop_at(seconds: float) -> float:
+    """time.monotonic() waarop een taak moet stoppen: na `seconds`, maar nooit later dan het einde van het
+    budget van de hele run (zodat Azure de run niet halverwege afbreekt). Buiten de robot: alleen `seconds`."""
+    own = time.monotonic() + seconds
+    if not _ctx:
+        return own
+    left = _ctx["process_started"] + RUN_BUDGET - time.time()
+    return min(own, time.monotonic() + max(0.0, left))
+
+
 def seconds_since_start() -> float | None:
     """Seconden sinds het proces begon, of None buiten de robot."""
     return round(time.time() - _ctx["process_started"], 1) if _ctx else None

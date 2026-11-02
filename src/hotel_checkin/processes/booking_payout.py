@@ -273,7 +273,9 @@ def run(hotel_id: str, lh, today: date | None = None, deadline: float | None = N
     Geeft een samenvatting terug voor het robotlog (log_run)."""
     today = today or clock.today(hotel_id)
     cfg = workflow.config(hotel_id)
-    stop = time.monotonic() + MAX_SECONDS
+    from hotel_checkin.core import run_context
+
+    stop = run_context.stop_at(MAX_SECONDS)
     if deadline is not None:
         stop = min(stop, deadline)
     todo = [r for r in sorted(guests.list_reservations(hotel_id), key=lambda x: x.arrival) if candidate(r, cfg, today)]

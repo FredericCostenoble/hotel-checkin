@@ -450,7 +450,7 @@ resource robotJob 'Microsoft.App/jobs@2024-03-01' = if (withRobot) {
     workloadProfileName: 'Consumption'
     configuration: {
       triggerType: 'Schedule'
-      replicaTimeout: 900
+      replicaTimeout: 1800  // harde grens; de robot zelf stopt na 25 minuten (core/run_context.py)
       replicaRetryLimit: 0
       scheduleTriggerConfig: { cronExpression: robotSchedule, parallelism: 1, replicaCompletionCount: 1 }
       registries: [{ server: '${acrName}.azurecr.io', identity: robotId.id }]

@@ -133,7 +133,7 @@ def _check_due(hotel_id: str) -> str | None:
 
 SKIP_TASK = "robot"  # regel in het robotlog als een run niets doet (overgeslagen of al een andere bezig)
 LOCK_KEY = "robot_running"
-LOCK_MINUTES = 20  # een run duurt hoogstens 15 minuten (time-out van de job); ouder = vastgelopen
+LOCK_MINUTES = 35  # een run duurt hoogstens 30 minuten (time-out van de job); ouder = vastgelopen
 
 
 def _other_run(hotel_id: str, me: str) -> str | None:

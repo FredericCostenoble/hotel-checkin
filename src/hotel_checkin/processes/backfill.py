@@ -41,7 +41,9 @@ def run(hotel_id: str, lh) -> None:
     today = clock.today(hotel_id)
     first = max(0, int(guests.get_state(hotel_id, PAGE_KEY) or 0) - 1)  # één pagina overlap: lijst schuift op
     cutoff = datetime.now(UTC) - timedelta(days=365 * MAX_YEARS)
-    stop = time.monotonic() + MAX_SECONDS
+    from hotel_checkin.core import run_context
+
+    stop = run_context.stop_at(MAX_SECONDS)
     number, rows_seen, stored, finished, skipped = first, 0, [], False, []
     progress.step(hotel_id, TASK, f"oudere boekingen binnenhalen vanaf pagina {first + 1}", force=True)
     while time.monotonic() < stop:
