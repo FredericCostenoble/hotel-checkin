@@ -227,6 +227,7 @@ def main() -> int:
                 found = refresh_contacts.run(hotel_id)
                 logging.info("%s: %s e-mailadressen gevonden bij nalezen", hotel_id, found)
             # Log van de robot opruimen (standaard 30 dagen, instelling ROBOT_LOG_DAYS)
+            progress.step(hotel_id, SKIP_TASK, "afronden: robotlog opruimen, sessie van Lighthouse bewaren", force=True)
             guests.prune_robot_runs(hotel_id, int(os.environ.get("ROBOT_LOG_DAYS") or 30))
         except Exception:
             logging.exception("%s: robot mislukt", hotel_id)
@@ -234,7 +235,8 @@ def main() -> int:
         finally:
             _store_session(hotel_id)
             guests.delete_state(hotel_id, LOCK_KEY)  # deze run is klaar
-            progress.done(hotel_id)
+            progress.finish(hotel_id, "klaar met een fout, zie het robotlog; Azure sluit de robot af" if failed
+                            else "klaar: alle taken gedaan, Azure sluit de robot af")
     return 1 if failed else 0
 
 

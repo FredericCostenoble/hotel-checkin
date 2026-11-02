@@ -178,6 +178,7 @@ def run(hotel_id: str) -> int:
                             access_changes.append(f"{reservation.booking_number}: {'; '.join(changes)}")
                 # Pincode in de opmerking en kamers op KLAAR OM IN TE CHECKEN (PRD of testgast), zie pms_sync.py
                 if syncs and time.monotonic() <= deadline:
+                    progress.step(hotel_id, pms_sync.TASK, f"{len(syncs)} reservaties met een code nakijken", force=True)
                     sync_started = datetime.now(UTC)
                     pms_sync.log_run(hotel_id, sync_started, len(syncs), pms_sync.run(hotel_id, lh))
     except Exception as exc:

@@ -43,8 +43,25 @@ def step(hotel_id: str, task: str, text: str, force: bool = False) -> None:
         logging.debug("voortgang niet bewaard", exc_info=True)
 
 
+def finish(hotel_id: str, text: str = "klaar: alle taken gedaan, Azure sluit de robot af") -> None:
+    """Alle taken zijn gedaan. De live regel blijft staan zolang Azure de run nog als bezig toont
+    (afsluiten van de container duurt even), daarna verdwijnt ze in de monitor."""
+    try:
+        from hotel_checkin.guests import repository as guests
+
+        stamp = datetime.now(UTC).isoformat()
+        guests.set_state(hotel_id, KEY, json.dumps({
+            "run": os.environ.get("CONTAINER_APP_JOB_EXECUTION_NAME", ""), "task": "robot", "text": text,
+            "run_started": _started.get(hotel_id, stamp), "task_started": stamp, "updated": stamp, "done": True}))
+    except Exception:
+        logging.debug("voortgang niet bewaard", exc_info=True)
+    _last.pop(hotel_id, None)
+    _started.pop(hotel_id, None)
+    _task_started.pop(hotel_id, None)
+
+
 def done(hotel_id: str) -> None:
-    """De run is klaar: geen live regel meer."""
+    """Geen live regel meer (bv. run overgeslagen)."""
     _last.pop(hotel_id, None)
     _started.pop(hotel_id, None)
     _task_started.pop(hotel_id, None)
