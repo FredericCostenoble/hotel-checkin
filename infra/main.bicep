@@ -34,6 +34,12 @@ param adminClientId string = ''
 @description('Waar budgetmeldingen naartoe gaan.')
 param alertEmail string
 
+@description('Extra adressen voor de waarschuwingen van Azure (komma ertussen), naast alertEmail. GitHub-variabele ALERT_EXTRA_EMAILS.')
+param alertExtraEmails string = ''
+
+@description('Waarschuwingen van Azure als de Function App niets meer doet of steeds faalt. Standaard alleen in PRD (kost een klein bedrag per regel per maand).')
+param appAlerts bool = env == 'prd'
+
 @description('Maandbudget in de munt van het abonnement. 0 = geen budgetmelding.')
 param budgetAmount int = 0
 
@@ -478,3 +484,81 @@ output functionAppHost string = func.properties.defaultHostName
 output adminUrl string = 'https://${func.properties.defaultHostName}/monitor/'
 output keyVaultName string = kv.name
 output storageAccountName string = st.name
+
+// ---------------------------------------------------------------- waarschuwingen van Azure
+// Los van onze eigen code (processes/oversight.py): ook als de Function App helemaal stilvalt of steeds
+// faalt, komt er een mail. Timers draaien elke minuut (mail_trigger) en elke 2 minuten (send_messages);
+// aanvragen worden in Application Insights niet uitgedund (host.json, excludedTypes Request).
+
+var alertReceivers = filter(union([alertEmail], empty(alertExtraEmails) ? [] : split(replace(alertExtraEmails, ' ', ''), ',')), e => !empty(e))
+
+resource alertGroup 'Microsoft.Insights/actionGroups@2023-01-01' = if (appAlerts) {
+  name: 'ag-checkin-${env}'
+  location: 'global'
+  tags: tags
+  properties: {
+    groupShortName: 'checkin${env}'
+    enabled: true
+    emailReceivers: [for (mail, i) in alertReceivers: {
+      name: 'mail${i}'
+      emailAddress: mail
+      useCommonAlertSchema: true
+    }]
+  }
+}
+
+resource alertSilent 'Microsoft.Insights/scheduledQueryRules@2023-03-15-preview' = if (appAlerts) {
+  name: 'alert-checkin-${env}-stil'
+  location: location
+  tags: tags
+  properties: {
+    displayName: 'Check-in ${env}: Function App doet niets meer'
+    description: 'In 30 minuten geen enkele run van mail_trigger of send_messages. Berichten en meldingen worden niet meer verwerkt.'
+    severity: 1
+    enabled: true
+    scopes: [appi.id]
+    evaluationFrequency: 'PT15M'
+    windowSize: 'PT30M'
+    criteria: {
+      allOf: [
+        {
+          query: 'requests | where name in ("mail_trigger", "send_messages")'
+          timeAggregation: 'Count'
+          operator: 'LessThan'
+          threshold: 1
+          failingPeriods: { numberOfEvaluationPeriods: 1, minFailingPeriodsToAlert: 1 }
+        }
+      ]
+    }
+    autoMitigate: true
+    actions: { actionGroups: [alertGroup.id] }
+  }
+}
+
+resource alertFailing 'Microsoft.Insights/scheduledQueryRules@2023-03-15-preview' = if (appAlerts) {
+  name: 'alert-checkin-${env}-fouten'
+  location: location
+  tags: tags
+  properties: {
+    displayName: 'Check-in ${env}: Function App faalt herhaaldelijk'
+    description: 'Meer dan 10 mislukte runs of aanvragen in een uur (bv. geen toegang meer tot de opslag of Key Vault).'
+    severity: 2
+    enabled: true
+    scopes: [appi.id]
+    evaluationFrequency: 'PT1H'
+    windowSize: 'PT1H'
+    criteria: {
+      allOf: [
+        {
+          query: 'requests | where success == false'
+          timeAggregation: 'Count'
+          operator: 'GreaterThan'
+          threshold: 10
+          failingPeriods: { numberOfEvaluationPeriods: 1, minFailingPeriodsToAlert: 1 }
+        }
+      ]
+    }
+    autoMitigate: true
+    actions: { actionGroups: [alertGroup.id] }
+  }
+}
