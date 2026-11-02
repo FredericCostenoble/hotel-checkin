@@ -826,7 +826,7 @@ function renderRuns(d) {
       <td>${Math.round((now - new Date(p.task_started)) / 1000)} s<div class="muted">${t("live_run")} ${stamp(p.run_started)}</div></td>
       <td><span class="task task-${esc(p.task)}">${esc(taskName(p.task))}</span></td>
       <td class="${!p.done && age > 120 ? "err" : "running"}">${p.done ? "" : '<span class="spin"></span>'}${t(p.done ? "live_done" : "live_now")}</td><td></td><td></td>
-      <td class="wrap">${esc(p.text)} ${p.done ? "" : `<span class="${age > 120 ? "err" : "muted"}">(${age > 120 ? t("live_quiet")(age) : t("live_since")(age)})</span>`}</td><td></td></tr>` : "";
+      <td class="wrap">${esc(p.text)} ${p.done ? "" : `<span class="${age > 120 ? "err" : "muted"}">(${age > 120 ? t("live_quiet", age) : t("live_since", age)})</span>`}</td><td></td></tr>` : "";
   $("#runs").innerHTML = live + shown.map(x => {
     const secs = (new Date(x.finished_at) - new Date(x.started_at)) / 1000;
     // Rood alleen bij een fout of overgeslagen rijen; anders is de opmerking gewoon informatie

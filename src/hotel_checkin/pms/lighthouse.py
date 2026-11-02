@@ -297,21 +297,25 @@ def add_payment(hotel_id: str, reservation_id: str, method: str, amount: float, 
     label = PAYMENT_METHODS[method]
     page = session.goto(DETAIL_PATH.format(id=reservation_id), ready=_TRANSACTIONS_LOADED, timeout=10_000)
     session.close_popups()
-    if min_open is not None:
-        open_now = parse_folio(page.evaluate(_DETAIL_JS).get("folio_text") or "")["open"]
-        if open_now is None or open_now < min_open - 0.01:
-            raise RuntimeError(f"openstaand saldo {open_now} lager dan {min_open:.2f}: niets toegevoegd")
+    open_now = parse_folio(page.evaluate(_DETAIL_JS).get("folio_text") or "")["open"]
+    if min_open is not None and (open_now is None or open_now < min_open - 0.01):
+        raise RuntimeError(f"openstaand saldo {open_now} lager dan {min_open:.2f}: niets toegevoegd")
     form = page.locator("fieldset:has(select[name=PaymentMethodID])").first
     form.locator("select[name=PaymentMethodID]").select_option(label=label)
     form.locator("input[name=Value]").fill(f"{amount:.2f}")
     form.locator("input[name=Comment]").fill(comment)
     form.locator("button.AddPaymentBtn").click()
-    # Klaar zodra de opmerking bij de transacties staat (niet wachten tot het netwerk stil is)
+    # Klaar zodra het openstaande saldo veranderd is. Lighthouse toont de opmerking niet bij de transactie
+    # (alleen "Overschrijving, Betaald € 362,00"), dus daarop wachten liep altijd in een time-out, terwijl
+    # de betaling wel geboekt was.
+    before = "" if open_now is None else f"{open_now:.2f}".replace(".", ",")
     page.wait_for_function(
-        """c => { const t = [...document.querySelectorAll('h1,h2,h3,h4,h5,h6,legend,strong,b,span,div,p')].find(e => [...e.childNodes].filter(n => n.nodeType === 3).map(n => n.textContent).join('').trim() === 'Transacties');
-                  const b = t && (t.closest('.jarviswidget, .col-md-6, .col-lg-6') || t.parentElement.parentElement);
-                  if (!b) return false; const k = b.cloneNode(true); k.querySelectorAll('fieldset').forEach(e => e.remove());
-                  return k.innerText.includes(c); }""", arg=comment, timeout=20_000)
+        """b => { const t = [...document.querySelectorAll('h1,h2,h3,h4,h5,h6,legend,strong,b,span,div,p')].find(e => [...e.childNodes].filter(n => n.nodeType === 3).map(n => n.textContent).join('').trim() === 'Transacties');
+                  const box = t && (t.closest('.jarviswidget, .col-md-6, .col-lg-6') || t.parentElement.parentElement);
+                  if (!box || [...box.querySelectorAll('.fa-spin, .paymentloader')].some(e => e.offsetParent !== null)) return false;
+                  const m = box.innerText.replace(/\u00a0/g, ' ').match(/Openstaand saldo van €\\s*(-?[\\d.]+,\\d{2})/);
+                  if (!m) return /volledig betaald/i.test(box.innerText);
+                  return m[1].replace(/\\./g, '') !== b; }""", arg=before.replace(".", ""), timeout=20_000)
     return _read_detail(session, hotel_id, reservation_id)
 
 
