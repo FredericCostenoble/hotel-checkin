@@ -202,6 +202,15 @@ def _e(text: str) -> str:
     return html.escape(text, quote=True)
 
 
+def _host(url: str) -> str:
+    """Website zoals getoond in de voettekst: alleen de naam (www.hotellucca.be), niet het hele adres
+    van de taalpagina. Dat is één lang woord dat op een smalle gsm niet past."""
+    from urllib.parse import urlparse
+
+    host = urlparse(url).netloc or url.replace("https://", "").split("/")[0]
+    return host if host.startswith("www.") else "www." + host
+
+
 def _gap(height: int) -> str:
     """Verticale witruimte die ook Outlook respecteert (vaste regelhoogte)."""
     return (
@@ -232,7 +241,7 @@ def _render_html(t: dict, common: dict, f: dict, config: dict, language: str) ->
         elif kind == "details":
             rows = "".join(
                 f'<tr><td style="padding:8px 12px;font-family:{FONT};font-size:14px;color:{c["accent_donker"]};'
-                f'border-bottom:1px solid #E3E6ED;width:45%;">{_e(_fill(k, f))}</td>'
+                f'border-bottom:1px solid #E3E6ED;width:45%;" class="lbl">{_e(_fill(k, f))}</td>'
                 f'<td style="padding:8px 12px;font-family:{FONT};font-size:14px;color:{c["tekst"]};'
                 f'border-bottom:1px solid #E3E6ED;font-weight:bold;">{_e(_fill(v, f))}</td></tr>'
                 for k, v in block["rijen"]
@@ -295,7 +304,7 @@ def _render_html(t: dict, common: dict, f: dict, config: dict, language: str) ->
                 f'strokecolor="{bg}" fillcolor="{bg}"><w:anchorlock/>'
                 f'<center style="color:#FFFFFF;font-family:Arial,sans-serif;font-size:14px;'
                 f'font-weight:bold;">{text}</center></v:roundrect><![endif]-->'
-                f'<!--[if !mso]><!-- --><a href="{link}" style="display:inline-block;background:{bg};'
+                f'<!--[if !mso]><!-- --><a href="{link}" class="btn" style="display:inline-block;background:{bg};'
                 f"border-radius:3px;padding:15px 32px;font-family:{FONT};font-size:14px;"
                 f'font-weight:bold;color:#FFFFFF;text-decoration:none;">{text}</a><!--<![endif]-->'
                 f"</div>{_gap(26)}"
@@ -307,24 +316,35 @@ def _render_html(t: dict, common: dict, f: dict, config: dict, language: str) ->
     return f"""<!DOCTYPE html>
 <html lang="{language}" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>{_e(_fill(t["onderwerp"], f))}</title></head>
+<meta name="x-apple-disable-message-reformatting">
+<title>{_e(_fill(t["onderwerp"], f))}</title>
+<style>
+/* Gsm: geen rand rond de mail, minder witruimte opzij, knoppen over de volle breedte (groter om te tikken).
+   Mailprogramma's zonder ondersteuning voor <style> tonen de gewone versie, die ook past. */
+@media only screen and (max-width: 480px) {{
+  .outer {{ padding: 0 !important; }}
+  .px {{ padding-left: 18px !important; padding-right: 18px !important; }}
+  .btn {{ display: block !important; text-align: center !important; padding-left: 12px !important; padding-right: 12px !important; }}
+  .lbl {{ width: 38% !important; }}
+}}
+</style></head>
 <body style="margin:0;padding:0;background:{c['achtergrond']};">
 <div style="display:none;max-height:0;overflow:hidden;">{_e(_fill(t["voorvertoning"], f))}</div>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:{c['achtergrond']};">
-<tr><td align="center" style="padding:24px 12px;">
+<tr><td align="center" class="outer" style="padding:24px 12px;">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background:#FFFFFF;">
 <tr><td align="center" style="background:{c['accent']};padding:28px 24px;">
 <a href="{_e(f['hotel_website'])}"><img src="{_e(f['hotel_logo_url'])}" alt="{_e(f['hotel_naam'])}" width="220"
  style="display:block;width:220px;max-width:70%;height:auto;border:0;"></a>
 </td></tr>
-<tr><td style="padding:32px 32px 16px 32px;">
+<tr><td class="px" style="padding:32px 32px 16px 32px;">
 {body}
 </td></tr>
-<tr><td style="padding:20px 32px;background:{c['accent']};font-family:{FONT};font-size:13px;line-height:1.6;color:{c['tekst']};" align="center">
+<tr><td class="px" style="padding:20px 32px;background:{c['accent']};font-family:{FONT};font-size:13px;line-height:1.6;color:{c['tekst']};" align="center">
 <strong>{_e(f['hotel_naam'])}</strong><br>{_e(f['hotel_adres'])}<br>
 <a href="tel:{_e(f['hotel_telefoon'].replace(' ', ''))}" style="color:{c['tekst']};">{_e(f['hotel_telefoon'])}</a> |
 <a href="mailto:{_e(f['hotel_email'])}" style="color:{c['tekst']};">{_e(f['hotel_email'])}</a> |
-<a href="{_e(f['hotel_website'])}" style="color:{c['tekst']};">{_e(f['hotel_website'].replace('https://', ''))}</a>
+<a href="{_e(f['hotel_website'])}" style="color:{c['tekst']};">{_e(_host(f['hotel_website']))}</a>
 </td></tr>
 </table>
 <p style="margin:14px 0 0 0;font-family:{FONT};font-size:11px;color:#8A90A0;">{_e(_fill(common['voettekst'], f))}</p>

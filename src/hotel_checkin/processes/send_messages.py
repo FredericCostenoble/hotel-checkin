@@ -83,7 +83,8 @@ CITY_TAX_UNIT_TEXT = {
 
 def money(amount: float, currency: str = "EUR") -> str:
     symbol = {"EUR": "€"}.get(currency, currency)
-    return f"{symbol} {amount:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+    # vaste spatie: € en bedrag nooit op twee regels (smalle gsm)
+    return f"{symbol}\u00a0{amount:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
 
 def pay_data(hotel_id: str, r: Reservation, cfg: dict, open_amount: float | None = None) -> dict:
@@ -187,7 +188,7 @@ def _rendered(hotel_id: str, step: workflow.Step, r: Reservation, cfg: dict):
     if test and pay != "none" and not payments_ready(hotel_id):
         data["betaal_link"] = "#saferpay-nog-niet-actief"
         if not data.get("openstaand_bedrag"):
-            data["openstaand_bedrag"] = "€ XXX"
+            data["openstaand_bedrag"] = "€\u00a0XXX"
         notes.append("Saferpay is nog niet actief: de betaalknop werkt nog niet.")
     if notes:
         data["_test_note"] = "TEST: " + " ".join(notes)

@@ -93,3 +93,18 @@ def test_several_rooms_in_reservation_details():
     assert "3 rooms: 31, 14, 30" in msg.html and "Small double room" not in msg.html
     one = templates.render("lucca", "confirmation", "en", {**data, "_rooms": ["31"]})
     assert "Small double room" in one.html
+
+
+def test_mail_fits_on_a_phone():
+    """Gsm: geen lange onbreekbare woorden (website in de voettekst), bedragen niet gesplitst, en de
+    regels voor smalle schermen staan erin (review 02/11)."""
+    from hotel_checkin.messaging import templates
+
+    for lang in templates.LANGUAGES:
+        msg = templates.render("lucca", "confirmation", lang, templates.sample_data(lang))
+        assert "@media only screen and (max-width: 480px)" in msg.html and 'class="px"' in msg.html
+        # link naar de taalpagina, maar getoond als alleen de naam (geen lang woord op een smalle gsm)
+        assert ">www.hotellucca.be</a>" in msg.html
+    from hotel_checkin.processes.send_messages import money
+
+    assert money(245) == "€ 245,00"
