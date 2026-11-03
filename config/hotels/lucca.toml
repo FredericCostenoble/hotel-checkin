@@ -253,18 +253,10 @@ channels = ["email", "sms"]
 pay = "open_amount"
 
 [[flows.booking.steps]]
-step = "thank_you"   # bedankmail na vertrek
+step = "thank_you"   # bedankmail na vertrek; betaalknop alleen als er nog iets openstaat
 when = "days_after_departure"
 days = 1
 only_if = ["not_cancelled"]
-channels = ["email"]
-pay = "none"
-
-[[flows.booking.steps]]
-step = "payment_request"   # betaalverzoek als er na vertrek nog iets openstaat
-when = "days_after_departure"
-days = 1
-only_if = ["not_cancelled", "not_paid"]
 channels = ["email"]
 pay = "open_amount"
 
@@ -296,18 +288,10 @@ channels = ["email", "sms"]
 pay = "open_amount"
 
 [[flows.expedia.steps]]
-step = "thank_you"   # bedankmail na vertrek
+step = "thank_you"   # bedankmail na vertrek; betaalknop alleen als er nog iets openstaat
 when = "days_after_departure"
 days = 1
 only_if = ["not_cancelled"]
-channels = ["email"]
-pay = "none"
-
-[[flows.expedia.steps]]
-step = "payment_request"   # betaalverzoek als er na vertrek nog iets openstaat
-when = "days_after_departure"
-days = 1
-only_if = ["not_cancelled", "not_paid"]
 channels = ["email"]
 pay = "open_amount"
 
@@ -341,17 +325,9 @@ channels = ["email", "sms"]
 pay = "open_amount"
 
 [[flows.website.steps]]
-step = "thank_you"   # bedankmail na vertrek
+step = "thank_you"   # bedankmail na vertrek; betaalknop alleen als er nog iets openstaat
 when = "days_after_departure"
 days = 1
 only_if = ["not_cancelled"]
-channels = ["email"]
-pay = "none"
-
-[[flows.website.steps]]
-step = "payment_request"   # betaalverzoek als er na vertrek nog iets openstaat
-when = "days_after_departure"
-days = 1
-only_if = ["not_cancelled", "not_paid"]
 channels = ["email"]
 pay = "open_amount"

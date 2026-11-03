@@ -20,8 +20,8 @@ def _r(**kw):
 
 def test_lucca_workflow():
     steps = {s.step: s for s in workflow.steps("lucca", "booking")}
-    assert set(steps) == {"confirmation", "reminder", "access_code", "thank_you", "payment_request"}
-    assert steps["payment_request"].only_if == ["not_cancelled", "not_paid"]
+    assert set(steps) == {"confirmation", "reminder", "access_code", "thank_you"}
+    assert steps["thank_you"].pay == "open_amount"  # betaalknop in de bedankmail (vroeger een apart betaalverzoek)
     assert steps["reminder"].due_date(_r()) == date(2099, 1, 3)
     assert steps["access_code"].days == 2 and steps["access_code"].pay == "open_amount"
     assert workflow.detail_window_days("lucca") == 8
@@ -134,3 +134,17 @@ def test_unknown_rate_section_explained():
     cfg["flows"]["booking"]["steps"][0]["rates"] = {"nfr": {"welkom": True}}
     with pytest.raises(ValueError, match="onbekend tarief of onderdeel"):
         workflow.save_config("lucca", cfg, "test")
+
+
+def test_old_payment_request_merged_into_thank_you():
+    cfg = workflow.file_config("lucca")
+    steps = cfg["flows"]["booking"]["steps"]
+    thank = next(s for s in steps if s["step"] == "thank_you")
+    thank["pay"] = "none"
+    steps.append({"step": "payment_request", "when": "days_after_departure", "days": 1,
+                  "only_if": ["not_cancelled", "not_paid"], "pay": "open_amount", "enabled": True})
+    clean = workflow.validate("lucca", cfg)
+    names = [s["step"] for s in clean["flows"]["booking"]["steps"]]
+    assert "payment_request" not in names
+    merged = next(s for s in clean["flows"]["booking"]["steps"] if s["step"] == "thank_you")
+    assert merged["rates"]["nfr"]["pay"] and merged["rates"]["standard"]["pay"] and merged["rates"]["nfr"]["message"]

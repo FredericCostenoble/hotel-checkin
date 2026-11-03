@@ -53,7 +53,9 @@ AFTER_DEPARTURE_WINDOW = 14  # dagen: een bericht na vertrek dat zo lang niet we
 CHANNELS = ("email", "sms", "whatsapp")
 PAY = ("none", "open_amount")
 _OLD_PAY = {"city_tax": "open_amount"}  # vroeger een aparte knop voor de toeristenbelasting
-STEP_TYPES = ("confirmation", "reminder", "access_code", "thank_you", "payment_request")
+STEP_TYPES = ("confirmation", "reminder", "access_code", "thank_you")
+# Vroeger een aparte mail na vertrek (tot 03/11/2026): nu het onderdeel betaalknop van de bedankmail
+_OLD_STEPS = {"payment_request": "thank_you"}
 CITY_TAX_UNITS = ("person_night", "person_stay")
 CONFIG_DOC = "workflow"
 CONTENT = ("reservation", "checkin_form", "code", "practical_info")
@@ -66,7 +68,6 @@ DEFAULT_CONTENT = {
     "reminder": {"reservation": True, "checkin_form": True, "code": False, "practical_info": False},
     "access_code": {"reservation": False, "checkin_form": False, "code": True, "practical_info": True},
     "thank_you": {"reservation": False, "checkin_form": False, "code": False, "practical_info": False},
-    "payment_request": {"reservation": True, "checkin_form": False, "code": False, "practical_info": False},
 }
 
 CITY_TAX_LABELS = ("citytax", "city tax", "toeristenbelasting", "taxe de séjour", "kurtaxe")
@@ -221,7 +222,7 @@ def validate(hotel_id: str, cfg: dict) -> dict:
         if raw is None:
             problems.append(f"flow {name} ontbreekt")
             continue
-        steps_raw = raw.get("steps") or []
+        steps_raw = _merge_old_steps(raw.get("steps") or [])
         clean_steps = []
         for i, s in enumerate(steps_raw, 1):
             where = f"{name}, stap {i} ({s.get('step', '?')})"
@@ -274,6 +275,31 @@ def validate(hotel_id: str, cfg: dict) -> dict:
     if problems:
         raise ValueError(f"{hotel_id}: " + "; ".join(problems))
     return {"parameters": params, "flows": flows}
+
+
+def _merge_old_steps(steps_raw: list[dict]) -> list[dict]:
+    """Het vroegere betaalverzoek na vertrek wordt het onderdeel betaalknop van de bedankmail (zelfde dag):
+    stond het aan, dan staat de betaalknop aan in de bedankmail (per tarief zoals het betaalverzoek had)."""
+    old = [s for s in steps_raw if s.get("step") in _OLD_STEPS]
+    if not old:
+        return steps_raw
+    out = [copy.deepcopy(s) for s in steps_raw if s.get("step") not in _OLD_STEPS]
+    for o in old:
+        target = next((s for s in out if s.get("step") == _OLD_STEPS[o["step"]]), None)
+        if target is None or not o.get("enabled", True):
+            continue
+        t_step = Step(step=target["step"], when=target.get("when", "after_booking"), pay=str(target.get("pay", "none")),
+                      content=dict(target.get("content") or {}), rates=dict(target.get("rates") or {}))
+        o_step = Step(step=o["step"], when=o.get("when", "after_booking"), pay=_OLD_PAY.get(str(o.get("pay", "none")), str(o.get("pay", "none"))),
+                      content=dict(o.get("content") or {}), rates=dict(o.get("rates") or {}))
+        if not target.get("enabled", True):  # bedankmail stond uit: alleen de betaalknop (zoals het betaalverzoek)
+            target["enabled"] = True
+            target["rates"] = {r: {**{k: False for k in SECTIONS}, "message": True, "pay": o_step.sections(r)["pay"]}
+                               for r in RATES}
+        else:
+            target["rates"] = {r: {**t_step.sections(r), "pay": t_step.sections(r)["pay"] or o_step.sections(r)["pay"]}
+                               for r in RATES}
+    return out
 
 
 # ---------------------------------------------------------------- gebruik door de processen

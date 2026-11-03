@@ -54,10 +54,8 @@ def test_mode(hotel_id: str) -> bool:
 def ready_steps(hotel_id: str) -> tuple[str, ...]:
     """access_code pas als Salto ingesteld is (eerst een pincode maken, dan versturen)."""
     if test_mode(hotel_id):
-        return READY_STEPS + ("access_code", "payment_request")
-    steps = READY_STEPS + (("access_code",) if salto_ready(hotel_id) else ())
-    # betaalverzoek pas met een betaalknop (Saferpay) en het openstaande bedrag uit Lighthouse
-    return steps + (("payment_request",) if payments_ready(hotel_id) else ())
+        return READY_STEPS + ("access_code",)
+    return READY_STEPS + (("access_code",) if salto_ready(hotel_id) else ())
 
 
 def enabled(hotel_id: str) -> bool:
@@ -559,8 +557,6 @@ def run(hotel_id: str, today: date | None = None) -> int:
                 continue
             if workflow.is_replaced(step, r, today, sendable):
                 continue
-            if step.step == "payment_request" and not (has_pay_link(r) or test_mode(hotel_id)):
-                continue  # pas als Lighthouse de betaallink gaf (betaalverzoek naar checkin@)
             if step.step == "access_code" and not code_ready(hotel_id, r, failed):
                 continue
             if waiting_for_pay_link(hotel_id, step, r, cfg, today):

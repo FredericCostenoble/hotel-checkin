@@ -194,8 +194,17 @@ def test_plan_timeline(setup):
     code = next(p for p in plan if p["step"] == "access_code")
     assert code["state"] == "planned"  # in TST ook zonder Salto (met XXXXXX)
     assert code["due"] == (r.arrival - timedelta(days=2)).isoformat()
-    pay = next(p for p in plan if p["step"] == "payment_request")
-    assert pay["state"] == "skipped" and pay["reason"].startswith("condition:")  # betaalstatus onbekend
+    assert not any(p["step"] == "payment_request" for p in plan)  # nu de betaalknop in de bedankmail
+
+
+def test_thank_you_with_open_amount_has_pay_section_after_stay():
+    from hotel_checkin.messaging import templates
+
+    texts = templates.load_texts("lucca", "nl")
+    with_pay = templates.compose_blocks(texts, "thank_you", {"message": True}, "open_amount")
+    without = templates.compose_blocks(texts, "thank_you", {"message": True}, "none")
+    assert [b for b in with_pay if b.get("module") == "pay"] and not [b for b in without if b.get("module") == "pay"]
+    assert "bij aankomst" not in str(with_pay)  # eigen tekst na vertrek, niet die van voor de aankomst
 
 
 def test_muted_email_for_guest(setup):

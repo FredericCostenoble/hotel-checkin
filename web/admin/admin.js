@@ -1005,12 +1005,12 @@ function stepCard(s, i, flow, c) {
       <div class="group">
         <div class="group-title">${esc(t("f_rates"))}</div>
         <div class="table-wrap"><table class="rates">
-          <tr><th></th>${SECTIONS.map(m => `<th>${esc(t("m_" + m))}</th>`).join("")}<th></th></tr>
+          <tr><th></th>${SECTIONS.map(m => `<th>${esc(t("m_" + m))}</th>`).join("")}</tr>
           ${RATES.map(rate => {
             const sec = sectionsOf(s, rate), off = !SECTIONS.some(m => sec[m]);
-            return `<tr class="${off ? "off" : ""}"><th>${esc(t("rate_" + rate))}${off ? `<br><span class="muted small">${esc(t("rate_row_off"))}</span>` : ""}</th>
-              ${SECTIONS.map(m => `<td><input type="checkbox" aria-label="${esc(t("rate_" + rate) + ": " + t("m_" + m))}" data-i="${i}" data-f="rate" data-rate="${rate}" value="${m}" ${sec[m] ? "checked" : ""}></td>`).join("")}
-              <td><button type="button" class="link" data-preview="${i}" data-rate="${rate}" ${off ? "disabled" : ""}>${esc(t("rate_example"))}</button></td></tr>`;
+            return `<tr class="${off ? "off" : ""}"><th>${esc(t("rate_" + rate))}<br>${off ? `<span class="muted small">${esc(t("rate_row_off"))}</span>`
+                : `<button type="button" class="link small" data-preview="${i}" data-rate="${rate}">${esc(t("rate_example"))}</button>`}</th>
+              ${SECTIONS.map(m => `<td><input type="checkbox" aria-label="${esc(t("rate_" + rate) + ": " + t("m_" + m))}" data-i="${i}" data-f="rate" data-rate="${rate}" value="${m}" ${sec[m] ? "checked" : ""}></td>`).join("")}</tr>`;
           }).join("")}
         </table></div>
         <p class="muted small">${esc(t("wf_rule_code"))}<br>${esc(t("wf_rule_pay"))}<br>${esc(t("wf_rule_form"))}</p>
@@ -1024,7 +1024,6 @@ const DEFAULT_CONTENT = {
   reminder: { reservation: true, checkin_form: true, code: false, practical_info: false },
   access_code: { reservation: false, checkin_form: false, code: true, practical_info: true },
   thank_you: { reservation: false, checkin_form: false, code: false, practical_info: false },
-  payment_request: { reservation: true, checkin_form: false, code: false, practical_info: false },
 };
 const contentOf = s => ({ ...(DEFAULT_CONTENT[s.step] || {}), ...(s.content || {}) });
 const RATES = ["nfr", "standard"];

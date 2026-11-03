@@ -170,6 +170,30 @@ sms = "{hotel_naam}: Guten Tag {voornaam}, vielen Dank für Ihren Aufenthalt. Bi
 type = "text"
 alineas = ["Vielen Dank für Ihren Aufenthalt im {hotel_naam}. Wir hoffen, Sie haben Brügge und Ihr Zimmer genossen.", "Wir freuen uns, Sie wieder begrüßen zu dürfen. Wenn Sie direkt über unsere Website buchen, erhalten Sie garantiert den besten Preis."]
 
+[[thank_you.blokken]]   # onderdeel betaalknop (tabblad Workflow): alleen als er na vertrek nog iets openstaat
+module = "pay"
+type = "text"
+titel = "Bezahlen"
+alineas = ["Bei der Kontrolle Ihrer Rechnung haben wir festgestellt, dass noch {openstaand_bedrag} offen ist. Sie können den Betrag unten sicher online bezahlen."]
+
+[[thank_you.blokken]]
+module = "pay"
+type = "prices"
+totaal = "Gesamt"
+betaald = "Bereits bezahlt"
+open = "Noch zu zahlen"
+
+[[thank_you.blokken]]
+module = "pay"
+type = "button"
+tekst = "Jetzt bezahlen ({openstaand_bedrag})"
+link = "{betaal_link}"
+
+[[thank_you.blokken]]
+module = "pay"
+type = "text"
+alineas = ["Haben Sie eine Frage zur Rechnung? Antworten Sie einfach auf diese E-Mail oder rufen Sie uns an unter {hotel_telefoon}."]
+
 [[thank_you.blokken]]   # review vragen; alleen als het adres ingevuld is (Instellingen > Hotel > Reviews)
 type = "text"
 titel = "Ihre Meinung"

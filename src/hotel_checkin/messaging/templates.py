@@ -30,7 +30,8 @@ from pathlib import Path
 TEXTS_DIR = Path(__file__).parent / "texts"
 LANGUAGES = ("nl", "fr", "en", "de")
 FALLBACK_LANGUAGE = "en"
-EMAIL_MESSAGES = ("confirmation", "reminder", "access_code", "thank_you", "payment_request", "room_change")
+EMAIL_MESSAGES = ("confirmation", "reminder", "access_code", "thank_you", "room_change")
+# payment_request: vroeger een aparte mail na vertrek, nu het onderdeel betaalknop van de bedankmail
 
 
 @dataclass
@@ -105,7 +106,7 @@ def compose_blocks(texts: dict, message: str, content: dict | None, pay: str = "
     """
     blocks = texts[message].get("blokken", [])  # at_the_door: alleen sms
     if content is None and pay == "none":
-        return blocks
+        return [b for b in blocks if b.get("module") != "pay"]  # betaalknop alleen als gevraagd
     content = content or {}
     first_tagged = next((i for i, b in enumerate(blocks) if b.get("module")), len(blocks))
     intro = [b for b in blocks[:first_tagged] if not b.get("module")]
@@ -113,9 +114,9 @@ def compose_blocks(texts: dict, message: str, content: dict | None, pay: str = "
     shared = texts.get("modules", {})
     middle: list[dict] = []
     for mod in MODULES:
-        if mod == "pay":
+        if mod == "pay":  # eigen tekst van het bericht (module = "pay") gaat voor, anders de gedeelde
             if pay and pay != "none":
-                middle += shared.get(f"pay_{pay}", [])
+                middle += [b for b in blocks if b.get("module") == "pay"] or shared.get(f"pay_{pay}", [])
             continue
         if not content.get(mod, any(b.get("module") == mod for b in blocks)):
             continue
