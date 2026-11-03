@@ -58,7 +58,7 @@ def row(hotel_id: str, r: Reservation, day: date, today: date, code_active: bool
     msgs = guests.messages_for(hotel_id, r.reservation_id)
     code_mail = any(m["message_type"] == "access_code" and m["ok"] and m["channel"] != "salto" for m in msgs)
     code_due = any(s.step == "access_code" and s.enabled and workflow.is_due(s, r, today)
-                   for s in workflow._steps_from(workflow.config(hotel_id), workflow.flow_for(hotel_id, r)))
+                   for s in workflow.steps_for(hotel_id, r))
     paid = workflow.room_paid(r)
     has_code = bool(r.access_codes)
     in_pms = bool(r.access_codes) and r.pms_codes_line == pms_sync.wanted_line(r)

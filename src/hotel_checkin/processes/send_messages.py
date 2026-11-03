@@ -451,7 +451,7 @@ def resend(hotel_id: str, reservation_id: str, step_name: str, channel: str, to:
     if channel != "email" and not phone_enabled(hotel_id):
         return {"ok": False, "error": "WhatsApp en sms zijn nog niet actief"}
     cfg = workflow.config(hotel_id)
-    step = next((s for s in workflow._steps_from(cfg, workflow.flow_for(hotel_id, r, cfg)) if s.step == step_name), None)
+    step = next((s for s in workflow.steps_for(hotel_id, r, cfg) if s.step == step_name), None)
     if step is None or step.step not in ready_steps(hotel_id):
         return {"ok": False, "error": "Dit bericht kan nog niet verstuurd worden"}
     if step.step == "access_code" and not r.access_pin and not workflow.room_paid(r):
@@ -490,8 +490,8 @@ def plan(hotel_id: str, r: Reservation, rows: list[dict], cfg: dict, ready: tupl
     for to in recipients(r, "phone"):
         channels.append({"channel": "whatsapp", "to": to, "reason": "muted" if "whatsapp" in muted else off})
         channels.append({"channel": "sms", "to": to, "reason": "muted" if "sms" in muted else off or "fallback"})
-    flow = workflow.flow_for(hotel_id, r, cfg)
-    steps = workflow._steps_from(cfg, flow)
+    steps = workflow.steps_for(hotel_id, r, cfg)  # kanaal en tarief
+    switched_on = {s.step for s in workflow._steps_from(cfg, workflow.flow_for(hotel_id, r, cfg)) if s.enabled}
     active = [s for s in steps if s.enabled and s.step in ready]  # alleen wat echt verstuurd kan worden vervangt iets
     out = []
     for step in steps:
@@ -504,6 +504,8 @@ def plan(hotel_id: str, r: Reservation, rows: list[dict], cfg: dict, ready: tupl
             item["state"] = "sent"
         elif mine:
             item["state"] = "failed"
+        elif not step.enabled and step.step in switched_on:
+            item.update(state="off", reason="rate_off_" + workflow.rate_of(r))  # niets aangevinkt voor dit tarief
         elif not step.enabled:
             item.update(state="off", reason="disabled")
         elif not on:
@@ -549,8 +551,7 @@ def run(hotel_id: str, today: date | None = None) -> int:
     for r in guests.list_reservations(hotel_id):
         if before_start(r, begin) or not (r.guest.email or r.guest.phone):
             continue
-        flow = workflow.flow_for(hotel_id, r, cfg)  # kanaal en betaalstatus
-        all_steps = [s for s in workflow._steps_from(cfg, flow) if s.enabled]
+        all_steps = [s for s in workflow.steps_for(hotel_id, r, cfg) if s.enabled]  # kanaal en tarief
         # Alleen stappen die nu echt verstuurd kunnen worden, vervangen een eerdere stap
         sendable = [s for s in all_steps if s.step in ready]
         for step in sendable:

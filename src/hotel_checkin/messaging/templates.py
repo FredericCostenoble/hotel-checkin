@@ -121,6 +121,8 @@ def compose_blocks(texts: dict, message: str, content: dict | None, pay: str = "
             continue
         own = [b for b in blocks if b.get("module") == mod]
         middle += own or shared.get(mod, [])
+    if not content.get("message", True):  # eigen tekst (aanhef en slot) uitgevinkt
+        return middle
     return intro + middle + closing
 
 

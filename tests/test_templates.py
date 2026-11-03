@@ -108,3 +108,12 @@ def test_mail_fits_on_a_phone():
     from hotel_checkin.processes.send_messages import money
 
     assert money(245) == "€ 245,00"
+
+
+def test_message_text_off_leaves_only_sections():
+    from hotel_checkin.messaging import templates
+
+    texts = templates.load_texts("lucca", "nl")
+    full = templates.compose_blocks(texts, "confirmation", {"reservation": True, "checkin_form": False})
+    bare = templates.compose_blocks(texts, "confirmation", {"message": False, "reservation": True, "checkin_form": False})
+    assert bare and len(bare) < len(full) and all(b in full for b in bare)

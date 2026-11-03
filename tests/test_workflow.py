@@ -106,3 +106,31 @@ def test_old_website_flows_from_monitor_become_one():
     assert set(cfg["flows"]) == {"booking", "expedia", "website"}
     assert next(s for s in workflow._steps_from(cfg, "website") if s.step == "reminder").days == 9
     workflow.reset_config("lucca")
+
+
+def test_rates_per_step_from_old_content():
+    step = next(s for s in workflow.steps("lucca", "booking") if s.step == "access_code")
+    assert set(step.rates) == {"nfr", "standard"} and step.rates["nfr"]["code"] and step.rates["nfr"]["pay"]
+    assert workflow.rate_of(_r(non_refundable=True)) == "nfr"
+    assert workflow.rate_of(_r()) == "standard" and workflow.rate_of(_r(non_refundable=False)) == "standard"
+
+
+def test_rate_all_off_means_not_sent_for_that_rate():
+    cfg = workflow.config("lucca")
+    first = cfg["flows"]["booking"]["steps"][0]
+    first["rates"] = {"nfr": {k: False for k in workflow.SECTIONS},
+                      "standard": {"message": True, "reservation": False, "checkin_form": True, "pay": True}}
+    workflow.save_config("lucca", cfg, "test")
+    nfr = workflow.steps_for("lucca", _r(source="Booking.com", non_refundable=True))[0]
+    std = workflow.steps_for("lucca", _r(source="Booking.com"))[0]
+    assert not nfr.enabled
+    assert std.enabled and std.pay == "open_amount" and not std.mail_content()["reservation"]
+    assert std.mail_content()["checkin_form"] and std.mail_content()["message"]
+    assert workflow.steps_for("lucca", _r(source="Expedia", non_refundable=True))[0].enabled  # ander kanaal
+
+
+def test_unknown_rate_section_explained():
+    cfg = workflow.config("lucca")
+    cfg["flows"]["booking"]["steps"][0]["rates"] = {"nfr": {"welkom": True}}
+    with pytest.raises(ValueError, match="onbekend tarief of onderdeel"):
+        workflow.save_config("lucca", cfg, "test")

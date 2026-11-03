@@ -222,6 +222,9 @@ city_tax_amount = 4.2            # toeristenbelasting in euro (Brugge, zoals Lig
 city_tax_unit = "person_night"   # per persoon per nacht (person_night) of per persoon per verblijf (person_stay)
 currency = "EUR"
 
+# Per kanaal een flow; per stap kan in de monitor (tabblad Workflow) per tarief (NFR, Standaard) gekozen worden
+# welke onderdelen in de mail staan (rates = { nfr = {...}, standard = {...} }, zie core/workflow.py).
+# Zonder keuze per tarief gelden content en pay hieronder voor beide tarieven.
 [flows.booking]
 sources = ["Booking.com"]   # herkend aan het kanaal ("Via")
 

@@ -20,8 +20,17 @@ Een stap:
     skip_if_booked_late = true        # niet als de reservatie pas op of na deze dag binnenkwam
     pay = "none"                      # betaalknop: none | open_amount (wat nog openstaat: alleen de taks of alles)
     enabled = true
-    content = { reservation = true, checkin_form = true, code = false, practical_info = false }
-                                      # wat in de mail staat (bouwstenen, zie messaging/templates.py)
+    [rates.nfr] / [rates.standard]    # per tarief welke onderdelen in de mail staan (zie SECTIONS):
+    rates = { nfr = { message = true, reservation = true, checkin_form = true, pay = false, ... },
+              standard = { ... } }
+                                      # niets aangevinkt = deze mail gaat niet weg voor dat tarief
+                                      # (oud: content en pay, gelden dan voor beide tarieven)
+
+Tarief (rate_of): nfr = niet annuleerbaar (r.non_refundable), anders standard (ook als het niet gekend is).
+Wat in de code blijft, omdat het tarief alleen niet zegt of er betaald is (getoond in de monitor):
+- pincode alleen als de kamer echt betaald is in Lighthouse (room_paid);
+- betaalknop alleen als er nog iets openstaat en Lighthouse een betaallink gaf;
+- check-in-formulier al ingevuld: een knop om aan te passen in plaats van de vraag om in te vullen.
 
 De bouwblokken (Lighthouse, mail, SMS, Salto) kennen deze workflow niet; alleen de processen
 lezen hem en beslissen daarmee wat wanneer gebeurt, en welke gegevens ze daarvoor nodig hebben.
@@ -48,6 +57,9 @@ STEP_TYPES = ("confirmation", "reminder", "access_code", "thank_you", "payment_r
 CITY_TAX_UNITS = ("person_night", "person_stay")
 CONFIG_DOC = "workflow"
 CONTENT = ("reservation", "checkin_form", "code", "practical_info")
+RATES = ("nfr", "standard")
+# Onderdelen van een mail, per tarief aan of uit: message = de eigen tekst van het bericht (aanhef en slot)
+SECTIONS = ("message",) + CONTENT + ("pay",)
 # Standaardinhoud per berichttype (als een stap niets opgeeft)
 DEFAULT_CONTENT = {
     "confirmation": {"reservation": True, "checkin_form": True, "code": False, "practical_info": False},
@@ -101,6 +113,19 @@ class Step:
     pay: str = "none"
     enabled: bool = True
     content: dict[str, bool] = field(default_factory=dict)  # leeg = standaard voor dit berichttype
+    rates: dict[str, dict[str, bool]] = field(default_factory=dict)  # per tarief de onderdelen (SECTIONS)
+
+    def sections(self, rate: str) -> dict[str, bool]:
+        """Onderdelen van de mail voor dit tarief. Zonder keuze per tarief: content en pay (oud)."""
+        base = {"message": True, **self.mail_content(), "pay": self.pay != "none"}
+        base = {k: bool(base.get(k)) for k in SECTIONS}
+        return {**base, **{k: bool(v) for k, v in (self.rates.get(rate) or {}).items() if k in SECTIONS}}
+
+    def for_rate(self, rate: str) -> Step:
+        """Deze stap zoals hij geldt voor een reservatie met dit tarief. Niets aangevinkt: uit."""
+        sec = self.sections(rate)
+        return replace(self, content={k: sec[k] for k in ("message",) + CONTENT},
+                       pay="open_amount" if sec["pay"] else "none", enabled=self.enabled and any(sec.values()))
 
     def mail_content(self) -> dict[str, bool]:
         """Wat in de mail staat: standaard voor het berichttype, aangevuld met de keuzes van de stap."""
@@ -222,7 +247,15 @@ def validate(hotel_id: str, cfg: dict) -> dict:
             unknown = [c for c in step.only_if if c not in CONDITIONS] + [c for c in step.channels if c not in CHANNELS]
             if unknown:
                 problems.append(f"{where}: onbekend {unknown}")
-            if [k for k in step.content if k not in CONTENT]:
+            rates_in = s.get("rates") or {}
+            bad_rates = [x for x in rates_in if x not in RATES] + [
+                k for v in rates_in.values() if isinstance(v, dict) for k in v if k not in SECTIONS]
+            if bad_rates:
+                problems.append(f"{where}: onbekend tarief of onderdeel {bad_rates}")
+            # altijd volledig bewaren: per tarief elk onderdeel aan of uit (zonder keuze: wat de stap had)
+            step.rates = {rate: v for rate, v in rates_in.items() if rate in RATES and isinstance(v, dict)}
+            step.rates = {rate: step.sections(rate) for rate in RATES}
+            if [k for k in step.content if k not in CONTENT + ("message",)]:
                 problems.append(f"{where}: onbekende inhoud {[k for k in step.content if k not in CONTENT]}")
             if step.pay not in PAY:
                 problems.append(f"{where}: onbekende betaalknop {step.pay!r}")
@@ -258,6 +291,18 @@ def steps(hotel_id: str, flow: str | None = None, enabled_only: bool = True) -> 
     """De stappen van één flow, of van alle flows samen (flow=None)."""
     found = _steps_from(config(hotel_id), flow)
     return [s for s in found if s.enabled] if enabled_only else found
+
+
+def rate_of(r: Reservation) -> str:
+    """Tarief van de reservatie voor de workflow: nfr (niet annuleerbaar) of standard (ook als onbekend)."""
+    return "nfr" if r.non_refundable is True else "standard"
+
+
+def steps_for(hotel_id: str, r: Reservation, cfg: dict | None = None) -> list[Step]:
+    """De stappen voor deze reservatie: flow van haar kanaal, onderdelen van haar tarief."""
+    cfg = cfg or config(hotel_id)
+    rate = rate_of(r)
+    return [s.for_rate(rate) for s in _steps_from(cfg, flow_for(hotel_id, r, cfg))]
 
 
 def flow_for(hotel_id: str, r: Reservation, cfg: dict | None = None) -> str:

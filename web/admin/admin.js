@@ -21,6 +21,11 @@ const T = {
     m_reservation: "reservatiegegevens", m_checkin_form: "link check-in-formulier", m_code: "pincode", m_practical_info: "praktische info", m_pay: "betaalknop",
     wf_pay_note: "Knop om het openstaande bedrag online te betalen: alleen de toeristenbelasting of alles, wat in Lighthouse nog openstaat.",
     wf_form_note: "De link naar het formulier valt vanzelf weg als de gast het al invulde.",
+    f_rates: "In de mail, per tarief", m_message: "tekst van de mail", rate_nfr: "NFR (niet annuleerbaar)", rate_standard: "Standaard (annuleerbaar of onbekend)",
+    rate_row_off: "niets aangevinkt: gaat niet weg", rate_example: "voorbeeld",
+    wf_rule_code: "Pincode: alleen als de kamer betaald is in Lighthouse (toeristenbelasting mag openstaan).",
+    wf_rule_pay: "Betaalknop: alleen als er nog iets openstaat en Lighthouse een betaallink gaf.",
+    wf_rule_form: "Check-in-formulier: al ingevuld, dan een knop om de gegevens aan te passen.",
     when_after_booking: "na de boeking", when_days_before_arrival: "dagen voor aankomst",
     ch_email: "e-mail", ch_sms: "sms", ch_whatsapp: "WhatsApp",
     pay_none: "geen", pay_open_amount: "openstaand bedrag", pay_city_tax: "toeristenbelasting",
@@ -53,7 +58,7 @@ const T = {
     rs_confirm_test: (step, ch, test, to) => `${step} nu versturen per ${ch} naar het testadres ${test}? (bedoeld voor ${to}; in de testomgeving gaat niets naar de gast)`,
     rs_no_test: "Er is geen testadres ingesteld voor deze omgeving, dus er wordt niets verstuurd. Vul het in op Instellingen > Hotel > Testomgeving.",
     chr_muted: "uitgezet voor deze gast", chr_phone_off: "nog niet actief (Twilio)", chr_fallback: "alleen als WhatsApp niet lukt",
-    rs_disabled: "stap staat uit", rs_messaging_off: "berichten staan uit in deze omgeving", rs_before_start: "niet automatisch: reservatie kwam binnen vóór de startdatum van de berichten (Instellingen > Hotel > Berichten > Vanaf)",
+    rs_disabled: "stap staat uit", rs_rate_off_nfr: "uit voor NFR (niets aangevinkt bij dit tarief)", rs_rate_off_standard: "uit voor Standaard (niets aangevinkt bij dit tarief)", rs_messaging_off: "berichten staan uit in deze omgeving", rs_before_start: "niet automatisch: reservatie kwam binnen vóór de startdatum van de berichten (Instellingen > Hotel > Berichten > Vanaf)",
     rs_booked_late: "boeking kwam te laat", rs_stored_late: "oudere boeking, later binnengehaald: het moment van de boeking is voorbij (de herinnering en de code-mail komen wel)", rs_later_due: "een latere mail is al aan de beurt, de inhoud zit daarin", rs_not_ready: "nog niet gebouwd",
     rs_no_contact: "Geen e-mailadres of gsm-nummer in Lighthouse. Versturen kan wel: klik bij een bericht op Versturen en kies of typ een adres.", rs_window_passed: "moment voorbij", rs_condition: "voorwaarde niet voldaan",
     g_msgs: "Berichten", g_mute_hint: "Vinkje weg: dit kanaal nooit gebruiken voor deze gast",
@@ -98,6 +103,11 @@ const T = {
     m_reservation: "reservation details", m_checkin_form: "check-in form link", m_code: "PIN code", m_practical_info: "practical info", m_pay: "pay button",
     wf_pay_note: "Button to pay the open amount online: just the city tax or everything, whatever is still open in Lighthouse.",
     wf_form_note: "The form link is left out automatically when the guest already filled it in.",
+    f_rates: "In the mail, per rate", m_message: "mail text", rate_nfr: "NFR (non-refundable)", rate_standard: "Standard (refundable or unknown)",
+    rate_row_off: "nothing ticked: not sent", rate_example: "example",
+    wf_rule_code: "PIN code: only when the room is paid in Lighthouse (city tax may be open).",
+    wf_rule_pay: "Pay button: only when something is still open and Lighthouse gave a payment link.",
+    wf_rule_form: "Check-in form: already filled in, then a button to edit the details.",
     when_after_booking: "after booking", when_days_before_arrival: "days before arrival",
     ch_email: "e-mail", ch_sms: "SMS", ch_whatsapp: "WhatsApp",
     pay_none: "none", pay_open_amount: "open amount", pay_city_tax: "city tax",
@@ -130,7 +140,7 @@ const T = {
     rs_confirm_test: (step, ch, test, to) => `Send ${step} now by ${ch} to the test address ${test}? (meant for ${to}; in the test environment nothing goes to the guest)`,
     rs_no_test: "No test address is set for this environment, so nothing will be sent. Fill it in under Settings > Hotel > Test environment.",
     chr_muted: "switched off for this guest", chr_phone_off: "not active yet (Twilio)", chr_fallback: "only if WhatsApp fails",
-    rs_disabled: "step is off", rs_messaging_off: "messages are off in this environment", rs_before_start: "not automatic: reservation came in before the messages start date (Settings > Hotel > Messages > From)",
+    rs_disabled: "step is off", rs_rate_off_nfr: "off for NFR (nothing ticked for this rate)", rs_rate_off_standard: "off for Standard (nothing ticked for this rate)", rs_messaging_off: "messages are off in this environment", rs_before_start: "not automatic: reservation came in before the messages start date (Settings > Hotel > Messages > From)",
     rs_booked_late: "booked too late", rs_stored_late: "older booking, imported later: the booking moment has passed (reminder and code mail still follow)", rs_later_due: "a later mail is already due, the content is included there", rs_not_ready: "not built yet",
     rs_no_contact: "No e-mail address or mobile number in Lighthouse. You can still send: click Send at a message and pick or type an address.", rs_window_passed: "moment passed", rs_condition: "condition not met",
     g_msgs: "Messages", g_mute_hint: "Unchecked: never use this channel for this guest",
@@ -993,8 +1003,17 @@ function stepCard(s, i, flow, c) {
         </div>
       </div>
       <div class="group">
-        <div class="group-title">${esc(t("f_content"))}</div>
-        <div class="fields"><div>${CONTENT.map(m => `<label class="chk" title="${m === "checkin_form" ? esc(t("wf_form_note")) : ""}"><input type="checkbox" data-i="${i}" data-f="content" value="${m}" ${contentOf(s)[m] ? "checked" : ""}> ${esc(t("m_" + m))}</label>`).join("")}<label class="chk" title="${esc(t("wf_pay_note"))}"><input type="checkbox" data-i="${i}" data-f="pay" ${s.pay !== "none" ? "checked" : ""}> ${esc(t("m_pay"))}</label></div></div>
+        <div class="group-title">${esc(t("f_rates"))}</div>
+        <div class="table-wrap"><table class="rates">
+          <tr><th></th>${SECTIONS.map(m => `<th>${esc(t("m_" + m))}</th>`).join("")}<th></th></tr>
+          ${RATES.map(rate => {
+            const sec = sectionsOf(s, rate), off = !SECTIONS.some(m => sec[m]);
+            return `<tr class="${off ? "off" : ""}"><th>${esc(t("rate_" + rate))}${off ? `<br><span class="muted small">${esc(t("rate_row_off"))}</span>` : ""}</th>
+              ${SECTIONS.map(m => `<td><input type="checkbox" aria-label="${esc(t("rate_" + rate) + ": " + t("m_" + m))}" data-i="${i}" data-f="rate" data-rate="${rate}" value="${m}" ${sec[m] ? "checked" : ""}></td>`).join("")}
+              <td><button type="button" class="link" data-preview="${i}" data-rate="${rate}" ${off ? "disabled" : ""}>${esc(t("rate_example"))}</button></td></tr>`;
+          }).join("")}
+        </table></div>
+        <p class="muted small">${esc(t("wf_rule_code"))}<br>${esc(t("wf_rule_pay"))}<br>${esc(t("wf_rule_form"))}</p>
       </div>
     </div></div>`;
 }
@@ -1008,18 +1027,25 @@ const DEFAULT_CONTENT = {
   payment_request: { reservation: true, checkin_form: false, code: false, practical_info: false },
 };
 const contentOf = s => ({ ...(DEFAULT_CONTENT[s.step] || {}), ...(s.content || {}) });
+const RATES = ["nfr", "standard"];
+const SECTIONS = ["message", ...CONTENT, "pay"];
+// Onderdelen per tarief; zonder keuze per tarief wat de stap had (content en pay)
+const sectionsOf = (s, rate) => {
+  const base = { message: true, ...contentOf(s), pay: s.pay !== "none" };
+  return Object.fromEntries(SECTIONS.map(m => [m, !!({ ...base, ...((s.rates || {})[rate] || {}) })[m]]));
+};
 
 // Voorbeeldmail: de stap zoals ze nu op het scherm staat (ook als ze nog niet bewaard is)
-let pvStep = null, pvLang = "nl";
-async function showPreview(step) {
-  pvStep = step;
+let pvStep = null, pvLang = "nl", pvRate = "standard";
+async function showPreview(step, rate) {
+  pvStep = step; pvRate = rate || pvRate;
   $("#preview").hidden = false;
-  $("#pv-title").textContent = `${t("wf_example")}: ${t("step_" + step.step)} (${t("flow_" + wfFlow)})`;
+  $("#pv-title").textContent = `${t("wf_example")}: ${t("step_" + step.step)} (${t("flow_" + wfFlow)}, ${t("rate_" + pvRate)})`;
   $("#pv-langs").innerHTML = ["nl", "fr", "en", "de"].map(l => `<button type="button" data-l="${l}" class="${l === pvLang ? "active" : ""}">${l.toUpperCase()}</button>`).join("");
   document.querySelectorAll("#pv-langs button").forEach(b => b.onclick = () => { pvLang = b.dataset.l; showPreview(pvStep); });
   const r = await apiFetch(API + `/api/monitor/${$("#hotel").value}/preview`, {
     method: "POST", headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ step, flow: wfFlow, language: pvLang, parameters: wf.parameters }),
+    body: JSON.stringify({ step, flow: wfFlow, rate: pvRate, language: pvLang, parameters: wf.parameters }),
   });
   const d = await r.json().catch(() => ({}));
   $("#pv-subject").textContent = d.error ? d.error : `${t("pv_subject")}: ${d.subject}`;
@@ -1029,10 +1055,13 @@ async function showPreview(step) {
 }
 
 function bindSteps(flow) {
-  document.querySelectorAll("#wf-timeline [data-preview]").forEach(b => b.onclick = () => showPreview(flow.steps[+b.dataset.preview]));
+  document.querySelectorAll("#wf-timeline [data-preview]").forEach(b => b.onclick = () => showPreview(flow.steps[+b.dataset.preview], b.dataset.rate));
   document.querySelectorAll("#wf-timeline [data-f]").forEach(el => el.onchange = () => {
     const s = flow.steps[+el.dataset.i], f = el.dataset.f;
-    if (f === "content") {
+    if (f === "rate") {
+      s.rates = Object.fromEntries(RATES.map(r => [r, sectionsOf(s, r)]));
+      s.rates[el.dataset.rate][el.value] = el.checked;
+    } else if (f === "content") {
       s.content = { ...contentOf(s), [el.value]: el.checked };
     } else if (["channels", "only_if", "replaced_by"].includes(f)) {
       s[f] = [...document.querySelectorAll(`#wf-timeline [data-i="${el.dataset.i}"][data-f="${f}"]:checked`)].map(x => x.value);

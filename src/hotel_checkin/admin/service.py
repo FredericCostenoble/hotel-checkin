@@ -323,7 +323,7 @@ def workflow_reset(hotel_id: str) -> dict:
 
 def workflow_preview(hotel_id: str, body: dict) -> dict:
     """Voorbeeldmail voor een stap zoals ze nu op het scherm staat (ook niet bewaard), met
-    voorbeeldgegevens. body: {"step": {...}, "flow": "booking", "language": "nl"}."""
+    voorbeeldgegevens. body: {"step": {...}, "flow": "booking", "rate": "nfr", "language": "nl"}."""
     from datetime import timedelta
 
     from hotel_checkin.core import workflow
@@ -337,8 +337,11 @@ def workflow_preview(hotel_id: str, body: dict) -> dict:
     try:
         if body.get("parameters"):
             cfg = {**cfg, "parameters": workflow.validate(hotel_id, {"parameters": body["parameters"], "flows": cfg["flows"]})["parameters"]}
+        rate = body.get("rate") if body.get("rate") in workflow.RATES else "standard"
         step = workflow.Step(step=raw["step"], when=raw.get("when", "after_booking"), days=int(raw.get("days", 0) or 0),
-                             pay=raw.get("pay", "none"), content={k: bool(v) for k, v in (raw.get("content") or {}).items()})
+                             pay=raw.get("pay", "none"), content={k: bool(v) for k, v in (raw.get("content") or {}).items()},
+                             rates={k: dict(v) for k, v in (raw.get("rates") or {}).items() if isinstance(v, dict)}
+                             ).for_rate(rate)
     except (KeyError, TypeError, ValueError) as exc:
         return {"error": str(exc)}
     source = {"booking": "Booking.com", "expedia": "Expedia"}.get(body.get("flow", ""), "Website")
@@ -349,8 +352,12 @@ def workflow_preview(hotel_id: str, body: dict) -> dict:
     sample.folio = [{"label": "Superior Double Room - Standard rate", "qty": None, "amount": 240.0},
                     {"label": "Citytax", "qty": 4, "amount": 20.0}]
     sample.folio_total, sample.open_amount = 260.0, 245.0
+    if rate == "nfr":  # niet annuleerbaar: kamer betaald, alleen de toeristenbelasting staat nog open
+        sample.non_refundable, sample.open_amount = True, 20.0
     data = {**templates.sample_data(language), **send_messages.pay_data(hotel_id, sample, cfg),
             "token": "voorbeeld-" + hotel_id,  # werkende link naar het formulier (voorbeeld, niets bewaard)
             "betaal_link": "#betalen"}
+    if not step.enabled:
+        return {"error": "Niets aangevinkt voor dit tarief: deze mail gaat niet weg."}
     msg = templates.render(hotel_id, step.step, language, data, step.mail_content(), step.pay)
     return {"subject": msg.subject, "html": msg.html}

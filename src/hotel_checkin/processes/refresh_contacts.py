@@ -45,7 +45,7 @@ def message_due_soon(hotel_id: str, r, cfg: dict, sent: set[str], today: date) -
     nakijken of de reservatie intussen niet geannuleerd of gewijzigd is."""
     if r.status == ReservationStatus.CANCELLED:
         return False
-    for step in workflow._steps_from(cfg, workflow.flow_for(hotel_id, r, cfg)):
+    for step in workflow.steps_for(hotel_id, r, cfg):
         if (step.enabled and step.when == "days_before_arrival" and step.step not in sent
                 and today <= step.due_date(r) <= today + timedelta(days=1)):
             return True

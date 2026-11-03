@@ -292,3 +292,18 @@ def test_room_change_message_once_with_same_code(setup, monkeypatch):
     r.access_codes[0]["room"] = "2"
     out = send_messages.notify_room_change("lucca", r, cfg, date.today())
     assert len(out) == 1 and "Kuipersstraat" in sent[-1][1]
+
+
+def test_nfr_without_sections_gets_no_confirmation(setup):
+    cfg = send_messages.workflow.config("lucca")
+    cfg["flows"]["website"]["steps"][0]["rates"] = {"nfr": {k: False for k in send_messages.workflow.SECTIONS}}
+    send_messages.workflow.save_config("lucca", cfg, "test")
+    nfr = _res("n1")
+    nfr.non_refundable = True
+    repo.save_reservation(nfr)
+    _res("s1")
+    assert send_messages.run("lucca") == 1 and repo.was_sent("lucca", "s1", "confirmation", "email")
+    assert not repo.was_sent("lucca", "n1", "confirmation", "email")
+    plan = send_messages.plan("lucca", repo.get_reservation("lucca", "n1"), [], send_messages.workflow.config("lucca"),
+                              send_messages.ready_steps("lucca"), date.today(), send_messages.start("lucca"), True)
+    assert next(p for p in plan if p["step"] == "confirmation")["reason"] == "rate_off_nfr"

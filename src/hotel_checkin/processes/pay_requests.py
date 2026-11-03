@@ -39,9 +39,8 @@ def days_ahead(hotel_id: str) -> int:
 
 def pay_step_soon(hotel_id: str, r: Reservation, today: date, cfg: dict) -> str | None:
     """Naam van een bericht met betaalknop dat binnenkort (of nu) aan de beurt is, anders None."""
-    flow = workflow.flow_for(hotel_id, r, cfg)
     lead = days_ahead(hotel_id)
-    for s in workflow._steps_from(cfg, flow):
+    for s in workflow.steps_for(hotel_id, r, cfg):  # betaalknop per tarief
         if not s.enabled or s.pay == "none":
             continue
         due = s.due_date(r)
