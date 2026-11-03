@@ -62,3 +62,21 @@ def test_mailbox_error_logged_once_per_hour(monkeypatch):
 
 def test_enabled_per_hotel():
     assert mail_trigger.enabled("lucca")
+
+
+def test_start_fails_retries_quietly_then_logs_once(monkeypatch):
+    monkeypatch.setattr(mail_trigger.cloud_robot, "start", lambda: False)
+    monkeypatch.setattr(mail_trigger.cloud_robot, "LAST_ERROR", "Azure antwoordde 409: conflict")
+    mails = [_mail("no-reply@cubilis.eu", "Nieuwe reservering bij Lucca Hotel - Brugge (12345678)", minutes_ago=2)]
+    monkeypatch.setattr(mail_trigger.mailbox, "list_messages", lambda h, since: [
+        m for m in mails if m["received_at"] >= since])
+    repo.set_state("lucca", mail_trigger.STATE_KEY, (datetime.now(UTC) - timedelta(minutes=30)).isoformat())
+    mail_trigger.run("lucca")  # pas 2 minuten oud: stil opnieuw proberen
+    boundary = repo.get_state("lucca", mail_trigger.STATE_KEY)
+    assert repo.robot_runs("lucca") == []
+    mails[0]["received_at"] = datetime.now(UTC) - timedelta(minutes=mail_trigger.RETRY_MINUTES + 1)
+    mail_trigger.run("lucca")  # te lang: één keer melden, het schema neemt het over
+    mail_trigger.run("lucca")
+    runs = repo.robot_runs("lucca")
+    assert repo.get_state("lucca", mail_trigger.STATE_KEY) != boundary  # leesgrens verzet
+    assert len(runs) == 1 and "409" in runs[0]["error"] and "geplande run" in runs[0]["error"]

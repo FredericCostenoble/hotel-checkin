@@ -31,6 +31,7 @@ CLEANUP_KEY = "mail_cleanup_done"
 CLEANUP_DAYS = 90
 STATE_KEY = "mail_trigger_since"
 ERROR_LOG_MINUTES = 60  # een fout hoogstens eens per uur in het logboek (draait elke minuut)
+RETRY_MINUTES = 10  # robot niet kunnen starten: zo lang elke minuut opnieuw proberen, daarna neemt het schema het over
 
 
 def enabled(hotel_id: str) -> bool:
@@ -64,22 +65,30 @@ def run(hotel_id: str) -> int:
     if cloud_robot.available() and cloud_robot.running():
         logging.info("%s: %s meldingen, robot is al bezig; volgende minuut opnieuw", hotel_id, len(notices))
         return len(notices)  # leesgrens niet verzetten, zodat dit na de lopende run opnieuw gebeurt
-    started_robot = cloud_robot.start() if cloud_robot.available() else False
+    try:
+        started_robot = cloud_robot.start() if cloud_robot.available() else False
+        why = cloud_robot.LAST_ERROR if cloud_robot.available() else "geen robot ingesteld in deze omgeving"
+    except Exception as exc:  # noqa: BLE001 - bv. Azure even onbereikbaar
+        started_robot, why = False, f"{type(exc).__name__}: {str(exc)[:200]}"
+    if not started_robot and newest and started - newest < timedelta(minutes=RETRY_MINUTES):
+        logging.warning("%s: robot niet gestart (%s); volgende minuut opnieuw", hotel_id, why)
+        return len(notices)  # stil opnieuw proberen; leesgrens blijft staan
     if started_robot:
         from hotel_checkin.core import progress
 
         progress.step(hotel_id, "robot", "gestart door een meldingsmail: Azure start de robot (duurt meestal 40 tot 60 s)",
                       force=True)
     kinds = {"new": "nieuw", "modified": "gewijzigd", "cancelled": "geannuleerd"}
-    note = ", ".join(f"{kinds.get(n.kind, n.kind)} {n.number or '?'}" for n in notices)
-    note += ". Robot gestart." if started_robot else ". Robot NIET gestart."
+    note = ", ".join(f"{kinds.get(n.kind, n.kind)} {n.number or '(nummer niet in de mail)'}" for n in notices)
+    note += (". Robot gestart." if started_robot else
+             f". Robot niet kunnen starten ({why or 'onbekende reden'}); de geplande run van het uur neemt ze mee.")
     if started_robot:  # verwerkt: uit de inbox, naar de map van die soort
         moved = sum(mailbox.move_message(hotel_id, m["id"], NOTICE_FOLDERS.get(n.kind, "Meldingen"))
                     for m, n in found)
         note += (f" {moved} mail(s) naar de mappen verplaatst." if moved == len(found) else
                  f" {len(found) - moved} mail(s) niet verplaatst (recht Mail.ReadWrite op de mailbox?).")
     guests.log_robot_run(hotel_id, TASK, started, started_robot, len(notices), 0, note)
-    if started_robot and newest:
+    if newest:  # ook als de robot niet startte: één keer gemeld, het schema neemt ze mee (niet elke minuut opnieuw)
         guests.set_state(hotel_id, STATE_KEY, (newest + timedelta(seconds=1)).isoformat())
     return len(notices)
 

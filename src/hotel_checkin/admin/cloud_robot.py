@@ -25,6 +25,9 @@ def _headers() -> dict:
     return {"Authorization": f"Bearer {token}"}
 
 
+LAST_ERROR = ""  # waarom de laatste start() mislukte (voor het log)
+
+
 def start() -> bool:
     """Start een run nu. Zelfde instellingen als de geplande runs, plus ROBOT_MANUAL=1: dan leest de
     robot alle hotels, ook als hun eigen interval ([robot] check_minutes) nog niet om is."""
@@ -40,6 +43,8 @@ def start() -> bool:
         if containers:
             body = {"containers": containers}
     r = httpx.post(f"{ARM}{job}/start?api-version={API_VERSION}", json=body, headers=headers, timeout=30)
+    global LAST_ERROR
+    LAST_ERROR = "" if r.status_code in (200, 202) else f"Azure antwoordde {r.status_code}: {r.text[:200]}"
     return r.status_code in (200, 202)
 
 

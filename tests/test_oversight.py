@@ -34,7 +34,8 @@ def test_overview_once_in_the_morning(setup):
     assert any("overzicht" in d for d in oversight.run("lucca", morning))
     to, subject, body = setup[0]
     assert to == "management@hotellucca.be" and "aankomsten 03/11" in subject
-    assert "CPB-b" in body and "kamer nog niet betaald" in body  # rood: kamer niet betaald, geen code
+    assert "CPB-b" in body and "betaalt nog" in body  # grijs: nog niet betaald is geen fout
+    assert "(1 probleem)" in subject  # alleen CPB-a (betaald, geen code-mail); CPB-b telt niet mee
     assert not any("overzicht" in d for d in oversight.run("lucca", morning + timedelta(minutes=15)))  # niet twee keer
 
 
@@ -56,7 +57,14 @@ def test_overview_tells_what_happened(setup):
     repo.log_robot_run("lucca", "ontbijt_labels", datetime.now(UTC) - timedelta(hours=2), True, 3, 1, "y", skipped=1)
     lines = oversight.activity("lucca")
     assert "2 overschrijving(en) geregistreerd" in lines[0] and "1 ontbijtlabel(s) gezet" in lines[0]
-    assert "Wat misliep (1)" in lines[1]
+    assert lines[1].startswith("Wat misliep: Ontbijt labels: y")
+
+
+def test_same_problem_counted_once(setup):
+    for _ in range(3):
+        repo.log_robot_run("lucca", "meldingen", datetime.now(UTC) - timedelta(hours=1), False, 1, 0, "robot niet gestart")
+    line = oversight.activity("lucca")[1]
+    assert line.count("robot niet gestart") == 1 and "(3 keer)" in line
 
 
 def test_check_warns_once_for_missing_code_mail(setup, monkeypatch):

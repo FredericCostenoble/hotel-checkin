@@ -62,12 +62,13 @@ def row(hotel_id: str, r: Reservation, day: date, today: date, code_active: bool
     paid = workflow.room_paid(r)
     has_code = bool(r.access_codes)
     in_pms = bool(r.access_codes) and r.pms_codes_line == pms_sync.wanted_line(r)
-    problems = []
+    problems = []  # echt mis: iemand moet iets doen (rood)
+    info = []  # gewoon goed om te weten, geen fout (grijs)
     if not (r.guest.email or r.guest.phone):
         problems.append("geen e-mailadres of gsm-nummer")
     if code_active and code_due:
         if not paid:
-            problems.append("kamer nog niet betaald: geen code")
+            info.append("betaalt nog: de code volgt na betaling (of aan de receptie)")
         elif salto_live and not has_code:
             problems.append("nog geen pincode bij Salto")
         elif messaging_on and not code_mail:
@@ -85,7 +86,7 @@ def row(hotel_id: str, r: Reservation, day: date, today: date, code_active: bool
             "contact": "ja" if (r.guest.email or r.guest.phone) else "nee",
             "betaald": paid, "code": has_code if (code_active and salto_live) else "-",
             "code_mail": code_mail if (code_active and messaging_on) else "-", "lighthouse": in_pms if has_code else "-",
-            "problemen": problems, "_day": day.isoformat()}
+            "problemen": problems, "info": info, "_day": day.isoformat()}
 
 
 def arrivals(hotel_id: str, today: date) -> dict[str, list[dict]]:
@@ -127,6 +128,10 @@ def _monitor_url() -> str:
 def _send(hotel_id: str, subject: str, html_body: str) -> bool:
     cfg = settings(hotel_id)
     sender = load_hotel(hotel_id).get("verzending", {}).get("mail_afzender")
+    if not safety.is_production():  # testomgeving: meteen zichtbaar, niet te verwarren met de echte mail
+        subject = f"[TEST] {subject}"
+        html_body = ('<p style="font-family:Arial,sans-serif;font-size:13px;color:#8A90A0;">Testomgeving (TST): '
+                     'de echte toestand staat in de mail van productie.</p>' + html_body)
     ok = True
     for to in cfg["email"]:
         res = email.send_email(to=to, subject=subject, html_body=html_body, sender=sender, hotel_id=hotel_id)
@@ -150,13 +155,14 @@ def activity(hotel_id: str, hours: int = 24) -> list[str]:
         return [f"De voorbije {hours} uur deed de robot niets (geen runs)."]
     robot_runs = len({r.get("execution") for r in runs if r.get("execution")})
     done = {}
-    problems = []
+    problems: dict[str, int] = {}  # zelfde melding maar één keer, met het aantal keer
     for r in runs:
         task = r.get("task")
         if task in _TASK_NAMES and int(r.get("new") or 0):
             done[task] = done.get(task, 0) + int(r["new"])
         if not r.get("ok") or int(r.get("skipped") or 0):
-            problems.append(f"{_TASK_NAMES.get(task, task)}: {(r.get('error') or '')[:200]}")
+            text = f"{_TASK_NAMES.get(task, task)}: {(r.get('error') or '').strip()[:200]}"
+            problems[text] = problems.get(text, 0) + 1
     words = {"overschrijving_booking": "overschrijving(en) geregistreerd", "ontbijt_labels": "ontbijtlabel(s) gezet",
              "lighthouse_bijwerken": "reservatie(s) bijgewerkt in Lighthouse", "nieuwe_reservaties": "nieuwe reservatie(s)",
              "oude_boekingen": "oudere boeking(en) binnengehaald", "betaalverzoeken": "betaalverzoek(en) gemaakt", "berichten": "bericht(en) verstuurd",
@@ -165,7 +171,11 @@ def activity(hotel_id: str, hours: int = 24) -> list[str]:
            + (", " + ", ".join(f"{n} {words[t]}" for t, n in done.items()) if done else ", niets geregistreerd of gezet")
            + "."]
     if problems:
-        out.append(f"Wat misliep ({len(problems)}): " + " | ".join(problems[:8]) + ". Details in de monitor (Robot).")
+        items = [t + (f" ({n} keer)" if n > 1 else "") for t, n in list(problems.items())[:5]]
+        more = f" En nog {len(problems) - 5} andere." if len(problems) > 5 else ""
+        out.append("Wat misliep: " + " | ".join(items) + "." + more + " Details in de monitor (Robot).")
+    else:
+        out.append("Niets misgelopen.")
     return out
 
 
@@ -173,8 +183,10 @@ def send_overview(hotel_id: str, today: date) -> bool:
     a = arrivals(hotel_id, today)
     problems = sum(1 for rows in a.values() for x in rows if x["problemen"])
     name = load_hotel(hotel_id)["hotel"]["naam"]
-    intro = [f"{len(a['today'])} aankomsten vandaag, {len(a['tomorrow'])} morgen."
-             + (f" {problems} met een probleem (rood)." if problems else " Alles in orde.")]
+    unpaid = sum(1 for rows in a.values() for x in rows if x["info"] and not x["problemen"])
+    intro = [f"{len(a['today'])} aankomst(en) vandaag, {len(a['tomorrow'])} morgen."
+             + (f" {problems} met een probleem (rood): nakijken." if problems else " Geen problemen.")
+             + (f" {unpaid} betaalt nog (code volgt na betaling), dat is normaal." if unpaid else "")]
     rp = robot_problem(hotel_id, settings(hotel_id)["robot_hours"])
     if rp:
         intro.append(f"Let op: {rp}.")

@@ -8,7 +8,9 @@ import html
 _OK, _BAD, _NA = "#1E6B3A", "#A33A3A", "#8A90A0"
 
 
-def _cell(value) -> str:
+def _cell(value, key: str = "") -> str:
+    if value is False and key == "betaald":  # nog niet betaald is geen fout
+        return f'<td style="color:{_NA};padding:4px 8px;">nee</td>'
     if value is True:
         return f'<td style="color:{_OK};padding:4px 8px;">ja</td>'
     if value is False:
@@ -21,7 +23,8 @@ COLUMNS = (("kamer", "Kamer"), ("gast", "Gast"), ("via", "Via"), ("contact", "Co
 
 
 def overview_html(title: str, intro: list[str], sections: list[tuple[str, list[dict]]], monitor_url: str) -> str:
-    """sections: (titel, rijen); een rij: kolommen hierboven plus "problemen" (lijst, rood bovenaan) en "nummer"."""
+    """sections: (titel, rijen); een rij: kolommen hierboven plus "problemen" (lijst, rood bovenaan), "info"
+    (lijst, grijs: goed om te weten, geen fout) en "nummer"."""
     parts = [f'<h2 style="font-family:Arial,sans-serif;font-size:18px;">{html.escape(title)}</h2>']
     parts += [f'<p style="font-family:Arial,sans-serif;font-size:14px;">{html.escape(p)}</p>' for p in intro]
     for name, rows in sections:
@@ -35,13 +38,17 @@ def overview_html(title: str, intro: list[str], sections: list[tuple[str, list[d
         body = ""
         for r in sorted(rows, key=lambda x: (not x["problemen"], str(x.get("kamer")))):
             bg = "#FDECEC" if r["problemen"] else "#FFFFFF"
-            cells = "".join(_cell(r.get(k)) if k in ("betaald", "code", "code_mail", "lighthouse")
+            cells = "".join(_cell(r.get(k), k) if k in ("betaald", "code", "code_mail", "lighthouse")
                             else f'<td style="padding:4px 8px;">{html.escape(str(r.get(k) or ""))}</td>' for k, _ in COLUMNS)
             body += f'<tr style="background:{bg};">{cells}</tr>'
             if r["problemen"]:
                 body += (f'<tr style="background:{bg};"><td></td><td colspan="{len(COLUMNS) - 1}" '
                          f'style="padding:0 8px 6px;color:{_BAD};font-size:13px;">'
                          + html.escape(f"{r.get('nummer', '')}: " + "; ".join(r["problemen"])) + "</td></tr>")
+            elif r.get("info"):
+                body += (f'<tr style="background:{bg};"><td></td><td colspan="{len(COLUMNS) - 1}" '
+                         f'style="padding:0 8px 6px;color:{_NA};font-size:13px;">'
+                         + html.escape(f"{r.get('nummer', '')}: " + "; ".join(r["info"])) + "</td></tr>")
         parts.append(f'<table style="border-collapse:collapse;font-family:Arial,sans-serif;font-size:13px;">'
                      f"<tr>{head}</tr>{body}</table>")
     parts.append(f'<p style="font-family:Arial,sans-serif;font-size:13px;margin-top:20px;">Opvolgen en opnieuw '
