@@ -49,7 +49,7 @@ def test_only_morning_mail_by_default(setup):
     evening = datetime(2026, 11, 3, 17, 5, tzinfo=oversight.clock.tz("lucca"))
     repo.log_robot_run("lucca", "nieuwe_reservaties", datetime.now(UTC) - timedelta(hours=5), False, error="TimeoutError")
     assert oversight.run("lucca", evening) == [] or all("overzicht" in d for d in oversight.run("lucca", evening))
-    assert not [m for m in setup if m[1].startswith("WAARSCHUWING")]  # geen controle- of robotmail
+    assert not [m for m in setup if "WAARSCHUWING" in m[1]]  # geen controle- of robotmail
 
 
 def test_overview_tells_what_happened(setup):
@@ -75,10 +75,10 @@ def test_check_warns_once_for_missing_code_mail(setup, monkeypatch):
     repo.save_reservation(r, fields=repo.SALTO_FIELDS)
     evening = datetime(2026, 11, 3, 17, 5, tzinfo=oversight.clock.tz("lucca"))
     done = oversight.run("lucca", evening)
-    warn = [m for m in setup if m[1].startswith("WAARSCHUWING")]
+    warn = [m for m in setup if "WAARSCHUWING" in m[1]]
     assert warn and "code-mail niet verstuurd" in warn[0][2] and any("controle van 17:00" in d for d in done)
     oversight.run("lucca", evening.replace(hour=20, minute=5))  # zelfde probleem: niet opnieuw melden
-    assert len([m for m in setup if m[1].startswith("WAARSCHUWING")]) == 1
+    assert len([m for m in setup if "WAARSCHUWING" in m[1]]) == 1
     repo.log_message("lucca", "c", "access_code", SendResult(Channel.EMAIL, "ann@example.com", True))
     assert oversight.row("lucca", repo.get_reservation("lucca", "c"), today, today, True, True)["problemen"] == []
 
