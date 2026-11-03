@@ -278,7 +278,7 @@ async function init() {
 }
 
 const PAGE = document.body.dataset.page || "main";
-const TABS = PAGE === "settings" ? ["workflow", "hotel", "robot"] : ["res", "guests"];
+const TABS = PAGE === "settings" ? ["hotel", "workflow", "robot"] : ["res", "guests"];
 let current = TABS[0];
 function showTab(name, initial = false) {
   if (((wfDirty && current === "workflow") || (hsDirty && current === "hotel")) && name !== current && !confirm(t("wf_leave"))) {
