@@ -381,6 +381,18 @@ def generate(hotel_id: str, kind: str, day: date, by: str = "", send_now: bool =
     return data
 
 
+def _robot_busy(hotel_id: str) -> bool:
+    """Draait de robot nu echt (of is hij net gestart)? Alleen dan staan de knoppen in de monitor even uit."""
+    from hotel_checkin.admin import cloud_robot
+
+    if not cloud_robot.available():
+        return False
+    try:
+        return cloud_robot.running()
+    except Exception:  # noqa: BLE001 - niet te weten: de knoppen niet blokkeren
+        return False
+
+
 def view(hotel_id: str, kind: str) -> dict:
     """Voor de monitor: de bewaarde lijsten (nieuwste eerst, met de tabel), en wanneer de volgende komt."""
     cfg = settings(hotel_id, kind)
@@ -389,7 +401,7 @@ def view(hotel_id: str, kind: str) -> dict:
                        "made": bool(_made_at(hotel_id, k, r))}
                       for k, r in requests(hotel_id).items() if k.startswith(kind + ":")), key=lambda x: x["day"])
     return {"kind": kind, "switch": switch(hotel_id, kind), "next_day": next_day(hotel_id, kind).isoformat(),
-            "pending": pending,
+            "pending": pending, "robot_busy": bool(pending) and _robot_busy(hotel_id),
             "time": cfg["time"], "days": cfg["days"], "email": cfg["email"], "whatsapp": cfg["whatsapp"],
             "keep": KEEP, "records": records}
 
@@ -471,7 +483,7 @@ def request(hotel_id: str, kind: str, day: date, by: str = "", send_now: bool = 
     key = f"{kind}:{day.isoformat()}"
     old = reqs.get(key, {})
     req = {"send": send_now or (auto and bool(old.get("send"))), "auto": auto, "by": by or "automatisch",
-           "at": now.isoformat(), "robot_at": old.get("robot_at")}
+           "at": now.isoformat(), "robot_at": None}  # een nieuwe vraag probeert de robot meteen te starten
     what = _start_robot(hotel_id, req, now)
     reqs[key] = req
     _save(hotel_id, REQUEST_STATE, reqs, now.date())
