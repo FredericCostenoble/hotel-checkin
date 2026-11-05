@@ -82,6 +82,17 @@ def _fill(text: str, fields: dict) -> str:
     return text.format_map(fields)
 
 
+def wifi_line(config: dict, common: dict, fields: dict) -> str:
+    """Wifiregel in de praktische info: een eigen netwerk per kamer (QR-code op de kamer, [wifi] per_kamer = true),
+    of één netwerk met naam en wachtwoord. Leeg als er geen netwerk ingevuld is."""
+    wifi = config.get("wifi", {})
+    if str(wifi.get("per_kamer", False)).lower() in ("true", "1", "ja"):
+        return _fill(common["wifi_per_kamer"], fields)
+    if not str(wifi.get("naam") or "").strip():
+        return ""
+    return _fill(common["wifi_gedeeld"], fields)
+
+
 def checkin_link(hotel_id: str, token: str, language: str | None = None) -> str:
     """Link naar het check-in-formulier. In TST naar het testformulier (instelling CHECKIN_FORM_URL),
     anders naar het formulier van het hotel uit config/hotels/<hotel_id>.toml.
@@ -144,10 +155,14 @@ def render(hotel_id: str, message: str, language: str, data: dict[str, str],
         fields["checkin_link"] = checkin_link(hotel_id, data["token"], language)
     # Website in de taal van het bericht als het hotelbestand die kent ([hotel] website_fr = ...)
     fields["hotel_website"] = config.get("hotel", {}).get(f"website_{language}") or fields.get("hotel_website", "")
+    fields["wifi_regel"] = wifi_line(config, texts["algemeen"], fields)
 
     blocks = compose_blocks(texts, message, content, pay)
     # Blok met alleen_als = "veld": weglaten als dat veld leeg is (bv. geen review-link ingevuld)
     blocks = [b for b in blocks if not b.get("alleen_als") or str(fields.get(b["alleen_als"]) or "").strip()]
+    # Lijstregels die leeg zijn na invullen (bv. geen wifi) weglaten
+    blocks = [b | {"items": [i for i in b["items"] if _fill(i, fields).strip()]} if b.get("type") == "list" else b
+              for b in blocks]
     t = {**texts[message], "blokken": blocks}
     sms = _fill(t["sms"], fields)
     if message not in EMAIL_MESSAGES:

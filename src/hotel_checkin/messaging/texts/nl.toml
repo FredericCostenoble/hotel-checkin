@@ -3,6 +3,10 @@
 # Bloktypes: text (alinea's), details (tabel), highlight (opvallend vak), list (opsomming), button.
 
 [algemeen]
+# Wifi in de praktische info ({wifi_regel}): per kamer een eigen netwerk (QR-code) of één netwerk voor iedereen,
+# volgens [wifi] per_kamer in het hotelbestand
+wifi_per_kamer = "Wifi: elke kamer heeft een eigen, privé wifinetwerk. Scan de QR-code op uw kamer om te verbinden."
+wifi_gedeeld = "Wifi: {wifi_naam}, wachtwoord {wifi_wachtwoord}"
 # Meer kamers: één code per kamer (code-mail)
 codes_titel = "Uw persoonlijke pincodes"
 codes_uitleg = "Elke code opent de voordeur en die kamer, van {code_geldig_van} tot {code_geldig_tot}. Druk na de code altijd op de pijltoets ↵."
@@ -121,7 +125,7 @@ type = "list"
 titel = "Tijdens uw verblijf"
 items = [
   "Ontbijt: elke dag van {ontbijt_van} tot {ontbijt_tot} in onze 14de-eeuwse gewelfde kelder.",
-  "Wifi: {wifi_naam}, wachtwoord {wifi_wachtwoord}",
+  "{wifi_regel}",
   "Parkeren: het hotel heeft geen eigen parking. Parking {parking_naam} ligt op {parking_minuten} minuten wandelen.",
 ]
 
@@ -297,7 +301,7 @@ type = "list"
 titel = "Tijdens uw verblijf"
 items = [
   "Ontbijt: elke dag van {ontbijt_van} tot {ontbijt_tot} in onze 14de-eeuwse gewelfde kelder.",
-  "Wifi: {wifi_naam}, wachtwoord {wifi_wachtwoord}",
+  "{wifi_regel}",
   "Parkeren: het hotel heeft geen eigen parking. Parking {parking_naam} ligt op {parking_minuten} minuten wandelen.",
 ]
 

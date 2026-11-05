@@ -117,3 +117,15 @@ def test_message_text_off_leaves_only_sections():
     full = templates.compose_blocks(texts, "confirmation", {"reservation": True, "checkin_form": False})
     bare = templates.compose_blocks(texts, "confirmation", {"message": False, "reservation": True, "checkin_form": False})
     assert bare and len(bare) < len(full) and all(b in full for b in bare)
+
+
+def test_wifi_per_room_or_shared(monkeypatch):
+    """Lucca: eigen wifi per kamer (QR-code). Een ander hotel: één netwerk met naam en wachtwoord, of niets."""
+    from hotel_checkin.messaging import templates
+
+    common = templates.load_texts("lucca", "nl")["algemeen"]
+    assert "QR-code" in templates.wifi_line({"wifi": {"per_kamer": True}}, common, {})
+    shared = {"wifi_naam": "Gasten", "wifi_wachtwoord": "geheim"}
+    assert templates.wifi_line({"wifi": {"per_kamer": False, "naam": "Gasten"}}, common, shared) == \
+        "Wifi: Gasten, wachtwoord geheim"
+    assert templates.wifi_line({"wifi": {"per_kamer": False, "naam": ""}}, common, {}) == ""

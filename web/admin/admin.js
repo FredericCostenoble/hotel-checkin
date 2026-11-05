@@ -1236,13 +1236,14 @@ const HS_TEXT = {
     "Label voor aankomsten binnen",
     "Aantal dagen vooruit dat de robot het ontbijtlabel zet. 0 = alle toekomstige reservaties."
    ],
+   "wifi.per_kamer": ["Eigen netwerk per kamer", "Aan: elke kamer heeft een eigen, privé wifinetwerk; de mail zegt de QR-code op de kamer te scannen. Uit: één netwerk voor iedereen, met de naam en het wachtwoord hieronder."],
    "wifi.naam": [
     "Netwerk",
-    "Naam van het wifinetwerk voor gasten."
+    "Alleen als het netwerk niet per kamer is: naam van het wifinetwerk voor gasten. Leeg = geen wifiregel in de mail."
    ],
    "wifi.wachtwoord": [
     "Wachtwoord",
-    "Staat in de mail met de praktische info."
+    "Alleen als het netwerk niet per kamer is. Staat in de mail met de praktische info."
    ],
    "parking.naam": [
     "Parking",
@@ -1494,13 +1495,14 @@ const HS_TEXT = {
     "Label for arrivals within",
     "Number of days ahead for which the robot sets the breakfast label. 0 = all future reservations."
    ],
+   "wifi.per_kamer": ["Own network per room", "On: every room has its own private Wi-Fi network; the mail tells guests to scan the QR code in the room. Off: one network for everyone, with the name and password below."],
    "wifi.naam": [
     "Network",
-    "Name of the guest Wi-Fi network."
+    "Only when the network is not per room: name of the guest Wi-Fi network. Empty = no Wi-Fi line in the mail."
    ],
    "wifi.wachtwoord": [
     "Password",
-    "Shown in the mail with practical info."
+    "Only when the network is not per room. Shown in the mail with practical info."
    ],
    "parking.naam": [
     "Car park",

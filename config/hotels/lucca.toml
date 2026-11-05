@@ -93,8 +93,11 @@ extra_rijen = ["TOILETTEN"]   # vaste rijen onderaan de lijst
 woorden = ["babybed", "baby bed", "baby cot", "cot", "crib", "kinderbed", "kinderbett", "babybett", "lit bébé", "lit parapluie", "extra bed", "bijzetbed", "lit d'appoint", "zusatzbett", "romant", "versiering", "decoratie", "decoration", "décoration", "rozen", "roses", "bloemen", "flowers", "fleurs", "champagne", "cava", "verjaardag", "birthday", "anniversaire", "geburtstag", "anniversary", "jubileum", "huwelijk", "honeymoon", "lune de miel", "aparte bedden", "separate beds", "lits séparés", "kussen", "pillow", "oreiller"]   # zinnen uit de opmerking of de folio met deze woorden komen bij de opmerkingen
 
 [wifi]
-naam = "HotelLucca"        # TODO: juiste naam invullen
-wachtwoord = "********"    # TODO: juist wachtwoord invullen
+# Wifi in de praktische info van de mails. Lucca: elke kamer heeft een eigen, privé wifinetwerk (QR-code op de kamer).
+# Een hotel met één netwerk voor alle gasten: per_kamer = false en naam en wachtwoord invullen.
+per_kamer = true          # true = eigen netwerk per kamer (QR-code op de kamer), false = één netwerk voor iedereen
+naam = ""                 # alleen bij per_kamer = false; leeg = geen wifiregel in de mail
+wachtwoord = ""           # alleen bij per_kamer = false
 
 [parking]
 naam = "Biekorf"

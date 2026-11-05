@@ -1,6 +1,10 @@
 # Texte der Nachrichten an Gäste, Deutsch. Gleiche Struktur wie nl.toml.
 
 [algemeen]
+# Wifi in de praktische info ({wifi_regel}): per kamer een eigen netwerk (QR-code) of één netwerk voor iedereen,
+# volgens [wifi] per_kamer in het hotelbestand
+wifi_per_kamer = "WLAN: Jedes Zimmer hat sein eigenes, privates WLAN. Scannen Sie den QR-Code in Ihrem Zimmer, um sich zu verbinden."
+wifi_gedeeld = "WLAN: {wifi_naam}, Passwort {wifi_wachtwoord}"
 # Meer kamers: één code per kamer (code-mail)
 codes_titel = "Ihre persönlichen PIN-Codes"
 codes_uitleg = "Jeder Code öffnet die Haustür und dieses Zimmer, von {code_geldig_van} bis {code_geldig_tot}. Drücken Sie nach dem Code immer die Pfeiltaste ↵."
@@ -119,7 +123,7 @@ type = "list"
 titel = "Während Ihres Aufenthalts"
 items = [
   "Frühstück: täglich von {ontbijt_van} bis {ontbijt_tot} Uhr in unserem Gewölbekeller aus dem 14. Jahrhundert.",
-  "WLAN: {wifi_naam}, Passwort {wifi_wachtwoord}",
+  "{wifi_regel}",
   "Parken: Das Hotel hat keinen eigenen Parkplatz. Das Parkhaus {parking_naam} liegt {parking_minuten} Gehminuten entfernt.",
 ]
 
@@ -295,7 +299,7 @@ type = "list"
 titel = "Während Ihres Aufenthalts"
 items = [
   "Frühstück: täglich von {ontbijt_van} bis {ontbijt_tot} Uhr in unserem Gewölbekeller aus dem 14. Jahrhundert.",
-  "WLAN: {wifi_naam}, Passwort {wifi_wachtwoord}",
+  "{wifi_regel}",
   "Parken: Das Hotel hat keinen eigenen Parkplatz. Das Parkhaus {parking_naam} liegt {parking_minuten} Gehminuten entfernt.",
 ]
 
