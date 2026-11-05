@@ -271,9 +271,12 @@ def mail_trigger(timer: func.TimerRequest) -> None:
 
 @app.timer_trigger(schedule="0 */2 * * * *", arg_name="timer", run_on_startup=False, use_monitor=False)
 def send_messages(timer: func.TimerRequest) -> None:
-    """Elke 2 minuten: berichten uit de workflow versturen die nu moeten (processes/send_messages.py)."""
+    """Elke 2 minuten: berichten uit de workflow versturen die nu moeten (processes/send_messages.py), en de
+    ontbijtlijst en kuislijst als hun uur er is (processes/daily_lists.py). Samen in één timer: geen extra
+    uitvoeringen (kost)."""
     import logging
 
+    from hotel_checkin.processes import daily_lists
     from hotel_checkin.processes import send_messages as process
 
     for hotel_id in list_hotels():
@@ -281,19 +284,8 @@ def send_messages(timer: func.TimerRequest) -> None:
             process.run(hotel_id)
         except Exception:
             logging.exception("%s: berichten versturen mislukt", hotel_id)
-
-
-@app.timer_trigger(schedule="0 */5 * * * *", arg_name="timer", run_on_startup=False, use_monitor=False)
-def daily_lists(timer: func.TimerRequest) -> None:
-    """Elke 5 minuten: de ontbijtlijst en de kuislijst maken en versturen als hun uur voorbij is
-    (processes/daily_lists.py, hoofdschakelaars ontbijtlijst en kuislijst)."""
-    import logging
-
-    from hotel_checkin.processes import daily_lists as process
-
-    for hotel_id in list_hotels():
         try:
-            process.run(hotel_id)
+            daily_lists.run(hotel_id)
         except Exception:
             logging.exception("%s: dagelijkse lijsten mislukt", hotel_id)
 

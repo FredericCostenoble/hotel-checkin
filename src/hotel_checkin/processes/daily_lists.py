@@ -22,7 +22,7 @@ gemaakt zodra dat nalezen klaar is; lukt het niet, dan toch, hoogstens MAX_WAIT_
 zijn (staat in het robotlog). Nieuwe boekingen tussendoor komen binnen via de meldingsmail.
 Kamers: nummer en omschrijving zoals Lighthouse ze toont (bv. 11, Superior double room), onthouden over de reservaties
 heen (RobotState room_catalog), zodat ook lege kamers hun omschrijving hebben.
-Draait in de Function App (timer), los van de robot. Buiten PRD gaan de berichten naar het testadres.
+Draait in de Function App (timer van de berichten, elke 2 minuten), los van de robot. Buiten PRD gaan de berichten naar het testadres.
 """
 
 from __future__ import annotations
@@ -461,7 +461,7 @@ def _start_robot(hotel_id: str, key: str, now: datetime) -> str:
 
 
 def run(hotel_id: str, now: datetime | None = None) -> list[str]:
-    """Aangeroepen door de timer (elke 5 minuten). REFRESH_MINUTES voor het uur: de robot starten om de reservaties van
+    """Aangeroepen door de timer (elke 2 minuten, samen met de berichten). REFRESH_MINUTES voor het uur: de robot starten om de reservaties van
     die dag na te lezen. Vanaf het uur: de lijst maken en versturen zodra dat nalezen klaar is, of hoogstens
     MAX_WAIT_MINUTES na het uur met wat er is. Elke lijst één keer automatisch. Geeft terug wat er gebeurde."""
     from hotel_checkin.admin import cloud_robot
