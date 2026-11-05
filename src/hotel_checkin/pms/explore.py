@@ -305,10 +305,17 @@ def explore_folio(lh: LighthouseSession, detail_id: str) -> str:
             continue
         resp = lh.page.request.get(lh.base + htmllib.unescape(url), headers={"X-Requested-With": "XMLHttpRequest"})
         body = resp.text()
-        from hotel_checkin.pms.lighthouse import _charge_days
+        from hotel_checkin.pms.lighthouse import CHARGE_DAYS_PATH, _charge_days
+        from hotel_checkin.pms.lighthouse_parse import charge_days_query
 
+        query = charge_days_query(body)
         report += [f"### {r['text']!r}", f"Antwoord: HTTP {resp.status}, {len(body)} tekens",
-                   f"Gelezen door de robot: {_charge_days(lh, url)}"]
+                   f"Gegevens voor de dagen: {query}"]
+        if query:
+            d = lh.page.request.get(lh.base + CHARGE_DAYS_PATH, params=query,
+                                    headers={"X-Requested-With": "XMLHttpRequest"})
+            report += [f"Dagen: HTTP {d.status}, adres {d.url}", "```html", d.text()[:3000], "```"]
+        report.append(f"Gelezen door de robot: {_charge_days(lh, url)}")
         # De dagen laadt het venster pas daarna zelf (lege .days-container). Venster echt openen zoals "Bewerken"
         # (bewaren is geblokkeerd), noteren welke adressen het opvraagt en wat er in de dagen komt.
         seen: list[str] = []
