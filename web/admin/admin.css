@@ -19,8 +19,6 @@ input[type=search] { padding: 6px 8px; width: 260px; max-width: 100%; }
 input[type=number] { width: 70px; padding: 4px; }
 input[type=date] { padding: 4px; }
 select, button { padding: 6px 10px; }
-#run { background: var(--accent); color: #fff; border: none; border-radius: 3px; cursor: pointer; }
-#run:disabled { opacity: .5; cursor: default; }
 table { border-collapse: collapse; width: 100%; }
 th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); vertical-align: top; white-space: nowrap; }
 th { font-size: 12px; text-transform: uppercase; letter-spacing: .5px; color: var(--accent); position: sticky; top: 0; background: #fff; }
@@ -105,8 +103,14 @@ a.jump svg { vertical-align: -1px; }
 #wf-side h3 { font-size: 0.85em; text-transform: uppercase; color: #5C6478; margin: 6px 0; }
 #wf-side label { display: grid; gap: 4px; margin-bottom: 10px; }
 #wf-side input[type=text] { width: 100%; }
-button.primary { background: #5C6478; color: #fff; border: none; padding: 6px 14px; border-radius: 4px; cursor: pointer; }
-button.primary:disabled { opacity: 0.4; cursor: default; }
+/* Knoppen voor acties: overal dezelfde vorm. primary = hoofdactie (gevuld), secondary = andere actie (omlijnd). */
+button.primary, button.secondary { font: inherit; font-size: 14px; line-height: 20px; padding: 5px 14px; border-radius: 4px;
+  border: 1px solid #5C6478; cursor: pointer; white-space: nowrap; }
+button.primary { background: #5C6478; color: #fff; }
+button.primary:hover:not(:disabled) { background: #4A5164; border-color: #4A5164; }
+button.secondary { background: #fff; color: #3A4050; }
+button.secondary:hover:not(:disabled) { background: #EEF1F8; }
+button.primary:disabled, button.secondary:disabled { opacity: 0.4; cursor: default; }
 
 .modal { position: fixed; inset: 0; background: rgba(30, 34, 45, 0.45); display: flex; align-items: center; justify-content: center; z-index: 10; }
 .modal[hidden] { display: none; }
