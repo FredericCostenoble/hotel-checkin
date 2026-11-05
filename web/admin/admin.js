@@ -429,7 +429,7 @@ function showMessages(id) {
         ${showReason ? `<span class="reason" title="${esc(reasonText(p.reason))}">${esc(reasonShort(p.reason))}</span>` : ""}
         ${["missed", "cond"].includes(k) && when ? `<span class="muted was">(${esc(t("pl_was"))} ${esc(when)})</span>` : ""}
         <span class="sp"></span>
-        ${sendable ? `<button type="button" class="send-open" data-step="${esc(p.step)}">${esc(t(sent.length ? "sb_again" : "sb_open"))}</button>` : ""}</div>
+        ${sendable ? `<button type="button" class="secondary small send-open" data-step="${esc(p.step)}">${esc(t(sent.length ? "sb_again" : "sb_open"))}</button>` : ""}</div>
       ${chips ? `<div class="chs">${chips}</div>` : ""}
       ${sendable ? `<div class="send-bar" data-bar="${esc(p.step)}" hidden></div>` : ""}</li>`;
   }).join("");
