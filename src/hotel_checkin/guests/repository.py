@@ -45,6 +45,7 @@ T_ROBOT = "RobotRuns"
 T_CONFIG = "HotelConfig"  # instellingen die in de monitor gewijzigd werden (bv. de workflow)
 T_STATE = "RobotState"  # kleine toestand per hotel, bv. tot waar de mailbox gelezen is
 T_FORMS = "CheckinForms"  # elke indiening van het check-in-formulier, nooit overschreven (vangnet)
+T_LISTS = "DailyLists"  # ontbijtlijst en kuislijst per dag (alleen de laatste 15 per soort)
 
 _client_factory = None  # alleen voor tests: functie die een tabelnaam krijgt en een tabel teruggeeft
 
@@ -678,6 +679,41 @@ def robot_runs(hotel_id: str, limit: int = 50, task: str | None = None) -> list[
 
     rows = _table(T_ROBOT).query_entities(_runs_filter(hotel_id, task), results_per_page=min(limit, 1000))
     return list(islice(rows, limit))
+
+
+# ---------------------------------------------------------------- dagelijkse lijsten (ontbijt, kuis)
+# Tabel DailyLists: PartitionKey = <hotel_id>|<soort> (breakfast, cleaning), RowKey = dag (ISO), veld data (JSON).
+# Alleen kamers, aantallen en opmerkingen, geen gastnamen. Alleen de laatste lijsten blijven (processes/daily_lists.py).
+
+
+def _list_pk(hotel_id: str, kind: str) -> str:
+    return f"{_key(hotel_id)}|{_key(kind)}"
+
+
+def save_daily_list(hotel_id: str, kind: str, day: str, data: dict) -> None:
+    _table(T_LISTS).upsert_entity({"PartitionKey": _list_pk(hotel_id, kind), "RowKey": day, "hotel_id": hotel_id,
+                                   "kind": kind, "data": json.dumps(data), "updated_at": _now().isoformat()})
+
+
+def get_daily_list(hotel_id: str, kind: str, day: str) -> dict | None:
+    try:
+        return json.loads(_table(T_LISTS).get_entity(_list_pk(hotel_id, kind), day)["data"])
+    except Exception:  # noqa: BLE001 - nog niet gemaakt
+        return None
+
+
+def daily_lists(hotel_id: str, kind: str) -> list[dict]:
+    """Alle bewaarde lijsten van die soort, nieuwste dag eerst."""
+    rows = _table(T_LISTS).query_entities(f"PartitionKey eq '{_q(_list_pk(hotel_id, kind))}'")
+    out = [json.loads(e["data"]) for e in rows]
+    return sorted(out, key=lambda d: d.get("day", ""), reverse=True)
+
+
+def delete_daily_list(hotel_id: str, kind: str, day: str) -> None:
+    try:
+        _table(T_LISTS).delete_entity(_list_pk(hotel_id, kind), day)
+    except Exception:  # noqa: BLE001 - stond er niet
+        pass
 
 
 # ---------------------------------------------------------------- marketing

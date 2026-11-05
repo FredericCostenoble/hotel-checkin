@@ -176,6 +176,10 @@ def _refresh_due(hotel_id: str) -> bool:
 
     if breakfast_labels.due(hotel_id, today):
         return True  # label ONTBIJT te zetten
+    from hotel_checkin.processes import daily_lists
+
+    if daily_lists.refresh_due(hotel_id):
+        return True  # binnenkort de ontbijt- of kuislijst: de reservaties van die dag eerst nalezen
     from hotel_checkin.processes import pay_requests
 
     if pay_requests.due(hotel_id, today):

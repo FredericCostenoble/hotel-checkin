@@ -101,6 +101,13 @@ def run(hotel_id: str) -> int:
     requested = refresh_requests.requested(hotel_id)
     todo = due(hotel_id)
     arrivals = [r for r in arrivals_due(hotel_id, requested) if r.reservation_id not in {x.reservation_id for x in todo}]
+    # Ontbijt- en kuislijst: in de uren voor het versturen de reservaties van die dag nog eens lezen (folio, opmerking)
+    from hotel_checkin.processes import daily_lists
+
+    seen = {x.reservation_id for x in todo} | {x.reservation_id for x in arrivals}
+    for_lists = [r for r in daily_lists.refresh_due(hotel_id) if r.reservation_id not in seen]
+    arrivals += for_lists
+    lists_due = bool(daily_lists.refresh_due(hotel_id))
     finished = True  # alles gelezen binnen de tijd (dan zijn de gevraagde dagen klaar)
     from hotel_checkin.processes import booking_payout
 
@@ -209,11 +216,15 @@ def run(hotel_id: str) -> int:
         raise
     if finished and not skipped:
         refresh_requests.done(hotel_id, requested)
+    if finished and lists_due:
+        daily_lists.refresh_done(hotel_id)
     parts = [f"{stats.read} reservaties zonder e-mailadres nagelezen: " + stats.note()] if stats.read else []
     if requested:
         parts.append("nagelezen na melding: " + ", ".join(sorted(requested)))
     if details_read:
         parts.append(f"{details_read} aankomsten en verblijven nagekeken (kamer, data, betaling)")
+    if lists_due:
+        parts.append(f"voor de ontbijt- en kuislijst: de reservaties van die dag nagelezen ({len(for_lists)} extra)")
     if not finished:
         left = len(todo) + len(arrivals) - stats.read - details_read - len(skipped)
         parts.append(f"tijd op: nog {left} na te lezen in een volgende run")

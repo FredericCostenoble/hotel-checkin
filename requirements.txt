@@ -5,3 +5,4 @@ azure-data-tables~=12.7
 azure-identity~=1.27
 azure-keyvault-secrets~=4.12
 httpx~=0.28
+openpyxl~=3.1

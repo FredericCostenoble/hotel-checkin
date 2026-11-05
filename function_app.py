@@ -169,6 +169,35 @@ def admin_api(req: func.HttpRequest) -> func.HttpResponse:
                 return _json(400, {"error": "json"})
             ok, data = admin.workflow_save(hotel, body, _admin_user(req) or "")
             return _json(200 if ok else 400, data)
+    if what in ("lists", "list-xlsx"):
+        # Tabbladen Ontbijt en Kuis: ?kind=breakfast|cleaning. GET = bewaarde lijsten; POST &day=JJJJ-MM-DD[&send=1]
+        # = (opnieuw) maken en eventueel versturen; list-xlsx&day=... = de Excel downloaden
+        from datetime import date
+
+        from hotel_checkin.messaging import lists
+        from hotel_checkin.processes import daily_lists
+
+        kind = req.params.get("kind", "")
+        if kind not in daily_lists.KINDS:
+            return _json(400, {"error": "kind"})
+        if what == "list-xlsx" and req.method == "GET":
+            data = admin.daily_list(hotel, kind, req.params.get("day", ""))
+            if not data:
+                return _json(404, {"error": "not_found"})
+            name = lists.file_name(data, admin.hotel_name(hotel))
+            return func.HttpResponse(lists.xlsx(data, admin.hotel_name(hotel)), headers={
+                "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                "Content-Disposition": f'attachment; filename="{name}"', "Cache-Control": "no-store"})
+        if what == "lists" and req.method == "GET":
+            return _json(200, daily_lists.view(hotel, kind))
+        if what == "lists" and req.method == "POST":
+            try:
+                day = date.fromisoformat(req.params.get("day", ""))
+            except ValueError:
+                return _json(400, {"error": "day"})
+            data = daily_lists.generate(hotel, kind, day, by=_admin_user(req) or "", send_now=req.params.get("send") == "1")
+            return _json(200, {"ok": True, "day": data["day"], "sent": data["sent"] if req.params.get("send") == "1" else []})
+        return _json(405, {"error": "method"})
     if req.method == "GET" and what == "guests":
         return _json(200, admin.guests(hotel))
     if req.method == "POST" and what == "maintenance":
@@ -252,6 +281,21 @@ def send_messages(timer: func.TimerRequest) -> None:
             process.run(hotel_id)
         except Exception:
             logging.exception("%s: berichten versturen mislukt", hotel_id)
+
+
+@app.timer_trigger(schedule="0 */5 * * * *", arg_name="timer", run_on_startup=False, use_monitor=False)
+def daily_lists(timer: func.TimerRequest) -> None:
+    """Elke 5 minuten: de ontbijtlijst en de kuislijst maken en versturen als hun uur voorbij is
+    (processes/daily_lists.py, hoofdschakelaars ontbijtlijst en kuislijst)."""
+    import logging
+
+    from hotel_checkin.processes import daily_lists as process
+
+    for hotel_id in list_hotels():
+        try:
+            process.run(hotel_id)
+        except Exception:
+            logging.exception("%s: dagelijkse lijsten mislukt", hotel_id)
 
 
 @app.timer_trigger(schedule="0 */15 * * * *", arg_name="timer", run_on_startup=False, use_monitor=False)

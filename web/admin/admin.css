@@ -306,3 +306,6 @@ table.rates tr > th:first-child { text-align: left; white-space: nowrap; }
 table.rates tr:first-child th { font-weight: 500; font-size: 12px; color: #5A6070; }
 table.rates tr.off th, table.rates tr.off td { background: #F2F3F5; color: #8A90A0; }
 .tl-step.off .card table.rates { opacity: 0.5; }
+.task-ontbijtlijst { background: #FFF6D6; color: #7A5A00; }
+.task-kuislijst { background: #E4F4F8; color: #135E70; }
+.list-view { overflow-x: auto; padding: 6px 0 10px; }

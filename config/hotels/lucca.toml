@@ -11,9 +11,12 @@
 # berichten: mails, sms en WhatsApp aan gasten, en de pincodes bij Salto (die gaan alleen mee met de code-mail).
 # ontbijt_labels: de robot zet het label ONTBIJT op het planbord bij wie ontbijt heeft (tarief met ontbijt,
 # of ontbijt voor alle personen en nachten in de folio).
+# ontbijtlijst en kuislijst: elke dag de lijst maken en versturen (processes/daily_lists.py), zie [ontbijtlijst] en [kuislijst].
 overschrijvingen = false
 berichten = false
 ontbijt_labels = false
+ontbijtlijst = false
+kuislijst = false
 
 [hotel]
 naam = "Hotel Lucca"
@@ -63,6 +66,28 @@ tot = "10:30"
 # naam van het label in Lighthouse, en voor aankomsten binnen hoeveel dagen (0 = alle toekomstige reservaties).
 label = "ONTBIJT"
 label_dagen = 0
+
+[ontbijtlijst]
+# Dagelijkse ontbijtlijst (hoofdschakelaar ontbijtlijst, processes/daily_lists.py): per kamer het aantal personen met
+# ontbijt, opmerkingen achteraan, in het geel wat nagekeken moet worden. Per mail met de Excel als bijlage, per WhatsApp
+# (of sms) als korte tekst. Ook te bekijken en opnieuw te maken in de monitor (tabblad Ontbijt).
+uur = "18:00"                 # elke dag om dit uur maken en versturen
+dag = 1                       # voor welke dag: 1 = morgen, 0 = vandaag
+email = ["management@hotellucca.be"]   # mail met de Excel als bijlage; leeg = geen mail
+whatsapp = []                 # gsm-nummers (+32...): WhatsApp, of sms als er geen WhatsApp-sjabloon is
+woorden = ["gluten", "lactose", "vegan", "vegetar", "végé", "allerg", "noten", "nuts", "noix", "halal", "kosher", "diabet", "suikervrij", "sugar free", "sans sucre", "zuckerfrei", "dieet", "diet", "régime"]   # zinnen uit de opmerking of de folio met deze woorden komen bij de opmerkingen
+
+[kuislijst]
+# Dagelijkse kuislijst (hoofdschakelaar kuislijst, processes/daily_lists.py): per kamer Leave (vertrek), Stay
+# (blijft) en Check in, met opmerkingen (bv. babybed, romantische versiering). Per mail met de Excel als bijlage,
+# per WhatsApp (of sms) als korte tekst. Ook te bekijken en opnieuw te maken in de monitor (tabblad Kuis).
+uur = "18:00"                 # elke dag om dit uur maken en versturen
+dag = 1                       # voor welke dag: 1 = morgen, 0 = vandaag
+email = ["management@hotellucca.be"]   # mail met de Excel als bijlage; leeg = geen mail
+whatsapp = []                 # gsm-nummers (+32...): WhatsApp, of sms als er geen WhatsApp-sjabloon is
+controle = "Iqbal"            # naam bovenaan de lijst (Controle: ...)
+extra_rijen = ["TOILETTEN"]   # vaste rijen onderaan de lijst
+woorden = ["babybed", "baby bed", "baby cot", "cot", "crib", "kinderbed", "kinderbett", "babybett", "lit bébé", "lit parapluie", "extra bed", "bijzetbed", "lit d'appoint", "zusatzbett", "romant", "versiering", "decoratie", "decoration", "décoration", "rozen", "roses", "bloemen", "flowers", "fleurs", "champagne", "cava", "verjaardag", "birthday", "anniversaire", "geburtstag", "anniversary", "jubileum", "huwelijk", "honeymoon", "lune de miel", "aparte bedden", "separate beds", "lits séparés", "kussen", "pillow", "oreiller"]   # zinnen uit de opmerking of de folio met deze woorden komen bij de opmerkingen
 
 [wifi]
 naam = "HotelLucca"        # TODO: juiste naam invullen
@@ -154,6 +179,9 @@ max_gebruikers = 150               # maximum gebruikers van het abonnement (pers
 # Verdieping van een kamer in de code-mail en de sms: het eerste cijfer van het kamernummer (12 = 1e verdieping,
 # 23 = 2e verdieping). Kamers die daar niet in passen (eigen naam, eigen ingang), staan hieronder in [kamers.<nummer>].
 verdieping_regel = "eerste_cijfer"   # eerste_cijfer of geen (geen verdieping tonen)
+# Kamers op de ontbijt- en kuislijst, in deze volgorde; "-" = lege rij (nieuwe verdieping). Een eigen naam op de
+# lijst: lijst = "..." in [kamers.<nummer>] (bv. App voor kamer 20).
+lijst_volgorde = ["20", "2", "-", "11", "12", "14", "15", "16", "-", "21", "22", "23", "24", "25", "-", "30", "31", "32", "33", "34"]
 
 [kamers.2]
 # Historische suite op de benedenverdieping, met een eigen ingang om de hoek (Kuipersstraat), niet via de voordeur.
@@ -175,6 +203,7 @@ toegang_de = "Ihre Suite hat einen eigenen Eingang: Sie gehen nicht durch die Ha
 [kamers.20]
 # Appartement in het gebouw rechts naast het hotel, met een eigen klavier; niet op de 2e verdieping.
 verdieping = ""
+lijst = "App"   # naam op de ontbijt- en kuislijst
 naam_nl = "appartement naast het hotel"
 naam_fr = "appartement à côté de l'hôtel"
 naam_en = "apartment next to the hotel"

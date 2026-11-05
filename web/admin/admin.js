@@ -4,6 +4,15 @@ const API = window.ADMIN_API || "";
 const T = {
   nl: {
     title: "Check-in monitor", hotel: "Hotel", tab_res: "Reservaties", tab_robot: "Robot", tab_guests: "Gasten", tab_workflow: "Workflow",
+    tab_breakfast: "Ontbijt", tab_cleaning: "Kuis", dl_day: "Lijst voor", dl_make: "Lijst maken", dl_send: "Maken en versturen",
+    dl_c_day: "Dag", dl_c_made: "Gemaakt", dl_c_by: "Door", dl_c_content: "Inhoud", dl_c_sent: "Verstuurd", dl_view: "Bekijken", dl_hide: "Verbergen",
+    dl_auto: "automatisch", dl_busy: "Bezig...", dl_made: day => `Lijst voor ${day} gemaakt.`, dl_sent_ok: day => `Lijst voor ${day} gemaakt en verstuurd.`,
+    dl_sent_fail: n => `Gemaakt, maar ${n} verzending(en) niet gelukt (zie Verstuurd).`, dl_none: "Nog geen lijsten.",
+    dl_not_sent: "niet verstuurd", dl_no_to: "geen ontvangers", dl_confirm: (day, to) => `Lijst voor ${day} opnieuw maken en versturen naar ${to}?`,
+    dl_info: (on, time, days, to, keep) => `Automatisch: ${on ? `elke dag om ${time} voor ${days === 0 ? "dezelfde dag" : days === 1 ? "de dag erna" : `${days} dagen later`}` : "uit (hoofdschakelaar)"}. Naar: ${to || "niemand (instellingen)"}. De laatste ${keep} lijsten blijven bewaard. Geel = nakijken in Lighthouse.`,
+    dl_name_breakfast: "Ontbijtlijst", dl_name_cleaning: "Kuislijst", dl_wa: "WhatsApp/sms",
+    sw_blist: "Ontbijtlijst", sw_clist: "Kuislijst", task_ontbijtlijst: "Ontbijtlijst", task_kuislijst: "Kuislijst",
+    sec_ontbijtlijst: "Ontbijtlijst", sec_kuislijst: "Kuislijst", sec_kamers: "Kamers",
     wf_save: "Bewaren", wf_reset: "Terug naar standaard", wf_saved: "Bewaard.", wf_dirty: "Niet bewaarde wijzigingen.",
     wf_reset_confirm: "De workflow terugzetten naar de standaard uit het hotelbestand? Alle wijzigingen gaan verloren.",
     wf_from_file: "Standaard uit het hotelbestand", wf_changed: (who, when) => `Gewijzigd door ${who} op ${when}`,
@@ -86,6 +95,15 @@ const T = {
   },
   en: {
     title: "Check-in monitor", hotel: "Hotel", tab_res: "Reservations", tab_robot: "Robot", tab_guests: "Guests", tab_workflow: "Workflow",
+    tab_breakfast: "Breakfast", tab_cleaning: "Cleaning", dl_day: "List for", dl_make: "Make list", dl_send: "Make and send",
+    dl_c_day: "Day", dl_c_made: "Made", dl_c_by: "By", dl_c_content: "Content", dl_c_sent: "Sent", dl_view: "View", dl_hide: "Hide",
+    dl_auto: "automatic", dl_busy: "Working...", dl_made: day => `List for ${day} made.`, dl_sent_ok: day => `List for ${day} made and sent.`,
+    dl_sent_fail: n => `Made, but ${n} sending(s) failed (see Sent).`, dl_none: "No lists yet.",
+    dl_not_sent: "not sent", dl_no_to: "no recipients", dl_confirm: (day, to) => `Make the list for ${day} again and send it to ${to}?`,
+    dl_info: (on, time, days, to, keep) => `Automatic: ${on ? `every day at ${time} for ${days === 0 ? "the same day" : days === 1 ? "the next day" : `${days} days later`}` : "off (main switch)"}. To: ${to || "nobody (settings)"}. The last ${keep} lists are kept. Yellow = check in Lighthouse.`,
+    dl_name_breakfast: "Breakfast list", dl_name_cleaning: "Cleaning list", dl_wa: "WhatsApp/SMS",
+    sw_blist: "Breakfast list", sw_clist: "Cleaning list", task_ontbijtlijst: "Breakfast list", task_kuislijst: "Cleaning list",
+    sec_ontbijtlijst: "Breakfast list", sec_kuislijst: "Cleaning list", sec_kamers: "Rooms",
     wf_save: "Save", wf_reset: "Back to default", wf_saved: "Saved.", wf_dirty: "Unsaved changes.",
     wf_reset_confirm: "Reset the workflow to the default from the hotel file? All changes will be lost.",
     wf_from_file: "Default from the hotel file", wf_changed: (who, when) => `Changed by ${who} on ${when}`,
@@ -176,7 +194,7 @@ const day = iso => iso ? new Date(iso + (iso.length === 10 ? "T00:00" : "")).toL
 const stamp = iso => iso ? new Date(iso).toLocaleString(locale(), { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) : "";
 let rows = [], runsData = null, timer = null, waitTries = 0;
 const runOpen = {};  // robotlog: welke runs zelf open- of dichtgeklapt werden (blijft zo bij het verversen)
-const TASKS = ["nieuwe_reservaties", "contactgegevens_nalezen", "overschrijving_booking", "lighthouse_bijwerken", "betaalverzoeken", "ontbijt_labels", "meldingen", "onderhoud", "berichten"];
+const TASKS = ["nieuwe_reservaties", "contactgegevens_nalezen", "overschrijving_booking", "lighthouse_bijwerken", "betaalverzoeken", "ontbijt_labels", "meldingen", "onderhoud", "berichten", "ontbijtlijst", "kuislijst"];
 // Taken zonder Te doen/Gedaan (alleen een notitie, bv. de bewaking: welke mail verstuurd werd)
 const NO_COUNTS = ["bewaking", "onderhoud", "robot"];  // onderhoud: de aantallen staan in de notitie
 const taskName = k => T[lang]["task_" + k] || k;
@@ -211,7 +229,7 @@ function setLang(l) {
   if ($("#env-bar")) $("#env-bar").textContent = t("env_bar_" + ($(".brand .env")?.textContent || "").trim().toLowerCase());
   if ($("#env-switch") && !$("#env-switch").hidden) $("#env-switch").textContent = t("env_to_" + ($("#env-switch").className.includes("to-prd") ? "prd" : "tst"));
   renderSwitches();
-  if (PAGE === "main") { render(); renderGuests(); } else { renderWorkflow(); renderSettings(); if (runsData) renderRuns(runsData); }
+  if (PAGE === "main") { render(); renderGuests(); LIST_KINDS.forEach(k => renderList(k)); } else { renderWorkflow(); renderSettings(); if (runsData) renderRuns(runsData); }
 }
 
 // Hoofdschakelaars van het gekozen hotel, altijd zichtbaar bovenaan (groen = aan, grijs = uit)
@@ -225,7 +243,7 @@ function renderSwitches() {
   el.hidden = !sw;
   if (!sw) return;
   el.title = t("sw_title");
-  el.innerHTML = [["overschrijvingen", "sw_payout"], ["berichten", "sw_messages"], ["ontbijt_labels", "sw_breakfast"]].map(([k, label]) =>
+  el.innerHTML = [["overschrijvingen", "sw_payout"], ["berichten", "sw_messages"], ["ontbijt_labels", "sw_breakfast"], ["ontbijtlijst", "sw_blist"], ["kuislijst", "sw_clist"]].map(([k, label]) =>
     `<span class="sw ${sw[k] ? "on" : "off"}${NOT_BUILT.includes(k) ? " todo" : ""}">${esc(t(label))}: <b>${t(sw[k] ? "sw_on" : "sw_off")}</b>${NOT_BUILT.includes(k) ? ` (${t("sw_not_built")})` : ""}</span>`).join("");
 }
 
@@ -265,6 +283,10 @@ async function init() {
     $("#from").onchange = render;
     $("#to").onchange = render;
     $("#today").onclick = () => { $("#from").value = todayIso(); $("#to").value = ""; render(); };
+    LIST_KINDS.forEach(k => {
+      $(`#${k}-make`).onclick = () => makeList(k, false);
+      $(`#${k}-send`).onclick = () => makeList(k, true);
+    });
   } else {
     document.querySelectorAll("#tab-robot .subtabs button").forEach(b => b.onclick = () => showSub(b.dataset.sub));
     $("#bin-all").innerHTML = BIN;
@@ -288,7 +310,7 @@ async function init() {
 }
 
 const PAGE = document.body.dataset.page || "main";
-const TABS = PAGE === "settings" ? ["hotel", "workflow", "robot"] : ["res", "guests"];
+const TABS = PAGE === "settings" ? ["hotel", "workflow", "robot"] : ["res", "guests", "breakfast", "cleaning"];
 let current = TABS[0];
 function showTab(name, initial = false) {
   if (((wfDirty && current === "workflow") || (hsDirty && current === "hotel")) && name !== current && !confirm(t("wf_leave"))) {
@@ -298,6 +320,7 @@ function showTab(name, initial = false) {
   current = name;
   document.querySelectorAll("nav button[data-tab]").forEach(x => x.classList.toggle("active", x.dataset.tab === name));
   TABS.forEach(n => { $(`#tab-${n}`).hidden = n !== name; });
+  if (LIST_KINDS.includes(name) && !initial) loadList(name);
   if (location.hash.slice(1) !== name) history[initial ? "replaceState" : "pushState"](null, "", "#" + name);
 }
 
@@ -329,7 +352,8 @@ async function load() {
   rows = await get(`/api/monitor/${$("#hotel").value}/reservations`);
   render();
   loadGuests();
-  loadWorkflow();  // stappen die al verstuurd kunnen worden (tijdlijn per reservatie)
+  loadWorkflow();
+  LIST_KINDS.forEach(k => { listData[k] = null; listDay[k] = ""; loadList(k); });  // stappen die al verstuurd kunnen worden (tijdlijn per reservatie)
 }
 
 // ---------------------------------------------------------------- berichten per reservatie
@@ -1258,6 +1282,22 @@ const HS_TEXT = {
     "Ontbijt labels plaatsen",
     "De robot zet het label ONTBIJT op het planbord bij wie ontbijt heeft (tarief met ontbijt, of ontbijt voor alle personen en nachten in de folio). Geldt alleen voor deze omgeving."
    ],
+   "schakelaars.ontbijtlijst": ["Ontbijtlijst maken en versturen", "Elke dag de ontbijtlijst maken en versturen (instellingen Ontbijtlijst). In de monitor (tabblad Ontbijt) kan een lijst ook met de schakelaar uit gemaakt worden. Geldt alleen voor deze omgeving."],
+   "schakelaars.kuislijst": ["Kuislijst maken en versturen", "Elke dag de kuislijst maken en versturen (instellingen Kuislijst). In de monitor (tabblad Kuis) kan een lijst ook met de schakelaar uit gemaakt worden. Geldt alleen voor deze omgeving."],
+   "ontbijtlijst.uur": ["Uur", "Elke dag om dit uur maken en versturen (bv. 18:00). In de 3 uur ervoor leest de robot de reservaties van die dag nog eens in Lighthouse."],
+   "ontbijtlijst.dag": ["Voor welke dag", "1 = morgen, 0 = vandaag."],
+   "ontbijtlijst.email": ["Per mail naar", "Mail met de lijst en de Excel als bijlage. Meer adressen met een komma. Leeg = geen mail."],
+   "ontbijtlijst.whatsapp": ["Per WhatsApp naar", "Gsm-nummers (+32...), met een komma. WhatsApp met het sjabloon template_breakfast_list_nl (instellingen WhatsApp), anders per sms. Pas als WhatsApp en sms aan staan."],
+   "ontbijtlijst.woorden": ["Woorden voor opmerkingen", "Zinnen uit de opmerking of de folio van de reservatie met een van deze woorden komen bij de opmerkingen (bv. glutenvrij)."],
+   "kuislijst.uur": ["Uur", "Elke dag om dit uur maken en versturen (bv. 18:00). In de 3 uur ervoor leest de robot de reservaties van die dag nog eens in Lighthouse."],
+   "kuislijst.dag": ["Voor welke dag", "1 = morgen, 0 = vandaag."],
+   "kuislijst.email": ["Per mail naar", "Mail met de lijst en de Excel als bijlage. Meer adressen met een komma. Leeg = geen mail."],
+   "kuislijst.whatsapp": ["Per WhatsApp naar", "Gsm-nummers (+32...), met een komma. WhatsApp met het sjabloon template_cleaning_list_nl (instellingen WhatsApp), anders per sms. Pas als WhatsApp en sms aan staan."],
+   "kuislijst.controle": ["Controle", "Naam bovenaan de lijst (Controle: ...)."],
+   "kuislijst.extra_rijen": ["Vaste rijen onderaan", "Bv. TOILETTEN. Meer rijen met een komma."],
+   "kuislijst.woorden": ["Woorden voor opmerkingen", "Zinnen uit de opmerking of de folio van de reservatie met een van deze woorden komen bij de opmerkingen (bv. babybed, romantisch)."],
+   "kamers.lijst_volgorde": ["Kamers op de ontbijt- en kuislijst", "In deze volgorde, met een komma; - = lege rij (nieuwe verdieping)."],
+   "kamers.20.lijst": ["Naam op de lijsten", "Naam van deze kamer op de ontbijt- en kuislijst (bv. App)."],
    "schakelaars.berichten": [
     "Berichten en Salto",
     "Mails, sms en WhatsApp aan gasten, en de pincodes bij Salto. Uit = niets naar gasten en geen codes. Geldt alleen voor deze omgeving; buiten PRD gaat alles naar het testadres."
@@ -1344,6 +1384,8 @@ const HS_TEXT = {
    "twilio": "Het Twilio-account zelf staat in Key Vault.",
    "robot": "De robot leest Lighthouse (alleen lezen).",
    "schakelaars": "Hoofdschakelaars: wat het systeem echt mag doen. Standaard uit, per omgeving apart.",
+   "ontbijtlijst": "Dagelijkse ontbijtlijst: per kamer het aantal personen met ontbijt. Aan of uit met de hoofdschakelaar Ontbijtlijst.",
+   "kuislijst": "Dagelijkse kuislijst: per kamer vertrek, blijft of check in, met opmerkingen. Aan of uit met de hoofdschakelaar Kuislijst.",
    "messaging": "Berichten uit de workflow.",
    "whatsapp": "Door Meta goedgekeurde sjablonen per bericht en taal, bv. template_confirmation_nl = HX... Zonder sjabloon gaat het bericht per sms.",
    "retention": "Opruimen gebeurt bij Synchroniseren op het tabblad Gasten.",
@@ -1497,6 +1539,22 @@ const HS_TEXT = {
     "Place breakfast labels",
     "The robot puts the ONTBIJT label on the planboard for guests with breakfast (rate with breakfast, or breakfast for all persons and nights in the folio). Applies to this environment only."
    ],
+   "schakelaars.ontbijtlijst": ["Make and send the breakfast list", "Make and send the breakfast list every day (settings Breakfast list). In the monitor (Breakfast tab) a list can also be made with the switch off. Applies to this environment only."],
+   "schakelaars.kuislijst": ["Make and send the cleaning list", "Make and send the cleaning list every day (settings Cleaning list). In the monitor (Cleaning tab) a list can also be made with the switch off. Applies to this environment only."],
+   "ontbijtlijst.uur": ["Time", "Make and send every day at this time (e.g. 18:00). In the 3 hours before, the robot reads that day's reservations again in Lighthouse."],
+   "ontbijtlijst.dag": ["For which day", "1 = tomorrow, 0 = today."],
+   "ontbijtlijst.email": ["By mail to", "Mail with the list and the Excel attached. More addresses separated by commas. Empty = no mail."],
+   "ontbijtlijst.whatsapp": ["By WhatsApp to", "Mobile numbers (+32...), separated by commas. WhatsApp with template template_breakfast_list_nl (settings WhatsApp), otherwise by SMS. Only when WhatsApp and SMS are on."],
+   "ontbijtlijst.woorden": ["Words for remarks", "Sentences from the reservation remark or folio containing one of these words are added to the remarks (e.g. gluten free)."],
+   "kuislijst.uur": ["Time", "Make and send every day at this time (e.g. 18:00). In the 3 hours before, the robot reads that day's reservations again in Lighthouse."],
+   "kuislijst.dag": ["For which day", "1 = tomorrow, 0 = today."],
+   "kuislijst.email": ["By mail to", "Mail with the list and the Excel attached. More addresses separated by commas. Empty = no mail."],
+   "kuislijst.whatsapp": ["By WhatsApp to", "Mobile numbers (+32...), separated by commas. WhatsApp with template template_cleaning_list_nl (settings WhatsApp), otherwise by SMS. Only when WhatsApp and SMS are on."],
+   "kuislijst.controle": ["Check", "Name at the top of the list (Controle: ...)."],
+   "kuislijst.extra_rijen": ["Fixed rows at the bottom", "E.g. TOILETTEN. More rows separated by commas."],
+   "kuislijst.woorden": ["Words for remarks", "Sentences from the reservation remark or folio containing one of these words are added to the remarks (e.g. baby cot, romantic)."],
+   "kamers.lijst_volgorde": ["Rooms on the breakfast and cleaning list", "In this order, separated by commas; - = empty row (new floor)."],
+   "kamers.20.lijst": ["Name on the lists", "Name of this room on the breakfast and cleaning list (e.g. App)."],
    "schakelaars.berichten": [
     "Messages and Salto",
     "Mails, SMS and WhatsApp to guests, and the Salto PIN codes. Off = nothing to guests and no codes. Applies to this environment only; outside PRD everything goes to the test address."
@@ -1583,6 +1641,8 @@ const HS_TEXT = {
    "twilio": "The Twilio account itself is in Key Vault.",
    "robot": "The robot reads Lighthouse (read only).",
    "schakelaars": "Main switches: what the system is really allowed to do. Off by default, per environment.",
+   "ontbijtlijst": "Daily breakfast list: per room the number of persons with breakfast. On or off with the main switch Breakfast list.",
+   "kuislijst": "Daily cleaning list: per room departure, stay or check-in, with remarks. On or off with the main switch Cleaning list.",
    "messaging": "Messages from the workflow.",
    "whatsapp": "Templates approved by Meta per message and language, e.g. template_confirmation_nl = HX... Without a template the message goes by SMS.",
    "retention": "Clean-up happens with Synchronize on the Guests tab.",
@@ -1709,6 +1769,78 @@ async function resetSettings() {
   $("#hs-state").textContent = "";
   renderSettings();
   refreshSwitches();
+}
+
+
+// ---------------------------------------------------------------- ontbijtlijst en kuislijst (tabbladen Ontbijt en Kuis)
+// Per dag één lijst (de laatste 15). Opnieuw maken (en versturen) voor een gekozen dag; bekijken en de Excel downloaden.
+const LIST_KINDS = ["breakfast", "cleaning"];
+const listData = {}, listDay = {}, listOpen = {};
+const dayLong = iso => new Date(iso + "T00:00").toLocaleDateString(locale(), { weekday: "long", day: "2-digit", month: "2-digit", year: "numeric" });
+
+async function loadList(kind) {
+  try { listData[kind] = await get(`/api/monitor/${$("#hotel").value}/lists?kind=${kind}`); } catch (e) { return; }
+  if (!listDay[kind]) listDay[kind] = listData[kind].next_day;
+  renderList(kind);
+}
+
+function recipients(d) {
+  return [...d.email, ...d.whatsapp.map(x => `${x} (${t("dl_wa")})`)].join(", ");
+}
+
+function sentCell(x) {
+  if (!x.sent || !x.sent.length) return `<span class="muted">${esc(t("dl_not_sent"))}</span>`;
+  return `<span class="muted small">${esc(stamp(x.sent_at))}</span><br>` + x.sent.map(s =>
+    `<span class="tag ${s.ok ? "" : "fail"}" title="${esc(s.error || "")}">${esc(s.channel === "email" ? t("ch_email") : s.channel === "sms" ? t("ch_sms") : t("ch_whatsapp"))}: ${esc(s.to)}</span>`).join(" ");
+}
+
+function renderList(kind) {
+  const d = listData[kind];
+  if (!d || !$(`#${kind}-rows`)) return;
+  const dayInput = $(`#${kind}-day`);
+  if (!dayInput.value || dayInput.dataset.kind !== $("#hotel").value) { dayInput.value = listDay[kind] || d.next_day; dayInput.dataset.kind = $("#hotel").value; }
+  dayInput.onchange = () => { listDay[kind] = dayInput.value; };
+  $(`#${kind}-info`).textContent = t("dl_info", d.switch, d.time, d.days, recipients(d), d.keep);
+  const hotel = encodeURIComponent($("#hotel").value);
+  $(`#${kind}-rows`).innerHTML = d.records.map(x => `
+    <tr>
+      <td><strong>${esc(dayLong(x.day))}</strong></td>
+      <td>${esc(stamp(x.generated_at))}</td>
+      <td>${x.generated_by === "automatisch" ? `<span class="tag">${esc(t("dl_auto"))}</span>` : esc(x.generated_by)}</td>
+      <td>${esc(x.summary)}</td>
+      <td class="wrap">${sentCell(x)}</td>
+      <td style="white-space:nowrap"><button type="button" class="link" data-view="${esc(x.day)}">${esc(t(listOpen[kind] === x.day ? "dl_hide" : "dl_view"))}</button>
+        <a href="${API}/api/monitor/${hotel}/list-xlsx?kind=${kind}&day=${esc(x.day)}">Excel</a></td>
+    </tr>${listOpen[kind] === x.day ? `<tr><td colspan="6"><div class="list-view">${x.html}</div></td></tr>` : ""}`).join("")
+    || `<tr><td colspan="6" class="muted">${esc(t("dl_none"))}</td></tr>`;
+  document.querySelectorAll(`#${kind}-rows button[data-view]`).forEach(b => b.onclick = () => {
+    listOpen[kind] = listOpen[kind] === b.dataset.view ? "" : b.dataset.view;
+    renderList(kind);
+  });
+}
+
+async function makeList(kind, send) {
+  const day = $(`#${kind}-day`).value;
+  if (!day) return;
+  const d = listData[kind];
+  if (send && !confirm(t("dl_confirm", dayLong(day), (d && recipients(d)) || t("dl_no_to")))) return;
+  const state = $(`#${kind}-state`), buttons = [$(`#${kind}-make`), $(`#${kind}-send`)];
+  buttons.forEach(b => { b.disabled = true; });
+  state.className = "muted";
+  state.textContent = t("dl_busy");
+  try {
+    const r = await get(`/api/monitor/${$("#hotel").value}/lists?kind=${kind}&day=${day}${send ? "&send=1" : ""}`, { method: "POST" });
+    const failed = (r.sent || []).filter(s => !s.ok).length;
+    state.className = failed ? "err" : "ok";
+    state.textContent = failed ? t("dl_sent_fail", failed) : t(send ? "dl_sent_ok" : "dl_made", dayLong(day));
+    listOpen[kind] = day;
+    await loadList(kind);
+  } catch (e) {
+    state.className = "err";
+    state.textContent = `${t("load_error")}: ${e.message}`;
+  } finally {
+    buttons.forEach(b => { b.disabled = false; });
+  }
 }
 
 // ---------------------------------------------------------------- wisselen tussen TST en PRD

@@ -32,8 +32,23 @@ def hotels() -> list[dict]:
              # hoofdschakelaars (per omgeving): bovenaan de monitor getoond
              "switches": {"overschrijvingen": send_messages.switch(h, "overschrijvingen"),
                           "berichten": send_messages.switch(h, "berichten"),
-                          "ontbijt_labels": send_messages.switch(h, "ontbijt_labels")}}
+                          "ontbijt_labels": send_messages.switch(h, "ontbijt_labels"),
+                          "ontbijtlijst": send_messages.switch(h, "ontbijtlijst"),
+                          "kuislijst": send_messages.switch(h, "kuislijst")}}
             for h in list_hotels()]
+
+
+def hotel_name(hotel_id: str) -> str:
+    return load_hotel(hotel_id)["hotel"]["naam"]
+
+
+def daily_list(hotel_id: str, kind: str, day: str) -> dict | None:
+    """Eén bewaarde ontbijt- of kuislijst (voor de Excel), of None."""
+    try:
+        date.fromisoformat(day)
+    except ValueError:
+        return None
+    return repo.get_daily_list(hotel_id, kind, day)
 
 
 def reservations(hotel_id: str) -> list[dict]:

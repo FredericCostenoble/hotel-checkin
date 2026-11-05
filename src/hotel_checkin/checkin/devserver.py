@@ -45,6 +45,19 @@ def seed() -> None:
         hotel_id="lucca", reservation_id="DEMO-2", token="annule", status=ReservationStatus.CANCELLED,
         guest=Guest("Pierre", "Dubois", "pierre@example.com", None, "fr", country="FR"),
         arrival=today + timedelta(days=3), departure=today + timedelta(days=5)))
+    # Voor de ontbijt- en kuislijst (morgen): vertrek, blijvers en een aankomst
+    for rid, rooms, a, d, n, rate, remark in (
+            ("DEMO-4", ["20"], -1, 1, 2, "STANDARD RATE BREAKFAST INCL", None),
+            ("DEMO-5", ["23"], -1, 3, 2, "NRF BREAKFAST EXCL", "1 pax glutenfree"),
+            ("DEMO-6", ["12"], 1, 2, 3, "STANDARD RATE BREAKFAST EXCL", "Please a baby cot."),
+            ("DEMO-7", ["31", "32"], 0, 3, 4, "NRF BREAKFAST INCL", "Romantische versiering")):
+        r = Reservation(hotel_id="lucca", reservation_id=rid, guest=Guest("Demo", rid, None, None, "nl"),
+                        arrival=today + timedelta(days=a), departure=today + timedelta(days=d), rooms=rooms,
+                        guest_count=n, rate_plan=rate, remarks=remark, booking_number="CPB-" + rid)
+        r.folio = [{"label": "Kamer - " + rate, "qty": None, "amount": 200.0}]
+        if rid == "DEMO-5":
+            r.folio.append({"label": "Ontbijt", "qty": 2, "amount": 40.0})
+        repo.save_reservation(r)
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -102,6 +115,30 @@ class Handler(BaseHTTPRequestHandler):
             self._json(200, maintenance.run(parts[2]))
         elif method == "GET" and len(parts) == 4 and parts[3] == "guests":
             self._json(200, admin.guests(parts[2]))
+        elif len(parts) == 4 and parts[3] in ("lists", "list-xlsx"):
+            # Tabbladen Ontbijt en Kuis (zelfde als function_app.py)
+            from urllib.parse import parse_qs, urlparse
+
+            from hotel_checkin.messaging import lists
+            from hotel_checkin.processes import daily_lists
+
+            q = {k: v[0] for k, v in parse_qs(urlparse(self.path).query).items()}
+            kind = q.get("kind", "")
+            if kind not in daily_lists.KINDS:
+                self._json(400, {"error": "kind"})
+            elif parts[3] == "list-xlsx":
+                data = admin.daily_list(parts[2], kind, q.get("day", ""))
+                if data:
+                    self._send(200, lists.xlsx(data, admin.hotel_name(parts[2])),
+                               "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+                else:
+                    self._json(404, {"error": "not_found"})
+            elif method == "GET":
+                self._json(200, daily_lists.view(parts[2], kind))
+            else:
+                data = daily_lists.generate(parts[2], kind, date.fromisoformat(q.get("day", "")), by="dev",
+                                            send_now=q.get("send") == "1")
+                self._json(200, {"ok": True, "day": data["day"], "sent": data["sent"] if q.get("send") == "1" else []})
         elif method == "POST" and len(parts) == 4 and parts[3] == "guests":
             from urllib.parse import parse_qs, urlparse
 
