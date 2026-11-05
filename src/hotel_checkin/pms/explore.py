@@ -290,30 +290,23 @@ def explore_folio(lh: LighthouseSession, detail_id: str) -> str:
     report = ["# Folio (verkenning, niets bewaard)", "", "## Regels"]
     for r in info["rows"]:
         report += [f"- {r['text']!r}", *[f"    {c['tag']} {c['text']!r} {c['attrs']}" for c in r["clickables"]]]
-    report += ["", "## Ontbijtregels: wat de 3 puntjes openen"]
-    rows = page.locator("tr, li").filter(has_text=re.compile(r"ontbijt|breakfast", re.IGNORECASE)).filter(has_text="€")
-    for i in range(min(rows.count(), 4)):
-        row = rows.nth(i)
-        dots = row.locator("a, button, [data-toggle], [data-loadingmodal]").last
-        if not dots.count():
-            report.append(f"- regel {i + 1}: geen knop gevonden")
+    report += ["", "## Ontbijtregels: venster Bewerken (opgevraagd, niet aangeklikt)"]
+    import html as htmllib
+
+    from hotel_checkin.pms.lighthouse_parse import BREAKFAST_LABEL, parse_charge_modal
+
+    for r in info["rows"]:
+        if not BREAKFAST_LABEL.search(r["text"]):
             continue
-        try:
-            dots.click(timeout=5000)
-            page.wait_for_timeout(2500)  # venster of menu laten openen (laadt asynchroon)
-        except Exception as exc:  # noqa: BLE001
-            report.append(f"- regel {i + 1}: klikken lukte niet ({type(exc).__name__})")
+        url = next((c["attrs"].get("data-loadingmodal") for c in r["clickables"]
+                    if "CreateOrUpdateFolioCharge" in (c["attrs"].get("data-loadingmodal") or "")), None)
+        if not url:
+            report.append(f"- {r['text']!r}: geen venster Bewerken gevonden")
             continue
-        modal = page.evaluate(_MODAL_JS)
-        if not modal:
-            menu = page.evaluate("() => [...document.querySelectorAll('.dropdown-menu')].filter(m => m.offsetParent !== null)"
-                                 ".map(m => m.outerHTML.slice(0, 3000))")
-            report += [f"- regel {i + 1}: geen venster; open menu's:", *[f"    {x}" for x in menu]]
-        else:
-            report += [f"### Regel {i + 1}: venster {modal['title']!r}", f"Tekst: {modal['text']}", "Velden:",
-                       *[f"- {x}" for x in modal["inputs"]], "", "HTML:", "```html", modal["html"], "```"]
-        page.keyboard.press("Escape")  # sluiten zonder bewaren (bewaren is toch geblokkeerd)
-        page.wait_for_timeout(800)
+        resp = lh.page.request.get(lh.base + htmllib.unescape(url), headers={"X-Requested-With": "XMLHttpRequest"})
+        body = resp.text()
+        report += [f"### {r['text']!r}", f"Antwoord: HTTP {resp.status}, {len(body)} tekens",
+                   f"Gelezen door de robot: {parse_charge_modal(body)}", "```html", body[:12000], "```"]
     report += ["", "## HTML van de folio", "```html", info["html"], "```", "",
                "## Geblokkeerde verzoeken (geen GET, dus niet uitgevoerd)", *([f"- {x}" for x in blocked] or ["- geen"])]
     return "\n".join(report) + "\n"

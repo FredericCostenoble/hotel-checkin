@@ -354,6 +354,72 @@ def parse_folio(text: str) -> dict:
     return out
 
 
+BREAKFAST_LABEL = re.compile(r"ontbijt|breakfast|petit[- ]d[ée]jeuner|fr[üu]hst[üu]ck", re.IGNORECASE)
+
+
+def parse_charge_modal(text: str) -> dict | None:
+    """Venster "Bewerken" van een extra in de folio (bv. Ontbijt): kamer, aantal per nacht en de aangevinkte dagen.
+    Geeft {"room": "22", "per_night": 1, "days": {"2026-11-06": 1}} of None als er niets bruikbaars in staat.
+    De dagen staan als vinkjes met een datum ("06 nov. 2026"); het vinkje "Dagen (1 van 3)" zonder datum telt niet."""
+    from html.parser import HTMLParser
+
+    boxes: list[dict] = []  # vinkjes in volgorde: {"checked", "date"}
+    selects: list[dict] = []
+    texts: list[str] = []
+
+    def as_date(value: str) -> date | None:
+        value = (value or "").strip()
+        m = re.fullmatch(r"(\d{4})-(\d{2})-(\d{2})(?:T.*)?", value)
+        if m:
+            return date(int(m.group(1)), int(m.group(2)), int(m.group(3)))
+        try:
+            return parse_date(value) if re.search(_DATE, value.lower()) else None
+        except (ValueError, KeyError):
+            return None
+
+    class P(HTMLParser):
+        option: dict | None = None
+
+        def handle_starttag(self, tag, attrs):
+            a = dict(attrs)
+            if tag == "input" and (a.get("type") or "").lower() == "checkbox":
+                boxes.append({"checked": "checked" in a, "date": as_date(a.get("value") or "")
+                              or as_date(a.get("data-date") or "")})
+            elif tag == "select":
+                selects.append({"name": a.get("name") or a.get("id") or "", "options": [], "selected": None})
+            elif tag == "option" and selects:
+                self.option = {"value": a.get("value") or "", "selected": "selected" in a, "text": ""}
+                selects[-1]["options"].append(self.option)
+
+        def handle_endtag(self, tag):
+            if tag == "option":
+                self.option = None
+
+        def handle_data(self, data):
+            t = " ".join(data.split())
+            if not t:
+                return
+            texts.append(t)
+            if self.option is not None:
+                self.option["text"] += t
+            if boxes and boxes[-1]["date"] is None and not boxes[-1].get("text"):
+                boxes[-1]["text"] = t
+                boxes[-1]["date"] = as_date(t)
+
+    P().feed(text)
+    per_night = None
+    for s in selects:
+        chosen = next((o for o in s["options"] if o["selected"]), None)
+        if chosen and re.fullmatch(r"\d+", (chosen["value"] or chosen["text"]).strip()):
+            per_night = int((chosen["value"] or chosen["text"]).strip())
+            break
+    days = sorted(b["date"] for b in boxes if b["checked"] and b["date"])
+    if not days:
+        return None
+    room = next((m.group(1) for t in texts if (m := re.match(r"^(\d{1,3})\s*-?\s*[A-Z]{3,}", t))), None)
+    return {"room": room, "per_night": per_night or 1, "days": {d.isoformat(): per_night or 1 for d in days}}
+
+
 def parse_contact(text: str) -> dict | None:
     """Antwoord van /Customer/Reservations/ContactDetails/{id} (wat het oog-icoon ophaalt) naar
     {"email", "phone"}. JSON of HTML; None als er geen bruikbare gegevens in staan."""

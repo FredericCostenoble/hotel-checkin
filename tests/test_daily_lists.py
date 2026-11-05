@@ -287,3 +287,12 @@ def test_robot_schedule_from_the_function_app(monkeypatch):
     assert robot_schedule.run("lucca", t + timedelta(minutes=31)) == ""  # net gestart: niet opnieuw
     monkeypatch.setenv("LUCCA_SCHAKELAARS_RESERVATIES", "false")  # alles uit: bevroren
     assert robot_schedule.run("lucca", t + timedelta(hours=5)) == "" and starts == [1]
+
+
+def test_breakfast_per_day_from_lighthouse():
+    """Ontbijt als extra met de dagen uit Lighthouse: alleen op die dag, met het aantal van die dag."""
+    line = {"label": "Ontbijt", "qty": 5, "amount": 90.0, "days": {DAY.isoformat(): 5}, "room": "20"}
+    _r("a", "20", DAY - timedelta(days=2), 3, persons=5, folio=[line])
+    assert _row(dl.build("lucca", "breakfast", DAY), "20")["count"] == 5
+    other = dl.build("lucca", "breakfast", DAY + timedelta(days=1))  # andere dag: geen ontbijt
+    assert _row(other, "20")["count"] is None and not _row(other, "20")["check"]

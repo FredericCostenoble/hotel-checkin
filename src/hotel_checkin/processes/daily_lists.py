@@ -8,9 +8,10 @@ per soort blijven bewaard. Er staan geen gastnamen op, alleen kamers, aantallen 
 
 Ontbijtlijst voor dag D (ontbijt 's ochtends): wie de nacht ervoor sliep (aankomst voor D, vertrek op of na D) en
 ontbijt heeft. Zelfde regel als het label ONTBIJT (processes/breakfast_labels.py): tarief met ontbijt, of ontbijt in
-de folio voor alle personen en nachten, of het label werd door de robot gezet. Ontbijt in de folio voor maar een
-deel van het verblijf (bv. één dag bijgeboekt): de kamer komt in het geel op de lijst, "nakijken": de folio zegt
-niet voor welke dag. Meer kamers in één reservatie: de personen verdeeld over de kamers, met "samen met ...".
+de folio voor alle personen en nachten, of het label werd door de robot gezet. Ontbijt als extra in de folio: de robot
+leest per ontbijtregel de dagen en het aantal per dag (venster "Bewerken" achter de 3 puntjes), zodat ook één
+bijgeboekte dag juist op de lijst komt. Kon hij de dagen niet lezen en is het ontbijt maar voor een deel van het
+verblijf: de kamer komt in het geel, "nakijken". Meer kamers in één reservatie: de personen verdeeld over de kamers, met "samen met ...".
 
 Kuislijst voor dag D, per kamer: Leave (vertrek op D), Stay (aankomst voor D, vertrek na D), Check in (aankomst op D).
 Opmerkingen: zinnen uit de opmerking van de reservatie of lijnen van de folio met een van de woorden uit de
@@ -184,6 +185,7 @@ def _active(r: Reservation) -> bool:
 
 
 def build_breakfast(hotel_id: str, day: date, reservations: list[Reservation], words: list[str]) -> dict:
+    from hotel_checkin.pms.lighthouse_parse import BREAKFAST_LABEL, rate_plans_from
     from hotel_checkin.processes.breakfast_labels import breakfast
 
     per_room: dict[str, dict] = {}
@@ -191,15 +193,31 @@ def build_breakfast(hotel_id: str, day: date, reservations: list[Reservation], w
         if not _active(r) or not (r.arrival < day <= r.departure):
             continue
         yes, why = breakfast(r)
+        rate_incl = yes and why.startswith("tarief")
+        # Ontbijt als extra met de dagen uit Lighthouse (venster "Bewerken" in de folio): precies per dag en kamer
+        lines = [x for x in r.folio if BREAKFAST_LABEL.search(x["label"]) and not rate_plans_from(x["label"])]
+        dated = {}
+        if not rate_incl and lines and all(x.get("days") for x in lines):
+            for x in lines:
+                n = int(x["days"].get(day.isoformat()) or 0)
+                if n:
+                    room = x.get("room") or (r.rooms[0] if r.rooms else "?")
+                    dated[room] = dated.get(room, 0) + n
+            if not dated:
+                continue  # ontbijt geboekt, maar niet voor deze dag
         yes = yes or bool(r.breakfast_labeled_at)
-        partial = not yes and why.startswith("maar ")
-        unread = not yes and not r.folio
-        if not (yes or partial or unread):
+        partial = not dated and not yes and why.startswith("maar ")
+        unread = not dated and not yes and not r.folio
+        if not (dated or yes or partial or unread):
             continue
-        rooms = r.rooms or ["?"]
         persons = r.guest_count
-        split = ([persons // len(rooms) + (1 if i < persons % len(rooms) else 0) for i in range(len(rooms))]
-                 if persons else [None] * len(rooms))
+        if dated:
+            rooms = list(dated)
+            split = [dated[x] for x in rooms]
+        else:
+            rooms = r.rooms or ["?"]
+            split = ([persons // len(rooms) + (1 if i < persons % len(rooms) else 0) for i in range(len(rooms))]
+                     if persons else [None] * len(rooms))
         found = notes(_texts(r), words)
         for i, room in enumerate(rooms):
             remark: list[str] = []
@@ -210,13 +228,13 @@ def build_breakfast(hotel_id: str, day: date, reservations: list[Reservation], w
             elif unread:
                 remark.append(f"folio nog niet gelezen: nakijken of er ontbijt is ({r.booking_number or ''})")
                 check = True
-            elif persons is None:
+            elif persons is None and not dated:
                 remark.append("aantal personen niet gekend")
                 check = True
             if room == "?":
                 remark.append(f"nog geen kamer toegewezen ({r.booking_number or ''})")
                 check = True
-            if len(rooms) > 1 and i == 0:
+            if len(rooms) > 1 and i == 0 and not dated:
                 remark.append(f"samen met {', '.join(room_name(hotel_id, x) for x in rooms[1:])}"
                               + (f" ({persons} pers.)" if persons else ""))
             if i == 0:

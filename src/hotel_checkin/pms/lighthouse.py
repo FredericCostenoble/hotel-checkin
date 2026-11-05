@@ -27,7 +27,9 @@ from datetime import datetime, timedelta
 from hotel_checkin.core.models import AccessCode, Guest, Reservation, ReservationStatus
 from hotel_checkin.pms.lighthouse_browser import LighthouseSession
 from hotel_checkin.pms.lighthouse_parse import (
+    BREAKFAST_LABEL,
     TZ,
+    parse_charge_modal,
     parse_contact,
     parse_detail,
     parse_folio,
@@ -147,6 +149,11 @@ _DETAIL_JS = r"""() => {
                       while (box && box !== document.body && txt(box).replace(/Opmerkingen:?/, '').trim() === '') box = box.parentElement;
                       return box && box !== document.body ? txt(box).replace(/^\s*Opmerkingen:?\s*/, '') : ''; })(),
     // Hele folio (lijnen links, transacties rechts): eerste blok rond "Transacties" waar ook "Totaal" in staat
+    // Extra's in de folio met hun venster "Bewerken" (3 puntjes): daar staan de dagen, bv. bij ontbijt
+    folio_charges: [...document.querySelectorAll('.js-folio-component-overview tr')]
+      .map(r => ({ label: (r.querySelector('td.componentline')?.innerText || '').trim(),
+                   url: r.querySelector('a[data-loadingmodal*="CreateOrUpdateFolioCharge"]')?.getAttribute('data-loadingmodal') || '' }))
+      .filter(x => x.label && x.url),
     folio_text: (() => { let b = trans; while (b && b !== document.body && !/\bTotaal\b/.test(b.innerText || '')) b = b.parentElement;
                          return b && b !== document.body ? txt(b) : ''; })(),
   };
@@ -177,7 +184,32 @@ def _read_detail(session: LighthouseSession, hotel_id: str, reservation_id: str,
             d["email"], d["phone"] = found["email"] or "", found["phone"] or ""
         else:
             logging.info("%s: contactgegevens niet opgehaald bij %s", hotel_id, reservation_id)
-    return parse_detail(hotel_id, reservation_id, d)
+    reservation = parse_detail(hotel_id, reservation_id, d)
+    _read_charge_days(hotel_id, session, reservation, d.get("folio_charges") or [])
+    return reservation
+
+
+def _read_charge_days(hotel_id: str, session: LighthouseSession, reservation: Reservation, charges: list[dict]) -> None:
+    """Voor ontbijtregels in de folio: welke dagen en hoeveel per dag, uit het venster "Bewerken" (wat de 3 puntjes
+    openen). Opgevraagd zoals dat venster het doet, zonder iets aan te klikken of te bewaren. Komt bij de folioregel:
+    {"days": {"2026-11-06": 1}, "room": "22"}. Lukt het niet, dan blijft de regel zoals ze was."""
+    lines = [x for x in reservation.folio if BREAKFAST_LABEL.search(x["label"])]
+    for charge in charges:
+        if not BREAKFAST_LABEL.search(charge["label"]):
+            continue
+        line = next((x for x in lines if "days" not in x and x["label"].strip() == charge["label"].strip()), None)
+        if line is None:
+            continue
+        try:
+            resp = session.page.request.get(session.base + html.unescape(charge["url"]),
+                                            headers={"X-Requested-With": "XMLHttpRequest"})
+            info = parse_charge_modal(resp.text()) if resp.ok and "/Customer/" in resp.url else None
+        except Exception:  # noqa: BLE001 - dan zonder dagen (nakijken op de lijst)
+            info = None
+        if info and info["days"]:
+            line["days"], line["room"] = info["days"], info["room"]
+        else:
+            logging.info("%s: dagen van %s niet gelezen bij %s", hotel_id, charge["label"], reservation.reservation_id)
 
 
 def _contact_request(session: LighthouseSession, reservation_id: str) -> dict | None:

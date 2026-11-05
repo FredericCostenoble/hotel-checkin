@@ -159,3 +159,17 @@ def test_rate_plan_and_non_refundable():
     assert non_refundable([]) is None
     r = parse_list_row("lucca", GENERAL, "Jan Voorbeeld", "Superior double  ! Nog geen accommodatie.\nNRF BREAKFAST EXCL, € 335,07", HREF)
     assert r.rate_plan == "NRF BREAKFAST EXCL" and r.non_refundable is True
+
+
+def test_charge_modal_days():
+    """Venster Bewerken van een ontbijtregel: kamer, aantal per nacht en de aangevinkte dagen."""
+    from hotel_checkin.pms.lighthouse_parse import parse_charge_modal
+
+    html = """<h4>Ontbijt</h4><div>22 BUDGET DOUBLE ROOM</div>
+      <select name="Amount"><option value="0">0</option><option value="1" selected="selected">1</option></select>
+      <label><input type="checkbox" class="js-all"> Dagen (1 van 3)</label>
+      <label><input type="checkbox" name="Days" value="x"> 05 nov. 2026</label>
+      <label><input type="checkbox" name="Days" value="y" checked="checked"> 06 nov. 2026</label>
+      <label><input type="checkbox" name="Days" value="z"> 07 nov. 2026</label>"""
+    assert parse_charge_modal(html) == {"room": "22", "per_night": 1, "days": {"2026-11-06": 1}}
+    assert parse_charge_modal("<div>niets</div>") is None
