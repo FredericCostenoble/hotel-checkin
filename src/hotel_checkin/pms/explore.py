@@ -6,6 +6,7 @@
     python -m hotel_checkin.pms.explore lucca --detail          # detailpagina, contactgegevens getoond
     python -m hotel_checkin.pms.explore lucca --status [<id>]   # hoe de status (inchecken) werkt, klikt NIETS
     python -m hotel_checkin.pms.explore lucca --folio <id>      # folio: de 3 puntjes bij ontbijt (dagen), wijzigt NIETS
+    python -m hotel_checkin.pms.explore lucca --charge-ids <id> # verandert het nummer van een folioregel door te lezen?
 
 Klikt niets aan en wijzigt niets. Schrijft naar lighthouse-explore/ (niet in git):
 - <pagina>.png: schermafbeelding, alleen voor jezelf (bevat gastgegevens)
@@ -346,6 +347,46 @@ def explore_folio(lh: LighthouseSession, detail_id: str) -> str:
     return "\n".join(report) + "\n"
 
 
+def explore_charge_ids(lh: LighthouseSession, detail_id: str) -> str:
+    """Verandert het nummer (folioChargeId) van de folioregels door de pagina te lezen, of door het venster
+    "Bewerken" op te vragen? Drie keer de pagina laden: twee keer alleen lezen, dan het venster en de dagen
+    opvragen (zoals de robot), dan opnieuw lezen. Alles behalve lezen (GET) is geblokkeerd."""
+    import html as htmllib
+
+    from hotel_checkin.pms.lighthouse import _TRANSACTIONS_LOADED, _charge_days
+
+    page = lh.goto("/Customer/Dashboard")
+    blocked: list[str] = []
+
+    def guard(route):
+        if route.request.method != "GET":
+            blocked.append(route.request.method + " " + route.request.url.split("?")[0])
+            return route.abort()
+        return route.continue_()
+    page.route("**/*", guard)
+
+    def ids() -> list[tuple[str, str]]:
+        page = lh.goto(f"/Customer/Reservations/Detail/{detail_id}", ready=_TRANSACTIONS_LOADED, timeout=15_000)
+        page.wait_for_timeout(3000)  # folio laadt asynchroon
+        return page.evaluate("""() => [...document.querySelectorAll('.js-folio-component-overview tr')].map(r => [
+            (r.querySelector('td.componentline')?.innerText || '').trim(),
+            ((r.querySelector('a[data-loadingmodal*="CreateOrUpdateFolioCharge"]')?.getAttribute('data-loadingmodal') || '')
+              .match(/folioChargeId=(\\d+)/) || [])[1] || '']).filter(x => x[1])""")
+
+    out = ["# Nummers van de folioregels (niets bewaard)", ""]
+    first = ids()
+    out.append(f"1. pagina gelezen: {first}")
+    out.append(f"2. pagina opnieuw gelezen: {ids()}")
+    lines = lh.page.evaluate("""() => [...document.querySelectorAll('a[data-loadingmodal*="CreateOrUpdateFolioCharge"]')]
+        .map(a => a.getAttribute('data-loadingmodal')).filter(u => !/folioChargeId=0/.test(u))""")
+    for url in lines:
+        out.append(f"   venster en dagen opgevraagd voor {url.split('folioChargeId=')[1].split('&')[0]}: "
+                   f"{_charge_days(lh, htmllib.unescape(url))}")
+    out.append(f"3. pagina gelezen na het opvragen: {ids()}")
+    out += ["", "Geblokkeerd (geen GET): " + (", ".join(sorted(set(blocked))) or "niets")]
+    return "\n".join(out) + "\n"
+
+
 def main() -> None:
     p = argparse.ArgumentParser()
     p.add_argument("hotel_id")
@@ -355,7 +396,13 @@ def main() -> None:
                    help="alleen de detailpagina van een reservering (uuid, of de eerste van het dashboard)")
     p.add_argument("--status", nargs="?", const="", help="hoe de status gewijzigd wordt (uuid of de eerste van het dashboard); klikt niets")
     p.add_argument("--folio", help="folio van deze reservatie (uuid): wat de 3 puntjes bij ontbijt tonen; wijzigt niets")
+    p.add_argument("--charge-ids", help="verandert het nummer van een folioregel door te lezen? (uuid); wijzigt niets")
     args = p.parse_args()
+
+    if args.charge_ids:
+        with LighthouseSession(args.hotel_id, headless=not args.show) as lh:
+            print(explore_charge_ids(lh, args.charge_ids))
+        return
 
     if args.folio:
         OUT.mkdir(exist_ok=True)
