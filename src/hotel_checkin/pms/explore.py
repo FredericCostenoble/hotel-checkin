@@ -5,6 +5,7 @@
     python -m hotel_checkin.pms.explore lucca --page /Customer/Reservations/Detail/<id>
     python -m hotel_checkin.pms.explore lucca --detail          # detailpagina, contactgegevens getoond
     python -m hotel_checkin.pms.explore lucca --status [<id>]   # hoe de status (inchecken) werkt, klikt NIETS
+    python -m hotel_checkin.pms.explore lucca --folio <id>      # folio: de 3 puntjes bij ontbijt (dagen), wijzigt NIETS
 
 Klikt niets aan en wijzigt niets. Schrijft naar lighthouse-explore/ (niet in git):
 - <pagina>.png: schermafbeelding, alleen voor jezelf (bevat gastgegevens)
@@ -241,6 +242,83 @@ def explore_status(lh: LighthouseSession, detail_id: str | None) -> str:
     return "\n".join(report) + "\n"
 
 
+_FOLIO_JS = r"""() => {
+  const trans = [...document.querySelectorAll('h1,h2,h3,h4,h5,h6,legend,strong,b,span,div,p')].find(e => [...e.childNodes].filter(n => n.nodeType === 3).map(n => n.textContent).join('').trim() === 'Transacties');
+  let box = trans; while (box && box !== document.body && !/\bTotaal\b/.test(box.innerText || '')) box = box.parentElement;
+  if (!box || box === document.body) return { rows: [], html: '' };
+  const attrs = e => Object.fromEntries([...e.attributes].map(a => [a.name, a.value.slice(0, 200)]));
+  const rows = [...box.querySelectorAll('tr, li, .row')].filter(r => /€/.test(r.innerText || '')).slice(0, 30).map(r => ({
+    text: (r.innerText || '').replace(/\s+/g, ' ').trim().slice(0, 120),
+    clickables: [...r.querySelectorAll('a, button, i, span[class*=dots], [data-toggle], [data-loadingmodal], [onclick]')]
+      .map(e => ({ tag: e.tagName.toLowerCase(), text: (e.innerText || '').trim().slice(0, 30), attrs: attrs(e) })).slice(0, 8),
+  }));
+  return { rows, html: box.outerHTML.slice(0, 15000) };
+}"""
+
+_MODAL_JS = r"""() => {
+  const m = [...document.querySelectorAll('.modal')].find(x => x.offsetParent !== null);
+  if (!m) return null;
+  const attrs = e => Object.fromEntries([...e.attributes].map(a => [a.name, a.value.slice(0, 200)]));
+  return {
+    title: (m.querySelector('.modal-title, h4, h3')?.innerText || '').trim(),
+    text: (m.innerText || '').replace(/\n+/g, ' | ').slice(0, 1500),
+    inputs: [...m.querySelectorAll('input, select')].map(i => ({ tag: i.tagName.toLowerCase(), type: i.type, name: i.name,
+      checked: i.checked, value: (i.value || '').slice(0, 60), label: (i.closest('label, li, tr, div')?.innerText || '').trim().slice(0, 60),
+      selected: i.tagName === 'SELECT' ? (i.selectedOptions[0]?.text || '') : '' })),
+    html: m.outerHTML.slice(0, 12000),
+  };
+}"""
+
+
+def explore_folio(lh: LighthouseSession, detail_id: str) -> str:
+    """Folio van een reservatie: de regels, wat er achter de 3 puntjes zit, en het venster dat opengaat bij een
+    ontbijtregel (dagen). Elke aanvraag die geen GET is, wordt geblokkeerd: er kan niets bewaard of gewist worden."""
+    from hotel_checkin.pms.lighthouse import _TRANSACTIONS_LOADED
+
+    page = lh.goto("/Customer/Dashboard")
+    blocked: list[str] = []
+
+    def guard(route):
+        if route.request.method != "GET":
+            blocked.append(f"{route.request.method} {re.sub(r'[0-9a-f]{8}-[0-9a-f-]{27,}', '{uuid}', route.request.url)}")
+            return route.abort()
+        return route.continue_()
+    page.route("**/*", guard)  # vanaf nu kan er niets meer gewijzigd worden
+    page = lh.goto(f"/Customer/Reservations/Detail/{detail_id}", ready=_TRANSACTIONS_LOADED, timeout=15_000)
+    lh.close_popups()
+    info = page.evaluate(_FOLIO_JS)
+    report = ["# Folio (verkenning, niets bewaard)", "", "## Regels"]
+    for r in info["rows"]:
+        report += [f"- {r['text']!r}", *[f"    {c['tag']} {c['text']!r} {c['attrs']}" for c in r["clickables"]]]
+    report += ["", "## Ontbijtregels: wat de 3 puntjes openen"]
+    rows = page.locator("tr, li").filter(has_text=re.compile(r"ontbijt|breakfast", re.IGNORECASE)).filter(has_text="€")
+    for i in range(min(rows.count(), 4)):
+        row = rows.nth(i)
+        dots = row.locator("a, button, [data-toggle], [data-loadingmodal]").last
+        if not dots.count():
+            report.append(f"- regel {i + 1}: geen knop gevonden")
+            continue
+        try:
+            dots.click(timeout=5000)
+            page.wait_for_timeout(2500)  # venster of menu laten openen (laadt asynchroon)
+        except Exception as exc:  # noqa: BLE001
+            report.append(f"- regel {i + 1}: klikken lukte niet ({type(exc).__name__})")
+            continue
+        modal = page.evaluate(_MODAL_JS)
+        if not modal:
+            menu = page.evaluate("() => [...document.querySelectorAll('.dropdown-menu')].filter(m => m.offsetParent !== null)"
+                                 ".map(m => m.outerHTML.slice(0, 3000))")
+            report += [f"- regel {i + 1}: geen venster; open menu's:", *[f"    {x}" for x in menu]]
+        else:
+            report += [f"### Regel {i + 1}: venster {modal['title']!r}", f"Tekst: {modal['text']}", "Velden:",
+                       *[f"- {x}" for x in modal["inputs"]], "", "HTML:", "```html", modal["html"], "```"]
+        page.keyboard.press("Escape")  # sluiten zonder bewaren (bewaren is toch geblokkeerd)
+        page.wait_for_timeout(800)
+    report += ["", "## HTML van de folio", "```html", info["html"], "```", "",
+               "## Geblokkeerde verzoeken (geen GET, dus niet uitgevoerd)", *([f"- {x}" for x in blocked] or ["- geen"])]
+    return "\n".join(report) + "\n"
+
+
 def main() -> None:
     p = argparse.ArgumentParser()
     p.add_argument("hotel_id")
@@ -249,7 +327,15 @@ def main() -> None:
     p.add_argument("--detail", nargs="?", const="first",
                    help="alleen de detailpagina van een reservering (uuid, of de eerste van het dashboard)")
     p.add_argument("--status", nargs="?", const="", help="hoe de status gewijzigd wordt (uuid of de eerste van het dashboard); klikt niets")
+    p.add_argument("--folio", help="folio van deze reservatie (uuid): wat de 3 puntjes bij ontbijt tonen; wijzigt niets")
     args = p.parse_args()
+
+    if args.folio:
+        OUT.mkdir(exist_ok=True)
+        with LighthouseSession(args.hotel_id, headless=not args.show, debug_dir=OUT) as lh:
+            (OUT / "folio.md").write_text(explore_folio(lh, args.folio), encoding="utf-8")
+        print(f"Klaar: {OUT}/folio.md. Er werd niets bewaard of gewist (alles behalve lezen geblokkeerd).")
+        return
 
     if args.status is not None:
         OUT.mkdir(exist_ok=True)
