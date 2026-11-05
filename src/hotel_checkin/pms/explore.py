@@ -317,31 +317,6 @@ def explore_folio(lh: LighthouseSession, detail_id: str) -> str:
                                     headers={"X-Requested-With": "XMLHttpRequest"})
             report += [f"Dagen: HTTP {d.status}, adres {d.url}", "```html", d.text()[:3000], "```"]
         report.append(f"Gelezen door de robot: {_charge_days(lh, url)}")
-        # De dagen laadt het venster pas daarna zelf (lege .days-container). Venster echt openen zoals "Bewerken"
-        # (bewaren is geblokkeerd), noteren welke adressen het opvraagt en wat er in de dagen komt.
-        seen: list[str] = []
-        def listener(req, seen=seen):
-            if "mylighthouse" in req.url and req.resource_type in ("xhr", "fetch", "document"):
-                seen.append(f"{req.method} {req.url}")
-        page.on("request", listener)
-        page.evaluate("u => { const a = [...document.querySelectorAll('a[data-loadingmodal]')]"
-                      ".find(x => x.getAttribute('data-loadingmodal') === u); if (a) a.click(); }", htmllib.unescape(url))
-        try:
-            page.wait_for_function("() => { const c = document.querySelector('.modal .days-container');"
-                                   " return c && c.children.length > 0; }", timeout=15_000)
-        except Exception as exc:  # noqa: BLE001
-            report.append(f"Dagen niet geladen binnen 15 s ({type(exc).__name__})")
-        page.wait_for_timeout(1000)
-        page.remove_listener("request", listener)
-        days = page.evaluate("() => document.querySelector('.modal .days-container')?.outerHTML || ''")
-        checked = page.evaluate("() => [...document.querySelectorAll('.modal .days-container input')]"
-                                ".map(i => ({ checked: i.checked, attrs: Object.fromEntries([...i.attributes]"
-                                ".map(a => [a.name, a.value])), label: (i.closest('label, li, div')?.innerText || '').trim() }))")
-        report += ["Opgevraagd door het venster:", *[f"- {x}" for x in seen],
-                   "Vinkjes (zoals op het scherm):", *[f"- {x}" for x in checked],
-                   "HTML van de dagen:", "```html", days[:6000], "```", "HTML van het venster:", "```html", body[:3000], "```"]
-        page.keyboard.press("Escape")
-        page.wait_for_timeout(800)
     report += ["", "## HTML van de folio", "```html", info["html"], "```", "",
                "## Geblokkeerde verzoeken (geen GET, dus niet uitgevoerd)", *([f"- {x}" for x in blocked] or ["- geen"])]
     return "\n".join(report) + "\n"

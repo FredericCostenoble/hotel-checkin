@@ -186,9 +186,9 @@ def _read_detail(session: LighthouseSession, hotel_id: str, reservation_id: str,
         else:
             logging.info("%s: contactgegevens niet opgehaald bij %s", hotel_id, reservation_id)
     reservation = parse_detail(hotel_id, reservation_id, d)
-    # UITGESCHAKELD tot nagekeken is of het opvragen van het venster "Bewerken" in Lighthouse niets wijzigt: het
-    # nummer van de ontbijtregel (folioChargeId) veranderde na elke verkenning.
-    # _read_charge_days(hotel_id, session, reservation, d.get("folio_charges") or [])
+    # Nagekeken (explore --charge-ids, 05/11/2026): het venster en de dagen opvragen wijzigt niets in Lighthouse, het
+    # nummer van de regel blijft hetzelfde. (Het venster in de pagina zelf openen deed dat wel: dat doet de robot niet.)
+    _read_charge_days(hotel_id, session, reservation, d.get("folio_charges") or [])
     return reservation
 
 
