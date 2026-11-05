@@ -124,8 +124,9 @@ def room_catalog(hotel_id: str, reservations: list[Reservation]) -> dict[str, st
 
 
 def describe_room(text: str) -> str:
-    """'SUPERIOR DOUBLE ROOM' -> 'Superior double room'."""
-    return text.strip().capitalize() if text and text.isupper() else (text or "").strip()
+    """'SUPERIOR DOUBLE ROOM' -> 'Superior double room' (alleen de eerste regel, niet het tarief)."""
+    text = (text or "").strip().splitlines()[0].strip() if (text or "").strip() else ""
+    return text.capitalize() if text.isupper() else text
 
 
 def _layout(hotel_id: str, rooms_used: list[str]) -> list[str]:
@@ -189,6 +190,7 @@ def build_breakfast(hotel_id: str, day: date, reservations: list[Reservation], w
     from hotel_checkin.processes.breakfast_labels import breakfast
 
     per_room: dict[str, dict] = {}
+    undated = dated_lines = 0  # ontbijtregels zonder / met de dagen uit Lighthouse (om te zien of de robot ze las)
     for r in reservations:
         if not _active(r) or not (r.arrival < day <= r.departure):
             continue
@@ -197,6 +199,9 @@ def build_breakfast(hotel_id: str, day: date, reservations: list[Reservation], w
         # Ontbijt als extra met de dagen uit Lighthouse (venster "Bewerken" in de folio): precies per dag en kamer
         lines = [x for x in r.folio if BREAKFAST_LABEL.search(x["label"]) and not rate_plans_from(x["label"])]
         dated = {}
+        if not rate_incl and lines:
+            undated += sum(1 for x in lines if not x.get("days"))
+            dated_lines += sum(1 for x in lines if x.get("days"))
         if not rate_incl and lines and all(x.get("days") for x in lines):
             for x in lines:
                 n = int(x["days"].get(day.isoformat()) or 0)
@@ -223,7 +228,10 @@ def build_breakfast(hotel_id: str, day: date, reservations: list[Reservation], w
             remark: list[str] = []
             check = False
             if partial:
-                remark.append(f"ontbijt bijgeboekt, {why[5:]}: nakijken voor welke dag ({r.booking_number or ''})")
+                errors = sorted({x["days_error"] for x in lines if x.get("days_error")})
+                remark.append(f"ontbijt bijgeboekt, {why[5:]}, maar de dagen werden "
+                              + (f"niet gelezen ({'; '.join(errors)})" if errors else "nog niet gelezen in Lighthouse")
+                              + f": nakijken ({r.booking_number or ''})")
                 check = True
             elif unread:
                 remark.append(f"folio nog niet gelezen: nakijken of er ontbijt is ({r.booking_number or ''})")
@@ -251,6 +259,7 @@ def build_breakfast(hotel_id: str, day: date, reservations: list[Reservation], w
                  room_catalog(hotel_id, reservations))
     total = sum(r.get("count") or 0 for r in rows if not r.get("sep"))
     return {"kind": "breakfast", "day": day.isoformat(), "rows": rows, "total": total,
+            "breakfast_lines": {"with_days": dated_lines, "without_days": undated},
             "check": sum(1 for r in rows if r.get("check"))}
 
 
@@ -299,8 +308,10 @@ def describe(data: dict) -> str:
     """Inhoud in een paar woorden (robotlog, monitor)."""
     if data["kind"] == "breakfast":
         rooms = sum(1 for r in data["rows"] if not r.get("sep") and (r.get("count") or r.get("check")))
+        missing = (data.get("breakfast_lines") or {}).get("without_days", 0)
         return (f"{data.get('total', 0)} personen in {rooms} kamers"
-                + (f", {data['check']} na te kijken" if data.get("check") else ""))
+                + (f", {data['check']} na te kijken" if data.get("check") else "")
+                + (f", van {missing} ontbijtregel(s) de dagen niet gelezen" if missing else ""))
     t = data.get("totals", {})
     return f"{t.get('leave', 0)} vertrek, {t.get('stay', 0)} blijvers, {t.get('checkin', 0)} check in"
 

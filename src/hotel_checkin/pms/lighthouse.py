@@ -36,6 +36,7 @@ from hotel_checkin.pms.lighthouse_parse import (
     parse_folio,
     parse_list_row,
     parse_planboard,
+    rate_plans_from,
 )
 
 LIST_PATH = "/Customer/Reservations/List"  # standaard gesorteerd op boekdatum, nieuwste eerst
@@ -196,7 +197,10 @@ def _read_charge_days(hotel_id: str, session: LighthouseSession, reservation: Re
     """Voor ontbijtregels in de folio: welke dagen en hoeveel per dag, uit het venster "Bewerken" (wat de 3 puntjes
     openen). Opgevraagd zoals dat venster het doet, zonder iets aan te klikken of te bewaren. Komt bij de folioregel:
     {"days": {"2026-11-06": 1}, "room": "22"}. Lukt het niet, dan blijft de regel zoals ze was."""
-    lines = [x for x in reservation.folio if BREAKFAST_LABEL.search(x["label"])]
+    lines = [x for x in reservation.folio if BREAKFAST_LABEL.search(x["label"]) and not rate_plans_from(x["label"])]
+    if lines and not any(BREAKFAST_LABEL.search(c["label"]) for c in charges):
+        for x in lines:
+            x["days_error"] = "venster Bewerken niet gevonden in de folio"
     for charge in charges:
         if not BREAKFAST_LABEL.search(charge["label"]):
             continue
@@ -205,12 +209,15 @@ def _read_charge_days(hotel_id: str, session: LighthouseSession, reservation: Re
             continue
         try:
             info = _charge_days(session, charge["url"])
-        except Exception:  # noqa: BLE001 - dan zonder dagen (nakijken op de lijst)
-            info = None
+            error = "" if info else "geen gekozen dag in het venster"
+        except Exception as exc:  # noqa: BLE001 - dan zonder dagen (nakijken op de lijst, met de reden)
+            info, error = None, f"{type(exc).__name__}: {str(exc)[:80]}"
         if info and info["days"]:
             line["days"], line["room"] = info["days"], info["room"]
         else:
-            logging.info("%s: dagen van %s niet gelezen bij %s", hotel_id, charge["label"], reservation.reservation_id)
+            line["days_error"] = error  # komt op de ontbijtlijst bij "nakijken"
+            logging.info("%s: dagen van %s niet gelezen bij %s: %s", hotel_id, charge["label"],
+                         reservation.reservation_id, error)
 
 
 CHARGE_DAYS_PATH = "/Customer/Folios/CalculateDays"  # wat het venster "Bewerken" opvraagt voor het blok "Dagen"

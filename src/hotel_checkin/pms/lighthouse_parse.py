@@ -165,7 +165,7 @@ def with_door_codes(comments: str | None, line: str) -> str:
     return line + (SEPARATOR + rest if rest else "")
 
 
-_ROOM_LINE = r"(?m)(?:^|\s)(\d{1,3})\s*-?\s*([A-Z]{3,}(?:\s+[A-Z]{2,})*)\s*$"
+_ROOM_LINE = r"(?m)(?:^|\s)(\d{1,3})[ \t]*-?[ \t]*([A-Z]{3,}(?:[ \t]+[A-Z]{2,})*)[ \t]*$"  # één regel, niet het tarief eronder
 
 
 def room_names_from(text: str) -> dict[str, str]:

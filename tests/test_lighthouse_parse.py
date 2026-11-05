@@ -214,3 +214,9 @@ def test_charge_days_json():
            '{"date":"2026-11-07T00:00:00","formattedDate":"07 nov. 2026","isSelected":false}]'
     assert parse_charge(modal, days) == {"room": "22", "per_night": 1, "days": {"2026-11-06": 1}}
     assert parse_charge(modal, "[]") is None
+
+
+def test_room_name_not_the_rate_below():
+    from hotel_checkin.pms.lighthouse_parse import room_names_from
+
+    assert room_names_from("20 FAMILY APARTMENT\nSTANDARD RATE BREAKFAST EXCL") == {"20": "FAMILY APARTMENT"}
