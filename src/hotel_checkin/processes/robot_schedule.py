@@ -60,6 +60,9 @@ def run(hotel_id: str, now: datetime | None = None) -> str:
     ok = cloud_robot.start()
     if not ok:
         logging.warning("%s: robot niet gestart op schema: %s", hotel_id, cloud_robot.LAST_ERROR)
+        guests.log_robot_run(hotel_id, "robot", now, False, 0, 0,
+                             f"robot niet gestart op schema: {cloud_robot.LAST_ERROR}. "
+                             f"Opnieuw over {RETRY_MINUTES} minuten")
         return f"robot niet gestart: {cloud_robot.LAST_ERROR}"
     from hotel_checkin.core import progress
 

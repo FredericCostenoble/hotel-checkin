@@ -442,7 +442,13 @@ def _start_robot(hotel_id: str, req: dict, now: datetime) -> str:
     if cloud_robot.running():
         return "robot is al bezig"
     req["robot_at"] = now.isoformat()
-    return "robot gestart om na te lezen" if cloud_robot.start() else f"robot niet gestart: {cloud_robot.LAST_ERROR}"
+    if cloud_robot.start():
+        return "robot gestart om na te lezen"
+    what = f"robot niet gestart: {cloud_robot.LAST_ERROR}"
+    guests.log_robot_run(hotel_id, "robot", datetime.now(UTC), False, 0, 0,
+                         f"voor de gevraagde ontbijt- of kuislijst: {what}. Opnieuw over {ROBOT_RETRY_MINUTES} minuten; "
+                         f"na {MAX_WAIT_MINUTES} minuten wordt de lijst gemaakt met de gegevens die er zijn")
+    return what
 
 
 def request(hotel_id: str, kind: str, day: date, by: str = "", send_now: bool = False, auto: bool = False,

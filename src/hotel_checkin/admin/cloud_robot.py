@@ -29,20 +29,12 @@ LAST_ERROR = ""  # waarom de laatste start() mislukte (voor het log)
 
 
 def start() -> bool:
-    """Start een run nu. Zelfde instellingen als de geplande runs, plus ROBOT_MANUAL=1: dan leest de
-    robot alle hotels, ook als hun eigen interval ([robot] check_minutes) nog niet om is."""
+    """Start een run nu, met de instellingen van de job zelf. Geen aangepaste instellingen meesturen: de rol
+    "Container Apps Jobs Operator" van de Function App mag een run starten, maar niet de instellingen ervan
+    wijzigen (Azure: JobStartOverrideAuthorizationFailed). ROBOT_MANUAL=1 staat daarom vast in de job
+    (infra/main.bicep): elke start leest alle hotels."""
     job = os.environ["ROBOT_JOB_ID"]
-    headers = _headers()
-    body: dict = {}
-    r = httpx.get(f"{ARM}{job}?api-version={API_VERSION}", headers=headers, timeout=30)
-    if r.status_code == 200:
-        containers = r.json().get("properties", {}).get("template", {}).get("containers", [])
-        for c in containers:
-            c["env"] = [e for e in c.get("env", []) if e.get("name") != "ROBOT_MANUAL"] + [
-                {"name": "ROBOT_MANUAL", "value": "1"}]
-        if containers:
-            body = {"containers": containers}
-    r = httpx.post(f"{ARM}{job}/start?api-version={API_VERSION}", json=body, headers=headers, timeout=30)
+    r = httpx.post(f"{ARM}{job}/start?api-version={API_VERSION}", headers=_headers(), timeout=30)
     global LAST_ERROR
     LAST_ERROR = "" if r.status_code in (200, 202) else f"Azure antwoordde {r.status_code}: {r.text[:200]}"
     return r.status_code in (200, 202)

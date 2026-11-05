@@ -463,6 +463,7 @@ resource robotJob 'Microsoft.App/jobs@2024-03-01' = if (withRobot) {
           resources: { cpu: json('1.0'), memory: '2Gi' }
           env: [
             { name: 'APP_ENV', value: env }
+            { name: 'ROBOT_MANUAL', value: '1' }  // altijd gestart door de Function App: elke start leest alle hotels
             { name: 'KEY_VAULT_URL', value: kv.properties.vaultUri }
             { name: 'SESSION_VAULT_URL', value: kvSession.properties.vaultUri }
             { name: 'STORAGE_TABLE_ENDPOINT', value: st.properties.primaryEndpoints.table }
