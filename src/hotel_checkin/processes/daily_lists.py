@@ -53,9 +53,10 @@ SEPARATOR = "-"  # in [kamers] lijst_volgorde: lege rij (nieuwe verdieping)
 
 
 def switch(hotel_id: str, kind: str) -> bool:
+    """Hoofdschakelaar van deze lijst (soort breakfast of cleaning), of een andere bij naam (bv. reservaties)."""
     from hotel_checkin.processes.send_messages import switch as main_switch
 
-    return main_switch(hotel_id, SECTION[kind])
+    return main_switch(hotel_id, SECTION.get(kind, kind))
 
 
 def _list(value) -> list[str]:
@@ -453,7 +454,7 @@ def request(hotel_id: str, kind: str, day: date, by: str = "", send_now: bool = 
     if kind not in KINDS:
         raise ValueError(kind)
     now = _now(now, hotel_id)
-    if not cloud_robot.available():
+    if not cloud_robot.available() or not switch(hotel_id, "reservaties"):  # geen robot, of hij leest niet
         data = generate(hotel_id, kind, day, by=by, send_now=send_now, auto=auto)
         return {"requested": False, "day": data["day"], "sent": data["sent"] if send_now else []}
     reqs = requests(hotel_id)
@@ -501,7 +502,7 @@ def run(hotel_id: str, now: datetime | None = None) -> list[str]:
     now = _now(now, hotel_id)
     done: list[str] = []
     reqs = requests(hotel_id)
-    lead = timedelta(minutes=ROBOT_MINUTES if cloud_robot.available() else 0)
+    lead = timedelta(minutes=ROBOT_MINUTES if cloud_robot.available() and switch(hotel_id, "reservaties") else 0)
     for kind in KINDS:
         if not switch(hotel_id, kind):
             continue

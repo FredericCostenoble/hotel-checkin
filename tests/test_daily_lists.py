@@ -232,3 +232,14 @@ def test_monitor_routes(monkeypatch):
     x = call("GET", "list-xlsx", {"kind": "breakfast", "day": DAY.isoformat()})
     assert x.status_code == 200 and x.get_body()[:2] == b"PK"
     assert call("GET", "lists", {"kind": "lunch"}).status_code == 400
+
+
+def test_frozen_when_all_switches_off(monkeypatch):
+    """Alle hoofdschakelaars uit (bv. TST als PRD goed loopt): de robot heeft niets te doen en start niet."""
+    from hotel_checkin.processes import mail_trigger, send_messages
+
+    monkeypatch.setenv("LUCCA_SCHAKELAARS_RESERVATIES", "false")
+    monkeypatch.setenv("LUCCA_ROBOT_MAIL_TRIGGER", "true")
+    assert not send_messages.robot_needed("lucca") and not mail_trigger.enabled("lucca")
+    monkeypatch.setenv("LUCCA_SCHAKELAARS_RESERVATIES", "true")
+    assert send_messages.robot_needed("lucca") and mail_trigger.enabled("lucca")

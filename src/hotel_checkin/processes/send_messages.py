@@ -70,6 +70,15 @@ def switch(hotel_id: str, name: str) -> bool:
     return str(flag).strip().lower() in ("true", "1", "ja", "aan")
 
 
+# Hoofdschakelaars waarvoor de robot (Lighthouse) moet draaien. Staan ze allemaal uit, dan is de omgeving
+# "bevroren": de robot start niet (meldingsmail, lijsten) en doet niets als het schema hem toch start.
+ROBOT_SWITCHES = ("reservaties", "overschrijvingen", "berichten", "ontbijt_labels", "ontbijtlijst", "kuislijst")
+
+
+def robot_needed(hotel_id: str) -> bool:
+    return any(switch(hotel_id, name) for name in ROBOT_SWITCHES)
+
+
 def before_start(r, begin: datetime | None) -> bool:
     """Valt deze reservatie buiten de berichten? Alleen als ze al bewaard was voor [messaging] start. Oudere
     boekingen die later binnengehaald worden (processes/backfill.py) volgen gewoon de regels van de workflow."""

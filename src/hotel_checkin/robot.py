@@ -229,6 +229,15 @@ def main() -> int:
 
     for hotel_id in [args.hotel] if args.hotel else list_hotels():
         progress.step(hotel_id, SKIP_TASK, "robot gestart in Azure, check-in-formulieren nakijken", force=True)
+        from hotel_checkin.processes import send_messages
+
+        if not send_messages.robot_needed(hotel_id):
+            # Bevroren (bv. TST als PRD goed loopt): Lighthouse niet openen
+            guests.log_robot_run(hotel_id, SKIP_TASK, datetime.now(UTC), True, 0, 0,
+                                 "alle hoofdschakelaars staan uit: de robot doet niets (omgeving bevroren)")
+            progress.done(hotel_id)
+            continue
+        reading = send_messages.switch(hotel_id, "reservaties")
         # Vangnet: ingevulde check-in-formulieren die niet in de reservatie staan, opnieuw toepassen.
         # Normaal gebeurt dat meteen bij het indienen; hier alleen nakijken (bij elke run, ook als vangnet-uur).
         try:
@@ -251,12 +260,16 @@ def main() -> int:
         since = _since(hotel_id, args.hours)
         _restore_session(hotel_id)
         try:
-            new = new_reservation.run(hotel_id, since)
-            logging.info("%s: %s nieuwe reservaties", hotel_id, new)
+            if reading:
+                new = new_reservation.run(hotel_id, since)
+                logging.info("%s: %s nieuwe reservaties", hotel_id, new)
+            else:
+                guests.log_robot_run(hotel_id, new_reservation.TASK, datetime.now(UTC), True, 0, 0,
+                                     "schakelaar Reservaties lezen staat uit: geen nieuwe reservaties gelezen")
             # Eenmalig: oudere boekingen voor toekomstige verblijven (processes/backfill.py), verdeeld over runs
             from hotel_checkin.processes import backfill
 
-            if not backfill.done(hotel_id):
+            if reading and not backfill.done(hotel_id):
                 with lighthouse.connect(hotel_id) as lh:
                     backfill.run(hotel_id, lh)
             # Gasten synchroniseren: één keer per dag mee in een run die toch al draait (geen eigen schema)

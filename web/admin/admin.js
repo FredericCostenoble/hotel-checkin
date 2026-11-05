@@ -12,7 +12,7 @@ const T = {
     dl_info: (on, time, days, to, keep) => `Automatisch: ${on ? `elke dag om ${time} voor ${days === 0 ? "dezelfde dag" : days === 1 ? "de dag erna" : `${days} dagen later`}` : "uit (hoofdschakelaar)"}. Naar: ${to || "niemand (instellingen)"}. De laatste ${keep} lijsten blijven bewaard. Geel = nakijken in Lighthouse.`,
     dl_waiting: days => `De robot leest de reservaties van ${days} in Lighthouse (folio, opmerkingen); de lijst volgt binnen enkele minuten...`, dl_ready: day => `Lijst voor ${day} gemaakt.`,
     dl_name_breakfast: "Ontbijtlijst", dl_name_cleaning: "Kuislijst", dl_wa: "WhatsApp/sms",
-    sw_blist: "Ontbijtlijst", sw_clist: "Kuislijst", task_ontbijtlijst: "Ontbijtlijst", task_kuislijst: "Kuislijst",
+    sw_blist: "Ontbijtlijst", sw_clist: "Kuislijst", sw_read: "Reservaties lezen", task_ontbijtlijst: "Ontbijtlijst", task_kuislijst: "Kuislijst",
     sec_ontbijtlijst: "Ontbijtlijst", sec_kuislijst: "Kuislijst", sec_kamers: "Kamers",
     wf_save: "Bewaren", wf_reset: "Terug naar standaard", wf_saved: "Bewaard.", wf_dirty: "Niet bewaarde wijzigingen.",
     wf_reset_confirm: "De workflow terugzetten naar de standaard uit het hotelbestand? Alle wijzigingen gaan verloren.",
@@ -104,7 +104,7 @@ const T = {
     dl_info: (on, time, days, to, keep) => `Automatic: ${on ? `every day at ${time} for ${days === 0 ? "the same day" : days === 1 ? "the next day" : `${days} days later`}` : "off (main switch)"}. To: ${to || "nobody (settings)"}. The last ${keep} lists are kept. Yellow = check in Lighthouse.`,
     dl_waiting: days => `The robot is reading the reservations of ${days} in Lighthouse (folio, remarks); the list follows within a few minutes...`, dl_ready: day => `List for ${day} made.`,
     dl_name_breakfast: "Breakfast list", dl_name_cleaning: "Cleaning list", dl_wa: "WhatsApp/SMS",
-    sw_blist: "Breakfast list", sw_clist: "Cleaning list", task_ontbijtlijst: "Breakfast list", task_kuislijst: "Cleaning list",
+    sw_blist: "Breakfast list", sw_clist: "Cleaning list", sw_read: "Read reservations", task_ontbijtlijst: "Breakfast list", task_kuislijst: "Cleaning list",
     sec_ontbijtlijst: "Breakfast list", sec_kuislijst: "Cleaning list", sec_kamers: "Rooms",
     wf_save: "Save", wf_reset: "Back to default", wf_saved: "Saved.", wf_dirty: "Unsaved changes.",
     wf_reset_confirm: "Reset the workflow to the default from the hotel file? All changes will be lost.",
@@ -245,7 +245,7 @@ function renderSwitches() {
   el.hidden = !sw;
   if (!sw) return;
   el.title = t("sw_title");
-  el.innerHTML = [["overschrijvingen", "sw_payout"], ["berichten", "sw_messages"], ["ontbijt_labels", "sw_breakfast"], ["ontbijtlijst", "sw_blist"], ["kuislijst", "sw_clist"]].map(([k, label]) =>
+  el.innerHTML = [["reservaties", "sw_read"], ["overschrijvingen", "sw_payout"], ["berichten", "sw_messages"], ["ontbijt_labels", "sw_breakfast"], ["ontbijtlijst", "sw_blist"], ["kuislijst", "sw_clist"]].map(([k, label]) =>
     `<span class="sw ${sw[k] ? "on" : "off"}${NOT_BUILT.includes(k) ? " todo" : ""}">${esc(t(label))}: <b>${t(sw[k] ? "sw_on" : "sw_off")}</b>${NOT_BUILT.includes(k) ? ` (${t("sw_not_built")})` : ""}</span>`).join("");
 }
 
@@ -1284,6 +1284,7 @@ const HS_TEXT = {
     "Ontbijt labels plaatsen",
     "De robot zet het label ONTBIJT op het planbord bij wie ontbijt heeft (tarief met ontbijt, of ontbijt voor alle personen en nachten in de folio). Geldt alleen voor deze omgeving."
    ],
+   "schakelaars.reservaties": ["Reservaties lezen (robot)", "De robot leest nieuwe en gewijzigde reservaties in Lighthouse. Staan alle hoofdschakelaars uit, dan is deze omgeving bevroren: de robot start niet meer en opent Lighthouse niet. Geldt alleen voor deze omgeving."],
    "schakelaars.ontbijtlijst": ["Ontbijtlijst maken en versturen", "Elke dag de ontbijtlijst maken en versturen (instellingen Ontbijtlijst). In de monitor (tabblad Ontbijt) kan een lijst ook met de schakelaar uit gemaakt worden. Geldt alleen voor deze omgeving."],
    "schakelaars.kuislijst": ["Kuislijst maken en versturen", "Elke dag de kuislijst maken en versturen (instellingen Kuislijst). In de monitor (tabblad Kuis) kan een lijst ook met de schakelaar uit gemaakt worden. Geldt alleen voor deze omgeving."],
    "ontbijtlijst.uur": ["Uur", "Elke dag om dit uur maken en versturen (bv. 17:45). 5 minuten ervoor start de robot om de reservaties van die dag nog eens in Lighthouse te lezen; de lijst vertrekt op het uur, of zodra dat klaar is (lukt het niet, dan toch, hoogstens 30 minuten later)."],
@@ -1541,6 +1542,7 @@ const HS_TEXT = {
     "Place breakfast labels",
     "The robot puts the ONTBIJT label on the planboard for guests with breakfast (rate with breakfast, or breakfast for all persons and nights in the folio). Applies to this environment only."
    ],
+   "schakelaars.reservaties": ["Read reservations (robot)", "The robot reads new and changed reservations in Lighthouse. With all main switches off, this environment is frozen: the robot no longer starts and does not open Lighthouse. Applies to this environment only."],
    "schakelaars.ontbijtlijst": ["Make and send the breakfast list", "Make and send the breakfast list every day (settings Breakfast list). In the monitor (Breakfast tab) a list can also be made with the switch off. Applies to this environment only."],
    "schakelaars.kuislijst": ["Make and send the cleaning list", "Make and send the cleaning list every day (settings Cleaning list). In the monitor (Cleaning tab) a list can also be made with the switch off. Applies to this environment only."],
    "ontbijtlijst.uur": ["Time", "Make and send every day at this time (e.g. 17:45). 5 minutes before, the robot starts to read that day's reservations again in Lighthouse; the list goes out at that time, or as soon as that is done (if it fails, still at most 30 minutes later)."],

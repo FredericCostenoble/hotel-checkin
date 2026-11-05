@@ -35,7 +35,11 @@ RETRY_MINUTES = 10  # robot niet kunnen starten: zo lang elke minuut opnieuw pro
 
 
 def enabled(hotel_id: str) -> bool:
-    return str(hotel_setting(hotel_id, "ROBOT_MAIL_TRIGGER", default="false", shared=False)).lower() == "true"
+    """Instelling [robot] mail_trigger, en alleen als de robot iets te doen heeft (niet alle hoofdschakelaars uit)."""
+    from hotel_checkin.processes.send_messages import robot_needed
+
+    on = str(hotel_setting(hotel_id, "ROBOT_MAIL_TRIGGER", default="false", shared=False)).lower() == "true"
+    return on and robot_needed(hotel_id)
 
 
 def run(hotel_id: str) -> int:

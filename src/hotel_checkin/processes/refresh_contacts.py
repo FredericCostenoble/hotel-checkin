@@ -100,14 +100,18 @@ def run(hotel_id: str) -> int:
     """Lees de contactgegevens van die reservaties opnieuw. Geeft het aantal gevonden e-mailadressen terug."""
     started = datetime.now(UTC)
     requested = refresh_requests.requested(hotel_id)
-    todo = due(hotel_id)
-    arrivals = [r for r in arrivals_due(hotel_id, requested) if r.reservation_id not in {x.reservation_id for x in todo}]
+    from hotel_checkin.processes.send_messages import switch
+
+    reading = switch(hotel_id, "reservaties")  # uit: niets nalezen, alleen schrijven met wat bewaard is
+    todo = due(hotel_id) if reading else []
+    arrivals = ([r for r in arrivals_due(hotel_id, requested) if r.reservation_id not in {x.reservation_id for x in todo}]
+                if reading else [])
     # Ontbijt- en kuislijst: in de uren voor het versturen de reservaties van die dag nog eens lezen (folio, opmerking)
     from hotel_checkin.processes import daily_lists
 
     # Eerst, zodat de tijdslimiet van de run ze zeker niet overslaat
-    list_keys = daily_lists.pending_reads(hotel_id)
-    for_lists = daily_lists.refresh_due(hotel_id)
+    list_keys = daily_lists.pending_reads(hotel_id) if reading else []
+    for_lists = daily_lists.refresh_due(hotel_id) if reading else []
     seen = {x.reservation_id for x in todo} | {x.reservation_id for x in for_lists}
     arrivals = for_lists + [r for r in arrivals if r.reservation_id not in seen]
     lists_due = bool(list_keys)

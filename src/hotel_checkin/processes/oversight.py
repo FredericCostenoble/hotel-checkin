@@ -189,7 +189,9 @@ def send_overview(hotel_id: str, today: date) -> bool:
     intro = [f"{len(a['today'])} aankomst(en) vandaag, {len(a['tomorrow'])} morgen."
              + (f" {problems} met een probleem (rood): nakijken." if problems else " Geen problemen.")
              + (f" {unpaid} betaalt nog (code volgt na betaling), dat is normaal." if unpaid else "")]
-    rp = robot_problem(hotel_id, settings(hotel_id)["robot_hours"])
+    from hotel_checkin.processes.send_messages import switch
+
+    rp = robot_problem(hotel_id, settings(hotel_id)["robot_hours"]) if switch(hotel_id, "reservaties") else None
     if rp:
         intro.append(f"Let op: {rp}.")
     intro += activity(hotel_id)
@@ -244,7 +246,9 @@ def run(hotel_id: str, now: datetime | None = None) -> list[str]:
             day[f"check_{at}"] = True
             done.append(f"controle van {at}: " + (f"{n} aankomst(en) met een probleem, mail verstuurd naar {', '.join(cfg['email'])}"
                                                   if n else "alle aankomsten in orde, geen mail nodig"))
-    rp = robot_problem(hotel_id, cfg["robot_hours"]) if cfg["robot_alert"] else None
+    from hotel_checkin.processes.send_messages import switch
+
+    rp = robot_problem(hotel_id, cfg["robot_hours"]) if cfg["robot_alert"] and switch(hotel_id, "reservaties") else None
     last = st.get("robot_alert_at")
     if rp and (not last or datetime.fromisoformat(last) < datetime.now(UTC) - timedelta(hours=3)):
         name = load_hotel(hotel_id)["hotel"]["naam"]

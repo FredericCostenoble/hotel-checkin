@@ -12,6 +12,9 @@
 # ontbijt_labels: de robot zet het label ONTBIJT op het planbord bij wie ontbijt heeft (tarief met ontbijt,
 # of ontbijt voor alle personen en nachten in de folio).
 # ontbijtlijst en kuislijst: elke dag de lijst maken en versturen (processes/daily_lists.py), zie [ontbijtlijst] en [kuislijst].
+# reservaties: de robot leest nieuwe en gewijzigde reservaties in Lighthouse (standaard aan). Staan alle schakelaars uit,
+# dan is de omgeving bevroren: de robot start niet meer en opent Lighthouse niet (bv. TST als PRD goed loopt).
+reservaties = true
 overschrijvingen = false
 berichten = false
 ontbijt_labels = false

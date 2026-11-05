@@ -30,7 +30,8 @@ def hotels() -> list[dict]:
              "test_phone": "" if prd else (safety.test_address("phone", h) or ""),
              "phone_enabled": send_messages.phone_enabled(h),
              # hoofdschakelaars (per omgeving): bovenaan de monitor getoond
-             "switches": {"overschrijvingen": send_messages.switch(h, "overschrijvingen"),
+             "switches": {"reservaties": send_messages.switch(h, "reservaties"),
+                          "overschrijvingen": send_messages.switch(h, "overschrijvingen"),
                           "berichten": send_messages.switch(h, "berichten"),
                           "ontbijt_labels": send_messages.switch(h, "ontbijt_labels"),
                           "ontbijtlijst": send_messages.switch(h, "ontbijtlijst"),
