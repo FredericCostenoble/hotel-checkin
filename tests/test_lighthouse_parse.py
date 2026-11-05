@@ -173,3 +173,31 @@ def test_charge_modal_days():
       <label><input type="checkbox" name="Days" value="z"> 07 nov. 2026</label>"""
     assert parse_charge_modal(html) == {"room": "22", "per_night": 1, "days": {"2026-11-06": 1}}
     assert parse_charge_modal("<div>niets</div>") is None
+
+
+def test_charge_days_like_lighthouse():
+    """Zoals Lighthouse het geeft: het venster met het blok Dagen leeg, de dagen apart (CalculateDays)."""
+    from hotel_checkin.pms.lighthouse_parse import charge_days_query, parse_charge_modal
+
+    modal = """<div class="modal-body"><div>
+                    22 BUDGET DOUBLE ROOM
+                </div>
+      <select id="accommodations-dropdown" name="SelectedAccommodation"><option value="c0" selected="selected">22 BUDGET DOUBLE ROOM - COMPACT DOUBLE ROOM</option></select>
+      <select id="extras-dropdown" name="SelectedExtra"><option value="" selected>Kies extra</option>
+        <option value="1156459" selected="selected">Ontbijt  (&#x20AC; 18,00 per nacht)</option></select>
+      <select class="form-control" id="charge-amount" name="Amount"><option>1</option><option selected="selected">2</option></select>
+      <div id="days-display"
+                data-folioMaskId="f1"
+                data-extraId="1156459"
+                data-chargeId="20388259"
+                data-accommodationId="c0"
+                data-extraisdaily="true">
+        <div class="days-container"></div></div>"""
+    days = """<div class="days-container"><div class="form-group checkbox-container">
+        <input class="js-day-checkbox form-control" name="SelectedDates" type="checkbox" value="2026-11-06T00:00:00" checked="" disabled="">
+        <label>06 nov. 2026</label></div><div class="form-group checkbox-container">
+        <input class="js-day-checkbox form-control" name="SelectedDates" type="checkbox" value="2026-11-07T00:00:00" disabled="">
+        <label>07 nov. 2026</label></div></div>"""
+    assert charge_days_query(modal) == {"accommodationId": "c0", "extraId": "1156459", "chargeId": "20388259",
+                                        "folioMaskId": "f1", "isToFolio": "false"}
+    assert parse_charge_modal(modal + days) == {"room": "22", "per_night": 2, "days": {"2026-11-06": 2}}

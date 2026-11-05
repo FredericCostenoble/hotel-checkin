@@ -408,7 +408,9 @@ def parse_charge_modal(text: str) -> dict | None:
 
     P().feed(text)
     per_night = None
-    for s in selects:
+    # Het aantal staat in de keuzelijst Amount ("Bedrag per nacht"); andere keuzelijsten (kamer, extra) tellen niet
+    amount = [x for x in selects if x["name"].lower() in ("amount", "charge-amount")]
+    for s in amount:
         chosen = next((o for o in s["options"] if o["selected"]), None)
         if chosen and re.fullmatch(r"\d+", (chosen["value"] or chosen["text"]).strip()):
             per_night = int((chosen["value"] or chosen["text"]).strip())
@@ -418,6 +420,18 @@ def parse_charge_modal(text: str) -> dict | None:
         return None
     room = next((m.group(1) for t in texts if (m := re.match(r"^(\d{1,3})\s*-?\s*[A-Z]{3,}", t))), None)
     return {"room": room, "per_night": per_night or 1, "days": {d.isoformat(): per_night or 1 for d in days}}
+
+
+def charge_days_query(text: str) -> dict | None:
+    """Uit het venster "Bewerken": de gegevens waarmee het venster zelf de dagen opvraagt (blok "Dagen",
+    /Customer/Folios/CalculateDays). None als het venster geen dagen heeft."""
+    m = re.search(r'<div[^>]*id="days-display"[^>]*>', text)
+    if not m:
+        return None
+    attrs = {k.lower(): v for k, v in re.findall(r'(data-[\w-]+)="([^"]*)"', m.group(0))}
+    query = {"accommodationId": attrs.get("data-accommodationid"), "extraId": attrs.get("data-extraid"),
+             "chargeId": attrs.get("data-chargeid"), "folioMaskId": attrs.get("data-foliomaskid")}
+    return query | {"isToFolio": "false"} if all(query.values()) else None
 
 
 def parse_contact(text: str) -> dict | None:

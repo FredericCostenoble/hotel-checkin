@@ -293,7 +293,7 @@ def explore_folio(lh: LighthouseSession, detail_id: str) -> str:
     report += ["", "## Ontbijtregels: venster Bewerken (opgevraagd, niet aangeklikt)"]
     import html as htmllib
 
-    from hotel_checkin.pms.lighthouse_parse import BREAKFAST_LABEL, parse_charge_modal
+    from hotel_checkin.pms.lighthouse_parse import BREAKFAST_LABEL
 
     for r in info["rows"]:
         if not BREAKFAST_LABEL.search(r["text"]):
@@ -305,8 +305,10 @@ def explore_folio(lh: LighthouseSession, detail_id: str) -> str:
             continue
         resp = lh.page.request.get(lh.base + htmllib.unescape(url), headers={"X-Requested-With": "XMLHttpRequest"})
         body = resp.text()
+        from hotel_checkin.pms.lighthouse import _charge_days
+
         report += [f"### {r['text']!r}", f"Antwoord: HTTP {resp.status}, {len(body)} tekens",
-                   f"Gelezen door de robot: {parse_charge_modal(body)}"]
+                   f"Gelezen door de robot: {_charge_days(lh, url)}"]
         # De dagen laadt het venster pas daarna zelf (lege .days-container). Venster echt openen zoals "Bewerken"
         # (bewaren is geblokkeerd), noteren welke adressen het opvraagt en wat er in de dagen komt.
         seen: list[str] = []

@@ -29,6 +29,7 @@ from hotel_checkin.pms.lighthouse_browser import LighthouseSession
 from hotel_checkin.pms.lighthouse_parse import (
     BREAKFAST_LABEL,
     TZ,
+    charge_days_query,
     parse_charge_modal,
     parse_contact,
     parse_detail,
@@ -201,15 +202,33 @@ def _read_charge_days(hotel_id: str, session: LighthouseSession, reservation: Re
         if line is None:
             continue
         try:
-            resp = session.page.request.get(session.base + html.unescape(charge["url"]),
-                                            headers={"X-Requested-With": "XMLHttpRequest"})
-            info = parse_charge_modal(resp.text()) if resp.ok and "/Customer/" in resp.url else None
+            info = _charge_days(session, charge["url"])
         except Exception:  # noqa: BLE001 - dan zonder dagen (nakijken op de lijst)
             info = None
         if info and info["days"]:
             line["days"], line["room"] = info["days"], info["room"]
         else:
             logging.info("%s: dagen van %s niet gelezen bij %s", hotel_id, charge["label"], reservation.reservation_id)
+
+
+CHARGE_DAYS_PATH = "/Customer/Folios/CalculateDays"  # wat het venster "Bewerken" opvraagt voor het blok "Dagen"
+
+
+def _charge_days(session: LighthouseSession, modal_url: str) -> dict | None:
+    """Venster "Bewerken" van een extra (kamer, aantal per nacht) en de dagen die het zelf opvraagt, zonder het venster
+    te openen. {"room", "per_night", "days": {"2026-11-06": 1}} of None."""
+    headers = {"X-Requested-With": "XMLHttpRequest"}
+    modal = session.page.request.get(session.base + html.unescape(modal_url), headers=headers)
+    if not modal.ok or "/Customer/" not in modal.url:
+        return None
+    body = modal.text()
+    query = charge_days_query(body)
+    if not query:
+        return None
+    days = session.page.request.get(session.base + CHARGE_DAYS_PATH, params=query, headers=headers)
+    if not days.ok or "/Customer/" not in days.url:
+        return None
+    return parse_charge_modal(body + days.text())
 
 
 def _contact_request(session: LighthouseSession, reservation_id: str) -> dict | None:
