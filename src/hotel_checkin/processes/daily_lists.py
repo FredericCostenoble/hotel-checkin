@@ -19,9 +19,9 @@ instellingen ([kuislijst] woorden, bv. babybed, romantisch), en het aantal perso
 
 Vers: een lijst wordt altijd gemaakt met wat de robot net in Lighthouse las. Lijst maken (monitor) of het uur van de
 automatische lijst start de robot, die de reservaties van die dag leest (kamer, data, folio, opmerking); daarna maakt
-de timer de lijst en verstuurt ze. De automatische lijst: de robot start ROBOT_MINUTES voor het uur, de lijst vertrekt
-op het uur (of zodra nagelezen is). Lukt het nalezen niet binnen MAX_WAIT_MINUTES, dan toch, met de gegevens die er
-zijn (staat in het robotlog). Zonder robot in de cloud (codespace) meteen met wat er is.
+de timer de lijst en verstuurt ze. De automatische lijst wordt gevraagd op het uur uit de instellingen; dat is een vast
+uur van de robot (keuzelijst), zodat de lijst de robotrun van dat uur gebruikt en er geen extra run nodig is. Lukt het
+nalezen niet binnen MAX_WAIT_MINUTES, dan toch, met de gegevens die er zijn (staat in het robotlog). Zonder robot in de cloud (codespace) meteen met wat er is.
 Kamers: nummer en omschrijving zoals Lighthouse ze toont (bv. 11, Superior double room), onthouden over de reservaties
 heen (RobotState room_catalog), zodat ook lege kamers hun omschrijving hebben.
 Lijsten maken en versturen gebeurt in de Function App (timer van de meldingen, elke minuut). Buiten PRD gaan de berichten naar het testadres.
@@ -44,7 +44,6 @@ KINDS = ("breakfast", "cleaning")
 SECTION = {"breakfast": "ontbijtlijst", "cleaning": "kuislijst"}  # sectie in het hotelbestand, ook de schakelaar
 TASK = SECTION  # taak in het robotlog
 KEEP = 15  # zoveel lijsten per soort bewaren, oudere worden gewist
-ROBOT_MINUTES = 5  # zoveel minuten voor het uur van de automatische lijst start de robot om na te lezen
 MAX_WAIT_MINUTES = 30  # hoogstens zo lang wachten op dat nalezen, daarna toch maken met wat er is
 ROBOT_RETRY_MINUTES = 6  # de robot opnieuw starten als hij intussen niet nalas en niet meer draait
 REQUEST_STATE = "daily_lists_requests"  # RobotState: gevraagde lijsten (schrijft alleen de Function App)
@@ -611,17 +610,16 @@ def send_stored(hotel_id: str, kind: str, day: date, auto: bool = False) -> list
 
 def run(hotel_id: str, now: datetime | None = None) -> list[str]:
     """Timer van de Function App (elke minuut).
-    - Automatische lijst: ROBOT_MINUTES voor het uur een aanvraag (de robot maakt de lijst).
+    - Automatische lijst: op het uur een aanvraag (de robot maakt de lijst in de run van dat vaste uur).
     - Lijst gemaakt door de robot: versturen als dat gevraagd was (een automatische pas vanaf het uur).
     - Na MAX_WAIT_MINUTES zonder robot: toch maken (en versturen) met de bewaarde gegevens (staat in het robotlog).
     - Draait de robot niet terwijl er nog een lijst te maken is: opnieuw starten.
     Geeft terug wat er gebeurde."""
-    from hotel_checkin.admin import cloud_robot
 
     now = _now(now, hotel_id)
     done: list[str] = []
     reqs = requests(hotel_id)
-    lead = timedelta(minutes=ROBOT_MINUTES if cloud_robot.available() and switch(hotel_id, "reservaties") else 0)
+    lead = timedelta(0)  # op het uur zelf: dat is een vast uur van de robot, de lijst gebruikt die run
     for kind in KINDS:
         if not switch(hotel_id, kind):
             continue

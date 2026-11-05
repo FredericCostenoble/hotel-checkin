@@ -3,8 +3,9 @@
 De robot (Container Apps Job) start nooit meer op een eigen schema in Azure: een container starten om niets te doen
 kost geld. De Function App kijkt elke minuut (timer van de meldingen) en start de robot alleen als:
 - de robot iets te doen heeft (niet alle hoofdschakelaars uit, send_messages.robot_needed), en
-- de vorige run of start langer geleden is dan [robot] check_minutes (instelling in de monitor, per omgeving;
-  0 = nooit op schema, alleen bij een meldingsmail, een gevraagde lijst of de knop "Robot nu draaien").
+- het een vast uur is (om de [robot] check_minutes vanaf middernacht, bv. 60 = elk heel uur; instelling in de monitor,
+  per omgeving; 0 = nooit op schema, alleen bij een meldingsmail, een gevraagde lijst of de knop "Robot nu draaien"),
+  en er sinds dat uur nog geen run was.
 Een bevroren omgeving (alle hoofdschakelaars uit) start dus geen enkele container.
 """
 
@@ -32,19 +33,42 @@ def _last_run(hotel_id: str) -> datetime | None:
     return datetime.fromisoformat(runs[0]["started_at"]) if runs else None
 
 
+def slots(every: float) -> list[str]:
+    """Vaste uren van het vangnet ("HH:MM"), elke dag vanaf middernacht om de `every` minuten, bv. om de 60 minuten:
+    00:00, 01:00, ... De ontbijt- en schoonmaaklijst kiezen een van deze uren: dan is hun robotrun meteen de run van
+    het vangnet, zonder extra run."""
+    if every <= 0:
+        return []
+    step = max(int(every), 5)
+    return [f"{m // 60:02d}:{m % 60:02d}" for m in range(0, 24 * 60, step)]
+
+
+def _slot_start(every: float, now: datetime) -> datetime:
+    step = max(int(every), 5)
+    minute = now.hour * 60 + now.minute
+    start = minute - minute % step
+    return now.replace(hour=start // 60, minute=start % 60, second=0, microsecond=0)
+
+
 def due(hotel_id: str, now: datetime | None = None) -> bool:
+    """Op de vaste uren (slots): de robot starten als er sinds het begin van dit uur nog geen run was (ook niet door
+    een meldingsmail of een gevraagde lijst) en hij nog niet gestart werd."""
+    from hotel_checkin.core import clock
     from hotel_checkin.processes.send_messages import robot_needed
 
     every = minutes(hotel_id)
     if every <= 0 or not robot_needed(hotel_id):
         return False
-    now = now or datetime.now(UTC)
+    now = (now or datetime.now(UTC)).astimezone(clock.tz(hotel_id))
+    start = _slot_start(every, now)
     last = _last_run(hotel_id)
     tried = guests.get_state(hotel_id, STATE)
-    if tried and now - datetime.fromisoformat(tried) < timedelta(minutes=min(every, RETRY_MINUTES)):
+    if tried and datetime.fromisoformat(tried) >= start and now - datetime.fromisoformat(tried) < timedelta(
+            minutes=RETRY_MINUTES):
         return False  # net gestart (of geprobeerd): de robot heeft tijd nodig om te starten
-    # 2 minuten marge: een run begint nooit op dezelfde seconde
-    return last is None or now - last >= timedelta(minutes=every) - timedelta(minutes=2)
+    if tried and datetime.fromisoformat(tried) >= start and last and last >= start:
+        return False
+    return last is None or last < start - timedelta(minutes=1)
 
 
 def run(hotel_id: str, now: datetime | None = None) -> str:

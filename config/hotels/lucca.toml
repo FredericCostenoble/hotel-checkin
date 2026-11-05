@@ -74,7 +74,7 @@ label_dagen = 0
 # Dagelijkse ontbijtlijst (hoofdschakelaar ontbijtlijst, processes/daily_lists.py): per kamer het aantal personen met
 # ontbijt, opmerkingen achteraan, in het geel wat nagekeken moet worden. Per mail met de Excel als bijlage, per WhatsApp
 # (of sms) als korte tekst. Ook te bekijken en opnieuw te maken in de monitor (tabblad Ontbijt).
-uur = "17:45"                 # elke dag om dit uur maken en versturen (wordt uitgeprint en in de keuken gelegd voor de volgende ochtend)
+uur = "17:00"                 # elke dag om dit uur maken en versturen (wordt uitgeprint en in de keuken gelegd voor de volgende ochtend); een vast uur van de robot ([robot] check_minutes)
 dag = 1                       # voor welke dag: 1 = morgen, 0 = vandaag
 email = ["management@hotellucca.be"]   # mail met de Excel als bijlage; leeg = geen mail
 whatsapp = []                 # gsm-nummers (+32...): WhatsApp, of sms als er geen WhatsApp-sjabloon is
@@ -84,7 +84,7 @@ woorden = ["gluten", "lactose", "vegan", "vegetar", "végé", "allerg", "noten",
 # Dagelijkse schoonmaaklijst (hoofdschakelaar kuislijst, processes/daily_lists.py): per kamer Leave (vertrek), Stay
 # (blijft) en Check in, met opmerkingen (bv. babybed, romantische versiering). Per mail met de Excel als bijlage,
 # per WhatsApp (of sms) als korte tekst. Ook te bekijken en opnieuw te maken in de monitor (tabblad Schoonmaak).
-uur = "17:45"                 # elke dag om dit uur maken en versturen
+uur = "17:00"                 # elke dag om dit uur maken en versturen; een vast uur van de robot ([robot] check_minutes)
 dag = 1                       # voor welke dag: 1 = morgen, 0 = vandaag
 email = ["management@hotellucca.be"]   # mail met de Excel als bijlage; leeg = geen mail
 whatsapp = []                 # gsm-nummers (+32...): WhatsApp, of sms als er geen WhatsApp-sjabloon is

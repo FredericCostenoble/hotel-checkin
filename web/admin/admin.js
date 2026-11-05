@@ -1267,7 +1267,7 @@ const HS_TEXT = {
    ],
    "robot.check_minutes": [
     "Vangnet: om de hoeveel minuten",
-    "Normaal start de meldingsmail van Lighthouse de robot. Om de zoveel minuten start hij daarnaast als vangnet (bv. 60). 0 = nooit op schema. Met alle hoofdschakelaars uit start hij nooit."
+    "Normaal start de meldingsmail van Lighthouse de robot. Daarnaast start hij als vangnet op vaste uren vanaf middernacht: 60 = elk heel uur, 240 = 00:00, 04:00, 08:00, ... Uit die uren kies je ook het uur van de ontbijt- en schoonmaaklijst. 0 = nooit op schema. Met alle hoofdschakelaars uit start hij nooit."
    ],
    "robot.contact_refresh_hours": [
     "Reservaties bijwerken: om de hoeveel uur",
@@ -1288,12 +1288,12 @@ const HS_TEXT = {
    "schakelaars.reservaties": ["Reservaties lezen (robot)", "De robot leest nieuwe en gewijzigde reservaties in Lighthouse. Staan alle hoofdschakelaars uit, dan is deze omgeving bevroren: de robot start niet meer en opent Lighthouse niet. Geldt alleen voor deze omgeving."],
    "schakelaars.ontbijtlijst": ["Ontbijtlijst maken en versturen", "Elke dag de ontbijtlijst maken en versturen (instellingen Ontbijtlijst). In de monitor (tabblad Ontbijt) kan een lijst ook met de schakelaar uit gemaakt worden. Geldt alleen voor deze omgeving."],
    "schakelaars.kuislijst": ["Schoonmaaklijst maken en versturen", "Elke dag de schoonmaaklijst maken en versturen (instellingen Schoonmaaklijst). In de monitor (tabblad Schoonmaak) kan een lijst ook met de schakelaar uit gemaakt worden. Geldt alleen voor deze omgeving."],
-   "ontbijtlijst.uur": ["Uur", "Elke dag om dit uur maken en versturen (bv. 17:45). 5 minuten ervoor start de robot om de reservaties van die dag nog eens in Lighthouse te lezen; de lijst vertrekt op het uur, of zodra dat klaar is (lukt het niet, dan toch, hoogstens 30 minuten later)."],
+   "ontbijtlijst.uur": ["Uur", "Elke dag om dit uur maken en versturen. Je kiest uit de vaste uren van de robot (instelling Robot: om de hoeveel minuten): de lijst gebruikt de robotrun van dat uur, dus geen extra run. Klaar na enkele minuten."],
    "ontbijtlijst.dag": ["Voor welke dag", "1 = morgen, 0 = vandaag."],
    "ontbijtlijst.email": ["Per mail naar", "Mail met de lijst en de Excel als bijlage. Meer adressen met een komma. Leeg = geen mail."],
    "ontbijtlijst.whatsapp": ["Per WhatsApp naar", "Gsm-nummers (+32...), met een komma. WhatsApp met het sjabloon template_breakfast_list_nl (instellingen WhatsApp), anders per sms. Pas als WhatsApp en sms aan staan."],
    "ontbijtlijst.woorden": ["Woorden voor opmerkingen", "Zinnen uit de opmerking of de folio van de reservatie met een van deze woorden komen bij de opmerkingen (bv. glutenvrij)."],
-   "kuislijst.uur": ["Uur", "Elke dag om dit uur maken en versturen (bv. 17:45). 5 minuten ervoor start de robot om de reservaties van die dag nog eens in Lighthouse te lezen; de lijst vertrekt op het uur, of zodra dat klaar is (lukt het niet, dan toch, hoogstens 30 minuten later)."],
+   "kuislijst.uur": ["Uur", "Elke dag om dit uur maken en versturen. Je kiest uit de vaste uren van de robot (instelling Robot: om de hoeveel minuten): de lijst gebruikt de robotrun van dat uur, dus geen extra run. Klaar na enkele minuten."],
    "kuislijst.dag": ["Voor welke dag", "1 = morgen, 0 = vandaag."],
    "kuislijst.email": ["Per mail naar", "Mail met de lijst en de Excel als bijlage. Meer adressen met een komma. Leeg = geen mail."],
    "kuislijst.whatsapp": ["Per WhatsApp naar", "Gsm-nummers (+32...), met een komma. WhatsApp met het sjabloon template_cleaning_list_nl (instellingen WhatsApp), anders per sms. Pas als WhatsApp en sms aan staan."],
@@ -1526,7 +1526,7 @@ const HS_TEXT = {
    ],
    "robot.check_minutes": [
     "Safety net: every how many minutes",
-    "Normally the Lighthouse notification mail starts the robot. Every so many minutes it also starts as a safety net (e.g. 60). 0 = never on schedule. With all main switches off it never starts."
+    "Normally the Lighthouse notification mail starts the robot. It also starts as a safety net at fixed times from midnight: 60 = every full hour, 240 = 00:00, 04:00, 08:00, ... The time of the breakfast and cleaning list is chosen from these times. 0 = never on schedule. With all main switches off it never starts."
    ],
    "robot.contact_refresh_hours": [
     "Update reservations: every how many hours",
@@ -1547,12 +1547,12 @@ const HS_TEXT = {
    "schakelaars.reservaties": ["Read reservations (robot)", "The robot reads new and changed reservations in Lighthouse. With all main switches off, this environment is frozen: the robot no longer starts and does not open Lighthouse. Applies to this environment only."],
    "schakelaars.ontbijtlijst": ["Make and send the breakfast list", "Make and send the breakfast list every day (settings Breakfast list). In the monitor (Breakfast tab) a list can also be made with the switch off. Applies to this environment only."],
    "schakelaars.kuislijst": ["Make and send the cleaning list", "Make and send the cleaning list every day (settings Cleaning list). In the monitor (Cleaning tab) a list can also be made with the switch off. Applies to this environment only."],
-   "ontbijtlijst.uur": ["Time", "Make and send every day at this time (e.g. 17:45). 5 minutes before, the robot starts to read that day's reservations again in Lighthouse; the list goes out at that time, or as soon as that is done (if it fails, still at most 30 minutes later)."],
+   "ontbijtlijst.uur": ["Time", "Make and send every day at this time. You choose from the fixed times of the robot (setting Robot: every how many minutes): the list uses the robot run of that time, so no extra run. Ready after a few minutes."],
    "ontbijtlijst.dag": ["For which day", "1 = tomorrow, 0 = today."],
    "ontbijtlijst.email": ["By mail to", "Mail with the list and the Excel attached. More addresses separated by commas. Empty = no mail."],
    "ontbijtlijst.whatsapp": ["By WhatsApp to", "Mobile numbers (+32...), separated by commas. WhatsApp with template template_breakfast_list_nl (settings WhatsApp), otherwise by SMS. Only when WhatsApp and SMS are on."],
    "ontbijtlijst.woorden": ["Words for remarks", "Sentences from the reservation remark or folio containing one of these words are added to the remarks (e.g. gluten free)."],
-   "kuislijst.uur": ["Time", "Make and send every day at this time (e.g. 17:45). 5 minutes before, the robot starts to read that day's reservations again in Lighthouse; the list goes out at that time, or as soon as that is done (if it fails, still at most 30 minutes later)."],
+   "kuislijst.uur": ["Time", "Make and send every day at this time. You choose from the fixed times of the robot (setting Robot: every how many minutes): the list uses the robot run of that time, so no extra run. Ready after a few minutes."],
    "kuislijst.dag": ["For which day", "1 = tomorrow, 0 = today."],
    "kuislijst.email": ["By mail to", "Mail with the list and the Excel attached. More addresses separated by commas. Empty = no mail."],
    "kuislijst.whatsapp": ["By WhatsApp to", "Mobile numbers (+32...), separated by commas. WhatsApp with template template_cleaning_list_nl (settings WhatsApp), otherwise by SMS. Only when WhatsApp and SMS are on."],

@@ -20,6 +20,18 @@ from hotel_checkin.core import hotels
 EXCLUDED = ("flows",)  # tabblad Workflow
 # Instellingen met een vaste keuzelijst
 CHOICES = {("workflow_parameters", "city_tax_unit"): ("person_night", "person_stay")}
+LIST_TIMES = (("ontbijtlijst", "uur"), ("kuislijst", "uur"))  # keuze uit de vaste uren van de robot
+
+
+def _choices(hotel_id: str, section: str, key: str, changes: dict | None = None) -> tuple:
+    """Vaste keuzelijst, of voor het uur van de lijsten: de vaste uren van het vangnet van de robot
+    (processes/robot_schedule.py), zodat de lijst geen extra robotrun vraagt."""
+    if (section, key) in LIST_TIMES:
+        from hotel_checkin.processes import robot_schedule
+
+        every = (changes or {}).get("robot", {}).get("check_minutes")
+        return tuple(robot_schedule.slots(float(every) if every not in (None, "") else robot_schedule.minutes(hotel_id)))
+    return CHOICES.get((section, key), ())
 
 
 def _comments(hotel_id: str) -> tuple[dict[str, str], dict[tuple[str, str], str]]:
@@ -106,6 +118,14 @@ def _env_override(hotel_id: str, section: str, key: str, names: set[str]) -> boo
     return f"{hotel_id.upper().replace('-', '_')}_{section.upper()}_{key.upper()}" in names
 
 
+def _with_current(options: tuple, current) -> list:
+    """De huidige waarde blijft kiesbaar, ook als ze niet (meer) in de lijst staat."""
+    out = list(options)
+    if out and current not in (None, "") and str(current) not in out:
+        out = sorted([*out, str(current)])
+    return out
+
+
 def view(hotel_id: str) -> dict:
     """Alle instellingen met type, standaard, huidige waarde en uitleg, per sectie."""
     from hotel_checkin.guests import repository
@@ -122,8 +142,9 @@ def view(hotel_id: str) -> dict:
         sections.append({
             "section": name, "free": free, "help": section_help.get(name, ""),
             "fields": [{
-                "key": k, "type": "choice" if (name, k) in CHOICES else _kind(values.get(k, now.get(k, ""))),
-                "choices": list(CHOICES.get((name, k), ())), "default": values.get(k),
+                "key": k, "type": "choice" if _choices(hotel_id, name, k) else _kind(values.get(k, now.get(k, ""))),
+                "choices": _with_current(_choices(hotel_id, name, k), now.get(k, values.get(k))),
+                "default": values.get(k),
                 "value": now.get(k, values.get(k)), "help": field_help.get((name, k), ""),
                 "env": _env_override(hotel_id, name, k, names),
             } for k in keys],
@@ -175,8 +196,9 @@ def validate(hotel_id: str, changes: dict) -> dict:
             if k not in base:
                 raise ValueError(f"{section}: onbekende instelling {k}")
             value = _coerce(_kind(base[k]), v, f"{section}.{k}")
-            if (section, k) in CHOICES and value not in CHOICES[(section, k)]:
-                raise ValueError(f"{section}.{k}: kies uit {', '.join(CHOICES[(section, k)])}")
+            options = _choices(hotel_id, section, k, changes)
+            if options and value not in options and value != base[k]:
+                raise ValueError(f"{section}.{k}: kies uit {', '.join(options)}")
             if value != base[k]:
                 diff[k] = value
         if diff:

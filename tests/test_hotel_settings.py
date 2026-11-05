@@ -52,3 +52,16 @@ def test_city_tax_from_hotel_settings():
     assert workflow.config("lucca")["parameters"]["city_tax_amount"] == 4.5
     with pytest.raises(ValueError):
         hotel_settings.save("lucca", {"workflow_parameters": {"city_tax_unit": "per_kamer"}}, "x")
+
+
+def test_list_time_is_a_robot_time():
+    """Het uur van de lijsten: keuze uit de vaste uren van de robot ([robot] check_minutes)."""
+    import pytest
+
+    from hotel_checkin.core import hotel_settings as hs
+    from hotel_checkin.guests import repository as repo
+
+    repo.use_memory_store()
+    with pytest.raises(ValueError):
+        hs.validate("lucca", {"ontbijtlijst": {"uur": "17:45"}})
+    assert hs.validate("lucca", {"ontbijtlijst": {"uur": "18:00"}}) == {"ontbijtlijst": {"uur": "18:00"}}

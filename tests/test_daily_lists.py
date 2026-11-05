@@ -144,8 +144,8 @@ def test_timer_once_after_the_hour(setup, monkeypatch):
     """Zonder robot in de cloud (codespace): op het uur meteen, met wat er is."""
     monkeypatch.setenv("LUCCA_SCHAKELAARS_KUISLIJST", "true")
     today = DAY - timedelta(days=1)
-    assert dl.run("lucca", datetime(today.year, today.month, today.day, 17, 40, tzinfo=TZ)) == []
-    at = datetime(today.year, today.month, today.day, 17, 45, tzinfo=TZ)
+    assert dl.run("lucca", datetime(today.year, today.month, today.day, 16, 59, tzinfo=TZ)) == []
+    at = datetime(today.year, today.month, today.day, 17, 0, tzinfo=TZ)
     assert dl.run("lucca", at) == [f"cleaning {DAY.isoformat()}"]  # ontbijtlijst staat uit
     assert dl.run("lucca", at + timedelta(minutes=5)) == []  # niet twee keer
     assert len(setup) == 1
@@ -220,17 +220,17 @@ def test_robot_restarted_and_fallback_after_30_minutes(setup, robot):
     assert len(setup) == 1 and "maakte de lijst niet" in repo.robot_runs("lucca", task="kuislijst")[0]["error"]
 
 
-def test_automatic_list_robot_5_minutes_before(setup, robot, monkeypatch):
+def test_automatic_list_uses_the_robot_run_of_that_hour(setup, robot, monkeypatch):
+    """Automatische lijst op een vast uur van de robot (17:00): op het uur gevraagd, de robot maakt ze in die run."""
     monkeypatch.setenv("LUCCA_SCHAKELAARS_ONTBIJTLIJST", "true")
     _r("a", "20", DAY - timedelta(days=1), 2, rate="STANDARD RATE BREAKFAST INCL")
     today = DAY - timedelta(days=1)
-    t = datetime(today.year, today.month, today.day, 17, 39, tzinfo=TZ)
+    t = datetime(today.year, today.month, today.day, 16, 59, tzinfo=TZ)
     assert dl.run("lucca", t) == [] and robot == []
     assert dl.run("lucca", t + timedelta(minutes=1))[0].startswith(f"breakfast:{DAY.isoformat()}: aangevraagd")
     assert robot == [1]
     dl.robot_make("lucca", dl.pending_reads("lucca"), t + timedelta(minutes=3))
-    assert dl.run("lucca", t + timedelta(minutes=4)) == [] and not setup  # gemaakt, maar pas om 17:45 versturen
-    assert dl.run("lucca", t + timedelta(minutes=6)) == [f"breakfast {DAY.isoformat()}"] and len(setup) == 1
+    assert dl.run("lucca", t + timedelta(minutes=4)) == [f"breakfast {DAY.isoformat()}"] and len(setup) == 1
     assert dl.run("lucca", t + timedelta(minutes=8)) == []  # één keer per dag
 
 
@@ -271,7 +271,8 @@ def test_frozen_when_all_switches_off(monkeypatch):
 
 
 def test_robot_schedule_from_the_function_app(monkeypatch):
-    """Geen schema in Azure: de Function App start de robot om de [robot] check_minutes, nooit als alles uit staat."""
+    """Geen schema in Azure: de Function App start de robot op vaste uren (om de [robot] check_minutes vanaf
+    middernacht), niet als er sinds dat uur al een run was, nooit als alles uit staat."""
     from hotel_checkin.admin import cloud_robot
     from hotel_checkin.processes import new_reservation, robot_schedule
 
@@ -280,11 +281,14 @@ def test_robot_schedule_from_the_function_app(monkeypatch):
     monkeypatch.setattr(cloud_robot, "running", lambda execs=None: False)
     monkeypatch.setattr(cloud_robot, "start", lambda: starts.append(1) or True)
     monkeypatch.setenv("LUCCA_SCHAKELAARS_RESERVATIES", "true")
-    t = datetime(2026, 11, 5, 9, 0, tzinfo=dl.UTC)
-    repo.log_robot_run("lucca", new_reservation.TASK, t - timedelta(minutes=30), True)
-    assert robot_schedule.run("lucca", t) == "" and starts == []  # vorige run 30 minuten geleden
-    assert robot_schedule.run("lucca", t + timedelta(minutes=29)) == "robot gestart op schema" and starts == [1]
-    assert robot_schedule.run("lucca", t + timedelta(minutes=31)) == ""  # net gestart: niet opnieuw
+    assert robot_schedule.slots(60)[:3] == ["00:00", "01:00", "02:00"] and len(robot_schedule.slots(240)) == 6
+    t = datetime(2026, 11, 5, 9, 0, tzinfo=TZ)
+    repo.log_robot_run("lucca", new_reservation.TASK, t - timedelta(minutes=30), True)  # 08:30 (meldingsmail)
+    assert robot_schedule.run("lucca", t - timedelta(minutes=10)) == ""  # 08:50: run van 08:30 hoort bij dit uur
+    assert robot_schedule.run("lucca", t) == "robot gestart op schema" and starts == [1]  # 09:00
+    assert robot_schedule.run("lucca", t + timedelta(minutes=2)) == "" and starts == [1]  # net gestart
+    repo.log_robot_run("lucca", new_reservation.TASK, t + timedelta(minutes=1), True)  # de run van 09:00
+    assert robot_schedule.run("lucca", t + timedelta(minutes=30)) == "" and starts == [1]
     monkeypatch.setenv("LUCCA_SCHAKELAARS_RESERVATIES", "false")  # alles uit: bevroren
     assert robot_schedule.run("lucca", t + timedelta(hours=5)) == "" and starts == [1]
 

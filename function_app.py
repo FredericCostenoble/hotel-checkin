@@ -271,14 +271,14 @@ def mail_trigger(timer: func.TimerRequest) -> None:
                 process.cleanup(hotel_id)  # eenmalig: oude verwerkte mails naar hun map
         except Exception:
             logging.exception("%s: mail_trigger mislukt", hotel_id)
+        try:  # eerst de lijsten: een gevraagde lijst op een vast uur gebruikt de robotrun van dat uur
+            daily_lists.run(hotel_id)
+        except Exception:
+            logging.exception("%s: dagelijkse lijsten mislukt", hotel_id)
         try:
             robot_schedule.run(hotel_id)
         except Exception:
             logging.exception("%s: robot op schema starten mislukt", hotel_id)
-        try:
-            daily_lists.run(hotel_id)
-        except Exception:
-            logging.exception("%s: dagelijkse lijsten mislukt", hotel_id)
 
 
 
