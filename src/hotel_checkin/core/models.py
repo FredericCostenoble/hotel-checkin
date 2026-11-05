@@ -68,6 +68,7 @@ class Reservation:
     transactions: list[str] = field(default_factory=list)  # regels onder Transacties (detailpagina), bv. "Overschrijving ... € 362,00"
     pay_requested_at: datetime | None = None  # betaalverzoek in Lighthouse gemaakt (processes/pay_requests.py)
     breakfast_labeled_at: datetime | None = None  # label ONTBIJT op het planbord gezet (processes/breakfast_labels.py)
+    pms_labels: list[str] = field(default_factory=list)  # labels op het planbord in Lighthouse (namen), bv. ["ONTBIJT"]
     payout_registered_at: datetime | None = None  # overschrijving van Booking.com in Lighthouse geregistreerd (processes/booking_payout.py)
     room_statuses: list[str] = field(default_factory=list)  # status per kamer in Lighthouse: none, readyforcheckin, checkin, checkout
     pms_codes_line: str | None = None  # regel "Deur Pin code: ..." zoals de robot ze in Lighthouse zette (processes/pms_sync.py)

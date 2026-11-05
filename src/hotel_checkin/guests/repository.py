@@ -122,6 +122,7 @@ def _to_entity(r: Reservation) -> dict:
         "transactions": json.dumps(r.transactions),
         "payout_registered_at": r.payout_registered_at.isoformat() if r.payout_registered_at else "",
         "breakfast_labeled_at": r.breakfast_labeled_at.isoformat() if r.breakfast_labeled_at else "",
+        "pms_labels": json.dumps(r.pms_labels) if r.pms_labels else "",
         "pay_requested_at": r.pay_requested_at.isoformat() if r.pay_requested_at else "",
         "pay_link": r.pay_link or "",
         "room_statuses": json.dumps(r.room_statuses),
@@ -194,6 +195,7 @@ def _from_entity(e: dict) -> Reservation:
         transactions=json.loads(e["transactions"]) if e.get("transactions") else [],
         payout_registered_at=datetime.fromisoformat(e["payout_registered_at"]) if e.get("payout_registered_at") else None,
         breakfast_labeled_at=datetime.fromisoformat(e["breakfast_labeled_at"]) if e.get("breakfast_labeled_at") else None,
+        pms_labels=json.loads(e["pms_labels"]) if e.get("pms_labels") else [],
         pay_requested_at=datetime.fromisoformat(e["pay_requested_at"]) if e.get("pay_requested_at") else None,
         pay_link=e.get("pay_link") or None,
         room_statuses=json.loads(e["room_statuses"]) if e.get("room_statuses") else [],
@@ -237,6 +239,7 @@ DETAIL_FIELDS = ("rooms", "room_names", "arrival", "departure", "paid", "open_am
                  "room_statuses")
 PAYOUT_FIELDS = ("payout_registered_at",)
 BREAKFAST_FIELDS = ("breakfast_labeled_at",)
+PMS_LABEL_FIELDS = ("pms_labels",)
 PAY_REQUEST_FIELDS = ("pay_requested_at",)
 PAY_LINK_FIELDS = ("pay_link",)
 PMS_SYNC_FIELDS = ("pms_codes_line", "room_statuses")

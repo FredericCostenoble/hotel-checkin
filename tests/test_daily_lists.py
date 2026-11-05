@@ -296,3 +296,18 @@ def test_breakfast_per_day_from_lighthouse():
     assert _row(dl.build("lucca", "breakfast", DAY), "20")["count"] == 5
     other = dl.build("lucca", "breakfast", DAY + timedelta(days=1))  # andere dag: geen ontbijt
     assert _row(other, "20")["count"] is None and not _row(other, "20")["check"]
+
+
+def test_breakfast_label_on_planboard_means_every_day():
+    """Label ONTBIJT op het planbord (ook met de hand gezet): ontbijt elke dag voor iedereen."""
+    _r("a", "24", DAY - timedelta(days=1), 2, persons=2, pms_labels=["ONTBIJT"])
+    assert _row(dl.build("lucca", "breakfast", DAY), "24")["count"] == 2
+
+
+def test_planboard_labels_parse():
+    from hotel_checkin.pms.lighthouse_parse import parse_planboard_labels
+
+    html = """<div class="unitlabel" data-labelid="15912" data-labelname="ONTBIJT"></div>
+      <div data-reservation="ABC" data-accommodationid="a1" data-labelids="15912,7"></div>
+      <div data-reservation="def" data-accommodationid="a2" data-labelids=""></div>"""
+    assert parse_planboard_labels(html) == {"abc": ["7", "ONTBIJT"], "def": []}

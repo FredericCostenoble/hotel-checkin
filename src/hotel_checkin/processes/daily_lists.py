@@ -191,11 +191,15 @@ def build_breakfast(hotel_id: str, day: date, reservations: list[Reservation], w
 
     per_room: dict[str, dict] = {}
     undated = dated_lines = 0  # ontbijtregels zonder / met de dagen uit Lighthouse (om te zien of de robot ze las)
+    label = breakfast_label(hotel_id)
     for r in reservations:
         if not _active(r) or not (r.arrival < day <= r.departure):
             continue
         yes, why = breakfast(r)
-        rate_incl = yes and why.startswith("tarief")
+        # Label ONTBIJT op het planbord (Lighthouse): ontbijt elke dag, voor iedereen (tarief of bijgeboekt)
+        if label in r.pms_labels:
+            yes, why = True, f"label {label}"
+        rate_incl = yes and why.startswith(("tarief", "label"))
         # Ontbijt als extra met de dagen uit Lighthouse (venster "Bewerken" in de folio): precies per dag en kamer
         lines = [x for x in r.folio if BREAKFAST_LABEL.search(x["label"]) and not rate_plans_from(x["label"])]
         dated = {}
@@ -532,6 +536,32 @@ def refresh_due(hotel_id: str) -> list[Reservation]:
         return []
     return sorted((r for r in guests.list_reservations(hotel_id)
                    if _active(r) and any(r.arrival <= d <= r.departure for d in days)), key=lambda r: r.arrival)
+
+
+def robot_read_labels(hotel_id: str, keys: list[str], lh) -> str:
+    """Voor de robot: de labels op het planbord van de nacht voor elke gevraagde dag, bij de reservaties bewaren.
+    Geeft een korte notitie voor het robotlog."""
+    from hotel_checkin.pms import lighthouse
+
+    days = sorted({date.fromisoformat(k.split(":", 1)[1]) for k in keys})
+    found: dict[str, list[str]] = {}
+    for d in days:
+        found |= lighthouse.planboard_labels(hotel_id, d - timedelta(days=1), d, lh)
+    changed = 0
+    for r in guests.list_reservations(hotel_id):
+        if r.reservation_id in found and r.pms_labels != found[r.reservation_id]:
+            r.pms_labels = found[r.reservation_id]
+            guests.save_reservation(r, fields=guests.PMS_LABEL_FIELDS)
+            changed += 1
+    name = breakfast_label(hotel_id)
+    with_label = sum(1 for labels in found.values() if name in labels)
+    return f"planbord gelezen: {with_label} reservaties met label {name}"
+
+
+def breakfast_label(hotel_id: str) -> str:
+    from hotel_checkin.processes.breakfast_labels import label_name
+
+    return label_name(hotel_id)
 
 
 def robot_make(hotel_id: str, keys: list[str], now: datetime | None = None) -> list[str]:

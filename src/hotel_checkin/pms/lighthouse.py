@@ -36,6 +36,7 @@ from hotel_checkin.pms.lighthouse_parse import (
     parse_folio,
     parse_list_row,
     parse_planboard,
+    parse_planboard_labels,
     rate_plans_from,
 )
 
@@ -448,6 +449,15 @@ def reservation_labels(hotel_id: str, reservation_id: str, arrival, departure, s
     if not resp.ok or "/Customer/" not in resp.url:
         raise RuntimeError(f"planbord niet gelezen ({resp.status})")
     return parse_planboard(resp.text(), reservation_id)
+
+
+def planboard_labels(hotel_id: str, start, end, session: LighthouseSession) -> dict[str, list[str]]:
+    """Labels op het planbord voor een periode, per reservatie (namen). Alleen lezen: het planbord wordt
+    opgevraagd, niet geopend of aangeklikt."""
+    resp = session.page.request.get(session.base + PLANBOARD_PATH.format(start=start.isoformat(), end=end.isoformat()))
+    if not resp.ok or "/Customer/" not in resp.url:
+        raise RuntimeError(f"planbord niet gelezen ({resp.status})")
+    return parse_planboard_labels(resp.text())
 
 
 def add_label(hotel_id: str, reservation_id: str, accommodation_id: str, current: list[str], label_id: str,

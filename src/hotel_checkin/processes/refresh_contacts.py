@@ -115,6 +115,7 @@ def run(hotel_id: str) -> int:
     seen = {x.reservation_id for x in todo} | {x.reservation_id for x in for_lists}
     arrivals = for_lists + [r for r in arrivals if r.reservation_id not in seen]
     lists_due = bool(list_keys)
+    labels_read = ""
     finished = True  # alles gelezen binnen de tijd (dan zijn de gevraagde dagen klaar)
     from hotel_checkin.processes import booking_payout
 
@@ -198,6 +199,12 @@ def run(hotel_id: str) -> int:
                             continue
                         if changes:
                             access_changes.append(f"{reservation.booking_number}: {'; '.join(changes)}")
+                # Gevraagde ontbijt- of schoonmaaklijst: de labels op het planbord (ONTBIJT = ontbijt elke dag)
+                if lists_due and time.monotonic() <= deadline:
+                    try:
+                        labels_read = daily_lists.robot_read_labels(hotel_id, list_keys, lh)
+                    except Exception as exc:  # noqa: BLE001 - de lijst volgt dan zonder de labels (staat in de notitie)
+                        labels_read = f"planbord niet gelezen: {type(exc).__name__}"
                 # Pincode in de opmerking en kamers op KLAAR OM IN TE CHECKEN (PRD of testgast), zie pms_sync.py
                 if syncs and time.monotonic() <= deadline:
                     progress.step(hotel_id, pms_sync.TASK, f"{len(syncs)} reservaties met een code nakijken", force=True)
@@ -231,7 +238,8 @@ def run(hotel_id: str) -> int:
     if details_read:
         parts.append(f"{details_read} aankomsten en verblijven nagekeken (kamer, data, betaling)")
     if lists_due:
-        parts.append(f"voor de gevraagde lijsten ({', '.join(list_keys)}): {len(for_lists)} reservaties nagelezen")
+        parts.append(f"voor de gevraagde lijsten ({', '.join(list_keys)}): {len(for_lists)} reservaties nagelezen"
+                     + (f", {labels_read}" if labels_read else ""))
     if not finished:
         left = len(todo) + len(arrivals) - stats.read - details_read - len(skipped)
         parts.append(f"tijd op: nog {left} na te lezen in een volgende run")
