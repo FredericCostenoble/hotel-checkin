@@ -165,6 +165,15 @@ def with_door_codes(comments: str | None, line: str) -> str:
     return line + (SEPARATOR + rest if rest else "")
 
 
+_ROOM_LINE = r"(?m)(?:^|\s)(\d{1,3})\s*-?\s*([A-Z]{3,}(?:\s+[A-Z]{2,})*)\s*$"
+
+
+def room_names_from(text: str) -> dict[str, str]:
+    """Omschrijving van elke toegewezen kamer zoals Lighthouse ze toont: '11 - SUPERIOR DOUBLE ROOM' geeft
+    {'11': 'SUPERIOR DOUBLE ROOM'}."""
+    return {m.group(1): m.group(2) for m in re.finditer(_ROOM_LINE, text)}
+
+
 def rooms_from(text: str) -> list[str]:
     """Toegewezen kamers, bv. '30 DOUBLE ROOM' of '11 - SUPERIOR DOUBLE ROOM' geeft ['30'] en ['11']."""
     return re.findall(r"(?m)(?:^|\s)(\d{1,3})\s*-?\s*[A-Z]{3,}(?:\s+[A-Z]{2,})*\s*$", text)
@@ -196,6 +205,7 @@ def parse_list_row(hotel_id: str, general: str, contact: str, accommodations: st
         arrival=parse_date(arrival_text),
         departure=parse_date(departure_text),
         rooms=rooms_from(accommodations),
+        room_names=room_names_from(accommodations),
         status=status_from_pms(f.get("Status", "")),
         source=re.sub(r"\s*\(.*\)\s*$", "", via) or None,
         room_type=room_type,
@@ -246,9 +256,11 @@ def parse_detail(hotel_id: str, reservation_id: str, d: dict) -> Reservation:
     booked_line = _after("Gemaakt op", general)
     number = re.search(r"[A-Z]{2,5}-\d+-\d+", d.get("title", ""))
     rooms: list[str] = []
+    room_names: dict[str, str] = {}
     room_statuses: list[str] = []
     for r in d.get("rooms", []):
         rooms += [x for x in rooms_from(r.get("text", "")) if x not in rooms]
+        room_names.update(room_names_from(r.get("text", "")))
         room_statuses.append((r.get("value") or "").strip())
     status = (ReservationStatus.CANCELLED if "annul" in pms_status.lower()
               else accommodation_status([r.get("status", "") for r in d.get("rooms", [])]))
@@ -272,6 +284,7 @@ def parse_detail(hotel_id: str, reservation_id: str, d: dict) -> Reservation:
         arrival=parse_date(arrival_line),
         departure=parse_date(departure_line),
         rooms=rooms,
+        room_names=room_names,
         status=status,
         source=_after("Via", general) or None,
         paid=True if "volledig betaald" in paid_text else (False if paid_text else None),

@@ -3,8 +3,8 @@
 
 Zelfde opbouw als de lijsten die het hotel met de hand maakte: per kamer een rij, een lege rij tussen de
 verdiepingen, opmerkingen achteraan. Een lijst (dict):
-- soort "breakfast": rows = [{"room", "count", "remark", "check"}] (check = nakijken in Lighthouse), total;
-- soort "cleaning": rows = [{"room", "leave", "stay", "checkin", "remark"}], totals {"leave", "stay", "checkin"},
+- soort "breakfast": rows = [{"room", "desc", "count", "remark", "check"}] (check = nakijken in Lighthouse), total;
+- soort "cleaning": rows = [{"room", "desc", "leave", "stay", "checkin", "remark"}], totals {"leave", "stay", "checkin"},
   controle (naam), extra_rows (vaste rijen onderaan, bv. TOILETTEN).
 Een rij {"sep": True} is een lege rij (nieuwe verdieping).
 """
@@ -51,15 +51,15 @@ def xlsx(data: dict, hotel_name: str) -> bytes:
     ws["A1"], ws["B1"], ws["C1"] = TITLES[data["kind"]], "Date:", date.fromisoformat(data["day"])
     ws["A1"].font, ws["C1"].font = big, bold
     ws["C1"].number_format = "dddd dd/mm/yyyy"
-    ws["E1"] = hotel_name
+    ws["G1" if data["kind"] == "cleaning" else "E1"] = hotel_name
     if data["kind"] == "breakfast":
-        head = ("KAMER", "AANTAL", "OPMERKINGEN")
-        widths = (10, 10, 60)
+        head = ("KAMER", "TYPE", "AANTAL", "OPMERKINGEN")
+        widths = (8, 24, 10, 60)
     else:
-        head = ("Kamer", "Leave", "Stay", "Check in", "REMARKS/OPMERKINGEN")
-        widths = (10, 8, 8, 10, 60)
+        head = ("Kamer", "Type", "Leave", "Stay", "Check in", "REMARKS/OPMERKINGEN")
+        widths = (8, 24, 8, 8, 10, 60)
         if data.get("controle"):
-            ws["D1"] = f"Controle: {data['controle']}"
+            ws["E1"] = f"Controle: {data['controle']}"
     for col, (text, width) in enumerate(zip(head, widths, strict=True), 1):
         c = ws.cell(row=3, column=col, value=text)
         c.font, c.border = bold, box
@@ -70,10 +70,12 @@ def xlsx(data: dict, hotel_name: str) -> bytes:
         if r.get("sep"):
             row += 1
             continue
-        values = ([r["room"], r.get("count") if r.get("count") is not None else ("?" if r.get("check") else None),
+        values = ([r["room"], r.get("desc") or None,
+                   r.get("count") if r.get("count") is not None else ("?" if r.get("check") else None),
                    r.get("remark") or None] if data["kind"] == "breakfast"
-                  else [r["room"], "x" if r.get("leave") else None, "x" if r.get("stay") else None,
-                        "check in" if r.get("checkin") else None, r.get("remark") or None])
+                  else [r["room"], r.get("desc") or None, "x" if r.get("leave") else None,
+                        "x" if r.get("stay") else None, "check in" if r.get("checkin") else None,
+                        r.get("remark") or None])
         if str(values[0]).isdigit():
             values[0] = int(values[0])  # kamernummer als getal, zoals in de lijst met de hand
         for col, v in enumerate(values, 1):
@@ -87,9 +89,9 @@ def xlsx(data: dict, hotel_name: str) -> bytes:
     row += 1
     ws.cell(row=row, column=1, value="TOTAAL").font = bold
     if data["kind"] == "breakfast":
-        ws.cell(row=row, column=2, value=f"=SUM(B{first}:B{last})").font = bold
+        ws.cell(row=row, column=3, value=f"=SUM(C{first}:C{last})").font = bold
     else:
-        for col, letter, text in ((2, "B", "x"), (3, "C", "x"), (4, "D", "check in")):
+        for col, letter, text in ((3, "C", "x"), (4, "D", "x"), (5, "E", "check in")):
             ws.cell(row=row, column=col, value=f'=COUNTIF({letter}{first}:{letter}{last},"{text}")').font = bold
         for extra in data.get("extra_rows") or []:
             row += 2
@@ -114,9 +116,9 @@ def _e(value) -> str:
 def table_html(data: dict) -> str:
     """Alleen de tabel (ook voor de monitor)."""
     if data["kind"] == "breakfast":
-        head = ("Kamer", "Aantal", "Opmerkingen")
+        head = ("Kamer", "Type", "Aantal", "Opmerkingen")
     else:
-        head = ("Kamer", "Leave", "Stay", "Check in", "Opmerkingen")
+        head = ("Kamer", "Type", "Leave", "Stay", "Check in", "Opmerkingen")
     body = ""
     for r in data["rows"]:
         if r.get("sep"):
@@ -125,17 +127,17 @@ def table_html(data: dict) -> str:
         bg = "#FFF2A8" if r.get("check") else "#FFFFFF"
         if data["kind"] == "breakfast":
             count = r.get("count") if r.get("count") is not None else ("?" if r.get("check") else "")
-            cells = [r["room"], count, r.get("remark")]
+            cells = [r["room"], r.get("desc"), count, r.get("remark")]
         else:
-            cells = [r["room"], "x" if r.get("leave") else "", "x" if r.get("stay") else "",
+            cells = [r["room"], r.get("desc"), "x" if r.get("leave") else "", "x" if r.get("stay") else "",
                      "check in" if r.get("checkin") else "", r.get("remark")]
         body += f'<tr style="background:{bg};">' + "".join(
             f'<td style="{_TD}{"font-weight:bold;" if i == 0 else ""}">{_e(v)}</td>' for i, v in enumerate(cells)) + "</tr>"
     if data["kind"] == "breakfast":
-        foot = [("Totaal", data.get("total", 0), "")]
+        foot = [("Totaal", "", data.get("total", 0), "")]
     else:
         tot = data.get("totals", {})
-        foot = [("Totaal", tot.get("leave", 0), tot.get("stay", 0), tot.get("checkin", 0), "")]
+        foot = [("Totaal", "", tot.get("leave", 0), tot.get("stay", 0), tot.get("checkin", 0), "")]
     body += "".join('<tr style="font-weight:bold;">' + "".join(f'<td style="{_TD}">{_e(v)}</td>' for v in f) + "</tr>"
                     for f in foot)
     for extra in data.get("extra_rows") or []:

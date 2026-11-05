@@ -79,6 +79,7 @@ def arrivals_due(hotel_id: str, requested: set[str] | None = None) -> list:
 def _apply_detail(r, d) -> None:
     """Kamer, betaling, status en Lighthouse-status van de detailpagina; contact alleen aanvullen."""
     r.rooms = d.rooms or r.rooms
+    r.room_names = {**r.room_names, **d.room_names}
     r.arrival, r.departure = d.arrival, d.departure
     r.paid = d.paid if d.paid is not None else r.paid
     if d.open_amount is not None:  # prijzen en openstaand bedrag voor de betaalknop in de mail

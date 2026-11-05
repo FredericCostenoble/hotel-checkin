@@ -55,6 +55,7 @@ def seed() -> None:
                         arrival=today + timedelta(days=a), departure=today + timedelta(days=d), rooms=rooms,
                         guest_count=n, rate_plan=rate, remarks=remark, booking_number="CPB-" + rid)
         r.folio = [{"label": "Kamer - " + rate, "qty": None, "amount": 200.0}]
+        r.room_names = {x: "APARTMENT" if x == "20" else "SUPERIOR DOUBLE ROOM" for x in rooms}
         if rid == "DEMO-5":
             r.folio.append({"label": "Ontbijt", "qty": 2, "amount": 40.0})
         repo.save_reservation(r)

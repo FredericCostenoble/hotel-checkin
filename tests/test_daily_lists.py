@@ -29,6 +29,8 @@ def setup(monkeypatch):
 
 
 def _r(rid, room, arrival, nights, persons=2, rate="STANDARD RATE BREAKFAST EXCL", folio=(), **kw):
+    if room == "20":
+        kw.setdefault("room_names", {"20": "APARTMENT"})
     r = Reservation("lucca", rid, Guest("Ann", "Brand"), arrival, arrival + timedelta(days=nights),
                     rooms=[room] if isinstance(room, str) else list(room), guest_count=persons, rate_plan=rate,
                     booking_number="CPB-" + rid, **kw)
@@ -51,7 +53,7 @@ def test_breakfast_list():
     _r("f", ["30", "31", "32"], DAY - timedelta(days=1), 2, persons=5, rate="STANDARD RATE BREAKFAST INCL")
     _r("g", "33", DAY - timedelta(days=1), 2, rate="STANDARD RATE BREAKFAST INCL", status=ReservationStatus.CANCELLED)
     data = dl.build("lucca", "breakfast", DAY)
-    assert data["rows"][0]["room"] == "App" and _row(data, "App")["count"] == 2  # kamer 20 = App, bovenaan
+    assert data["rows"][0]["room"] == "20" and _row(data, "20")["count"] == 2  # appartement, bovenaan
     assert _row(data, "16")["count"] == 1
     c = _row(data, "23")
     assert c["count"] is None and c["check"] and "nakijken" in c["remark"] and "glutenfree" in c["remark"]
@@ -77,7 +79,7 @@ def test_cleaning_list():
     assert r21["stay"] and not r21["leave"] and "Romantische versiering" in r21["remark"]
     assert not any(_row(data, "24")[k] for k in ("leave", "stay", "checkin"))
     assert data["totals"] == {"leave": 1, "stay": 1, "checkin": 1}
-    assert data["controle"] == "Iqbal" and data["extra_rows"] == ["TOILETTEN"]
+    assert data["controle"] == "verantwoordelijke housekeeping" and data["extra_rows"] == ["TOILETTEN"]
     assert "vertrek 1 (12)" in lists.summary(data) and "12: vertrek, check in" in lists.text(data, "Hotel Lucca")
 
 
@@ -94,10 +96,25 @@ def test_excel_like_the_hand_made_list():
         data = dl.build("lucca", kind, DAY) | {"generated_at": "2026-11-05T18:00+01:00"}
         ws = load_workbook(io.BytesIO(lists.xlsx(data, "Hotel Lucca"))).active
         assert ws["A1"].value == lists.TITLES[kind] and ws["C1"].value.date() == DAY
-        assert ws["A4"].value == "App"
+        assert ws["A4"].value == 20 and ws["B4"].value == "Apartment"
         html = lists.mail_html(data, "Hotel Lucca", ["x"])
-        assert "<table" in html and "App" in html
-    assert load_workbook(io.BytesIO(lists.xlsx(dl.build("lucca", "cleaning", DAY), "L"))).active["D1"].value == "Controle: Iqbal"
+        assert "<table" in html and "Apartment" in html
+    ws = load_workbook(io.BytesIO(lists.xlsx(dl.build("lucca", "cleaning", DAY), "L"))).active
+    assert ws["E1"].value == "Controle: verantwoordelijke housekeeping"
+
+
+def test_room_descriptions_from_lighthouse():
+    """Omschrijving uit Lighthouse naast het nummer, ook voor kamers die nu leeg zijn (onthouden)."""
+    from hotel_checkin.pms.lighthouse_parse import room_names_from
+
+    assert room_names_from("Superior double\n11 - SUPERIOR DOUBLE ROOM\nNRF BREAKFAST INCL, € 10") == \
+        {"11": "SUPERIOR DOUBLE ROOM"}
+    r = _r("a", "11", DAY - timedelta(days=1), 1, room_names={"11": "SUPERIOR DOUBLE ROOM"})
+    assert repo.get_reservation("lucca", r.reservation_id).room_names == {"11": "SUPERIOR DOUBLE ROOM"}
+    assert _row(dl.build("lucca", "cleaning", DAY), "11")["desc"] == "Superior double room"
+    repo.delete_reservation("lucca", r.reservation_id)
+    assert _row(dl.build("lucca", "breakfast", DAY), "11")["desc"] == "Superior double room"
+    assert _row(dl.build("lucca", "breakfast", DAY), "12")["desc"] == ""
 
 
 def test_generate_sends_mail_with_excel_and_keeps_15(setup):
@@ -126,8 +143,8 @@ def test_whatsapp_waits_for_twilio(monkeypatch):
 def test_timer_once_after_the_hour(setup, monkeypatch):
     monkeypatch.setenv("LUCCA_SCHAKELAARS_KUISLIJST", "true")
     today = DAY - timedelta(days=1)
-    assert dl.run("lucca", datetime(today.year, today.month, today.day, 17, 55, tzinfo=TZ)) == []
-    at = datetime(today.year, today.month, today.day, 18, 5, tzinfo=TZ)
+    assert dl.run("lucca", datetime(today.year, today.month, today.day, 17, 40, tzinfo=TZ)) == []
+    at = datetime(today.year, today.month, today.day, 17, 45, tzinfo=TZ)  # zonder robot (codespace): meteen
     assert dl.run("lucca", at) == [f"cleaning {DAY.isoformat()}"]  # ontbijtlijst staat uit
     assert dl.run("lucca", at + timedelta(minutes=5)) == []  # niet twee keer
     assert len(setup) == 1
@@ -135,17 +152,46 @@ def test_timer_once_after_the_hour(setup, monkeypatch):
     assert dl.next_day("lucca", "cleaning", at - timedelta(hours=1)) == DAY
 
 
-def test_robot_reads_the_day_before_sending(monkeypatch):
+def test_robot_reads_the_day_right_before_sending(monkeypatch):
     monkeypatch.setenv("LUCCA_SCHAKELAARS_ONTBIJTLIJST", "true")
     _r("a", "20", DAY - timedelta(days=1), 2)
     _r("b", "21", DAY + timedelta(days=3), 2)
     today = DAY - timedelta(days=1)
-    early = datetime(today.year, today.month, today.day, 12, 0, tzinfo=TZ)
-    assert dl.refresh_due("lucca", early) == []  # nog te vroeg
-    window = datetime(today.year, today.month, today.day, 16, 0, tzinfo=TZ)
+    early = datetime(today.year, today.month, today.day, 17, 20, tzinfo=TZ)
+    assert dl.refresh_due("lucca", early) == []  # nog te vroeg (meer dan 20 minuten voor 17:45)
+    window = datetime(today.year, today.month, today.day, 17, 25, tzinfo=TZ)
     assert [r.reservation_id for r in dl.refresh_due("lucca", window)] == ["a"]
     dl.refresh_done("lucca", window)
-    assert dl.refresh_due("lucca", window + timedelta(hours=1)) == []  # één keer per lijst
+    assert dl.refresh_due("lucca", window + timedelta(minutes=5)) == []  # één keer per lijst
+
+
+def test_timer_starts_robot_and_waits_for_it(setup, monkeypatch):
+    """In Azure: 20 minuten voor het uur de robot starten, op het uur versturen zodra nagelezen, anders hoogstens
+    30 minuten wachten."""
+    from hotel_checkin.admin import cloud_robot
+
+    monkeypatch.setenv("LUCCA_SCHAKELAARS_ONTBIJTLIJST", "true")
+    starts = []
+    monkeypatch.setattr(cloud_robot, "available", lambda: True)
+    monkeypatch.setattr(cloud_robot, "running", lambda execs=None: False)
+    monkeypatch.setattr(cloud_robot, "start", lambda: starts.append(1) or True)
+    _r("a", "20", DAY - timedelta(days=1), 2, rate="STANDARD RATE BREAKFAST INCL")
+    today = DAY - timedelta(days=1)
+    t = datetime(today.year, today.month, today.day, 17, 25, tzinfo=TZ)
+    assert dl.run("lucca", t) == [f"breakfast:{DAY.isoformat()}: robot gestart om na te lezen"] and starts == [1]
+    assert dl.run("lucca", t + timedelta(minutes=5)) == [] and starts == [1]  # niet opnieuw starten
+    dl.refresh_done("lucca", t + timedelta(minutes=8))  # de robot las na
+    assert dl.run("lucca", t + timedelta(minutes=15)) == []  # nog voor het uur
+    assert dl.run("lucca", t + timedelta(minutes=20)) == [f"breakfast {DAY.isoformat()}"]
+    assert "nagelezen om 17:33" in repo.robot_runs("lucca", task="ontbijtlijst")[0]["error"]
+    # Volgende dag: de robot leest niet na; na 30 minuten toch versturen
+    t2, day2 = t + timedelta(days=1), DAY + timedelta(days=1)
+    _r("b", "20", day2 - timedelta(days=1), 2, rate="STANDARD RATE BREAKFAST INCL")
+    dl.run("lucca", t2)
+    assert dl.run("lucca", t2 + timedelta(minutes=25)) != [f"breakfast {day2.isoformat()}"]
+    assert dl.run("lucca", t2 + timedelta(minutes=50)) == [f"breakfast {day2.isoformat()}"]
+    assert any("lijst voor zaterdag 07/11/2026" in x["error"] and "niet nagelezen binnen 30 minuten" in x["error"]
+               for x in repo.robot_runs("lucca", task="ontbijtlijst"))
 
 
 def test_monitor_routes(monkeypatch):

@@ -54,6 +54,7 @@ class Reservation:
     arrival: date
     departure: date
     rooms: list[str] = field(default_factory=list)
+    room_names: dict[str, str] = field(default_factory=dict)  # kamer -> omschrijving in Lighthouse, bv. "SUPERIOR DOUBLE ROOM"
     status: ReservationStatus = ReservationStatus.READY_FOR_CHECKIN
     source: str | None = None  # Booking.com, Expedia, Booking Engine, ...
     paid: bool | None = None  # None = nog niet gecontroleerd

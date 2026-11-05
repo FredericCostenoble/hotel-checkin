@@ -114,6 +114,7 @@ def _to_entity(r: Reservation) -> dict:
         "arrival": r.arrival.isoformat(),
         "departure": r.departure.isoformat(),
         "rooms": json.dumps(r.rooms),
+        "room_names": json.dumps(r.room_names) if r.room_names else "",
         "room_type": r.room_type or "",
         "rate_plan": r.rate_plan or "",
         "non_refundable": "" if r.non_refundable is None else str(r.non_refundable),
@@ -182,6 +183,7 @@ def _from_entity(e: dict) -> Reservation:
         arrival=date.fromisoformat(e["arrival"]),
         departure=date.fromisoformat(e["departure"]),
         rooms=json.loads(e["rooms"]),
+        room_names=json.loads(e["room_names"]) if e.get("room_names") else {},
         status=ReservationStatus(e["status"]),
         source=e["source"] or None,
         paid=None if e["paid"] == "" else e["paid"] == "True",
@@ -226,11 +228,11 @@ _NOT_DATA = {"created_at", "updated_at", "contact_checked_at", "stay_counted_at"
 # Wie welke velden van een reservatie schrijft. Een proces dat maar een deel bezit, geeft dat deel mee
 # aan save_reservation(fields=...): de andere velden blijven zoals ze nu in de tabel staan. Zo wist de
 # robot (lijst uit Lighthouse) nooit de pincode van Salto of de koppeling met het gastprofiel.
-LIST_FIELDS = ("first_name", "last_name", "arrival", "departure", "rooms", "room_type", "status", "source", "paid",
+LIST_FIELDS = ("first_name", "last_name", "arrival", "departure", "rooms", "room_names", "room_type", "status", "source", "paid",
                "booking_number", "pms_status", "guest_count", "booked_at", "rate_plan", "non_refundable")
 CONTACT_FIELDS = ("email", "phone", "language", "country", "backup_email", "backup_phone", "relay_email",
                   "contact_checked_at")
-DETAIL_FIELDS = ("rooms", "arrival", "departure", "paid", "open_amount", "folio", "folio_total", "status",
+DETAIL_FIELDS = ("rooms", "room_names", "arrival", "departure", "paid", "open_amount", "folio", "folio_total", "status",
                  "pms_status", "email", "phone", "rate_plan", "non_refundable", "remarks", "transactions",
                  "room_statuses")
 PAYOUT_FIELDS = ("payout_registered_at",)
