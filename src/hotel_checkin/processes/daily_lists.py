@@ -205,10 +205,10 @@ def build_breakfast(hotel_id: str, day: date, reservations: list[Reservation], w
             remark: list[str] = []
             check = False
             if partial:
-                remark.append(f"ontbijt bijgeboekt, {why[5:]}: nakijken voor welke dag")
+                remark.append(f"ontbijt bijgeboekt, {why[5:]}: nakijken voor welke dag ({r.booking_number or ''})")
                 check = True
             elif unread:
-                remark.append("folio nog niet gelezen: nakijken of er ontbijt is")
+                remark.append(f"folio nog niet gelezen: nakijken of er ontbijt is ({r.booking_number or ''})")
                 check = True
             elif persons is None:
                 remark.append("aantal personen niet gekend")
