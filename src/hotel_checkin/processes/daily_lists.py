@@ -16,13 +16,14 @@ Kuislijst voor dag D, per kamer: Leave (vertrek op D), Stay (aankomst voor D, ve
 Opmerkingen: zinnen uit de opmerking van de reservatie of lijnen van de folio met een van de woorden uit de
 instellingen ([kuislijst] woorden, bv. babybed, romantisch), en het aantal personen bij een check in.
 
-Vers: REFRESH_MINUTES voor het uur start de timer de robot, die de reservaties van die dag nog eens in Lighthouse leest
-(Reservaties bijwerken, processes/refresh_contacts.py): kamer, data, folio en opmerking. Op het uur wordt de lijst
-gemaakt zodra dat nalezen klaar is; lukt het niet, dan toch, hoogstens MAX_WAIT_MINUTES later, met de gegevens die er
-zijn (staat in het robotlog). Nieuwe boekingen tussendoor komen binnen via de meldingsmail.
+Vers: een lijst wordt altijd gemaakt met wat de robot net in Lighthouse las. Lijst maken (monitor) of het uur van de
+automatische lijst start de robot, die de reservaties van die dag leest (kamer, data, folio, opmerking); daarna maakt
+de timer de lijst en verstuurt ze. De automatische lijst: de robot start ROBOT_MINUTES voor het uur, de lijst vertrekt
+op het uur (of zodra nagelezen is). Lukt het nalezen niet binnen MAX_WAIT_MINUTES, dan toch, met de gegevens die er
+zijn (staat in het robotlog). Zonder robot in de cloud (codespace) meteen met wat er is.
 Kamers: nummer en omschrijving zoals Lighthouse ze toont (bv. 11, Superior double room), onthouden over de reservaties
 heen (RobotState room_catalog), zodat ook lege kamers hun omschrijving hebben.
-Draait in de Function App (timer van de berichten, elke 2 minuten), los van de robot. Buiten PRD gaan de berichten naar het testadres.
+Lijsten maken en versturen gebeurt in de Function App (timer van de meldingen, elke minuut). Buiten PRD gaan de berichten naar het testadres.
 """
 
 from __future__ import annotations
@@ -42,10 +43,11 @@ KINDS = ("breakfast", "cleaning")
 SECTION = {"breakfast": "ontbijtlijst", "cleaning": "kuislijst"}  # sectie in het hotelbestand, ook de schakelaar
 TASK = SECTION  # taak in het robotlog
 KEEP = 15  # zoveel lijsten per soort bewaren, oudere worden gewist
-REFRESH_MINUTES = 20  # zoveel minuten voor het versturen start de robot om de reservaties van die dag na te lezen
-MAX_WAIT_MINUTES = 30  # na het uur hoogstens zo lang wachten op dat nalezen, daarna toch versturen
-REFRESH_STATE = "daily_lists_refreshed"  # RobotState: voor welke lijsten de robot al nalas, en wanneer
-ROBOT_STATE = "daily_lists_robot"  # RobotState: wanneer de timer de robot startte voor een lijst
+ROBOT_MINUTES = 5  # zoveel minuten voor het uur van de automatische lijst start de robot om na te lezen
+MAX_WAIT_MINUTES = 30  # hoogstens zo lang wachten op dat nalezen, daarna toch maken met wat er is
+ROBOT_RETRY_MINUTES = 6  # de robot opnieuw starten als hij intussen niet nalas en niet meer draait
+REQUEST_STATE = "daily_lists_requests"  # RobotState: gevraagde lijsten (schrijft alleen de Function App)
+READ_STATE = "daily_lists_read"  # RobotState: wanneer de robot nalas voor een aanvraag (schrijft alleen de robot)
 CATALOG_STATE = "room_catalog"  # RobotState: kamer -> omschrijving in Lighthouse
 SEPARATOR = "-"  # in [kamers] lijst_volgorde: lege rij (nieuwe verdieping)
 
@@ -382,12 +384,20 @@ def view(hotel_id: str, kind: str) -> dict:
     """Voor de monitor: de bewaarde lijsten (nieuwste eerst, met de tabel), en wanneer de volgende komt."""
     cfg = settings(hotel_id, kind)
     records = [d | {"html": lists.table_html(d), "summary": describe(d)} for d in guests.daily_lists(hotel_id, kind)]
+    pending = sorted(k.split(":", 1)[1] for k in requests(hotel_id) if k.startswith(kind + ":"))
     return {"kind": kind, "switch": switch(hotel_id, kind), "next_day": next_day(hotel_id, kind).isoformat(),
+            "pending": pending,
             "time": cfg["time"], "days": cfg["days"], "email": cfg["email"], "whatsapp": cfg["whatsapp"],
             "keep": KEEP, "records": records}
 
 
-# ---------------------------------------------------------------- timer en robot
+# ---------------------------------------------------------------- aanvragen: eerst de robot laten nalezen
+# Een lijst wordt altijd gemaakt met wat de robot net in Lighthouse las (folio, opmerking, kamer). Wie een lijst
+# vraagt (knop in de monitor of het uur van de automatische lijst), maakt een aanvraag en start de robot. De robot
+# leest de reservaties van die dag (Reservaties bijwerken) en noteert dat (READ_STATE). De timer van de Function App
+# (elke minuut) maakt de lijst daarna en verstuurt ze; de robot zelf mag geen mail versturen.
+# Twee toestanden met elk één schrijver, zodat ze elkaar niet overschrijven: REQUEST_STATE (Function App) en
+# READ_STATE (robot).
 
 
 def _state(hotel_id: str, key: str) -> dict:
@@ -404,104 +414,134 @@ def _save(hotel_id: str, key: str, value: dict, today: date) -> None:
     guests.set_state(hotel_id, key, json.dumps({k: v for k, v in value.items() if k.split(":", 1)[1] >= oldest}))
 
 
-def _key(hotel_id: str, kind: str, today: date) -> str:
-    return f"{kind}:{(today + timedelta(days=settings(hotel_id, kind)['days'])).isoformat()}"
+def _now(now: datetime | None, hotel_id: str) -> datetime:
+    return (now or datetime.now(UTC)).astimezone(clock.tz(hotel_id))
 
 
-def _windows(hotel_id: str, now: datetime) -> list[str]:
-    """Lijsten die nu nagelezen moeten worden ("soort:dag"): vanaf REFRESH_MINUTES voor het uur tot ze verstuurd zijn
-    (of hoogstens MAX_WAIT_MINUTES na het uur)."""
-    now = now.astimezone(clock.tz(hotel_id))
-    out = []
-    for kind in KINDS:
-        if not switch(hotel_id, kind):
-            continue
-        at = send_moment(hotel_id, kind, now.date())
-        if at - timedelta(minutes=REFRESH_MINUTES) <= now < at + timedelta(minutes=MAX_WAIT_MINUTES):
-            key = _key(hotel_id, kind, now.date())
-            if not (guests.get_daily_list(hotel_id, kind, key.split(":", 1)[1]) or {}).get("auto"):
-                out.append(key)
-    return out
+def requests(hotel_id: str) -> dict:
+    """Openstaande aanvragen: {"soort:dag": {"send", "auto", "by", "at", "robot_at"}}."""
+    return _state(hotel_id, REQUEST_STATE)
 
 
-def refresh_due(hotel_id: str, now: datetime | None = None) -> list[Reservation]:
-    """Reservaties die de robot nu opnieuw moet lezen voor een lijst die zo dadelijk verstuurd wordt (één keer per
-    lijst): wie op die dag in het hotel is, aankomt of vertrekt."""
-    now = now or datetime.now(UTC)
-    done = _state(hotel_id, REFRESH_STATE)
-    days = {date.fromisoformat(w.split(":", 1)[1]) for w in _windows(hotel_id, now) if w not in done}
+def _read_at(hotel_id: str, key: str, req: dict) -> datetime | None:
+    """Wanneer de robot de reservaties voor deze aanvraag las (na de aanvraag), of None."""
+    value = _state(hotel_id, READ_STATE).get(key)
+    if value and value >= req["at"]:
+        return datetime.fromisoformat(value)
+    return None
+
+
+def _start_robot(hotel_id: str, req: dict, now: datetime) -> str:
+    """De robot starten om na te lezen, als hij niet al draait en niet net gestart werd."""
+    from hotel_checkin.admin import cloud_robot
+
+    last = req.get("robot_at")
+    if last and now - datetime.fromisoformat(last) < timedelta(minutes=ROBOT_RETRY_MINUTES):
+        return ""
+    if cloud_robot.running():
+        return "robot is al bezig"
+    req["robot_at"] = now.isoformat()
+    return "robot gestart om na te lezen" if cloud_robot.start() else f"robot niet gestart: {cloud_robot.LAST_ERROR}"
+
+
+def request(hotel_id: str, kind: str, day: date, by: str = "", send_now: bool = False, auto: bool = False,
+            now: datetime | None = None) -> dict:
+    """Een lijst vragen: de robot leest eerst de reservaties van die dag, daarna maakt de timer de lijst.
+    Zonder robot in de cloud (codespace, tests): meteen maken met wat er is."""
+    from hotel_checkin.admin import cloud_robot
+
+    if kind not in KINDS:
+        raise ValueError(kind)
+    now = _now(now, hotel_id)
+    if not cloud_robot.available():
+        data = generate(hotel_id, kind, day, by=by, send_now=send_now, auto=auto)
+        return {"requested": False, "day": data["day"], "sent": data["sent"] if send_now else []}
+    reqs = requests(hotel_id)
+    key = f"{kind}:{day.isoformat()}"
+    req = {"send": send_now or bool(reqs.get(key, {}).get("send")), "auto": auto or bool(reqs.get(key, {}).get("auto")),
+           "by": by or reqs.get(key, {}).get("by", ""), "at": now.isoformat()}
+    what = _start_robot(hotel_id, req, now)
+    reqs[key] = req
+    _save(hotel_id, REQUEST_STATE, reqs, now.date())
+    return {"requested": True, "day": day.isoformat(), "robot": what}
+
+
+def pending_reads(hotel_id: str) -> list[str]:
+    """Voor de robot: aanvragen waarvoor hij nog moet nalezen ("soort:dag")."""
+    return [k for k, r in requests(hotel_id).items() if not _read_at(hotel_id, k, r)]
+
+
+def refresh_due(hotel_id: str) -> list[Reservation]:
+    """Voor de robot: reservaties om nu te lezen voor de gevraagde lijsten (wie op die dag in het hotel is,
+    aankomt of vertrekt)."""
+    days = {date.fromisoformat(k.split(":", 1)[1]) for k in pending_reads(hotel_id)}
     if not days:
         return []
     return sorted((r for r in guests.list_reservations(hotel_id)
                    if _active(r) and any(r.arrival <= d <= r.departure for d in days)), key=lambda r: r.arrival)
 
 
-def refresh_done(hotel_id: str, now: datetime | None = None) -> None:
-    """De robot las de reservaties na voor de lijsten die nu aan de beurt zijn."""
-    now = now or datetime.now(UTC)
-    done = _state(hotel_id, REFRESH_STATE)
-    done.update({w: now.isoformat() for w in _windows(hotel_id, now)})
-    _save(hotel_id, REFRESH_STATE, done, now.astimezone(clock.tz(hotel_id)).date())
-
-
-def _start_robot(hotel_id: str, key: str, now: datetime) -> str:
-    """De robot starten om na te lezen (hoogstens om de 10 minuten opnieuw). Geeft terug wat er gebeurde."""
-    from hotel_checkin.admin import cloud_robot
-
-    started = _state(hotel_id, ROBOT_STATE)
-    last = started.get(key)
-    if last and now - datetime.fromisoformat(last) < timedelta(minutes=10):
-        return ""
-    if cloud_robot.running():
-        return "robot is al bezig"
-    ok = cloud_robot.start()
-    started[key] = now.isoformat()
-    _save(hotel_id, ROBOT_STATE, started, now.astimezone(clock.tz(hotel_id)).date())
-    return "robot gestart om na te lezen" if ok else f"robot niet gestart: {cloud_robot.LAST_ERROR}"
+def refresh_done(hotel_id: str, keys: list[str], now: datetime | None = None) -> None:
+    """Voor de robot: de reservaties voor deze aanvragen zijn gelezen."""
+    now = _now(now, hotel_id)
+    read = _state(hotel_id, READ_STATE)
+    read.update({k: now.isoformat() for k in keys})
+    _save(hotel_id, READ_STATE, read, now.date())
 
 
 def run(hotel_id: str, now: datetime | None = None) -> list[str]:
-    """Aangeroepen door de timer (elke 2 minuten, samen met de berichten). REFRESH_MINUTES voor het uur: de robot starten om de reservaties van
-    die dag na te lezen. Vanaf het uur: de lijst maken en versturen zodra dat nalezen klaar is, of hoogstens
-    MAX_WAIT_MINUTES na het uur met wat er is. Elke lijst één keer automatisch. Geeft terug wat er gebeurde."""
+    """Timer van de Function App (elke minuut).
+    - Automatische lijst: ROBOT_MINUTES voor het uur een aanvraag (de robot leest na).
+    - Aanvragen die nagelezen zijn: de lijst maken (en versturen); een automatische niet voor het uur.
+    - Na MAX_WAIT_MINUTES zonder nalezen: toch maken met wat er is (staat in het robotlog).
+    - Draait de robot niet terwijl er nog nagelezen moet worden: opnieuw starten.
+    Geeft terug wat er gebeurde."""
     from hotel_checkin.admin import cloud_robot
 
-    now = (now or datetime.now(clock.tz(hotel_id))).astimezone(clock.tz(hotel_id))
-    done = []
-    refreshed = _state(hotel_id, REFRESH_STATE)
+    now = _now(now, hotel_id)
+    done: list[str] = []
+    reqs = requests(hotel_id)
+    lead = timedelta(minutes=ROBOT_MINUTES if cloud_robot.available() else 0)
     for kind in KINDS:
         if not switch(hotel_id, kind):
             continue
         at = send_moment(hotel_id, kind, now.date())
-        key = _key(hotel_id, kind, now.date())
-        day = date.fromisoformat(key.split(":", 1)[1])
-        if now < at - timedelta(minutes=REFRESH_MINUTES) or (guests.get_daily_list(hotel_id, kind, day.isoformat())
-                                                               or {}).get("auto"):
-            continue
-        robot = cloud_robot.available()
-        if robot and key not in refreshed and now < at + timedelta(minutes=MAX_WAIT_MINUTES):
-            try:
-                what = _start_robot(hotel_id, key, now)
-            except Exception as exc:  # dan op het uur met wat er is
-                logging.exception("%s: robot niet gestart voor %s", hotel_id, key)
-                what = f"robot niet gestart: {type(exc).__name__}"
+        day = now.date() + timedelta(days=settings(hotel_id, kind)["days"])
+        key = f"{kind}:{day.isoformat()}"
+        if now >= at - lead and key not in reqs \
+                and not (guests.get_daily_list(hotel_id, kind, day.isoformat()) or {}).get("auto"):
+            result = request(hotel_id, kind, day, send_now=True, auto=True, now=now)
+            reqs = requests(hotel_id)
+            if not result["requested"]:
+                done.append(f"{kind} {day.isoformat()}")
+            else:
+                done.append(f"{key}: aangevraagd, {result['robot'] or 'robot start straks'}")
+    changed = False
+    for key, req in list(reqs.items()):
+        kind, day_iso = key.split(":", 1)
+        day = date.fromisoformat(day_iso)
+        asked = datetime.fromisoformat(req["at"])
+        read = _read_at(hotel_id, key, req)
+        if read is None and now - asked < timedelta(minutes=MAX_WAIT_MINUTES):
+            what = _start_robot(hotel_id, req, now)
             if what:
+                changed = True
                 done.append(f"{key}: {what}")
-            if now < at or what.startswith("robot gestart") or what == "robot is al bezig" or not what:
-                continue  # wachten op het nalezen
-        if now < at:
             continue
-        if key in refreshed:
-            fresh = f"reservaties nagelezen om {datetime.fromisoformat(refreshed[key]).astimezone(clock.tz(hotel_id)):%H:%M}"
-        elif robot:
-            fresh = f"niet nagelezen binnen {MAX_WAIT_MINUTES} minuten, gemaakt met de gegevens die er waren"
-        else:
-            fresh = ""
+        if req.get("auto") and now < send_moment(hotel_id, kind, day - timedelta(days=settings(hotel_id, kind)["days"])):
+            continue  # nagelezen, maar automatisch pas op het uur versturen
+        fresh = (f"reservaties nagelezen om {read:%H:%M}" if read
+                 else f"niet nagelezen binnen {MAX_WAIT_MINUTES} minuten, gemaakt met de gegevens die er waren")
         try:
-            generate(hotel_id, kind, day, send_now=True, auto=True, fresh=fresh)
-            done.append(f"{kind} {day.isoformat()}")
+            generate(hotel_id, kind, day, by=req.get("by", ""), send_now=bool(req.get("send")),
+                     auto=bool(req.get("auto")), fresh=fresh)
+            done.append(f"{kind} {day_iso}")
         except Exception as exc:
-            logging.exception("%s: %s niet gemaakt", hotel_id, kind)
+            logging.exception("%s: %s niet gemaakt", hotel_id, key)
             guests.log_robot_run(hotel_id, TASK[kind], datetime.now(UTC), False, 1, 0,
                                  f"lijst voor {day:%d/%m} niet gemaakt: {type(exc).__name__}: {exc}")
+        reqs.pop(key)
+        changed = True
+    if changed:
+        _save(hotel_id, REQUEST_STATE, reqs, now.date())
     return done

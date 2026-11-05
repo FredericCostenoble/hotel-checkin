@@ -195,8 +195,9 @@ def admin_api(req: func.HttpRequest) -> func.HttpResponse:
                 day = date.fromisoformat(req.params.get("day", ""))
             except ValueError:
                 return _json(400, {"error": "day"})
-            data = daily_lists.generate(hotel, kind, day, by=_admin_user(req) or "", send_now=req.params.get("send") == "1")
-            return _json(200, {"ok": True, "day": data["day"], "sent": data["sent"] if req.params.get("send") == "1" else []})
+            # Eerst leest de robot de reservaties van die dag in Lighthouse; daarna maakt de timer de lijst
+            result = daily_lists.request(hotel, kind, day, by=_admin_user(req) or "", send_now=req.params.get("send") == "1")
+            return _json(200, {"ok": True} | result)
         return _json(405, {"error": "method"})
     if req.method == "GET" and what == "guests":
         return _json(200, admin.guests(hotel))
@@ -254,9 +255,12 @@ def admin_api(req: func.HttpRequest) -> func.HttpResponse:
 
 @app.timer_trigger(schedule="0 * * * * *", arg_name="timer", run_on_startup=False, use_monitor=False)
 def mail_trigger(timer: func.TimerRequest) -> None:
-    """Elke minuut: meldingen van Lighthouse/Cubilis in de mailbox starten de robot (processes/mail_trigger.py)."""
+    """Elke minuut: meldingen van Lighthouse/Cubilis in de mailbox starten de robot (processes/mail_trigger.py), en
+    de ontbijtlijst en kuislijst maken zodra de robot nalas (processes/daily_lists.py). Samen in één timer: geen
+    extra uitvoeringen (kost)."""
     import logging
 
+    from hotel_checkin.processes import daily_lists
     from hotel_checkin.processes import mail_trigger as process
 
     for hotel_id in list_hotels():
@@ -266,17 +270,18 @@ def mail_trigger(timer: func.TimerRequest) -> None:
                 process.cleanup(hotel_id)  # eenmalig: oude verwerkte mails naar hun map
         except Exception:
             logging.exception("%s: mail_trigger mislukt", hotel_id)
+        try:
+            daily_lists.run(hotel_id)
+        except Exception:
+            logging.exception("%s: dagelijkse lijsten mislukt", hotel_id)
 
 
 
 @app.timer_trigger(schedule="0 */2 * * * *", arg_name="timer", run_on_startup=False, use_monitor=False)
 def send_messages(timer: func.TimerRequest) -> None:
-    """Elke 2 minuten: berichten uit de workflow versturen die nu moeten (processes/send_messages.py), en de
-    ontbijtlijst en kuislijst als hun uur er is (processes/daily_lists.py). Samen in één timer: geen extra
-    uitvoeringen (kost)."""
+    """Elke 2 minuten: berichten uit de workflow versturen die nu moeten (processes/send_messages.py)."""
     import logging
 
-    from hotel_checkin.processes import daily_lists
     from hotel_checkin.processes import send_messages as process
 
     for hotel_id in list_hotels():
@@ -284,10 +289,6 @@ def send_messages(timer: func.TimerRequest) -> None:
             process.run(hotel_id)
         except Exception:
             logging.exception("%s: berichten versturen mislukt", hotel_id)
-        try:
-            daily_lists.run(hotel_id)
-        except Exception:
-            logging.exception("%s: dagelijkse lijsten mislukt", hotel_id)
 
 
 @app.timer_trigger(schedule="0 */15 * * * *", arg_name="timer", run_on_startup=False, use_monitor=False)

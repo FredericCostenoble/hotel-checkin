@@ -137,9 +137,8 @@ class Handler(BaseHTTPRequestHandler):
             elif method == "GET":
                 self._json(200, daily_lists.view(parts[2], kind))
             else:
-                data = daily_lists.generate(parts[2], kind, date.fromisoformat(q.get("day", "")), by="dev",
-                                            send_now=q.get("send") == "1")
-                self._json(200, {"ok": True, "day": data["day"], "sent": data["sent"] if q.get("send") == "1" else []})
+                self._json(200, {"ok": True} | daily_lists.request(parts[2], kind, date.fromisoformat(q.get("day", "")),
+                                                                    by="dev", send_now=q.get("send") == "1"))
         elif method == "POST" and len(parts) == 4 and parts[3] == "guests":
             from urllib.parse import parse_qs, urlparse
 

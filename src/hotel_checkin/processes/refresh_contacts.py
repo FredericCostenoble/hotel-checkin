@@ -105,10 +105,12 @@ def run(hotel_id: str) -> int:
     # Ontbijt- en kuislijst: in de uren voor het versturen de reservaties van die dag nog eens lezen (folio, opmerking)
     from hotel_checkin.processes import daily_lists
 
-    seen = {x.reservation_id for x in todo} | {x.reservation_id for x in arrivals}
-    for_lists = [r for r in daily_lists.refresh_due(hotel_id) if r.reservation_id not in seen]
-    arrivals += for_lists
-    lists_due = bool(daily_lists.refresh_due(hotel_id))
+    # Eerst, zodat de tijdslimiet van de run ze zeker niet overslaat
+    list_keys = daily_lists.pending_reads(hotel_id)
+    for_lists = daily_lists.refresh_due(hotel_id)
+    seen = {x.reservation_id for x in todo} | {x.reservation_id for x in for_lists}
+    arrivals = for_lists + [r for r in arrivals if r.reservation_id not in seen]
+    lists_due = bool(list_keys)
     finished = True  # alles gelezen binnen de tijd (dan zijn de gevraagde dagen klaar)
     from hotel_checkin.processes import booking_payout
 
@@ -218,14 +220,14 @@ def run(hotel_id: str) -> int:
     if finished and not skipped:
         refresh_requests.done(hotel_id, requested)
     if finished and lists_due:
-        daily_lists.refresh_done(hotel_id)
+        daily_lists.refresh_done(hotel_id, list_keys)
     parts = [f"{stats.read} reservaties zonder e-mailadres nagelezen: " + stats.note()] if stats.read else []
     if requested:
         parts.append("nagelezen na melding: " + ", ".join(sorted(requested)))
     if details_read:
         parts.append(f"{details_read} aankomsten en verblijven nagekeken (kamer, data, betaling)")
     if lists_due:
-        parts.append(f"voor de ontbijt- en kuislijst: de reservaties van die dag nagelezen ({len(for_lists)} extra)")
+        parts.append(f"voor de gevraagde lijsten ({', '.join(list_keys)}): {len(for_lists)} reservaties nagelezen")
     if not finished:
         left = len(todo) + len(arrivals) - stats.read - details_read - len(skipped)
         parts.append(f"tijd op: nog {left} na te lezen in een volgende run")

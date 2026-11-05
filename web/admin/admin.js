@@ -10,6 +10,7 @@ const T = {
     dl_sent_fail: n => `Gemaakt, maar ${n} verzending(en) niet gelukt (zie Verstuurd).`, dl_none: "Nog geen lijsten.",
     dl_not_sent: "niet verstuurd", dl_no_to: "geen ontvangers", dl_confirm: (day, to) => `Lijst voor ${day} opnieuw maken en versturen naar ${to}?`,
     dl_info: (on, time, days, to, keep) => `Automatisch: ${on ? `elke dag om ${time} voor ${days === 0 ? "dezelfde dag" : days === 1 ? "de dag erna" : `${days} dagen later`}` : "uit (hoofdschakelaar)"}. Naar: ${to || "niemand (instellingen)"}. De laatste ${keep} lijsten blijven bewaard. Geel = nakijken in Lighthouse.`,
+    dl_waiting: days => `De robot leest de reservaties van ${days} in Lighthouse (folio, opmerkingen); de lijst volgt binnen enkele minuten...`, dl_ready: day => `Lijst voor ${day} gemaakt.`,
     dl_name_breakfast: "Ontbijtlijst", dl_name_cleaning: "Kuislijst", dl_wa: "WhatsApp/sms",
     sw_blist: "Ontbijtlijst", sw_clist: "Kuislijst", task_ontbijtlijst: "Ontbijtlijst", task_kuislijst: "Kuislijst",
     sec_ontbijtlijst: "Ontbijtlijst", sec_kuislijst: "Kuislijst", sec_kamers: "Kamers",
@@ -101,6 +102,7 @@ const T = {
     dl_sent_fail: n => `Made, but ${n} sending(s) failed (see Sent).`, dl_none: "No lists yet.",
     dl_not_sent: "not sent", dl_no_to: "no recipients", dl_confirm: (day, to) => `Make the list for ${day} again and send it to ${to}?`,
     dl_info: (on, time, days, to, keep) => `Automatic: ${on ? `every day at ${time} for ${days === 0 ? "the same day" : days === 1 ? "the next day" : `${days} days later`}` : "off (main switch)"}. To: ${to || "nobody (settings)"}. The last ${keep} lists are kept. Yellow = check in Lighthouse.`,
+    dl_waiting: days => `The robot is reading the reservations of ${days} in Lighthouse (folio, remarks); the list follows within a few minutes...`, dl_ready: day => `List for ${day} made.`,
     dl_name_breakfast: "Breakfast list", dl_name_cleaning: "Cleaning list", dl_wa: "WhatsApp/SMS",
     sw_blist: "Breakfast list", sw_clist: "Cleaning list", task_ontbijtlijst: "Breakfast list", task_kuislijst: "Cleaning list",
     sec_ontbijtlijst: "Breakfast list", sec_kuislijst: "Cleaning list", sec_kamers: "Rooms",
@@ -1284,12 +1286,12 @@ const HS_TEXT = {
    ],
    "schakelaars.ontbijtlijst": ["Ontbijtlijst maken en versturen", "Elke dag de ontbijtlijst maken en versturen (instellingen Ontbijtlijst). In de monitor (tabblad Ontbijt) kan een lijst ook met de schakelaar uit gemaakt worden. Geldt alleen voor deze omgeving."],
    "schakelaars.kuislijst": ["Kuislijst maken en versturen", "Elke dag de kuislijst maken en versturen (instellingen Kuislijst). In de monitor (tabblad Kuis) kan een lijst ook met de schakelaar uit gemaakt worden. Geldt alleen voor deze omgeving."],
-   "ontbijtlijst.uur": ["Uur", "Elke dag om dit uur maken en versturen (bv. 17:45). 20 minuten ervoor start de robot om de reservaties van die dag nog eens in Lighthouse te lezen; de lijst vertrekt zodra dat klaar is (hoogstens 30 minuten na het uur)."],
+   "ontbijtlijst.uur": ["Uur", "Elke dag om dit uur maken en versturen (bv. 17:45). 5 minuten ervoor start de robot om de reservaties van die dag nog eens in Lighthouse te lezen; de lijst vertrekt op het uur, of zodra dat klaar is (lukt het niet, dan toch, hoogstens 30 minuten later)."],
    "ontbijtlijst.dag": ["Voor welke dag", "1 = morgen, 0 = vandaag."],
    "ontbijtlijst.email": ["Per mail naar", "Mail met de lijst en de Excel als bijlage. Meer adressen met een komma. Leeg = geen mail."],
    "ontbijtlijst.whatsapp": ["Per WhatsApp naar", "Gsm-nummers (+32...), met een komma. WhatsApp met het sjabloon template_breakfast_list_nl (instellingen WhatsApp), anders per sms. Pas als WhatsApp en sms aan staan."],
    "ontbijtlijst.woorden": ["Woorden voor opmerkingen", "Zinnen uit de opmerking of de folio van de reservatie met een van deze woorden komen bij de opmerkingen (bv. glutenvrij)."],
-   "kuislijst.uur": ["Uur", "Elke dag om dit uur maken en versturen (bv. 17:45). 20 minuten ervoor start de robot om de reservaties van die dag nog eens in Lighthouse te lezen; de lijst vertrekt zodra dat klaar is (hoogstens 30 minuten na het uur)."],
+   "kuislijst.uur": ["Uur", "Elke dag om dit uur maken en versturen (bv. 17:45). 5 minuten ervoor start de robot om de reservaties van die dag nog eens in Lighthouse te lezen; de lijst vertrekt op het uur, of zodra dat klaar is (lukt het niet, dan toch, hoogstens 30 minuten later)."],
    "kuislijst.dag": ["Voor welke dag", "1 = morgen, 0 = vandaag."],
    "kuislijst.email": ["Per mail naar", "Mail met de lijst en de Excel als bijlage. Meer adressen met een komma. Leeg = geen mail."],
    "kuislijst.whatsapp": ["Per WhatsApp naar", "Gsm-nummers (+32...), met een komma. WhatsApp met het sjabloon template_cleaning_list_nl (instellingen WhatsApp), anders per sms. Pas als WhatsApp en sms aan staan."],
@@ -1541,12 +1543,12 @@ const HS_TEXT = {
    ],
    "schakelaars.ontbijtlijst": ["Make and send the breakfast list", "Make and send the breakfast list every day (settings Breakfast list). In the monitor (Breakfast tab) a list can also be made with the switch off. Applies to this environment only."],
    "schakelaars.kuislijst": ["Make and send the cleaning list", "Make and send the cleaning list every day (settings Cleaning list). In the monitor (Cleaning tab) a list can also be made with the switch off. Applies to this environment only."],
-   "ontbijtlijst.uur": ["Time", "Make and send every day at this time (e.g. 17:45). 20 minutes before, the robot starts to read that day's reservations again in Lighthouse; the list goes out as soon as that is done (at most 30 minutes after the time)."],
+   "ontbijtlijst.uur": ["Time", "Make and send every day at this time (e.g. 17:45). 5 minutes before, the robot starts to read that day's reservations again in Lighthouse; the list goes out at that time, or as soon as that is done (if it fails, still at most 30 minutes later)."],
    "ontbijtlijst.dag": ["For which day", "1 = tomorrow, 0 = today."],
    "ontbijtlijst.email": ["By mail to", "Mail with the list and the Excel attached. More addresses separated by commas. Empty = no mail."],
    "ontbijtlijst.whatsapp": ["By WhatsApp to", "Mobile numbers (+32...), separated by commas. WhatsApp with template template_breakfast_list_nl (settings WhatsApp), otherwise by SMS. Only when WhatsApp and SMS are on."],
    "ontbijtlijst.woorden": ["Words for remarks", "Sentences from the reservation remark or folio containing one of these words are added to the remarks (e.g. gluten free)."],
-   "kuislijst.uur": ["Time", "Make and send every day at this time (e.g. 17:45). 20 minutes before, the robot starts to read that day's reservations again in Lighthouse; the list goes out as soon as that is done (at most 30 minutes after the time)."],
+   "kuislijst.uur": ["Time", "Make and send every day at this time (e.g. 17:45). 5 minutes before, the robot starts to read that day's reservations again in Lighthouse; the list goes out at that time, or as soon as that is done (if it fails, still at most 30 minutes later)."],
    "kuislijst.dag": ["For which day", "1 = tomorrow, 0 = today."],
    "kuislijst.email": ["By mail to", "Mail with the list and the Excel attached. More addresses separated by commas. Empty = no mail."],
    "kuislijst.whatsapp": ["By WhatsApp to", "Mobile numbers (+32...), separated by commas. WhatsApp with template template_cleaning_list_nl (settings WhatsApp), otherwise by SMS. Only when WhatsApp and SMS are on."],
@@ -1775,7 +1777,7 @@ async function resetSettings() {
 // ---------------------------------------------------------------- ontbijtlijst en kuislijst (tabbladen Ontbijt en Kuis)
 // Per dag één lijst (de laatste 15). Opnieuw maken (en versturen) voor een gekozen dag; bekijken en de Excel downloaden.
 const LIST_KINDS = ["breakfast", "cleaning"];
-const listData = {}, listDay = {}, listOpen = {};
+const listData = {}, listDay = {}, listOpen = {}, listPoll = {};
 const dayLong = iso => new Date(iso + "T00:00").toLocaleDateString(locale(), { weekday: "long", day: "2-digit", month: "2-digit", year: "numeric" });
 
 async function loadList(kind) {
@@ -1801,6 +1803,20 @@ function renderList(kind) {
   if (!dayInput.value || dayInput.dataset.kind !== $("#hotel").value) { dayInput.value = listDay[kind] || d.next_day; dayInput.dataset.kind = $("#hotel").value; }
   dayInput.onchange = () => { listDay[kind] = dayInput.value; };
   $(`#${kind}-info`).textContent = t("dl_info", d.switch, d.time, d.days, recipients(d), d.keep);
+  const busy = (d.pending || []).length > 0;
+  [$(`#${kind}-make`), $(`#${kind}-send`)].forEach(b => { b.disabled = busy; });
+  if (busy) {
+    $(`#${kind}-state`).className = "muted";
+    $(`#${kind}-state`).textContent = t("dl_waiting", d.pending.map(dayLong).join(", "));
+    clearTimeout(listPoll[kind]);
+    listPoll[kind] = setTimeout(() => loadList(kind), 15000);  // tot de robot nalas en de lijst gemaakt is
+  } else if (listPoll[kind]) {
+    listPoll[kind] = null;
+    const last = d.records[0];
+    $(`#${kind}-state`).className = "ok";
+    $(`#${kind}-state`).textContent = last ? t("dl_ready", dayLong(last.day)) : "";
+    if (last) listOpen[kind] = last.day;
+  }
   const hotel = encodeURIComponent($("#hotel").value);
   $(`#${kind}-rows`).innerHTML = d.records.map(x => `
     <tr>
@@ -1810,7 +1826,7 @@ function renderList(kind) {
       <td>${esc(x.summary)}</td>
       <td class="wrap">${sentCell(x)}</td>
       <td style="white-space:nowrap"><button type="button" class="link" data-view="${esc(x.day)}">${esc(t(listOpen[kind] === x.day ? "dl_hide" : "dl_view"))}</button>
-        <a href="${API}/api/monitor/${hotel}/list-xlsx?kind=${kind}&day=${esc(x.day)}">Excel</a></td>
+        <a class="jump" href="${API}/api/monitor/${hotel}/list-xlsx?kind=${kind}&day=${esc(x.day)}">Excel</a></td>
     </tr>${listOpen[kind] === x.day ? `<tr><td colspan="6"><div class="list-view">${x.html}</div></td></tr>` : ""}`).join("")
     || `<tr><td colspan="6" class="muted">${esc(t("dl_none"))}</td></tr>`;
   document.querySelectorAll(`#${kind}-rows button[data-view]`).forEach(b => b.onclick = () => {
@@ -1830,6 +1846,7 @@ async function makeList(kind, send) {
   state.textContent = t("dl_busy");
   try {
     const r = await get(`/api/monitor/${$("#hotel").value}/lists?kind=${kind}&day=${day}${send ? "&send=1" : ""}`, { method: "POST" });
+    if (r.requested) { await loadList(kind); return; }  // de robot leest eerst Lighthouse; de lijst volgt
     const failed = (r.sent || []).filter(s => !s.ok).length;
     state.className = failed ? "err" : "ok";
     state.textContent = failed ? t("dl_sent_fail", failed) : t(send ? "dl_sent_ok" : "dl_made", dayLong(day));
@@ -1839,7 +1856,7 @@ async function makeList(kind, send) {
     state.className = "err";
     state.textContent = `${t("load_error")}: ${e.message}`;
   } finally {
-    buttons.forEach(b => { b.disabled = false; });
+    if (!(listData[kind]?.pending || []).length) buttons.forEach(b => { b.disabled = false; });
   }
 }
 
