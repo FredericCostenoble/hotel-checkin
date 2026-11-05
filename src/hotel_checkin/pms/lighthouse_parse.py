@@ -422,6 +422,26 @@ def parse_charge_modal(text: str) -> dict | None:
     return {"room": room, "per_night": per_night or 1, "days": {d.isoformat(): per_night or 1 for d in days}}
 
 
+def parse_charge(modal: str, days_json: str) -> dict | None:
+    """Venster "Bewerken" (kamer, aantal per nacht) met het antwoord van CalculateDays, dat JSON geeft:
+    [{"date": "2026-11-06T00:00:00", "formattedDate": "06 nov. 2026", "isSelected": true}].
+    Geeft {"room", "per_night", "days": {"2026-11-06": 1}} of None als er geen gekozen dag is."""
+    import json
+
+    try:
+        rows = json.loads(days_json)
+    except ValueError:
+        return parse_charge_modal(modal + days_json)  # toch HTML (zoals het venster het toont)
+    chosen = sorted(str(x.get("date") or "")[:10] for x in rows if isinstance(x, dict) and x.get("isSelected"))
+    chosen = [d for d in chosen if re.fullmatch(r"\d{4}-\d{2}-\d{2}", d)]
+    if not chosen:
+        return None
+    head = parse_charge_modal(modal + "".join(
+        f'<input type="checkbox" checked value="{d}">' for d in chosen)) or {}
+    per_night = head.get("per_night") or 1
+    return {"room": head.get("room"), "per_night": per_night, "days": {d: per_night for d in chosen}}
+
+
 def charge_days_query(text: str) -> dict | None:
     """Uit het venster "Bewerken": de gegevens waarmee het venster zelf de dagen opvraagt (blok "Dagen",
     /Customer/Folios/CalculateDays). None als het venster geen dagen heeft."""

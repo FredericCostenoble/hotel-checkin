@@ -201,3 +201,16 @@ def test_charge_days_like_lighthouse():
     assert charge_days_query(modal) == {"accommodationId": "c0", "extraId": "1156459", "chargeId": "20388259",
                                         "folioMaskId": "f1", "isToFolio": "false"}
     assert parse_charge_modal(modal + days) == {"room": "22", "per_night": 2, "days": {"2026-11-06": 2}}
+
+
+def test_charge_days_json():
+    """CalculateDays geeft JSON met per dag isSelected."""
+    from hotel_checkin.pms.lighthouse_parse import parse_charge
+
+    modal = """<div>
+                    22 BUDGET DOUBLE ROOM
+                </div><select id="charge-amount" name="Amount"><option selected="selected">1</option><option>2</option></select>"""
+    days = '[{"date":"2026-11-06T00:00:00","formattedDate":"06 nov. 2026","isSelected":true},' \
+           '{"date":"2026-11-07T00:00:00","formattedDate":"07 nov. 2026","isSelected":false}]'
+    assert parse_charge(modal, days) == {"room": "22", "per_night": 1, "days": {"2026-11-06": 1}}
+    assert parse_charge(modal, "[]") is None

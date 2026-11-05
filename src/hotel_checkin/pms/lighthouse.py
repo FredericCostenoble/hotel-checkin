@@ -30,7 +30,7 @@ from hotel_checkin.pms.lighthouse_parse import (
     BREAKFAST_LABEL,
     TZ,
     charge_days_query,
-    parse_charge_modal,
+    parse_charge,
     parse_contact,
     parse_detail,
     parse_folio,
@@ -228,7 +228,7 @@ def _charge_days(session: LighthouseSession, modal_url: str) -> dict | None:
     days = session.page.request.get(session.base + CHARGE_DAYS_PATH, params=query, headers=headers)
     if not days.ok or "/Customer/" not in days.url:
         return None
-    return parse_charge_modal(body + days.text())
+    return parse_charge(body, days.text())
 
 
 def _contact_request(session: LighthouseSession, reservation_id: str) -> dict | None:
