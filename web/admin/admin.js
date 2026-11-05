@@ -1266,7 +1266,7 @@ const HS_TEXT = {
    ],
    "robot.check_minutes": [
     "Vangnet: om de hoeveel minuten",
-    "Normaal start de meldingsmail van Lighthouse de robot. Dit is hoe vaak hij daarnaast zelf kijkt."
+    "Normaal start de meldingsmail van Lighthouse de robot. Om de zoveel minuten start hij daarnaast als vangnet (bv. 60). 0 = nooit op schema. Met alle hoofdschakelaars uit start hij nooit."
    ],
    "robot.contact_refresh_hours": [
     "Reservaties bijwerken: om de hoeveel uur",
@@ -1524,7 +1524,7 @@ const HS_TEXT = {
    ],
    "robot.check_minutes": [
     "Safety net: every how many minutes",
-    "Normally the Lighthouse notification mail starts the robot. This is how often it also checks on its own."
+    "Normally the Lighthouse notification mail starts the robot. Every so many minutes it also starts as a safety net (e.g. 60). 0 = never on schedule. With all main switches off it never starts."
    ],
    "robot.contact_refresh_hours": [
     "Update reservations: every how many hours",

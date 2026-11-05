@@ -255,12 +255,13 @@ def admin_api(req: func.HttpRequest) -> func.HttpResponse:
 
 @app.timer_trigger(schedule="0 * * * * *", arg_name="timer", run_on_startup=False, use_monitor=False)
 def mail_trigger(timer: func.TimerRequest) -> None:
-    """Elke minuut: meldingen van Lighthouse/Cubilis in de mailbox starten de robot (processes/mail_trigger.py), en
-    de ontbijtlijst en kuislijst maken zodra de robot nalas (processes/daily_lists.py). Samen in één timer: geen
-    extra uitvoeringen (kost)."""
+    """Elke minuut: meldingen van Lighthouse/Cubilis in de mailbox starten de robot (processes/mail_trigger.py), de
+    robot als vangnet starten volgens [robot] check_minutes (processes/robot_schedule.py), en de ontbijtlijst en
+    kuislijst maken zodra de robot nalas (processes/daily_lists.py). Samen in één timer: geen extra uitvoeringen
+    (kost). De robot heeft geen eigen schema in Azure meer."""
     import logging
 
-    from hotel_checkin.processes import daily_lists
+    from hotel_checkin.processes import daily_lists, robot_schedule
     from hotel_checkin.processes import mail_trigger as process
 
     for hotel_id in list_hotels():
@@ -270,6 +271,10 @@ def mail_trigger(timer: func.TimerRequest) -> None:
                 process.cleanup(hotel_id)  # eenmalig: oude verwerkte mails naar hun map
         except Exception:
             logging.exception("%s: mail_trigger mislukt", hotel_id)
+        try:
+            robot_schedule.run(hotel_id)
+        except Exception:
+            logging.exception("%s: robot op schema starten mislukt", hotel_id)
         try:
             daily_lists.run(hotel_id)
         except Exception:

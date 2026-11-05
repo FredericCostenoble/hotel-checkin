@@ -1,16 +1,15 @@
 """De Lighthouse-robot als los programma (container in Azure Container Apps).
 
-Draait op schema (standaard elk uur, als vangnet) en op vraag via de knop "Robot nu draaien" op de
-opvolgpagina. Leest Lighthouse alleen; schrijft niets in Lighthouse.
+Wordt gestart door de Function App: bij een meldingsmail, een gevraagde ontbijt- of kuislijst, de knop "Robot nu
+draaien" op de opvolgpagina, en als vangnet om de [robot] check_minutes (processes/robot_schedule.py). De job heeft
+geen eigen schema in Azure (kost: geen container die start om niets te doen).
 
     python -m hotel_checkin.robot                  # alle hotels, sinds de nieuwste opgeslagen boeking
     python -m hotel_checkin.robot --hotel lucca --hours 48
 
-Schema van de job per omgeving: GitHub-variabele ROBOT_SCHEDULE (cron, UTC), standaard elk
-uur. Nieuwe boekingen komen normaal meteen binnen via de meldingsmail (processes/mail_trigger.py);
-het schema vangt op wat geen mail kreeg. Per hotel kan het trager: [robot] check_minutes in het hotelbestand, per omgeving te
-overschrijven met Key Vault-geheim <hotel>-robot-check-minutes. Op vraag (knop in de monitor,
-ROBOT_MANUAL=1) worden alle hotels gelezen.
+Nieuwe boekingen komen normaal meteen binnen via de meldingsmail (processes/mail_trigger.py); het vangnet vangt op
+wat geen mail kreeg. Elke start zet ROBOT_MANUAL=1: alle hotels worden gelezen. Staan alle hoofdschakelaars van een
+hotel uit (bevroren), dan opent de robot Lighthouse niet voor dat hotel.
 
 Elke run zoekt nieuwe reservaties (en leest van nieuwe meteen de contactgegevens). Om de zoveel
 uur ([robot] contact_refresh_hours in het hotelbestand, standaard 2) leest hij ook de

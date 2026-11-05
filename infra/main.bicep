@@ -69,8 +69,6 @@ param robotImage string = ''
 param acrName string = ''
 param acrResourceGroup string = ''
 
-@description('Schema van de robot (cron, UTC). GitHub-variabele ROBOT_SCHEDULE per omgeving. Per hotel kan het trager: [robot] check_minutes.')
-param robotSchedule string = '0 * * * *'
 
 @description('Id van de rol waarmee de Function App de robot mag starten (Container Apps Jobs Operator). Leeg = geen knop.')
 param robotStarterRoleId string = ''
@@ -449,10 +447,12 @@ resource robotJob 'Microsoft.App/jobs@2024-03-01' = if (withRobot) {
     environmentId: cae.id
     workloadProfileName: 'Consumption'
     configuration: {
-      triggerType: 'Schedule'
+      // Geen eigen schema: de Function App start de robot (meldingsmail, lijsten, knop, en als vangnet om de
+      // [robot] check_minutes, processes/robot_schedule.py). Zo start er nooit een container om niets te doen.
+      triggerType: 'Manual'
       replicaTimeout: 1800  // harde grens; de robot zelf stopt na 25 minuten (core/run_context.py)
       replicaRetryLimit: 0
-      scheduleTriggerConfig: { cronExpression: robotSchedule, parallelism: 1, replicaCompletionCount: 1 }
+      manualTriggerConfig: { parallelism: 1, replicaCompletionCount: 1 }
       registries: [{ server: '${acrName}.azurecr.io', identity: robotId.id }]
     }
     template: {

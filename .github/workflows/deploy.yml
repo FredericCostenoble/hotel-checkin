@@ -99,7 +99,6 @@ jobs:
                          acrResourceGroup=rg-checkin-prd \
                          robotStarterRoleId="$STARTER" \
                          budgetAmount="${{ vars.BUDGET_AMOUNT || '0' }}" \
-                         robotSchedule="${{ vars.ROBOT_SCHEDULE || '0 * * * *' }}" \
                          alertEmail="${{ vars.ALERT_EMAIL }}" \
                          alertExtraEmails="$HOTEL_ALERTS" \
                          kvAdminObjectId="${{ vars.KV_ADMIN_OBJECT_ID }}" \

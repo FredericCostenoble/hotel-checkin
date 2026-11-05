@@ -243,3 +243,22 @@ def test_frozen_when_all_switches_off(monkeypatch):
     assert not send_messages.robot_needed("lucca") and not mail_trigger.enabled("lucca")
     monkeypatch.setenv("LUCCA_SCHAKELAARS_RESERVATIES", "true")
     assert send_messages.robot_needed("lucca") and mail_trigger.enabled("lucca")
+
+
+def test_robot_schedule_from_the_function_app(monkeypatch):
+    """Geen schema in Azure: de Function App start de robot om de [robot] check_minutes, nooit als alles uit staat."""
+    from hotel_checkin.admin import cloud_robot
+    from hotel_checkin.processes import new_reservation, robot_schedule
+
+    starts = []
+    monkeypatch.setattr(cloud_robot, "available", lambda: True)
+    monkeypatch.setattr(cloud_robot, "running", lambda execs=None: False)
+    monkeypatch.setattr(cloud_robot, "start", lambda: starts.append(1) or True)
+    monkeypatch.setenv("LUCCA_SCHAKELAARS_RESERVATIES", "true")
+    t = datetime(2026, 11, 5, 9, 0, tzinfo=dl.UTC)
+    repo.log_robot_run("lucca", new_reservation.TASK, t - timedelta(minutes=30), True)
+    assert robot_schedule.run("lucca", t) == "" and starts == []  # vorige run 30 minuten geleden
+    assert robot_schedule.run("lucca", t + timedelta(minutes=29)) == "robot gestart op schema" and starts == [1]
+    assert robot_schedule.run("lucca", t + timedelta(minutes=31)) == ""  # net gestart: niet opnieuw
+    monkeypatch.setenv("LUCCA_SCHAKELAARS_RESERVATIES", "false")  # alles uit: bevroren
+    assert robot_schedule.run("lucca", t + timedelta(hours=5)) == "" and starts == [1]

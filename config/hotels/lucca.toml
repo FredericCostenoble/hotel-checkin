@@ -111,10 +111,10 @@ whatsapp_from = "+4915888620339"   # TODO: idem
 [robot]
 # De robot zoekt bij elke run nieuwe reservaties. Om de zoveel uur leest hij ook de contactgegevens
 # opnieuw van reservaties die binnenkort aankomen en nog geen e-mailadres hebben.
-# check_minutes: hoe vaak naar nieuwe reservaties kijken als vangnet (normaal start de meldingsmail de robot). Nooit sneller dan het schema van de job
-# (GitHub-variabele ROBOT_SCHEDULE per omgeving). Per omgeving te overschrijven met Key Vault-geheim
-# lucca-robot-check-minutes (bv. trager in TST).
-check_minutes = 0  # 0 = elke run op schema (elk heel uur) gaat door, ook na een manuele run
+# check_minutes: om de hoeveel minuten de Function App de robot als vangnet start (normaal start de meldingsmail de
+# robot). De robot heeft geen eigen schema in Azure: er start nooit een container om niets te doen, en met alle
+# hoofdschakelaars uit start hij helemaal niet (processes/robot_schedule.py). Per omgeving in de monitor te wijzigen.
+check_minutes = 60  # 0 = nooit op schema (alleen meldingsmail, gevraagde lijst of de knop)
 contact_refresh_hours = 2
 # mail_trigger: de mailbox van checkin@ elke minuut nakijken op meldingen van Lighthouse/Cubilis
 # (via een regel doorgestuurd van info@) en dan meteen de robot starten. Per omgeving uit te zetten
