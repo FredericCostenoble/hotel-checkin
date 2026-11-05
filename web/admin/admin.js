@@ -10,7 +10,7 @@ const T = {
     dl_sent_fail: n => `Gemaakt, maar ${n} verzending(en) niet gelukt (zie Verstuurd).`, dl_none: "Nog geen lijsten.",
     dl_not_sent: "niet verstuurd", dl_no_to: "geen ontvangers", dl_confirm: (day, to) => `Lijst voor ${day} opnieuw maken en versturen naar ${to}?`,
     dl_info: (on, time, days, to, keep) => `Automatisch: ${on ? `elke dag om ${time} voor ${days === 0 ? "dezelfde dag" : days === 1 ? "de dag erna" : `${days} dagen later`}` : "uit (hoofdschakelaar)"}. Naar: ${to || "niemand (instellingen)"}. De laatste ${keep} lijsten blijven bewaard. Geel = nakijken in Lighthouse.`,
-    dl_waiting: days => `De robot leest de reservaties van ${days} in Lighthouse (folio, opmerkingen); de lijst volgt binnen enkele minuten...`, dl_ready: day => `Lijst voor ${day} gemaakt.`,
+    dl_waiting: (day, at) => `Gevraagd om ${at}: de robot leest de reservaties van ${day} in Lighthouse en maakt de lijst (enkele minuten). Zie ook het robotlog.`, dl_sending: (day, at) => `Lijst voor ${day} gemaakt door de robot, wordt verstuurd...`, dl_ready: day => `Lijst voor ${day} gemaakt.`,
     dl_name_breakfast: "Ontbijtlijst", dl_name_cleaning: "Kuislijst", dl_wa: "WhatsApp/sms",
     sw_blist: "Ontbijtlijst", sw_clist: "Kuislijst", sw_read: "Reservaties lezen", task_ontbijtlijst: "Ontbijtlijst", task_kuislijst: "Kuislijst",
     sec_ontbijtlijst: "Ontbijtlijst", sec_kuislijst: "Kuislijst", sec_kamers: "Kamers",
@@ -102,7 +102,7 @@ const T = {
     dl_sent_fail: n => `Made, but ${n} sending(s) failed (see Sent).`, dl_none: "No lists yet.",
     dl_not_sent: "not sent", dl_no_to: "no recipients", dl_confirm: (day, to) => `Make the list for ${day} again and send it to ${to}?`,
     dl_info: (on, time, days, to, keep) => `Automatic: ${on ? `every day at ${time} for ${days === 0 ? "the same day" : days === 1 ? "the next day" : `${days} days later`}` : "off (main switch)"}. To: ${to || "nobody (settings)"}. The last ${keep} lists are kept. Yellow = check in Lighthouse.`,
-    dl_waiting: days => `The robot is reading the reservations of ${days} in Lighthouse (folio, remarks); the list follows within a few minutes...`, dl_ready: day => `List for ${day} made.`,
+    dl_waiting: (day, at) => `Requested at ${at}: the robot reads the reservations of ${day} in Lighthouse and makes the list (a few minutes). See also the robot log.`, dl_sending: (day, at) => `List for ${day} made by the robot, being sent...`, dl_ready: day => `List for ${day} made.`,
     dl_name_breakfast: "Breakfast list", dl_name_cleaning: "Cleaning list", dl_wa: "WhatsApp/SMS",
     sw_blist: "Breakfast list", sw_clist: "Cleaning list", sw_read: "Read reservations", task_ontbijtlijst: "Breakfast list", task_kuislijst: "Cleaning list",
     sec_ontbijtlijst: "Breakfast list", sec_kuislijst: "Cleaning list", sec_kamers: "Rooms",
@@ -1807,11 +1807,11 @@ function renderList(kind) {
   if (!dayInput.value || dayInput.dataset.kind !== $("#hotel").value) { dayInput.value = listDay[kind] || d.next_day; dayInput.dataset.kind = $("#hotel").value; }
   dayInput.onchange = () => { listDay[kind] = dayInput.value; };
   $(`#${kind}-info`).textContent = t("dl_info", d.switch, d.time, d.days, recipients(d), d.keep);
+  // Gevraagd en nog niet klaar: zeggen wat er gebeurt; de knoppen blijven bruikbaar (een nieuwe vraag vervangt de vorige)
   const busy = (d.pending || []).length > 0;
-  [$(`#${kind}-make`), $(`#${kind}-send`)].forEach(b => { b.disabled = busy; });
   if (busy) {
     $(`#${kind}-state`).className = "muted";
-    $(`#${kind}-state`).textContent = t("dl_waiting", d.pending.map(dayLong).join(", "));
+    $(`#${kind}-state`).textContent = d.pending.map(p => t(p.made ? "dl_sending" : "dl_waiting", dayLong(p.day), stamp(p.at))).join(" ");
     clearTimeout(listPoll[kind]);
     listPoll[kind] = setTimeout(() => loadList(kind), 15000);  // tot de robot nalas en de lijst gemaakt is
   } else if (listPoll[kind]) {
@@ -1864,7 +1864,7 @@ async function makeList(kind, send) {
     state.className = "err";
     state.textContent = `${t("load_error")}: ${e.message}`;
   } finally {
-    if (!(listData[kind]?.pending || []).length) buttons.forEach(b => { b.disabled = false; });
+    buttons.forEach(b => { b.disabled = false; });
   }
 }
 

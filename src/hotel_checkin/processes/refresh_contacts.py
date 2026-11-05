@@ -224,7 +224,7 @@ def run(hotel_id: str) -> int:
     if finished and not skipped:
         refresh_requests.done(hotel_id, requested)
     if finished and lists_due:
-        daily_lists.refresh_done(hotel_id, list_keys)
+        daily_lists.robot_make(hotel_id, list_keys)  # de robot maakt de gevraagde lijsten (eigen taak)
     parts = [f"{stats.read} reservaties zonder e-mailadres nagelezen: " + stats.note()] if stats.read else []
     if requested:
         parts.append("nagelezen na melding: " + ", ".join(sorted(requested)))

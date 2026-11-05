@@ -165,24 +165,49 @@ def robot(monkeypatch):
     return starts
 
 
-def test_make_first_lets_the_robot_read(setup, robot):
-    """Lijst maken in de monitor: eerst leest de robot de reservaties van die dag (folio), dan pas de lijst."""
+def test_make_list_is_done_by_the_robot_and_never_sends(setup, robot):
+    """Lijst maken in de monitor: de robot leest de reservaties van die dag (folio) en maakt de lijst, als eigen
+    taak in zijn run. Lijst maken verstuurt niets."""
     _r("a", "20", DAY - timedelta(days=1), 2, rate="STANDARD RATE BREAKFAST INCL")
     _r("b", "21", DAY + timedelta(days=3), 2)
     t = datetime(2026, 11, 5, 9, 0, tzinfo=TZ)
     assert dl.request("lucca", "breakfast", DAY, by="frederic", send_now=False, now=t)["requested"]
     assert robot == [1] and not repo.daily_lists("lucca", "breakfast")
-    assert dl.view("lucca", "breakfast")["pending"] == [DAY.isoformat()]
-    # De robot leest wie op die dag in het hotel is, en noteert dat
-    assert dl.pending_reads("lucca") == [f"breakfast:{DAY.isoformat()}"]
+    assert [p["day"] for p in dl.view("lucca", "breakfast")["pending"]] == [DAY.isoformat()]
+    # De robot: wie op die dag in het hotel is nalezen, dan de lijst maken
+    keys = dl.pending_reads("lucca")
+    assert keys == [f"breakfast:{DAY.isoformat()}"]
     assert [r.reservation_id for r in dl.refresh_due("lucca")] == ["a"]
-    assert dl.run("lucca", t + timedelta(minutes=1)) == []  # nog niet nagelezen: wachten
-    dl.refresh_done("lucca", dl.pending_reads("lucca"), t + timedelta(minutes=3))
-    assert dl.pending_reads("lucca") == []
-    assert dl.run("lucca", t + timedelta(minutes=4)) == [f"breakfast {DAY.isoformat()}"]
-    assert repo.daily_lists("lucca", "breakfast")[0]["generated_by"] == "frederic" and not setup  # niet verstuurd
+    assert dl.run("lucca", t + timedelta(minutes=1)) == []  # nog niet gemaakt: wachten
+    assert dl.robot_make("lucca", keys, t + timedelta(minutes=3)) == keys
+    made = repo.daily_lists("lucca", "breakfast")[0]
+    assert made["generated_by"] == "frederic" and made["total"] == 2 and not made["sent"]
     assert "nagelezen om 09:03" in repo.robot_runs("lucca", task="ontbijtlijst")[0]["error"]
-    assert dl.view("lucca", "breakfast")["pending"] == []
+    assert dl.pending_reads("lucca") == []
+    assert dl.run("lucca", t + timedelta(minutes=4)) == [f"breakfast {DAY.isoformat()}"]  # aanvraag afgesloten
+    assert not setup and dl.view("lucca", "breakfast")["pending"] == []  # geen mail
+
+
+def test_make_and_send_robot_makes_function_app_sends(setup, robot):
+    _r("a", "20", DAY - timedelta(days=1), 2, rate="STANDARD RATE BREAKFAST INCL")
+    t = datetime(2026, 11, 5, 9, 0, tzinfo=TZ)
+    dl.request("lucca", "breakfast", DAY, by="frederic", send_now=True, now=t)
+    dl.robot_make("lucca", dl.pending_reads("lucca"), t + timedelta(minutes=3))
+    assert not setup  # de robot verstuurt niet
+    assert dl.run("lucca", t + timedelta(minutes=4)) == [f"breakfast {DAY.isoformat()}"]
+    assert len(setup) == 1 and repo.daily_lists("lucca", "breakfast")[0]["sent"][0]["ok"]
+    assert "verstuurd" in repo.robot_runs("lucca", task="ontbijtlijst")[0]["error"]
+
+
+def test_new_request_replaces_send(setup, robot):
+    """Eerst Maken en versturen, daarna Lijst maken: de laatste vraag geldt, er gaat niets weg."""
+    _r("a", "20", DAY - timedelta(days=1), 2, rate="STANDARD RATE BREAKFAST INCL")
+    t = datetime(2026, 11, 5, 9, 0, tzinfo=TZ)
+    dl.request("lucca", "breakfast", DAY, send_now=True, now=t)
+    dl.request("lucca", "breakfast", DAY, send_now=False, now=t + timedelta(minutes=1))
+    dl.robot_make("lucca", dl.pending_reads("lucca"), t + timedelta(minutes=3))
+    dl.run("lucca", t + timedelta(minutes=4))
+    assert not setup
 
 
 def test_robot_restarted_and_fallback_after_30_minutes(setup, robot):
@@ -190,9 +215,9 @@ def test_robot_restarted_and_fallback_after_30_minutes(setup, robot):
     t = datetime(2026, 11, 5, 9, 0, tzinfo=TZ)
     dl.request("lucca", "cleaning", DAY, send_now=True, now=t)
     assert dl.run("lucca", t + timedelta(minutes=2)) == [] and robot == [1]  # net gestart
-    assert dl.run("lucca", t + timedelta(minutes=7))[0].endswith("robot gestart om na te lezen") and robot == [1, 1]
+    assert dl.run("lucca", t + timedelta(minutes=7))[0].endswith("robot gestart") and robot == [1, 1]
     assert dl.run("lucca", t + timedelta(minutes=31)) == [f"cleaning {DAY.isoformat()}"]
-    assert len(setup) == 1 and "niet nagelezen" in repo.robot_runs("lucca", task="kuislijst")[0]["error"]
+    assert len(setup) == 1 and "maakte de lijst niet" in repo.robot_runs("lucca", task="kuislijst")[0]["error"]
 
 
 def test_automatic_list_robot_5_minutes_before(setup, robot, monkeypatch):
@@ -203,8 +228,8 @@ def test_automatic_list_robot_5_minutes_before(setup, robot, monkeypatch):
     assert dl.run("lucca", t) == [] and robot == []
     assert dl.run("lucca", t + timedelta(minutes=1))[0].startswith(f"breakfast:{DAY.isoformat()}: aangevraagd")
     assert robot == [1]
-    dl.refresh_done("lucca", dl.pending_reads("lucca"), t + timedelta(minutes=3))
-    assert dl.run("lucca", t + timedelta(minutes=4)) == []  # nagelezen, maar pas om 17:45 versturen
+    dl.robot_make("lucca", dl.pending_reads("lucca"), t + timedelta(minutes=3))
+    assert dl.run("lucca", t + timedelta(minutes=4)) == [] and not setup  # gemaakt, maar pas om 17:45 versturen
     assert dl.run("lucca", t + timedelta(minutes=6)) == [f"breakfast {DAY.isoformat()}"] and len(setup) == 1
     assert dl.run("lucca", t + timedelta(minutes=8)) == []  # één keer per dag
 
