@@ -4,16 +4,16 @@ const API = window.ADMIN_API || "";
 const T = {
   nl: {
     title: "Check-in monitor", hotel: "Hotel", tab_res: "Reservaties", tab_robot: "Robot", tab_guests: "Gasten", tab_workflow: "Workflow",
-    tab_breakfast: "Ontbijt", tab_cleaning: "Kuis", dl_day: "Lijst voor", dl_make: "Lijst maken", dl_send: "Maken en versturen",
+    tab_breakfast: "Ontbijt", tab_cleaning: "Schoonmaak", dl_day: "Lijst voor", dl_make: "Lijst maken", dl_send: "Maken en versturen",
     dl_c_day: "Dag", dl_c_made: "Gemaakt", dl_c_by: "Door", dl_c_content: "Inhoud", dl_c_sent: "Verstuurd", dl_view: "Bekijken", dl_hide: "Verbergen",
     dl_auto: "automatisch", dl_busy: "Bezig...", dl_made: day => `Lijst voor ${day} gemaakt.`, dl_sent_ok: day => `Lijst voor ${day} gemaakt en verstuurd.`,
     dl_sent_fail: n => `Gemaakt, maar ${n} verzending(en) niet gelukt (zie Verstuurd).`, dl_none: "Nog geen lijsten.",
     dl_not_sent: "niet verstuurd", dl_no_to: "geen ontvangers", dl_confirm: (day, to) => `Lijst voor ${day} opnieuw maken en versturen naar ${to}?`,
     dl_info: (on, time, days, to, keep) => `Automatisch: ${on ? `elke dag om ${time} voor ${days === 0 ? "dezelfde dag" : days === 1 ? "de dag erna" : `${days} dagen later`}` : "uit (hoofdschakelaar)"}. Naar: ${to || "niemand (instellingen)"}. De laatste ${keep} lijsten blijven bewaard.`,
     dl_waiting: (day, at) => `Gevraagd om ${at}: de robot leest de reservaties van ${day} in Lighthouse en maakt de lijst (enkele minuten). Zie ook het robotlog.`, dl_sending: (day, at) => `Lijst voor ${day} gemaakt door de robot, wordt verstuurd...`, dl_no_robot: (day, at) => `Lijst voor ${day} gevraagd om ${at}, maar er draait geen robot (niet gestart, zie robotlog). Klik opnieuw om het nog eens te proberen.`, dl_ready: day => `Lijst voor ${day} gemaakt.`,
-    dl_name_breakfast: "Ontbijtlijst", dl_name_cleaning: "Kuislijst", dl_wa: "WhatsApp/sms",
-    sw_blist: "Ontbijtlijst", sw_clist: "Kuislijst", sw_read: "Reservaties lezen", task_ontbijtlijst: "Ontbijtlijst", task_kuislijst: "Kuislijst",
-    sec_ontbijtlijst: "Ontbijtlijst", sec_kuislijst: "Kuislijst", sec_kamers: "Kamers",
+    dl_name_breakfast: "Ontbijtlijst", dl_name_cleaning: "Schoonmaaklijst", dl_wa: "WhatsApp/sms",
+    sw_blist: "Ontbijtlijst", sw_clist: "Schoonmaaklijst", sw_read: "Reservaties lezen", task_ontbijtlijst: "Ontbijtlijst", task_kuislijst: "Schoonmaaklijst",
+    sec_ontbijtlijst: "Ontbijtlijst", sec_kuislijst: "Schoonmaaklijst", sec_kamers: "Kamers",
     wf_save: "Bewaren", wf_reset: "Terug naar standaard", wf_saved: "Bewaard.", wf_dirty: "Niet bewaarde wijzigingen.",
     wf_reset_confirm: "De workflow terugzetten naar de standaard uit het hotelbestand? Alle wijzigingen gaan verloren.",
     wf_from_file: "Standaard uit het hotelbestand", wf_changed: (who, when) => `Gewijzigd door ${who} op ${when}`,
@@ -1287,7 +1287,7 @@ const HS_TEXT = {
    ],
    "schakelaars.reservaties": ["Reservaties lezen (robot)", "De robot leest nieuwe en gewijzigde reservaties in Lighthouse. Staan alle hoofdschakelaars uit, dan is deze omgeving bevroren: de robot start niet meer en opent Lighthouse niet. Geldt alleen voor deze omgeving."],
    "schakelaars.ontbijtlijst": ["Ontbijtlijst maken en versturen", "Elke dag de ontbijtlijst maken en versturen (instellingen Ontbijtlijst). In de monitor (tabblad Ontbijt) kan een lijst ook met de schakelaar uit gemaakt worden. Geldt alleen voor deze omgeving."],
-   "schakelaars.kuislijst": ["Kuislijst maken en versturen", "Elke dag de kuislijst maken en versturen (instellingen Kuislijst). In de monitor (tabblad Kuis) kan een lijst ook met de schakelaar uit gemaakt worden. Geldt alleen voor deze omgeving."],
+   "schakelaars.kuislijst": ["Schoonmaaklijst maken en versturen", "Elke dag de schoonmaaklijst maken en versturen (instellingen Schoonmaaklijst). In de monitor (tabblad Schoonmaak) kan een lijst ook met de schakelaar uit gemaakt worden. Geldt alleen voor deze omgeving."],
    "ontbijtlijst.uur": ["Uur", "Elke dag om dit uur maken en versturen (bv. 17:45). 5 minuten ervoor start de robot om de reservaties van die dag nog eens in Lighthouse te lezen; de lijst vertrekt op het uur, of zodra dat klaar is (lukt het niet, dan toch, hoogstens 30 minuten later)."],
    "ontbijtlijst.dag": ["Voor welke dag", "1 = morgen, 0 = vandaag."],
    "ontbijtlijst.email": ["Per mail naar", "Mail met de lijst en de Excel als bijlage. Meer adressen met een komma. Leeg = geen mail."],
@@ -1300,8 +1300,8 @@ const HS_TEXT = {
    "kuislijst.controle": ["Controle", "Functie bovenaan de lijst (Controle: ...), geen naam. Leeg = geen regel."],
    "kuislijst.extra_rijen": ["Vaste rijen onderaan", "Bv. TOILETTEN. Meer rijen met een komma."],
    "kuislijst.woorden": ["Woorden voor opmerkingen", "Zinnen uit de opmerking of de folio van de reservatie met een van deze woorden komen bij de opmerkingen (bv. babybed, romantisch)."],
-   "kamers.lijst_volgorde": ["Kamers op de ontbijt- en kuislijst", "In deze volgorde, met een komma; - = lege rij (nieuwe verdieping). Naast het nummer komt de omschrijving uit Lighthouse."],
-   "kamers.20.lijst": ["Naam op de lijsten", "Eigen naam in plaats van het nummer op de ontbijt- en kuislijst (bv. App). Leeg = het nummer."],
+   "kamers.lijst_volgorde": ["Kamers op de ontbijt- en schoonmaaklijst", "In deze volgorde, met een komma; - = lege rij (nieuwe verdieping). Naast het nummer komt de omschrijving uit Lighthouse."],
+   "kamers.20.lijst": ["Naam op de lijsten", "Eigen naam in plaats van het nummer op de ontbijt- en schoonmaaklijst (bv. App). Leeg = het nummer."],
    "schakelaars.berichten": [
     "Berichten en Salto",
     "Mails, sms en WhatsApp aan gasten, en de pincodes bij Salto. Uit = niets naar gasten en geen codes. Geldt alleen voor deze omgeving; buiten PRD gaat alles naar het testadres."
@@ -1389,7 +1389,7 @@ const HS_TEXT = {
    "robot": "De robot leest Lighthouse (alleen lezen).",
    "schakelaars": "Hoofdschakelaars: wat het systeem echt mag doen. Standaard uit, per omgeving apart.",
    "ontbijtlijst": "Dagelijkse ontbijtlijst: per kamer het aantal personen met ontbijt. Aan of uit met de hoofdschakelaar Ontbijtlijst.",
-   "kuislijst": "Dagelijkse kuislijst: per kamer vertrek, blijft of check in, met opmerkingen. Aan of uit met de hoofdschakelaar Kuislijst.",
+   "kuislijst": "Dagelijkse schoonmaaklijst: per kamer vertrek, blijft of check in, met opmerkingen. Aan of uit met de hoofdschakelaar Schoonmaaklijst.",
    "messaging": "Berichten uit de workflow.",
    "whatsapp": "Door Meta goedgekeurde sjablonen per bericht en taal, bv. template_confirmation_nl = HX... Zonder sjabloon gaat het bericht per sms.",
    "retention": "Opruimen gebeurt bij Synchroniseren op het tabblad Gasten.",
@@ -1778,7 +1778,7 @@ async function resetSettings() {
 }
 
 
-// ---------------------------------------------------------------- ontbijtlijst en kuislijst (tabbladen Ontbijt en Kuis)
+// ---------------------------------------------------------------- ontbijtlijst en kuislijst (tabbladen Ontbijt en Schoonmaak)
 // Per dag één lijst (de laatste 15). Opnieuw maken (en versturen) voor een gekozen dag; bekijken en de Excel downloaden.
 const LIST_KINDS = ["breakfast", "cleaning"];
 const listData = {}, listDay = {}, listOpen = {}, listPoll = {};

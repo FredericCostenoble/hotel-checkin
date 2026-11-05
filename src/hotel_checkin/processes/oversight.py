@@ -145,7 +145,7 @@ def _send(hotel_id: str, subject: str, html_body: str) -> bool:
 _TASK_NAMES = {"overschrijving_booking": "Overschrijvingen", "ontbijt_labels": "Ontbijt labels",
                "lighthouse_bijwerken": "Pincode en status in Lighthouse", "nieuwe_reservaties": "Nieuwe reservaties",
                "oude_boekingen": "Oudere boekingen", "betaalverzoeken": "Betaalverzoeken", "berichten": "Berichten", "meldingen": "Mailbox nakijken",
-               "ontbijtlijst": "Ontbijtlijst", "kuislijst": "Kuislijst"}
+               "ontbijtlijst": "Ontbijtlijst", "kuislijst": "Schoonmaaklijst"}
 
 
 def activity(hotel_id: str, hours: int = 24) -> list[str]:
@@ -168,7 +168,7 @@ def activity(hotel_id: str, hours: int = 24) -> list[str]:
              "lighthouse_bijwerken": "reservatie(s) bijgewerkt in Lighthouse", "nieuwe_reservaties": "nieuwe reservatie(s)",
              "oude_boekingen": "oudere boeking(en) binnengehaald", "betaalverzoeken": "betaalverzoek(en) gemaakt", "berichten": "bericht(en) verstuurd",
              "meldingen": "betaallink(s) bewaard", "ontbijtlijst": "ontbijtlijst(en) verstuurd",
-             "kuislijst": "kuislijst(en) verstuurd"}
+             "kuislijst": "schoonmaaklijst(en) verstuurd"}
     out = [f"De voorbije {hours} uur: {robot_runs} robotrun(s)"
            + (", " + ", ".join(f"{n} {words[t]}" for t, n in done.items()) if done else ", niets geregistreerd of gezet")
            + "."]

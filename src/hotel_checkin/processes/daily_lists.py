@@ -1,8 +1,8 @@
-"""Proces: elke dag de ontbijtlijst en de kuislijst maken en versturen.
+"""Proces: elke dag de ontbijtlijst en de schoonmaaklijst maken en versturen.
 
 Hoofdschakelaars [schakelaars] ontbijtlijst en kuislijst (per omgeving, standaard uit). Aan = de lijst wordt elke
 dag om [ontbijtlijst] uur / [kuislijst] uur gemaakt voor de dag [..] dag later (1 = morgen) en verstuurd per mail
-(met de Excel als bijlage) en per WhatsApp (met sms als terugval). In de monitor (tabbladen Ontbijt en Kuis) kan
+(met de Excel als bijlage) en per WhatsApp (met sms als terugval). In de monitor (tabbladen Ontbijt en Schoonmaak) kan
 een lijst altijd opnieuw gemaakt en verstuurd worden, ook met de schakelaar uit. Alleen de laatste KEEP lijsten
 per soort blijven bewaard. Er staan geen gastnamen op, alleen kamers, aantallen en opmerkingen.
 
@@ -13,7 +13,7 @@ leest per ontbijtregel de dagen en het aantal per dag (venster "Bewerken" achter
 bijgeboekte dag juist op de lijst komt. Kon hij de dagen niet lezen en is het ontbijt maar voor een deel van het
 verblijf: de kamer komt in het geel, "nakijken". Meer kamers in één reservatie: de personen verdeeld over de kamers, met "samen met ...".
 
-Kuislijst voor dag D, per kamer: Leave (vertrek op D), Stay (aankomst voor D, vertrek na D), Check in (aankomst op D).
+Schoonmaaklijst voor dag D, per kamer: Leave (vertrek op D), Stay (aankomst voor D, vertrek na D), Check in (aankomst op D).
 Opmerkingen: zinnen uit de opmerking van de reservatie of lijnen van de folio met een van de woorden uit de
 instellingen ([kuislijst] woorden, bv. babybed, romantisch), en het aantal personen bij een check in.
 
@@ -479,7 +479,7 @@ def _start_robot(hotel_id: str, req: dict, now: datetime) -> str:
         return "robot gestart"
     what = f"robot niet gestart: {cloud_robot.LAST_ERROR}"
     guests.log_robot_run(hotel_id, "robot", datetime.now(UTC), False, 0, 0,
-                         f"voor de gevraagde ontbijt- of kuislijst: {what}. Opnieuw over {ROBOT_RETRY_MINUTES} minuten; "
+                         f"voor de gevraagde ontbijt- of schoonmaaklijst: {what}. Opnieuw over {ROBOT_RETRY_MINUTES} minuten; "
                          f"na {MAX_WAIT_MINUTES} minuten wordt de lijst gemaakt met de gegevens die er zijn")
     return what
 

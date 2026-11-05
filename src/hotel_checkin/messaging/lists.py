@@ -1,4 +1,4 @@
-"""Bouwblok: de ontbijtlijst en de kuislijst opmaken als Excel, als HTML (mail en monitor) en als korte tekst
+"""Bouwblok: de ontbijtlijst en de schoonmaaklijst opmaken als Excel, als HTML (mail en monitor) en als korte tekst
 (WhatsApp of sms). Alleen opmaak: wat erop staat, beslist het proces (processes/daily_lists.py).
 
 Zelfde opbouw als de lijsten die het hotel met de hand maakte: per kamer een rij, een lege rij tussen de
@@ -25,12 +25,12 @@ def day_text(day: str) -> str:
 
 
 def file_name(data: dict, hotel_name: str) -> str:
-    what = "Ontbijtlijst" if data["kind"] == "breakfast" else "Kuislijst"
+    what = "Ontbijtlijst" if data["kind"] == "breakfast" else "Schoonmaaklijst"
     return f"{what} {hotel_name} {data['day']}.xlsx"
 
 
 def subject(data: dict, hotel_name: str) -> str:
-    what = "Ontbijtlijst" if data["kind"] == "breakfast" else "Kuislijst"
+    what = "Ontbijtlijst" if data["kind"] == "breakfast" else "Schoonmaaklijst"
     return f"{hotel_name}: {what.lower()} {day_text(data['day'])}"
 
 
@@ -148,15 +148,14 @@ def table_html(data: dict) -> str:
 
 def mail_html(data: dict, hotel_name: str, notes: list[str]) -> str:
     """Mail met de lijst als tabel (leesbaar op de gsm); de Excel zit als bijlage bij."""
-    title = f"{'Ontbijtlijst' if data['kind'] == 'breakfast' else 'Kuislijst'} {day_text(data['day'])}"
+    title = f"{'Ontbijtlijst' if data['kind'] == 'breakfast' else 'Schoonmaaklijst'} {day_text(data['day'])}"
     parts = [f'<h2 style="font-family:Arial,sans-serif;font-size:18px;">{_e(hotel_name)}: {_e(title)}</h2>']
     if data["kind"] == "cleaning" and data.get("controle"):
         parts.append(f'<p style="font-family:Arial,sans-serif;font-size:14px;">Controle: {_e(data["controle"])}</p>')
     parts += [f'<p style="font-family:Arial,sans-serif;font-size:14px;">{_e(n)}</p>' for n in notes]
     parts.append(table_html(data))
     parts.append('<p style="font-family:Arial,sans-serif;font-size:12px;color:#8A90A0;margin-top:16px;">'
-                 f"Gemaakt op {_e(data.get('generated_at', '')[:16].replace('T', ' '))}. Geel = nakijken in Lighthouse. "
-                 "De Excel staat in de bijlage.</p>")
+                 f"Gemaakt op {_e(data.get('generated_at', '')[:16].replace('T', ' '))}. De Excel staat in de bijlage.</p>")
     return "\n".join(parts)
 
 
@@ -180,7 +179,7 @@ def summary(data: dict) -> str:
 
 def text(data: dict, hotel_name: str) -> str:
     """Volledige lijst als tekst met een regel per kamer (sms)."""
-    what = "Ontbijtlijst" if data["kind"] == "breakfast" else "Kuislijst"
+    what = "Ontbijtlijst" if data["kind"] == "breakfast" else "Schoonmaaklijst"
     lines = [f"{hotel_name} {what.lower()} {day_text(data['day'])}"]
     for r in data["rows"]:
         if r.get("sep"):

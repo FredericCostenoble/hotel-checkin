@@ -81,9 +81,9 @@ whatsapp = []                 # gsm-nummers (+32...): WhatsApp, of sms als er ge
 woorden = ["gluten", "lactose", "vegan", "vegetar", "végé", "allerg", "noten", "nuts", "noix", "halal", "kosher", "diabet", "suikervrij", "sugar free", "sans sucre", "zuckerfrei", "dieet", "diet", "régime"]   # zinnen uit de opmerking of de folio met deze woorden komen bij de opmerkingen
 
 [kuislijst]
-# Dagelijkse kuislijst (hoofdschakelaar kuislijst, processes/daily_lists.py): per kamer Leave (vertrek), Stay
+# Dagelijkse schoonmaaklijst (hoofdschakelaar kuislijst, processes/daily_lists.py): per kamer Leave (vertrek), Stay
 # (blijft) en Check in, met opmerkingen (bv. babybed, romantische versiering). Per mail met de Excel als bijlage,
-# per WhatsApp (of sms) als korte tekst. Ook te bekijken en opnieuw te maken in de monitor (tabblad Kuis).
+# per WhatsApp (of sms) als korte tekst. Ook te bekijken en opnieuw te maken in de monitor (tabblad Schoonmaak).
 uur = "17:45"                 # elke dag om dit uur maken en versturen
 dag = 1                       # voor welke dag: 1 = morgen, 0 = vandaag
 email = ["management@hotellucca.be"]   # mail met de Excel als bijlage; leeg = geen mail
@@ -185,7 +185,7 @@ max_gebruikers = 150               # maximum gebruikers van het abonnement (pers
 # Verdieping van een kamer in de code-mail en de sms: het eerste cijfer van het kamernummer (12 = 1e verdieping,
 # 23 = 2e verdieping). Kamers die daar niet in passen (eigen naam, eigen ingang), staan hieronder in [kamers.<nummer>].
 verdieping_regel = "eerste_cijfer"   # eerste_cijfer of geen (geen verdieping tonen)
-# Kamers op de ontbijt- en kuislijst, in deze volgorde; "-" = lege rij (nieuwe verdieping). Naast het nummer komt de
+# Kamers op de ontbijt- en schoonmaaklijst, in deze volgorde; "-" = lege rij (nieuwe verdieping). Naast het nummer komt de
 # omschrijving uit Lighthouse. Een eigen naam in plaats van het nummer: lijst = "..." in [kamers.<nummer>].
 lijst_volgorde = ["20", "2", "-", "11", "12", "14", "15", "16", "-", "21", "22", "23", "24", "25", "-", "30", "31", "32", "33", "34"]
 
@@ -209,7 +209,7 @@ toegang_de = "Ihre Suite hat einen eigenen Eingang: Sie gehen nicht durch die Ha
 [kamers.20]
 # Appartement in het gebouw rechts naast het hotel, met een eigen klavier; niet op de 2e verdieping.
 verdieping = ""
-lijst = ""   # eigen naam op de ontbijt- en kuislijst (bv. App); leeg = het kamernummer, met de omschrijving uit Lighthouse
+lijst = ""   # eigen naam op de ontbijt- en schoonmaaklijst (bv. App); leeg = het kamernummer, met de omschrijving uit Lighthouse
 naam_nl = "appartement naast het hotel"
 naam_fr = "appartement à côté de l'hôtel"
 naam_en = "apartment next to the hotel"
