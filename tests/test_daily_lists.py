@@ -315,3 +315,10 @@ def test_planboard_labels_parse():
       <div data-reservation="ABC" data-accommodationid="a1" data-labelids="15912,7"></div>
       <div data-reservation="def" data-accommodationid="a2" data-labelids=""></div>"""
     assert parse_planboard_labels(html) == {"abc": ["7", "ONTBIJT"], "def": []}
+
+
+def test_booking_boilerplate_is_not_a_remark():
+    words = dl.settings("lucca", "cleaning")["words"]
+    text = ("Kinderen en extra bedden: Kinderen van alle leeftijden zijn toegestaan. U heeft geen kinderbedjes "
+            "toegevoegd. U heeft geen extra bedden toegevoegd. Graag een babybed voor onze zoon.")
+    assert dl.notes([text], words) == ["Graag een babybed voor onze zoon."]

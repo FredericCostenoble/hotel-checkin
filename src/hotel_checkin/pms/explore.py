@@ -7,6 +7,7 @@
     python -m hotel_checkin.pms.explore lucca --status [<id>]   # hoe de status (inchecken) werkt, klikt NIETS
     python -m hotel_checkin.pms.explore lucca --folio <id>      # folio: de 3 puntjes bij ontbijt (dagen), wijzigt NIETS
     python -m hotel_checkin.pms.explore lucca --charge-ids <id> # verandert het nummer van een folioregel door te lezen?
+    python -m hotel_checkin.pms.explore lucca --planboard 2026-11-07  # planbord rond die dag: blokken per kamer
 
 Klikt niets aan en wijzigt niets. Schrijft naar lighthouse-explore/ (niet in git):
 - <pagina>.png: schermafbeelding, alleen voor jezelf (bevat gastgegevens)
@@ -362,6 +363,39 @@ def explore_charge_ids(lh: LighthouseSession, detail_id: str) -> str:
     return "\n".join(out) + "\n"
 
 
+def explore_planboard(lh: LighthouseSession, day: str) -> str:
+    """Planbord van de dag ervoor tot de dag erna (opgevraagd, niet geopend): per blok alle gegevens, en hoe de
+    kamers (units) erop staan. Om de schoonmaak- en ontbijtlijst rechtstreeks uit het planbord te maken."""
+    from datetime import date, timedelta
+    from html.parser import HTMLParser
+
+    from hotel_checkin.pms.lighthouse import PLANBOARD_PATH
+
+    d = date.fromisoformat(day)
+    url = lh.base + PLANBOARD_PATH.format(start=(d - timedelta(days=1)).isoformat(), end=(d + timedelta(days=1)).isoformat())
+    resp = lh.page.request.get(url)
+    body = resp.text()
+    blocks: list[str] = []
+    units: list[str] = []
+
+    class P(HTMLParser):
+        depth_unit = 0
+
+        def handle_starttag(self, tag, attrs):
+            a = {k: (v or "")[:120] for k, v in attrs}
+            if a.get("data-reservation"):
+                blocks.append(f"{tag} {a}")
+            elif any(k in a for k in ("data-unit", "data-unitid", "data-unitname", "data-roomid")) and len(units) < 60:
+                units.append(f"{tag} {a}")
+
+    P().feed(body)
+    out = [f"# Planbord {day} (opgevraagd, niets gewijzigd)", f"Adres: {url}", f"HTTP {resp.status}, {len(body)} tekens", "",
+           f"## Blokken met een reservatie ({len(blocks)})", *[f"- {b}" for b in blocks[:80]], "",
+           f"## Kamers (units) ({len(units)})", *[f"- {u}" for u in units], "",
+           "## Begin van de HTML", "```html", body[:15000], "```"]
+    return "\n".join(out) + "\n"
+
+
 def main() -> None:
     p = argparse.ArgumentParser()
     p.add_argument("hotel_id")
@@ -372,7 +406,15 @@ def main() -> None:
     p.add_argument("--status", nargs="?", const="", help="hoe de status gewijzigd wordt (uuid of de eerste van het dashboard); klikt niets")
     p.add_argument("--folio", help="folio van deze reservatie (uuid): wat de 3 puntjes bij ontbijt tonen; wijzigt niets")
     p.add_argument("--charge-ids", help="verandert het nummer van een folioregel door te lezen? (uuid); wijzigt niets")
+    p.add_argument("--planboard", help="planbord rond deze dag (JJJJ-MM-DD): blokken per kamer; wijzigt niets")
     args = p.parse_args()
+
+    if args.planboard:
+        OUT.mkdir(exist_ok=True)
+        with LighthouseSession(args.hotel_id, headless=not args.show, debug_dir=OUT) as lh:
+            (OUT / "planboard.md").write_text(explore_planboard(lh, args.planboard), encoding="utf-8")
+        print(f"Klaar: {OUT}/planboard.md (niets gewijzigd).")
+        return
 
     if args.charge_ids:
         with LighthouseSession(args.hotel_id, headless=not args.show) as lh:

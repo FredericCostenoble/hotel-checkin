@@ -86,8 +86,10 @@ _NON_REFUNDABLE = re.compile(r"\bNRF\b|non[- ]?refundable|niet[- ]?terugbetaalba
 def rate_plans_from(text: str) -> list[str]:
     """Tarieven uit de kolom Accommodaties van de lijst ("NRF BREAKFAST EXCL, € 335,07") of uit
     folio-lijnen ("Superior double - NRF BREAKFAST EXCL"). Zonder dubbels, in volgorde."""
-    found = re.findall(r"(?m)^\s*([A-Z][A-Z0-9 &/+.-]*?[A-Z0-9])\s*,\s*€", text)
-    found += re.findall(r"(?m)\s-\s+([A-Z][A-Z0-9 &/+.-]*?[A-Z0-9])\s*$", text)
+    # Hoofdletters ("NRF BREAKFAST EXCL") of gewone tekst ("Non-refundable rate including breakfast BDC", zoals
+    # Booking.com-tarieven heten)
+    found = re.findall(r"(?m)^[ \t]*([A-Za-z][\w &/+.()'-]*?[A-Za-z0-9)])[ \t]*,[ \t]*€", text)
+    found += re.findall(r"(?m)[ \t]-[ \t]+([A-Za-z][\w &/+.()'-]*?[A-Za-z0-9)])[ \t]*$", text)
     return list(dict.fromkeys(x.strip() for x in found))
 
 

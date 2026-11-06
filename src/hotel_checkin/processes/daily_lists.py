@@ -156,6 +156,12 @@ def _rows(hotel_id: str, layout: list[str], per_room: dict[str, dict], empty: di
 # ---------------------------------------------------------------- opmerkingen
 
 
+# Standaardzinnen van de boekingssites, geen wens van de gast: "U heeft geen kinderbedjes toegevoegd.", "Kinderen en
+# extra bedden: Kinderen van alle leeftijden zijn toegestaan.", "No cots added", ...
+_NOISE = re.compile(r"\b(geen|no|not|none|pas de|aucun|keine?n?|kein)\b|toegestaan|allowed|accepted|autoris|erlaubt|"
+                    r"kinderen en extra bedden|children and extra beds|enfants et lits", re.IGNORECASE)
+
+
 def notes(texts: list[str | None], words: list[str]) -> list[str]:
     """Zinnen of lijnen met een van de woorden (begin van een woord, hoofdletters maken niet uit)."""
     from hotel_checkin.pms.lighthouse_parse import DOOR_CODE_PREFIX
@@ -165,7 +171,7 @@ def notes(texts: list[str | None], words: list[str]) -> list[str]:
     for text in texts:
         for part in re.split(r"\n|\s\|\s|(?<=[.!?])\s+", text or ""):
             p = " ".join(part.split()).strip(" -;,|")
-            if not p or p.startswith(DOOR_CODE_PREFIX) or not any(x.search(p) for x in pats):
+            if not p or p.startswith(DOOR_CODE_PREFIX) or not any(x.search(p) for x in pats) or _NOISE.search(p):
                 continue
             p = p if len(p) <= 120 else p[:117] + "..."
             if p.lower() not in (o.lower() for o in out):

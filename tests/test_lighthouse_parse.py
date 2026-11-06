@@ -220,3 +220,14 @@ def test_room_name_not_the_rate_below():
     from hotel_checkin.pms.lighthouse_parse import room_names_from
 
     assert room_names_from("20 FAMILY APARTMENT\nSTANDARD RATE BREAKFAST EXCL") == {"20": "FAMILY APARTMENT"}
+
+
+def test_rate_plan_in_normal_case():
+    """Booking.com-tarieven in gewone tekst (CPB-4276-002390): ontbijt inbegrepen herkennen."""
+    from hotel_checkin.pms.lighthouse_parse import rate_plans_from
+
+    assert rate_plans_from("Family apartment - Non-refundable rate including breakfast BDC") == \
+        ["Non-refundable rate including breakfast BDC"]
+    assert rate_plans_from("Non-refundable rate including breakfast BDC, € 796,07") == \
+        ["Non-refundable rate including breakfast BDC"]
+    assert rate_plans_from("Citytax") == [] and rate_plans_from("Ontbijt") == []

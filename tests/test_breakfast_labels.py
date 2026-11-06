@@ -97,3 +97,15 @@ def test_new_reservation_folio_read_once_then_label(monkeypatch):
 def test_no_breakfast_known_folio_not_read_again():
     repo.save_reservation(_r("STANDARD RATE BREAKFAST EXCL"))  # folio gekend, geen ontbijt
     assert bl.due("lucca", TODAY) == []
+
+
+def test_including_breakfast_rate_in_normal_case():
+    from datetime import date
+
+    from hotel_checkin.core.models import Guest, Reservation
+    from hotel_checkin.processes.breakfast_labels import breakfast
+
+    r = Reservation("lucca", "x", Guest("E", "B"), date(2026, 11, 6), date(2026, 11, 8), guest_count=6)
+    r.folio = [{"label": "Family apartment - Non-refundable rate including breakfast BDC", "qty": None, "amount": 796.07},
+               {"label": "Citytax", "qty": 12, "amount": 50.4}]
+    assert breakfast(r)[0]
