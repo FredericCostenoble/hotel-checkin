@@ -1718,7 +1718,9 @@ function renderSettings() {
       rows = sec.fields.map(f => {
         const id = i++;
         const changed = JSON.stringify(hsValue(sec, f)) !== JSON.stringify(f.default);
-        return `<div class="hs-row ${changed ? "changed" : ""}">
+        // Hoofdschakelaars: vet = aan (zoals groen in de bovenbalk), ook als aan de standaard is; anders vet = gewijzigd
+        const strong = sec.section === "schakelaars" ? !!hsValue(sec, f) : changed;
+        return `<div class="hs-row ${strong ? "changed" : ""}">
           <label for="hs-${id}">${esc(hsText(sec.section, f.key)[0])}</label>
           <div>${hsInput(sec, f, id)}${f.env ? ` <span class="tag warn" title="${esc(t("hs_env"))}">Key Vault</span>` : ""}
             ${changed ? `<span class="muted small">${esc(t("hs_default"))}: ${esc(Array.isArray(f.default) ? f.default.join(", ") : String(f.default ?? ""))}</span>` : ""}
