@@ -364,8 +364,9 @@ def explore_charge_ids(lh: LighthouseSession, detail_id: str) -> str:
 
 
 def explore_planboard(lh: LighthouseSession, day: str) -> str:
-    """Planbord van de dag ervoor tot de dag erna (opgevraagd, niet geopend): per blok alle gegevens, en hoe de
-    kamers (units) erop staan. Om de schoonmaak- en ontbijtlijst rechtstreeks uit het planbord te maken."""
+    """Planbord van de dag ervoor tot de dag erna (opgevraagd, niet geopend): de blokken per kamer, en vooral waar het
+    kamernummer staat bij elke unit (data-unit van de blokken). Wijzigt niets."""
+    import re as _re
     from datetime import date, timedelta
     from html.parser import HTMLParser
 
@@ -375,24 +376,39 @@ def explore_planboard(lh: LighthouseSession, day: str) -> str:
     url = lh.base + PLANBOARD_PATH.format(start=(d - timedelta(days=1)).isoformat(), end=(d + timedelta(days=1)).isoformat())
     resp = lh.page.request.get(url)
     body = resp.text()
-    blocks: list[str] = []
-    units: list[str] = []
+    unit_ids = sorted(set(_re.findall(r'data-unit="(\d+)"', body)))
+    found: list[str] = []
+
+    stack: list[dict] = []
 
     class P(HTMLParser):
-        depth_unit = 0
-
         def handle_starttag(self, tag, attrs):
-            a = {k: (v or "")[:120] for k, v in attrs}
-            if a.get("data-reservation"):
-                blocks.append(f"{tag} {a}")
-            elif any(k in a for k in ("data-unit", "data-unitid", "data-unitname", "data-roomid")) and len(units) < 60:
-                units.append(f"{tag} {a}")
+            a = {k: (v or "")[:100] for k, v in attrs}
+            cls = a.get("class", "")
+            hit = any(v in unit_ids for v in a.values()) and "unitlabel" not in cls and "planned-accommodation" not in cls
+            stack.append({"tag": tag, "attrs": a, "text": "", "hit": hit})
+
+        def handle_data(self, data):
+            for el in stack[-6:]:
+                if el["hit"] and len(el["text"]) < 120:
+                    el["text"] += " ".join(data.split()) + " "
+
+        def handle_endtag(self, tag):
+            while stack:
+                el = stack.pop()
+                if el["hit"] and len(found) < 120:
+                    found.append(f"{el['tag']} {el['attrs']} TEKST: {el['text'].strip()[:120]!r}")
+                if el["tag"] == tag:
+                    break
 
     P().feed(body)
-    out = [f"# Planbord {day} (opgevraagd, niets gewijzigd)", f"Adres: {url}", f"HTTP {resp.status}, {len(body)} tekens", "",
-           f"## Blokken met een reservatie ({len(blocks)})", *[f"- {b}" for b in blocks[:80]], "",
-           f"## Kamers (units) ({len(units)})", *[f"- {u}" for u in units], "",
-           "## Begin van de HTML", "```html", body[:15000], "```"]
+    out = [f"# Planbord {day}: kamernummers bij de units (opgevraagd, niets gewijzigd)", f"HTTP {resp.status}",
+           f"Units in de blokken: {unit_ids}", "", "## Elementen met een unit-nummer (geen blokken, geen labels)",
+           *[f"- {x}" for x in found], "", "## HTML rond de eerste unit (zonder scripts)"]
+    clean = _re.sub(r"<script.*?</script>", "", body, flags=_re.DOTALL)
+    for uid in unit_ids[:3]:
+        for mm in list(_re.finditer(uid, clean))[:3]:
+            out += ["```html", clean[max(0, mm.start() - 600): mm.start() + 300], "```"]
     return "\n".join(out) + "\n"
 
 
