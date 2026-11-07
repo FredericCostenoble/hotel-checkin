@@ -59,6 +59,7 @@ PLANBOARD_STATE = "planboard:{day}"  # RobotState: wie verblijft in welke kamer 
 CLEANING_LABELS = ("BABY BED", "LATE ARRIVAL")  # standaard voor [kuislijst] labels
 TWIN_LABELS = ("DOUBLE OPMAKEN",)  # standaard voor [kuislijst] labels_twin: alleen op een twin kamer ([kamers.N] twin)
 MEMO_LABELS = ("SPECIAAL VERZOEK",)  # standaard voor [kuislijst] labels_memo: de interne memo komt bij de opmerkingen
+STAIRS_REMARK = "moeilijk ter been: lagere verdieping indien vrij"  # check-in-formulier (stairs_help)
 SEPARATOR = "-"  # in [kamers] lijst_volgorde: lege rij (nieuwe verdieping)
 
 
@@ -401,6 +402,8 @@ def _cleaning_plan(day: date, reservations: list[Reservation], words: list[str],
                 remark.append("nog geen kamer toegewezen" + (f" ({r.booking_number})" if r and r.booking_number else ""))
                 cur["check"] = True
             if r is not None and not found_done:  # opmerkingen van de reservatie: bij de eerste kamer
+                if r.stairs_help and checkin:
+                    remark.append(STAIRS_REMARK)
                 remark += notes(_texts(r), words)
                 found_done = True
             cur["remark"] = "; ".join(x for x in (cur["remark"], *remark) if x)
@@ -433,6 +436,8 @@ def build_cleaning(hotel_id: str, day: date, reservations: list[Reservation], wo
             if room == "?":
                 remark.append(f"nog geen kamer toegewezen ({r.booking_number or ''})")
                 cur["check"] = True
+            if checkin and r.stairs_help and room == (r.rooms or ["?"])[0]:
+                remark.append(STAIRS_REMARK)
             remark += found
             cur["remark"] = "; ".join(x for x in (cur["remark"], *remark) if x)
     rows = _rows(hotel_id, _layout(hotel_id, list(per_room)), per_room,

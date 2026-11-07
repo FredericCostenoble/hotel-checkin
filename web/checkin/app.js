@@ -55,6 +55,10 @@ const API = window.CHECKIN_API || "";
     const roomsText = I18N[lang].rooms || I18N.en.rooms;
     $("r-room").textContent = rooms.length > 1 ? `${roomsText(rooms.length)}: ${rooms.join(", ")}` : data.room_type;
     document.querySelectorAll(".room-row").forEach((el) => (el.hidden = !(data.room_type || rooms.length)));
+    // Moeilijk trappen lopen: alleen als het hotel het vraagt en bij dit kamertype van kamer kan wisselen
+    const st = data.stairs && (data.stairs[lang] || data.stairs.en);
+    $("stairs-box").hidden = !st;
+    if (st) { $("stairs-q").textContent = st.q; $("stairs-text").textContent = st.text; }
     const h = data.hotel;
     $("privacy-link").href = (h.privacy_urls && h.privacy_urls[lang]) || h.privacy_url;
   }
@@ -117,6 +121,7 @@ const API = window.CHECKIN_API || "";
     $("backup-box").open = !!(data.backup_email || data.backup_phone);
     $("language").value = lang;
     $("no_marketing").checked = data.no_marketing;
+    $("stairs_help").checked = !!data.stairs_help;
     $("already").hidden = !data.completed;
     $("loading").hidden = true;
     $("form-section").hidden = false;
@@ -162,6 +167,7 @@ const API = window.CHECKIN_API || "";
           backup_phone: composePhone($("backup_phone_cc").value, $("backup_phone").value),
           language: $("language").value,
           no_marketing: $("no_marketing").checked,
+          stairs_help: !!data.stairs && $("stairs_help").checked,
         }),
       });
       const body = await res.json().catch(() => ({}));

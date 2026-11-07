@@ -107,6 +107,8 @@ def reservations(hotel_id: str) -> list[dict]:
             "status": r.status.value,
             "booked_at": r.booked_at.isoformat() if r.booked_at else "",
             "checkin_completed_at": r.checkin_completed_at.isoformat() if r.checkin_completed_at else "",
+            "stairs": bool(r.stairs_help),  # formulier: moeilijk ter been
+            "stairs_memo_at": r.stairs_memo_at.isoformat() if r.stairs_memo_at else "",
             "guest_id": r.guest_id or "",
             "guest_stays": earlier_stays(r) if r.guest_id else 0,
             "added_at": r.created_at.isoformat() if r.created_at else "",

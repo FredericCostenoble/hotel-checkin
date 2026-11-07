@@ -49,7 +49,7 @@ const T = {
     returning: n => `terugkerend (${n}×)`, mg_message: "Bericht", mg_time: "Tijdstip", short_confirmation: "Bevestiging", short_checkin_form: "Formulier ingevuld", ch_lighthouse: "Lighthouse", short_booking_payout: "Overschrijving Booking.com", short_pay_request: "Betaalverzoek in Lighthouse", short_pms_sync: "Code en status in Lighthouse", short_room_change: "Kamerwissel", ch_form: "formulier", short_reminder: "Herinnering", short_access_code: "Code-mail", mg_channel: "Kanaal", mg_to: "Naar",
     mg_title: (num, guest) => `Berichten voor ${guest} (${num})`, mg_click: "Klik voor alle details",
     mg_plan: "Tijdlijn", mg_attempts: "Alle pogingen", mg_next: "volgt",
-    pl_sent: "verstuurd op", pl_failed: "mislukt op", pl_planned: "gepland", pl_due: "wordt nu verstuurd", pl_will: "wordt verstuurd op", pl_wont: "wordt niet verstuurd", pl_was: "gepland", pl_skipped: "valt weg", pl_off: "niet actief", pl_missed: "niet verstuurd, te laat", lg_sent: "verstuurd", lg_failed: "mislukt", lg_planned: "komt nog", lg_missed: "te laat, niet verstuurd", lg_cond: "voorwaarde niet voldaan", lg_off: "niet actief", pl_cond: "niet verstuurd, voorwaarde", form_yes: "✓ formulier ingevuld", form_no: "formulier niet ingevuld", sb_open: "Versturen", sb_again: "Opnieuw versturen",
+    pl_sent: "verstuurd op", pl_failed: "mislukt op", pl_planned: "gepland", pl_due: "wordt nu verstuurd", pl_will: "wordt verstuurd op", pl_wont: "wordt niet verstuurd", pl_was: "gepland", pl_skipped: "valt weg", pl_off: "niet actief", pl_missed: "niet verstuurd, te laat", lg_sent: "verstuurd", lg_failed: "mislukt", lg_planned: "komt nog", lg_missed: "te laat, niet verstuurd", lg_cond: "voorwaarde niet voldaan", lg_off: "niet actief", pl_cond: "niet verstuurd, voorwaarde", stairs_tag: "trappen", stairs_tip: "Formulier: een van de gasten kan moeilijk trappen lopen (lagere verdieping indien vrij).", stairs_in_lh: w => `In de interne memo in Lighthouse sinds ${w}.`, form_yes: "✓ formulier ingevuld", form_no: "formulier niet ingevuld", sb_open: "Versturen", sb_again: "Opnieuw versturen",
     rss_before_start: "voor de startdatum", rss_booked_late: "te laat geboekt", rss_stored_late: "boeking al lang achter de rug", rss_later_due: "zit in de latere mail",
     rss_window_passed: "moment voorbij", rss_messaging_off: "berichten uit", rss_disabled: "stap uit", rss_not_ready: "nog niet gebouwd", sb_other: "Ander adres...", sb_bad_email: "Ongeldig e-mailadres", sb_bad_phone: "Ongeldig nummer (met landcode, bv. +32...)", src_test: "testadres", src_form: "check-in-formulier",
     src_form_extra: "extra, check-in-formulier", src_relay: "doorstuuradres", src_profile: "gastprofiel", src_used: "eerder gebruikt", src_earlier: "vroeger", sb_to: "naar", sb_go: "Versturen", sb_off: "(nog niet actief)", send_to: "Versturen naar...", send_to_ask: "Naar welk e-mailadres (of gsm-nummer met +32...) versturen? Het wordt bij de reservatie bewaard.", ct_add: "E-mailadres of gsm-nummer toevoegen", ct_email: "e-mailadres", ct_phone: "gsm-nummer met landcode (+32...)", env_to_prd: "Naar PRD", env_bar_tst: "TESTOMGEVING (TST): berichten gaan alleen naar het testadres, nooit naar gasten",
@@ -141,7 +141,7 @@ const T = {
     returning: n => `returning (${n}×)`, mg_message: "Message", mg_time: "Time", short_confirmation: "Confirmation", short_checkin_form: "Form filled in", ch_lighthouse: "Lighthouse", short_booking_payout: "Booking.com bank transfer", short_pay_request: "Payment request in Lighthouse", short_pms_sync: "Code and status in Lighthouse", short_room_change: "Room change", ch_form: "form", short_reminder: "Reminder", short_access_code: "Code mail", mg_channel: "Channel", mg_to: "To",
     mg_title: (num, guest) => `Messages for ${guest} (${num})`, mg_click: "Click for all details",
     mg_plan: "Timeline", mg_attempts: "All attempts", mg_next: "next",
-    pl_sent: "sent on", pl_failed: "failed on", pl_planned: "planned", pl_due: "being sent now", pl_will: "will be sent on", pl_wont: "will not be sent", pl_was: "planned", pl_skipped: "skipped", pl_off: "not active", pl_missed: "not sent, too late", lg_sent: "sent", lg_failed: "failed", lg_planned: "still to come", lg_missed: "too late, not sent", lg_cond: "condition not met", lg_off: "not active", pl_cond: "not sent, condition", form_yes: "✓ form filled in", form_no: "form not filled in", sb_open: "Send", sb_again: "Send again",
+    pl_sent: "sent on", pl_failed: "failed on", pl_planned: "planned", pl_due: "being sent now", pl_will: "will be sent on", pl_wont: "will not be sent", pl_was: "planned", pl_skipped: "skipped", pl_off: "not active", pl_missed: "not sent, too late", lg_sent: "sent", lg_failed: "failed", lg_planned: "still to come", lg_missed: "too late, not sent", lg_cond: "condition not met", lg_off: "not active", pl_cond: "not sent, condition", stairs_tag: "stairs", stairs_tip: "Form: one of the guests has difficulty climbing stairs (lower floor if available).", stairs_in_lh: w => `In the internal memo in Lighthouse since ${w}.`, form_yes: "✓ form filled in", form_no: "form not filled in", sb_open: "Send", sb_again: "Send again",
     rss_before_start: "before start date", rss_booked_late: "booked too late", rss_stored_late: "booking long past", rss_later_due: "included in the later mail",
     rss_window_passed: "moment passed", rss_messaging_off: "messages off", rss_disabled: "step off", rss_not_ready: "not built yet", sb_other: "Other address...", sb_bad_email: "Invalid e-mail address", sb_bad_phone: "Invalid number (with country code, e.g. +32...)", src_test: "test address", src_form: "check-in form",
     src_form_extra: "extra, check-in form", src_relay: "relay address", src_profile: "guest profile", src_used: "used before", src_earlier: "earlier", sb_to: "to", sb_go: "Send", sb_off: "(not active yet)", send_to: "Send to...", send_to_ask: "Send to which e-mail address (or mobile number with +32...)? It is saved with the reservation.", ct_add: "Add e-mail address or mobile number", ct_email: "e-mail address", ct_phone: "mobile number with country code (+32...)", env_to_prd: "To PRD", env_bar_tst: "TEST ENVIRONMENT (TST): messages only go to the test address, never to guests",
@@ -752,7 +752,7 @@ function render() {
     <tr class="${r.status === "cancelled" ? "cancelled" : ""}">
       <td>${day(r.arrival)}</td><td>${day(r.departure)}</td>
       <td class="nowrap">${esc(r.booking_number)}${r.lighthouse_url ? ` <a class="lh" href="${esc(r.lighthouse_url)}" target="_blank" rel="noopener" title="${esc(t("open_lh"))}">${ICON_LH}</a>` : ""}</td><td>${r.guest_id && guestById(r.guest_id) ? `<a href="#" class="jump" data-guest="${esc(r.guest_id)}" title="${esc(t("show_guest"))}">${ICON_GUEST} ${esc(r.guest)}</a>` : esc(r.guest)}${r.guest_stays ? ` <span class="tag back">${esc(t("returning", r.guest_stays))}</span>` : ""}
-        <div>${r.checkin_completed_at ? `<span class="tag form-yes" title="${esc(stamp(r.checkin_completed_at))}">${esc(t("form_yes"))}</span>` : `<span class="tag form-no">${esc(t("form_no"))}</span>`}</div></td><td>${esc(r.guests ?? "")}</td>
+        <div>${r.checkin_completed_at ? `<span class="tag form-yes" title="${esc(stamp(r.checkin_completed_at))}">${esc(t("form_yes"))}</span>` : `<span class="tag form-no">${esc(t("form_no"))}</span>`}${r.stairs ? ` <span class="tag stairs" title="${esc(t("stairs_tip") + (r.stairs_memo_at ? " " + t("stairs_in_lh", stamp(r.stairs_memo_at)) : ""))}">${esc(t("stairs_tag"))}</span>` : ""}</div></td><td>${esc(r.guests ?? "")}</td>
       <td>${esc(r.rooms.join(", ") || r.room_type)}</td>
       <td>${r.non_refundable === true ? `<span class="tag nrf">${esc(t("rate_nrf"))}</span>` : r.non_refundable === false ? `<span class="tag flex">${esc(t("rate_flex"))}</span>` : ""}${r.rate_plan ? `<div class="muted small">${esc(r.rate_plan)}</div>` : ""}</td><td>${esc(r.source)}</td><td><span class="tag flow">${esc(t("flow_" + r.flow) || r.flow)}</span></td><td>${esc(r.pms_status)}</td>
       <td>${stamp(r.booked_at)}</td><td>${stamp(r.added_at)}</td><td>${stamp(r.updated_at)}</td>
@@ -1351,6 +1351,17 @@ const HS_TEXT = {
     "Adres",
     "Adres van Reservation Manager."
    ],
+   "checkin.trappen_vraag_nl": ["Trappen: vraag (NL)", "Aanvinkvakje op het formulier: een van de gasten kan moeilijk trappen lopen. Leeg = de vraag staat er niet."],
+   "checkin.trappen_uitleg_nl": ["Trappen: uitleg (NL)", "Tekst onder de vraag."],
+   "checkin.trappen_vraag_fr": ["Trappen: vraag (FR)", "Aanvinkvakje op het formulier: een van de gasten kan moeilijk trappen lopen. Leeg = de vraag staat er niet."],
+   "checkin.trappen_uitleg_fr": ["Trappen: uitleg (FR)", "Tekst onder de vraag."],
+   "checkin.trappen_vraag_en": ["Trappen: vraag (EN)", "Aanvinkvakje op het formulier: een van de gasten kan moeilijk trappen lopen. Leeg = de vraag staat er niet."],
+   "checkin.trappen_uitleg_en": ["Trappen: uitleg (EN)", "Tekst onder de vraag."],
+   "checkin.trappen_vraag_de": ["Trappen: vraag (DE)", "Aanvinkvakje op het formulier: een van de gasten kan moeilijk trappen lopen. Leeg = de vraag staat er niet."],
+   "checkin.trappen_uitleg_de": ["Trappen: uitleg (DE)", "Tekst onder de vraag."],
+   "checkin.trappen_niet_bij": ["Trappen: niet bij kamertype", "De vraag staat niet op het formulier als het kamertype een van deze woorden bevat (bv. appartement, suite): daar kan het hotel niet van kamer wisselen."],
+   "checkin.trappen_memo": ["Trappen: regel in de interne memo", "De robot zet deze regel achteraan de interne memo in Lighthouse (alleen aanvullen, alleen PRD)."],
+   "checkin.trappen_label": ["Trappen: label op het planbord", "Naam van het label (eerst aanmaken in Lighthouse). Leeg = geen label."],
    "checkin.formulier_url": [
     "Adres van het formulier",
     "{token} wordt per gast ingevuld. In TST gaat de link naar het testformulier."
@@ -1613,6 +1624,17 @@ const HS_TEXT = {
     "Address",
     "Reservation Manager address."
    ],
+   "checkin.trappen_vraag_nl": ["Stairs: question (NL)", "Checkbox on the form: one of the guests has difficulty climbing stairs. Empty = the question is not shown."],
+   "checkin.trappen_uitleg_nl": ["Stairs: explanation (NL)", "Text under the question."],
+   "checkin.trappen_vraag_fr": ["Stairs: question (FR)", "Checkbox on the form: one of the guests has difficulty climbing stairs. Empty = the question is not shown."],
+   "checkin.trappen_uitleg_fr": ["Stairs: explanation (FR)", "Text under the question."],
+   "checkin.trappen_vraag_en": ["Stairs: question (EN)", "Checkbox on the form: one of the guests has difficulty climbing stairs. Empty = the question is not shown."],
+   "checkin.trappen_uitleg_en": ["Stairs: explanation (EN)", "Text under the question."],
+   "checkin.trappen_vraag_de": ["Stairs: question (DE)", "Checkbox on the form: one of the guests has difficulty climbing stairs. Empty = the question is not shown."],
+   "checkin.trappen_uitleg_de": ["Stairs: explanation (DE)", "Text under the question."],
+   "checkin.trappen_niet_bij": ["Stairs: not for room type", "The question is not shown when the room type contains one of these words (e.g. apartment, suite): there the hotel cannot change rooms."],
+   "checkin.trappen_memo": ["Stairs: line in the internal memo", "The robot adds this line at the end of the internal memo in Lighthouse (append only, PRD only)."],
+   "checkin.trappen_label": ["Stairs: label on the planboard", "Name of the label (create it in Lighthouse first). Empty = no label."],
    "checkin.formulier_url": [
     "Form address",
     "{token} is filled in per guest. In TST the link goes to the test form."

@@ -333,3 +333,4 @@ table.lists col.c-sent { width: 260px; }
 table.lists col.c-act { width: 150px; }
 table.lists td { white-space: normal; overflow-wrap: anywhere; }
 table.lists td:last-child { white-space: nowrap; }
+.tag.stairs { background: #FFF1E0; color: #A85C12; }  /* formulier: moeilijk ter been */

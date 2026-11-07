@@ -183,6 +183,10 @@ def _refresh_due(hotel_id: str) -> bool:
 
     if pay_requests.due(hotel_id, today):
         return True  # betaalverzoek te maken
+    from hotel_checkin.processes import stairs_memo
+
+    if stairs_memo.due(hotel_id, today):
+        return True  # moeilijk ter been in de interne memo te zetten
     hours = float(hotel_setting(hotel_id, "ROBOT_CONTACT_REFRESH_HOURS", default="2", shared=False))
     runs = [r for r in guests.robot_runs(hotel_id, task=refresh_contacts.TASK)
             if r.get("ok") and not (r.get("error") or "").startswith(IDLE_PREFIX)]  # alleen echte nalezingen

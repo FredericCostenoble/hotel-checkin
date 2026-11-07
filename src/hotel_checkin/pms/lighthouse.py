@@ -34,6 +34,7 @@ from hotel_checkin.pms.lighthouse_parse import (
     parse_contact,
     parse_detail,
     parse_folio,
+    parse_internal_memo_form,
     parse_list_row,
     parse_planboard,
     parse_planboard_labels,
@@ -470,6 +471,37 @@ def planboard_stays(hotel_id: str, start, end, session: LighthouseSession) -> di
     if not resp.ok or "/Customer/" not in resp.url:
         raise RuntimeError(f"planbord niet gelezen ({resp.status})")
     return parse_planboard_stays(resp.text())
+
+
+DETAIL_PATH = "/Customer/Reservations/Detail/{id}"
+
+
+def _memo_form(session: LighthouseSession, reservation_id: str) -> dict:
+    resp = session.page.request.get(session.base + DETAIL_PATH.format(id=reservation_id))
+    if not resp.ok or "/Customer/" not in resp.url:
+        raise RuntimeError(f"detailpagina niet gelezen ({resp.status})")
+    form = parse_internal_memo_form(resp.text())
+    if form is None or not form["action"]:
+        raise RuntimeError("blok Interne memo niet gevonden")
+    return form
+
+
+def append_internal_memo(hotel_id: str, reservation_id: str, line: str, session: LighthouseSession) -> str:
+    """Een regel achteraan de interne memo van de reservatie zetten, zoals Bewaren in het blok Interne memo.
+    Wat er al staat, blijft staan (alleen aanvullen). Staat de regel er al, dan niets. Leest de memo vlak voor
+    het bewaren opnieuw en controleert na het bewaren. Geeft "added" of "present" terug. Of dit mag, beslist het proces."""
+    form = _memo_form(session, reservation_id)
+    if line.strip().lower() in form["memo"].lower():
+        return "present"
+    memo = (form["memo"].rstrip() + "\n" + line) if form["memo"].strip() else line
+    resp = session.page.request.post(session.base + form["action"],
+                                     form={**form["fields"], "InternalMemo": memo})
+    if not resp.ok:
+        raise RuntimeError(f"interne memo niet bewaard ({resp.status})")
+    after = _memo_form(session, reservation_id)["memo"]
+    if line.strip().lower() not in after.lower() or not after.startswith(form["memo"].strip()[:50]):
+        raise RuntimeError("interne memo na het bewaren niet zoals verwacht")
+    return "added"
 
 
 def add_label(hotel_id: str, reservation_id: str, accommodation_id: str, current: list[str], label_id: str,

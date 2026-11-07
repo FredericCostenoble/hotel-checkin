@@ -84,3 +84,4 @@ button[type="submit"]:disabled { opacity: 0.6; cursor: default; }
   .card { padding: 40px 40px 32px; }
   button[type="submit"] { width: auto; }
 }
+.check-hint { display: block; margin-top: 4px; }  /* uitleg onder de vraag van een aanvinkvakje (bv. trappen) */

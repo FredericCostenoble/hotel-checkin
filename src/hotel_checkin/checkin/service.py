@@ -57,6 +57,26 @@ def hotel_info(hotel_id: str, language: str) -> dict:
     }
 
 
+def stairs_question(hotel_id: str, room_type: str | None, room_names: list[str] | None = None) -> dict | None:
+    """Vraag "moeilijk trappen lopen" voor het formulier, per taal {"nl": {"q", "text"}, ...}, of None als het hotel
+    ze niet stelt ([checkin] trappen_vraag_*) of bij dit kamertype niet van kamer kan wisselen ([checkin] trappen_niet_bij,
+    bv. appartement of suite)."""
+    from hotel_checkin.core.hotels import load_hotel
+
+    c = load_hotel(hotel_id).get("checkin", {})
+    out = {lang: {"q": str(c.get(f"trappen_vraag_{lang}") or "").strip(), "text": str(c.get(f"trappen_uitleg_{lang}") or "").strip()}
+           for lang in LANGUAGES}
+    if not any(v["q"] for v in out.values()):
+        return None
+    fallback = out.get("en") if out.get("en", {}).get("q") else next(v for v in out.values() if v["q"])
+    out = {lang: v if v["q"] else fallback for lang, v in out.items()}
+    words = [str(w).lower() for w in (c.get("trappen_niet_bij") or []) if str(w).strip()]
+    types = " ".join([room_type or "", *(room_names or [])]).lower()
+    if any(w in types for w in words):
+        return None
+    return out
+
+
 DEMO_PREFIX = "voorbeeld-"  # link in de voorbeeldmail van de monitor: voorbeeld-<hotel_id>
 
 
@@ -73,7 +93,8 @@ def _demo(token: str, today: date) -> dict | None:
         "arrival": arrival.isoformat(), "departure": (arrival + timedelta(days=2)).isoformat(),
         "room_type": "Superior Double Room", "email": "anna.peeters@example.com", "phone": "", "country": "BE",
         "backup_email": "", "backup_phone": "", "language": "nl", "completed": False, "no_marketing": False,
-        "hotel": hotel_info(hotel_id, "nl"),
+        "hotel": hotel_info(hotel_id, "nl"), "stairs": stairs_question(hotel_id, "Superior Double Room"),
+        "stairs_help": False,
     }
 
 
@@ -115,13 +136,15 @@ def form_data(token: str, today: date | None = None) -> dict | None:
         "completed": r.checkin_completed_at is not None,
         "no_marketing": repo.is_opted_out(r.hotel_id, email) if email else False,
         "hotel": hotel_info(r.hotel_id, r.guest.language),
+        "stairs": stairs_question(r.hotel_id, r.room_type, list(r.room_names.values())),
+        "stairs_help": bool(r.stairs_help),
     }
 
 
 def submit(token: str, form: dict) -> tuple[bool, dict]:
     """Bewaar de contactgegevens uit het formulier. Geeft (ok, fouten) terug.
 
-    form: email, phone, backup_email, backup_phone, language, no_marketing.
+    form: email, phone, backup_email, backup_phone, language, no_marketing, stairs_help (alleen als de vraag er stond).
     Telefoonnummers komen normaal al in +-formaat van het formulier (landkeuze + nummer).
     """
     data = form_data(token)
@@ -157,16 +180,18 @@ def submit(token: str, form: dict) -> tuple[bool, dict]:
     if data.get("demo"):  # voorbeeld: alles gecontroleerd, niets bewaard
         return True, {}
 
+    stairs = bool(form.get("stairs_help")) if data.get("stairs") else None  # alleen als de vraag op het formulier stond
     r = repo.get_by_token(token)
     # Eerst de indiening zelf bewaren (vangnet): wat de gast invulde, gaat nooit verloren
     repo.save_form_submission(r.hotel_id, r.reservation_id, {
         "email": email, "phone": phones["phone"], "backup_email": backup_email or None,
-        "backup_phone": phones["backup_phone"], "language": language, "no_marketing": bool(form.get("no_marketing"))})
+        "backup_phone": phones["backup_phone"], "language": language, "no_marketing": bool(form.get("no_marketing")),
+        **({"stairs_help": stairs} if stairs is not None else {})})
     if form.get("no_marketing"):
         repo.add_opt_out(r.hotel_id, email, "checkin_form")
     saved = repo.mark_checkin_completed(
         r.hotel_id, r.reservation_id, email, phones["phone"], language,
-        backup_email=backup_email or None, backup_phone=phones["backup_phone"],
+        backup_email=backup_email or None, backup_phone=phones["backup_phone"], stairs_help=stairs,
     )
     # In het berichtenlog van de reservatie, zodat het in de monitor zichtbaar is
     from hotel_checkin.core.models import Channel, SendResult
@@ -200,6 +225,7 @@ def reapply_forms(hotel_id: str) -> int:
         if r.checkin_completed_at and r.checkin_completed_at >= submitted and (r.guest.email or "") == (f.get("email") or ""):
             continue
         repo.mark_checkin_completed(hotel_id, r.reservation_id, f.get("email"), f.get("phone"), f.get("language"),
-                                    backup_email=f.get("backup_email"), backup_phone=f.get("backup_phone"))
+                                    backup_email=f.get("backup_email"), backup_phone=f.get("backup_phone"),
+                                    stairs_help=f.get("stairs_help"))
         fixed += 1
     return fixed

@@ -76,6 +76,8 @@ class Reservation:
     pay_link: str | None = None  # betaallink van Lighthouse (mail "Betaal uw openstaande saldo" in checkin@)
     token: str | None = None  # geheime sleutel in de link naar het check-in-formulier
     checkin_completed_at: datetime | None = None  # wanneer de gast het formulier invulde
+    stairs_help: bool | None = None  # formulier: een van de gasten kan moeilijk trappen lopen (lagere verdieping indien vrij)
+    stairs_memo_at: datetime | None = None  # wanneer de robot dat in de interne memo in Lighthouse zette (processes/stairs_memo.py)
     booking_number: str | None = None  # reservatienummer in Lighthouse, bv. CPB-4276-002731
     pms_status: str | None = None  # status zoals Lighthouse ze toont: Nieuw, Bevestigd, Geannuleerd
     guest_count: int | None = None

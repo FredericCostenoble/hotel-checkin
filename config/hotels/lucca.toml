@@ -238,6 +238,21 @@ base_url = "https://reservationmanager.mylighthouse.com"
 [checkin]
 # Link naar het online check-in-formulier (nog te bouwen). {token} wordt per gast ingevuld.
 formulier_url = "https://checkin.hotellucca.be/?r={token}"
+# Vraag op het formulier: kan een van de gasten moeilijk trappen lopen? (geen lift). Leeg = de vraag staat er niet.
+# Niet bij kamertypes met een van de woorden uit trappen_niet_bij (daar kan het hotel niet van kamer wisselen).
+# Aangevinkt: de robot zet trappen_memo in de interne memo in Lighthouse (alleen aanvullen), en het label trappen_label
+# op het planbord als het ingevuld is en in Lighthouse bestaat. Ook op de schoonmaaklijst en in de monitor.
+trappen_vraag_nl = "Een van de gasten kan moeilijk trappen lopen"
+trappen_vraag_fr = "L'un des clients a des difficultés à monter les escaliers"
+trappen_vraag_en = "One of the guests has difficulty climbing stairs"
+trappen_vraag_de = "Einer der Gäste hat Schwierigkeiten beim Treppensteigen"
+trappen_uitleg_nl = "Hotel Lucca is gevestigd in een middeleeuws pand zonder lift. Kan een van de gasten moeilijk trappen lopen, dan proberen wij u een kamer op een lagere verdieping te geven. Dat is enkel mogelijk als er bij uw aankomst nog een geschikte kamer vrij is."
+trappen_uitleg_fr = "L'Hôtel Lucca est situé dans un bâtiment médiéval sans ascenseur. Si l'un des clients éprouve des difficultés à monter les escaliers, nous essaierons de vous attribuer une chambre à un étage inférieur. Cela n'est possible que si une chambre adaptée est encore libre à votre arrivée."
+trappen_uitleg_en = "Hotel Lucca is housed in a medieval building without a lift. If one of the guests has difficulty climbing stairs, we will try to give you a room on a lower floor. This is only possible if a suitable room is still available on your arrival."
+trappen_uitleg_de = "Das Hotel Lucca befindet sich in einem mittelalterlichen Gebäude ohne Aufzug. Hat einer der Gäste Schwierigkeiten beim Treppensteigen, versuchen wir, Ihnen ein Zimmer in einem unteren Stockwerk zu geben. Dies ist nur möglich, wenn bei Ihrer Ankunft noch ein geeignetes Zimmer frei ist."
+trappen_niet_bij = ["apartment", "appartement", "suite"]
+trappen_memo = "Moeilijk ter been (check-in-formulier): lagere verdieping indien vrij"
+trappen_label = ""   # naam van het label op het planbord (eerst aanmaken in Lighthouse); leeg = geen label
 
 [privacy]
 # URL van de privacyverklaring per taal (komt van Wim, de webdesigner). TODO: invullen.

@@ -132,6 +132,9 @@ def run(hotel_id: str) -> int:
     from hotel_checkin.processes import pay_requests
 
     pay_todo = pay_requests.due(hotel_id, today)
+    from hotel_checkin.processes import stairs_memo
+
+    stairs_todo = stairs_memo.due(hotel_id, today)  # moeilijk ter been (formulier): in de interne memo zetten
 
     details_read = 0
     access_changes: list[str] = []
@@ -139,7 +142,7 @@ def run(hotel_id: str) -> int:
     skipped: list[str] = []
     timings: dict[str, float] = {}  # gemeten duur per onderdeel (seconden), voor de monitor
     try:
-        if todo or arrivals or payouts or syncs or breakfasts or pay_todo or lists_due:
+        if todo or arrivals or payouts or syncs or breakfasts or pay_todo or lists_due or stairs_todo:
             t0 = time.monotonic()
             with lighthouse.connect(hotel_id) as lh:
                 timings["login"] = round(time.monotonic() - t0, 1)
@@ -222,6 +225,10 @@ def run(hotel_id: str) -> int:
                 if time.monotonic() <= deadline:
                     pay_started = datetime.now(UTC)
                     pay_requests.log_run(hotel_id, pay_started, pay_requests.run(hotel_id, lh, today))
+                # Moeilijk ter been (check-in-formulier): regel in de interne memo (alleen aanvullen), PRD of testgast
+                if stairs_todo and time.monotonic() <= deadline:
+                    stairs_started = datetime.now(UTC)
+                    stairs_memo.log_run(hotel_id, stairs_started, stairs_memo.run(hotel_id, lh, today))
                 # Label ONTBIJT op het planbord (hoofdschakelaar), na het nalezen: dan is de folio bijgewerkt
                 if breakfasts and time.monotonic() <= deadline:
                     breakfast_started = datetime.now(UTC)

@@ -613,3 +613,26 @@ def parse_planboard(text: str, reservation_id: str) -> dict:
 
     P().feed(text)
     return {"rooms": list(rooms.values()), "names": names}
+
+
+def parse_internal_memo_form(text: str) -> dict | None:
+    """HTML van de detailpagina: het blok "Interne memo" (formulier frm-edit-internal-memo).
+    {"action", "fields": {naam: waarde} (ID, __RequestVerificationToken, ...), "memo": huidige tekst} of None."""
+    import html as _html
+
+    m = re.search(r'<form[^>]*id="frm-edit-internal-memo"[^>]*>(.*?)</form>', text, re.DOTALL)
+    if not m:
+        return None
+    form = m.group(0)
+    action = re.search(r'action="([^"]+)"', form)
+    fields = {}
+    for tag in re.findall(r"<input[^>]*>", form):
+        name, value = re.search(r'name="([^"]*)"', tag), re.search(r'value="([^"]*)"', tag)
+        if name:
+            fields[name.group(1)] = _html.unescape(value.group(1)) if value else ""
+    area = re.search(r'<textarea[^>]*name="InternalMemo"[^>]*>(.*?)</textarea>', form, re.DOTALL)
+    if area is None:
+        return None
+    memo = _html.unescape(area.group(1))
+    return {"action": _html.unescape(action.group(1)) if action else "", "fields": fields,
+            "memo": memo.replace("\r\n", "\n").strip("\n")}
