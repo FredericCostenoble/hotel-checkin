@@ -230,8 +230,10 @@ def main() -> int:
         progress.step(hotel_id, SKIP_TASK, "robot gestart in Azure, check-in-formulieren nakijken", force=True)
         from hotel_checkin.processes import send_messages
 
-        if not send_messages.robot_needed(hotel_id):
-            # Bevroren (bv. TST als PRD goed loopt): Lighthouse niet openen
+        from hotel_checkin.processes import daily_lists
+
+        if not send_messages.robot_needed(hotel_id) and not daily_lists.pending_reads(hotel_id):
+            # Bevroren (bv. TST als PRD goed loopt): Lighthouse niet openen, behalve voor een gevraagde lijst
             guests.log_robot_run(hotel_id, SKIP_TASK, datetime.now(UTC), True, 0, 0,
                                  "alle hoofdschakelaars staan uit: de robot doet niets (omgeving bevroren)")
             progress.done(hotel_id)

@@ -380,3 +380,36 @@ def test_breakfast_from_planboard():
     s31 = _row(data, "31")  # geen label en reservatie niet gekend: nakijken
     assert s31["check"] and s31["count"] is None and "nakijken" in s31["remark"]
     assert _row(data, "33")["count"] is None and not _row(data, "33")["check"]  # komt pas aan
+
+
+def test_robot_reads_planboard_for_requested_list(robot, monkeypatch):
+    """Lijst maken (knop of uur): de robot opent Lighthouse, leest het planbord en maakt de lijst, ook met de
+    schakelaar Reservaties uit en zonder reservaties om na te lezen."""
+    from contextlib import contextmanager
+
+    from hotel_checkin.pms import lighthouse
+    from hotel_checkin.pms.lighthouse_parse import parse_planboard_stays
+    from hotel_checkin.processes import pay_requests, refresh_contacts
+
+    monkeypatch.setenv("LUCCA_SCHAKELAARS_RESERVATIES", "false")
+    day = date(2026, 11, 8)
+    opened, asked = [], []
+
+    @contextmanager
+    def connect(hotel_id):
+        opened.append(hotel_id)
+        yield object()
+
+    def stays(hotel_id, start, end, lh):
+        asked.append((start, end))
+        return parse_planboard_stays(PLANBOARD.read_text())
+
+    monkeypatch.setattr(lighthouse, "connect", connect)
+    monkeypatch.setattr(lighthouse, "planboard_stays", stays)
+    monkeypatch.setattr(pay_requests, "run", lambda *a: {"todo": 0, "made": [], "errors": [], "left": 0})
+    dl.request("lucca", "cleaning", day, by="frederic", now=datetime(2026, 11, 7, 9, 0, tzinfo=TZ))
+    refresh_contacts.run("lucca")
+    assert opened == ["lucca"] and asked == [(date(2026, 11, 7), day)]
+    made = repo.get_daily_list("lucca", "cleaning", day.isoformat())
+    assert made["totals"] == {"leave": 13, "stay": 0, "checkin": 9} and made["source"].startswith("planbord van")
+    assert dl.pending_reads("lucca") == []

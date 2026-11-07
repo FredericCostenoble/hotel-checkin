@@ -652,13 +652,14 @@ def request(hotel_id: str, kind: str, day: date, by: str = "", send_now: bool = 
             now: datetime | None = None) -> dict:
     """Een lijst vragen: de robot leest de reservaties van die dag en maakt de lijst; versturen alleen als gevraagd.
     Een nieuwe vraag voor dezelfde lijst vervangt de vorige (ook of ze verstuurd moet worden).
-    Zonder robot in de cloud (codespace, tests) of als hij niet leest: meteen maken met wat er is."""
+    Altijd via de robot (planbord en reservaties van die dag), ook met de schakelaar Reservaties uit of een
+    bevroren omgeving. Zonder robot in de cloud (codespace, tests): meteen maken met wat er is."""
     from hotel_checkin.admin import cloud_robot
 
     if kind not in KINDS:
         raise ValueError(kind)
     now = _now(now, hotel_id)
-    if not cloud_robot.available() or not switch(hotel_id, "reservaties"):  # geen robot, of hij leest niet
+    if not cloud_robot.available():  # geen robot in de cloud (codespace, tests): meteen met wat er is
         data = generate(hotel_id, kind, day, by=by, send_now=send_now, auto=auto)
         return {"requested": False, "day": data["day"], "sent": data["sent"] if send_now else []}
     reqs = requests(hotel_id)

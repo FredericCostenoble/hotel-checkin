@@ -110,8 +110,9 @@ def run(hotel_id: str) -> int:
     from hotel_checkin.processes import daily_lists
 
     # Eerst, zodat de tijdslimiet van de run ze zeker niet overslaat
-    list_keys = daily_lists.pending_reads(hotel_id) if reading else []
-    for_lists = daily_lists.refresh_due(hotel_id) if reading else []
+    # Een gevraagde lijst (op het uur of met de knop) wordt altijd gemaakt, ook met de schakelaar Reservaties uit
+    list_keys = daily_lists.pending_reads(hotel_id)
+    for_lists = daily_lists.refresh_due(hotel_id) if list_keys else []
     seen = {x.reservation_id for x in todo} | {x.reservation_id for x in for_lists}
     arrivals = for_lists + [r for r in arrivals if r.reservation_id not in seen]
     lists_due = bool(list_keys)
@@ -137,7 +138,7 @@ def run(hotel_id: str) -> int:
     skipped: list[str] = []
     timings: dict[str, float] = {}  # gemeten duur per onderdeel (seconden), voor de monitor
     try:
-        if todo or arrivals or payouts or syncs or breakfasts or pay_todo:
+        if todo or arrivals or payouts or syncs or breakfasts or pay_todo or lists_due:
             t0 = time.monotonic()
             with lighthouse.connect(hotel_id) as lh:
                 timings["login"] = round(time.monotonic() - t0, 1)
@@ -146,6 +147,17 @@ def run(hotel_id: str) -> int:
                 if ready is not None:
                     timings["ready"] = ready
                 deadline = run_context.stop_at(MAX_SECONDS)
+                # Gevraagde ontbijt- of schoonmaaklijst: eerst het planbord van die dag (kamers, aankomst, vertrek,
+                # personen, labels), één keer opvragen, zodat de tijdslimiet van de run het nooit overslaat
+                if lists_due:
+                    from hotel_checkin.core import progress
+
+                    progress.step(hotel_id, daily_lists.TASK[list_keys[0].split(":", 1)[0]],
+                                  "planbord lezen voor de gevraagde lijsten", force=True)
+                    try:
+                        labels_read = daily_lists.robot_read_labels(hotel_id, list_keys, lh)
+                    except Exception as exc:  # noqa: BLE001 - de lijst volgt dan met de reservaties (staat in de notitie)
+                        labels_read = f"planbord niet gelezen: {type(exc).__name__}"
                 # Eerst de overschrijving van Booking.com (PRD of testgast, hoofdschakelaar), zodat een nieuwe
                 # reservatie die in aanmerking komt meteen in deze run geregistreerd wordt. Zie booking_payout.py
                 # Eigen taak in het robotlog, met een eigen tijdslimiet: de rest van deze run komt altijd aan bod.
@@ -199,12 +211,6 @@ def run(hotel_id: str) -> int:
                             continue
                         if changes:
                             access_changes.append(f"{reservation.booking_number}: {'; '.join(changes)}")
-                # Gevraagde ontbijt- of schoonmaaklijst: de labels op het planbord (ONTBIJT = ontbijt elke dag)
-                if lists_due and time.monotonic() <= deadline:
-                    try:
-                        labels_read = daily_lists.robot_read_labels(hotel_id, list_keys, lh)
-                    except Exception as exc:  # noqa: BLE001 - de lijst volgt dan zonder de labels (staat in de notitie)
-                        labels_read = f"planbord niet gelezen: {type(exc).__name__}"
                 # Pincode in de opmerking en kamers op KLAAR OM IN TE CHECKEN (PRD of testgast), zie pms_sync.py
                 if syncs and time.monotonic() <= deadline:
                     progress.step(hotel_id, pms_sync.TASK, f"{len(syncs)} reservaties met een code nakijken", force=True)
