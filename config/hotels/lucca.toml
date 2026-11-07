@@ -90,6 +90,7 @@ email = ["management@hotellucca.be"]   # mail met de Excel als bijlage; leeg = g
 whatsapp = []                 # gsm-nummers (+32...): WhatsApp, of sms als er geen WhatsApp-sjabloon is
 controle = "verantwoordelijke housekeeping"   # functie bovenaan de lijst (Controle: ...), geen naam; leeg = geen regel
 extra_rijen = ["TOILETTEN"]   # vaste rijen onderaan de lijst
+labels = ["BABY BED", "DOUBLE OPMAKEN", "SPECIAAL VERZOEK", "LATE ARRIVAL"]   # labels op het planbord die als opmerking komen (wie blijft of aankomt)
 woorden = ["babybed", "baby bed", "baby cot", "cot", "crib", "kinderbed", "kinderbett", "babybett", "lit bébé", "lit parapluie", "extra bed", "bijzetbed", "lit d'appoint", "zusatzbett", "romant", "versiering", "decoratie", "decoration", "décoration", "rozen", "roses", "bloemen", "flowers", "fleurs", "champagne", "cava", "verjaardag", "birthday", "anniversaire", "geburtstag", "anniversary", "jubileum", "huwelijk", "honeymoon", "lune de miel", "aparte bedden", "separate beds", "lits séparés", "kussen", "pillow", "oreiller"]   # zinnen uit de opmerking of de folio met deze woorden komen bij de opmerkingen
 
 [wifi]

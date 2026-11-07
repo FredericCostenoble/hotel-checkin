@@ -517,6 +517,81 @@ def parse_planboard_labels(text: str) -> dict[str, list[str]]:
     return {rid: sorted(names.get(x, x) for x in labels) for rid, labels in ids.items()}
 
 
+_ROOM_NUMBER = re.compile(r"^\s*(\d{1,4})\b\s*-?\s*(.*)$")
+
+
+def parse_planboard_stays(text: str) -> dict:
+    """HTML van het planbord: alle kamers en per kamer wie er wanneer verblijft. Elke kamer van een reservatie is
+    een eigen blok met eigen data (een groep kan kamers met andere data hebben). Geen gastnamen.
+    {"units": {unit: {"room": "20", "name": "FAMILY APARTMENT"}},
+     "stays": [{"reservation", "accommodation", "unit", "room", "arrival", "departure", "persons", "labels": [naam]}]}
+    room = kamernummer (leeg voor een kamer zonder nummer, bv. DUMMY); persons = het getal voor "×" in het blok."""
+    from html.parser import HTMLParser
+
+    units: dict[str, dict] = {}
+    names: dict[str, str] = {}
+    stays: dict[str, dict] = {}
+
+    class P(HTMLParser):
+        def __init__(self):
+            super().__init__(convert_charrefs=True)
+            self.unit = ""  # rij tr.unit waarin we zitten (kamernaam)
+            self.room_text: list[str] | None = None
+            self.block: dict | None = None  # blok waarvan we de tekst lezen (aantal personen)
+            self.depth = 0
+
+        def handle_starttag(self, tag, attrs):
+            a = dict(attrs)
+            cls = (a.get("class") or "").split()
+            if tag == "tr" and "unit" in cls and a.get("data-id"):
+                self.unit = a["data-id"]
+            if tag == "div" and "roomname" in cls and self.unit:
+                self.room_text = []
+            if a.get("data-labelid") and a.get("data-labelname"):
+                names.setdefault(a["data-labelid"], a["data-labelname"].strip())
+            if self.block is not None and tag == "div":
+                self.depth += 1
+            if "planned-accommodation" in cls and a.get("data-accommodationid") and a.get("data-reservation"):
+                acc = a["data-accommodationid"]
+                stays.setdefault(acc, {
+                    "reservation": a["data-reservation"].lower(), "accommodation": acc, "unit": a.get("data-unit", ""),
+                    "arrival": a.get("data-arrival", ""), "departure": a.get("data-departure", ""), "persons": None,
+                    "labels": [x for x in (a.get("data-labelids") or "").split(",") if x], "_text": []})
+                if tag == "div" and self.block is None:
+                    self.block, self.depth = stays[acc], 1
+
+        def handle_endtag(self, tag):
+            if tag == "div" and self.room_text is not None:
+                name = " ".join(" ".join(self.room_text).split())
+                if name:
+                    m = _ROOM_NUMBER.match(name)
+                    units.setdefault(self.unit, {"room": m.group(1) if m else "",
+                                                 "name": (m.group(2) if m else name).strip()})
+                self.room_text = None
+            if tag == "tr":
+                self.unit = ""
+            if self.block is not None and tag == "div":
+                self.depth -= 1
+                if self.depth <= 0:
+                    self.block = None
+
+        def handle_data(self, data):
+            if self.room_text is not None:
+                self.room_text.append(data)
+            if self.block is not None:
+                self.block["_text"].append(data)
+
+    P().feed(text)
+    out = []
+    for s in stays.values():
+        m = re.search(r"(\d{1,3})\s*[×x]", " ".join(s.pop("_text")))
+        s["persons"] = int(m.group(1)) if m else None
+        s["labels"] = sorted(names.get(x, x) for x in s["labels"])
+        s["room"] = (units.get(s["unit"]) or {}).get("room", "")
+        out.append(s)
+    return {"units": units, "stays": out}
+
+
 def parse_planboard(text: str, reservation_id: str) -> dict:
     """HTML van het planbord: de kamers (accommodaties) van één reservatie met hun labels, en de nummers van
     alle labels. {"rooms": [{"accommodation_id", "labels": [id], "unit"}], "names": {naam: id}}."""

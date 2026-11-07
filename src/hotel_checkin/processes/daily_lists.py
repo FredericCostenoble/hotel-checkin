@@ -17,6 +17,12 @@ Schoonmaaklijst voor dag D, per kamer: Leave (vertrek op D), Stay (aankomst voor
 Opmerkingen: zinnen uit de opmerking van de reservatie of lijnen van de folio met een van de woorden uit de
 instellingen ([kuislijst] woorden, bv. babybed, romantisch), en het aantal personen bij een check in.
 
+Planbord: de robot leest bij elke gevraagde lijst het planbord van Lighthouse voor die dag (alleen lezen). Daarop is
+elke kamer een eigen blok met eigen aankomst, vertrek, aantal personen en labels, ook bij een groep met kamers op
+verschillende data, en ook reservaties die de robot nog niet kent. Beide lijsten volgen de kamers en data van het
+planbord; tarief, folio en opmerking komen uit de reservatie. Labels uit [kuislijst] labels (bv. BABY BED) komen bij
+de opmerkingen. Kon de robot het planbord niet lezen, dan de kamers en data van de reservaties (staat bij de lijst).
+
 Vers: een lijst wordt altijd gemaakt met wat de robot net in Lighthouse las. Lijst maken (monitor) of het uur van de
 automatische lijst start de robot, die de reservaties van die dag leest (kamer, data, folio, opmerking); daarna maakt
 de timer de lijst en verstuurt ze. De automatische lijst wordt gevraagd op het uur uit de instellingen; dat is een vast
@@ -49,6 +55,8 @@ ROBOT_RETRY_MINUTES = 6  # de robot opnieuw starten als hij intussen niet nalas 
 REQUEST_STATE = "daily_lists_requests"  # RobotState: gevraagde lijsten (schrijft alleen de Function App)
 MADE_STATE = "daily_lists_made"  # RobotState: wanneer de robot de gevraagde lijst maakte (schrijft alleen de robot)
 CATALOG_STATE = "room_catalog"  # RobotState: kamer -> omschrijving in Lighthouse
+PLANBOARD_STATE = "planboard:{day}"  # RobotState: wie verblijft in welke kamer op die dag, zoals de robot het planbord las
+CLEANING_LABELS = ("BABY BED", "DOUBLE OPMAKEN", "SPECIAAL VERZOEK", "LATE ARRIVAL")  # standaard voor [kuislijst] labels
 SEPARATOR = "-"  # in [kamers] lijst_volgorde: lege rij (nieuwe verdieping)
 
 
@@ -70,7 +78,8 @@ def settings(hotel_id: str, kind: str) -> dict:
     return {"time": str(cfg.get("uur") or "18:00"), "days": int(cfg.get("dag", 1) or 0),
             "email": _list(cfg.get("email")), "whatsapp": _list(cfg.get("whatsapp")),
             "words": _list(cfg.get("woorden")), "controle": str(cfg.get("controle") or ""),
-            "extra_rows": _list(cfg.get("extra_rijen"))}
+            "extra_rows": _list(cfg.get("extra_rijen")),
+            "labels": _list(cfg["labels"] if "labels" in cfg else (list(CLEANING_LABELS) if kind == "cleaning" else []))}
 
 
 def _time(value: str) -> tuple[int, int]:
@@ -190,17 +199,86 @@ def _active(r: Reservation) -> bool:
 # ---------------------------------------------------------------- lijsten opmaken
 
 
-def build_breakfast(hotel_id: str, day: date, reservations: list[Reservation], words: list[str]) -> dict:
+def _persons(stay: dict, r: Reservation | None, stays_of_r: list[dict]) -> int | None:
+    """Personen in deze kamer: het getal op het planbord, anders dat van de reservatie als ze maar één kamer heeft."""
+    if stay.get("persons"):
+        return stay["persons"]
+    return r.guest_count if r and len(stays_of_r) == 1 else None
+
+
+def _add(per_room: dict, room: str, count: int | None, remark: list[str], check: bool) -> None:
+    cur = per_room.get(room)
+    if cur:  # twee reservaties in dezelfde kamer (bv. wissel op die dag)
+        cur["count"] = (cur["count"] or 0) + (count or 0) if (cur["count"] is not None or count is not None) else None
+        cur["remark"] = "; ".join(x for x in (cur["remark"], *remark) if x)
+        cur["check"] = cur["check"] or check
+    else:
+        per_room[room] = {"count": count, "remark": "; ".join(remark), "check": check}
+
+
+def _labeled(per_room: dict, room: str, persons: int | None) -> None:
+    """Kamer met het label ONTBIJT: ontbijt voor wie in de kamer is."""
+    _add(per_room, room, persons, [] if persons else ["aantal personen niet gekend"], not persons)
+
+
+def _by_reservation(stays: list[dict]) -> dict[str, list[dict]]:
+    out: dict[str, list[dict]] = {}
+    for st in sorted(stays, key=lambda x: (len(x.get("room") or "999"), x.get("room") or "")):
+        out.setdefault(st["reservation"], []).append(st)
+    return out
+
+
+def build_breakfast(hotel_id: str, day: date, reservations: list[Reservation], words: list[str],
+                    stays: list[dict] | None = None) -> dict:
+    """stays = het planbord (robot): wie in welke kamer sliep, per kamer met eigen data, personen en labels. Zonder
+    planbord: de kamers en data van de reservaties."""
+    from dataclasses import replace
+
     from hotel_checkin.pms.lighthouse_parse import BREAKFAST_LABEL, rate_plans_from
     from hotel_checkin.processes.breakfast_labels import breakfast
 
     per_room: dict[str, dict] = {}
     undated = dated_lines = 0  # ontbijtregels zonder / met de dagen uit Lighthouse (om te zien of de robot ze las)
     label = breakfast_label(hotel_id)
-    for r in reservations:
-        if not _active(r) or not (r.arrival < day <= r.departure):
+    plan = None if stays is None else _by_reservation(
+        [x for x in stays if x["arrival"] < day.isoformat() <= x["departure"]])
+    known = {r.reservation_id.lower() for r in reservations}
+    room_persons: dict[str, int | None] = {}
+    for rid, st in (plan or {}).items():
+        if rid in known:
             continue
-        yes, why = breakfast(r)
+        # Op het planbord, maar de robot kent de reservatie (nog) niet: met het label is het zeker, anders nakijken
+        for x in st:
+            room = x.get("room") or "?"
+            if label in x["labels"]:
+                _labeled(per_room, room, x.get("persons"))
+            else:
+                _add(per_room, room, None, ["reservatie nog niet gelezen door de robot: nakijken of er ontbijt is"], True)
+    for r in reservations:
+        if not _active(r):
+            continue
+        judged = None
+        if plan is not None:
+            st = plan.get(r.reservation_id.lower())
+            if not st:
+                continue  # die nacht niet in het hotel volgens het planbord
+            for x in st:  # label ONTBIJT op deze kamer: ontbijt elke dag voor wie in de kamer is
+                if label in x["labels"]:
+                    _labeled(per_room, x.get("room") or "?", _persons(x, r, st))
+            rest = [x for x in st if label not in x["labels"]]
+            if not rest:
+                continue
+            judged = breakfast(r)  # tarief en folio gelden voor de hele reservatie
+            room_persons = {x.get("room") or "?": _persons(x, r, st) for x in rest}
+            known_persons = [p for p in room_persons.values() if p]
+            r = replace(r, rooms=list(room_persons), pms_labels=[], breakfast_labeled_at=None,
+                        guest_count=sum(known_persons) if len(known_persons) == len(rest) else
+                        (r.guest_count if len(rest) == len(st) else None))
+        elif not (r.arrival < day <= r.departure):
+            continue
+        else:
+            room_persons = {}
+        yes, why = judged or breakfast(r)
         # Label ONTBIJT op het planbord (Lighthouse): ontbijt elke dag, voor iedereen (tarief of bijgeboekt)
         if label in r.pms_labels:
             yes, why = True, f"label {label}"
@@ -214,8 +292,8 @@ def build_breakfast(hotel_id: str, day: date, reservations: list[Reservation], w
         if not rate_incl and lines and all(x.get("days") for x in lines):
             for x in lines:
                 n = int(x["days"].get(day.isoformat()) or 0)
-                if n:
-                    room = x.get("room") or (r.rooms[0] if r.rooms else "?")
+                room = x.get("room") or (r.rooms[0] if r.rooms else "?")
+                if n and (plan is None or room in r.rooms):
                     dated[room] = dated.get(room, 0) + n
             if not dated:
                 continue  # ontbijt geboekt, maar niet voor deze dag
@@ -228,6 +306,9 @@ def build_breakfast(hotel_id: str, day: date, reservations: list[Reservation], w
         if dated:
             rooms = list(dated)
             split = [dated[x] for x in rooms]
+        elif room_persons and all(room_persons.values()):
+            rooms = list(room_persons)
+            split = [room_persons[x] for x in rooms]
         else:
             rooms = r.rooms or ["?"]
             split = ([persons // len(rooms) + (1 if i < persons % len(rooms) else 0) for i in range(len(rooms))]
@@ -251,19 +332,12 @@ def build_breakfast(hotel_id: str, day: date, reservations: list[Reservation], w
             if room == "?":
                 remark.append(f"nog geen kamer toegewezen ({r.booking_number or ''})")
                 check = True
-            if len(rooms) > 1 and i == 0 and not dated:
+            if len(rooms) > 1 and i == 0 and not dated and not (room_persons and all(room_persons.values())):
                 remark.append(f"samen met {', '.join(room_name(hotel_id, x) for x in rooms[1:])}"
                               + (f" ({persons} pers.)" if persons else ""))
             if i == 0:
                 remark += found
-            count = None if (partial or unread) else split[i]
-            cur = per_room.get(room)
-            if cur:  # twee reservaties in dezelfde kamer (bv. wissel op die dag)
-                cur["count"] = (cur["count"] or 0) + (count or 0) if (cur["count"] is not None or count is not None) else None
-                cur["remark"] = "; ".join(x for x in (cur["remark"], *remark) if x)
-                cur["check"] = cur["check"] or check
-            else:
-                per_room[room] = {"count": count, "remark": "; ".join(remark), "check": check}
+            _add(per_room, room, None if (partial or unread) else split[i], remark, check)
     rows = _rows(hotel_id, _layout(hotel_id, list(per_room)), per_room, {"count": None, "remark": "", "check": False},
                  room_catalog(hotel_id, reservations))
     total = sum(r.get("count") or 0 for r in rows if not r.get("sep"))
@@ -272,9 +346,49 @@ def build_breakfast(hotel_id: str, day: date, reservations: list[Reservation], w
             "check": sum(1 for r in rows if r.get("check"))}
 
 
-def build_cleaning(hotel_id: str, day: date, reservations: list[Reservation], words: list[str]) -> dict:
+def _cleaning_plan(day: date, reservations: list[Reservation], words: list[str], labels: list[str],
+                   stays: list[dict], per_room: dict) -> None:
+    """Schoonmaaklijst uit het planbord: elke kamer met haar eigen aankomst en vertrek."""
+    d = day.isoformat()
+    by_id = {r.reservation_id.lower(): r for r in reservations}
+    wanted = {x.upper() for x in labels}
+    for rid, st in _by_reservation([x for x in stays if x["arrival"] <= d <= x["departure"]]).items():
+        r = by_id.get(rid)
+        if r is not None and not _active(r):
+            continue
+        found_done = False
+        for x in st:
+            room = x.get("room") or "?"
+            leave, checkin = x["departure"] == d, x["arrival"] == d
+            stay = x["arrival"] < d < x["departure"]
+            cur = per_room.setdefault(room, {"leave": False, "stay": False, "checkin": False, "remark": "",
+                                             "check": False})
+            cur["leave"] = cur["leave"] or leave
+            cur["stay"] = cur["stay"] or stay
+            cur["checkin"] = cur["checkin"] or checkin
+            if not (stay or checkin):
+                continue  # wensen van wie vertrekt, gelden niet meer
+            remark = []
+            persons = _persons(x, r, st)
+            if checkin and persons:
+                remark.append(f"{persons} pers.")
+            remark += [lab.capitalize() for lab in x["labels"] if lab.upper() in wanted]
+            if room == "?":
+                remark.append("nog geen kamer toegewezen" + (f" ({r.booking_number})" if r and r.booking_number else ""))
+                cur["check"] = True
+            if r is not None and not found_done:  # opmerkingen van de reservatie: bij de eerste kamer
+                remark += notes(_texts(r), words)
+                found_done = True
+            cur["remark"] = "; ".join(x for x in (cur["remark"], *remark) if x)
+
+
+def build_cleaning(hotel_id: str, day: date, reservations: list[Reservation], words: list[str],
+                   stays: list[dict] | None = None, labels: list[str] | None = None) -> dict:
+    """stays = het planbord (robot), zie build_breakfast. labels = labels op het planbord die als opmerking komen."""
     per_room: dict[str, dict] = {}
-    for r in reservations:
+    if stays is not None:
+        _cleaning_plan(day, reservations, words, labels or [], stays, per_room)
+    for r in reservations if stays is None else []:
         if not _active(r) or not (r.arrival <= day <= r.departure):
             continue
         leave, checkin = r.departure == day, r.arrival == day
@@ -305,24 +419,54 @@ def build_cleaning(hotel_id: str, day: date, reservations: list[Reservation], wo
 def build(hotel_id: str, kind: str, day: date) -> dict:
     cfg = settings(hotel_id, kind)
     reservations = guests.list_reservations(hotel_id)
+    plan = planboard(hotel_id, day)
+    stays = plan["stays"] if plan else None
     if kind == "breakfast":
-        data = build_breakfast(hotel_id, day, reservations, cfg["words"])
+        data = build_breakfast(hotel_id, day, reservations, cfg["words"], stays)
     else:
-        data = build_cleaning(hotel_id, day, reservations, cfg["words"])
+        data = build_cleaning(hotel_id, day, reservations, cfg["words"], stays, cfg.get("labels") or [])
         data["controle"], data["extra_rows"] = cfg["controle"], cfg["extra_rows"]
+    data["source"] = f"planbord van {plan['read_at'][11:16]}" if plan else "reservaties (planbord niet gelezen)"
     return data
+
+
+def planboard(hotel_id: str, day: date) -> dict | None:
+    """Wat de robot op het planbord las voor die dag: {"read_at", "stays"}, of None."""
+    try:
+        data = json.loads(guests.get_state(hotel_id, PLANBOARD_STATE.format(day=day.isoformat())) or "null")
+    except ValueError:
+        return None
+    return data if isinstance(data, dict) and isinstance(data.get("stays"), list) else None
+
+
+def save_planboard(hotel_id: str, day: date, parsed: dict, read_at: datetime) -> int:
+    """Het planbord voor die dag bewaren (alleen wie er die dag of de nacht ervoor is) en de kamers onthouden."""
+    d, before = day.isoformat(), (day - timedelta(days=1)).isoformat()
+    keep = [{k: x[k] for k in ("reservation", "room", "arrival", "departure", "persons", "labels")}
+            for x in parsed["stays"] if x["arrival"] <= d and x["departure"] >= before]
+    guests.set_state(hotel_id, PLANBOARD_STATE.format(day=d),
+                     json.dumps({"read_at": read_at.isoformat(timespec="minutes"), "stays": keep}))
+    try:
+        known = dict(json.loads(guests.get_state(hotel_id, CATALOG_STATE) or "{}"))
+    except ValueError:
+        known = {}
+    merged = known | {u["room"]: u["name"] for u in parsed["units"].values() if u.get("room") and u.get("name")}
+    if merged != known:
+        guests.set_state(hotel_id, CATALOG_STATE, json.dumps(merged))
+    return len(keep)
 
 
 def describe(data: dict) -> str:
     """Inhoud in een paar woorden (robotlog, monitor)."""
+    source = f", volgens {data['source']}" if data.get("source") else ""
     if data["kind"] == "breakfast":
         rooms = sum(1 for r in data["rows"] if not r.get("sep") and (r.get("count") or r.get("check")))
         missing = (data.get("breakfast_lines") or {}).get("without_days", 0)
         return (f"{data.get('total', 0)} personen in {rooms} kamers"
                 + (f", {data['check']} na te kijken" if data.get("check") else "")
-                + (f", van {missing} ontbijtregel(s) de dagen niet gelezen" if missing else ""))
+                + (f", van {missing} ontbijtregel(s) de dagen niet gelezen" if missing else "") + source)
     t = data.get("totals", {})
-    return f"{t.get('leave', 0)} vertrek, {t.get('stay', 0)} blijvers, {t.get('checkin', 0)} check in"
+    return f"{t.get('leave', 0)} vertrek, {t.get('stay', 0)} blijvers, {t.get('checkin', 0)} check in" + source
 
 
 # ---------------------------------------------------------------- versturen
@@ -550,17 +694,22 @@ def robot_read_labels(hotel_id: str, keys: list[str], lh) -> str:
 
     days = sorted({date.fromisoformat(k.split(":", 1)[1]) for k in keys})
     found: dict[str, list[str]] = {}
+    stays = 0
     for d in days:
-        found |= lighthouse.planboard_labels(hotel_id, d - timedelta(days=1), d, lh)
+        parsed = lighthouse.planboard_stays(hotel_id, d - timedelta(days=1), d, lh)
+        stays += save_planboard(hotel_id, d, parsed, datetime.now(clock.tz(hotel_id)))
+        for x in parsed["stays"]:
+            found[x["reservation"]] = sorted(set(found.get(x["reservation"], [])) | set(x["labels"]))
     changed = 0
     for r in guests.list_reservations(hotel_id):
-        if r.reservation_id in found and r.pms_labels != found[r.reservation_id]:
-            r.pms_labels = found[r.reservation_id]
+        rid = r.reservation_id.lower()
+        if rid in found and r.pms_labels != found[rid]:
+            r.pms_labels = found[rid]
             guests.save_reservation(r, fields=guests.PMS_LABEL_FIELDS)
             changed += 1
     name = breakfast_label(hotel_id)
     with_label = sum(1 for labels in found.values() if name in labels)
-    return f"planbord gelezen: {with_label} reservaties met label {name}"
+    return f"planbord gelezen ({stays} kamers bezet): {with_label} reservaties met label {name}"
 
 
 def breakfast_label(hotel_id: str) -> str:

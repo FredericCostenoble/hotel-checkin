@@ -322,3 +322,61 @@ def test_booking_boilerplate_is_not_a_remark():
     text = ("Kinderen en extra bedden: Kinderen van alle leeftijden zijn toegestaan. U heeft geen kinderbedjes "
             "toegevoegd. U heeft geen extra bedden toegevoegd. Graag een babybed voor onze zoon.")
     assert dl.notes([text], words) == ["Graag een babybed voor onze zoon."]
+
+
+# ---------------------------------------------------------------- planbord (per kamer eigen data, personen, labels)
+
+PLANBOARD = Path(__file__).parent / "fixtures" / "planboard_2026-11-07.html"  # planbord van 7/11, zonder gastnamen
+
+
+def _plan(day):
+    from hotel_checkin.pms.lighthouse_parse import parse_planboard_stays
+
+    parsed = parse_planboard_stays(PLANBOARD.read_text())
+    dl.save_planboard("lucca", day, parsed, datetime(2026, 11, 7, 8, 0, tzinfo=TZ))
+    return parsed
+
+
+def test_planboard_parse():
+    from hotel_checkin.pms.lighthouse_parse import parse_planboard_stays
+
+    parsed = parse_planboard_stays(PLANBOARD.read_text())
+    assert parsed["units"]["51902"] == {"room": "20", "name": "FAMILY APARTMENT"}
+    assert parsed["units"]["47192"]["room"] == "11"  # "11 - SUPERIOR DOUBLE ROOM"
+    assert parsed["units"]["45333"]["room"] == ""  # DUMMY
+    apt = next(x for x in parsed["stays"] if x["room"] == "20" and x["arrival"] == "2026-11-06")
+    assert apt["persons"] == 6 and apt["labels"] == ["LATE ARRIVAL", "ONTBIJT"] and apt["departure"] == "2026-11-08"
+
+
+def test_cleaning_from_planboard():
+    day = date(2026, 11, 7)
+    _plan(day)
+    # De groep (7 kamers, 6/11 tot 8/11) kent de robot als één reservatie met maar één kamer: het planbord geeft ze allemaal
+    _r("ce6dec79-f6e4-41ad-8f7b-92b08ad9dd88", "22", date(2026, 11, 6), 2, persons=14,
+       remarks="Graag een babybed in de kamer")
+    data = dl.build("lucca", "cleaning", day)
+    rows = [x for x in data["rows"] if not x.get("sep")]
+    pick = lambda k: sorted((x["room"] for x in rows if x[k]), key=int)
+    assert pick("leave") == ["12", "14", "30", "31"]
+    assert pick("stay") == ["11", "15", "16", "20", "22", "24", "25", "32"]
+    assert pick("checkin") == ["12", "21", "30", "31", "33"]
+    assert data["totals"] == {"leave": 4, "stay": 8, "checkin": 5}
+    assert "Double opmaken" in _row(data, "32")["remark"]
+    assert "Late arrival" in _row(data, "30")["remark"] and "Late arrival" not in _row(data, "31")["remark"]  # vertrekker
+    assert "2 pers." in _row(data, "12")["remark"]  # check in, personen op het planbord
+    assert _row(data, "24")["desc"] == "QUAD KAMER - 2e verdiep"  # omschrijving uit het planbord
+    assert data["source"].startswith("planbord van 08:00")
+    assert sum("babybed" in x["remark"] for x in rows) == 1  # opmerking van de groep: één keer, bij de eerste kamer
+
+
+def test_breakfast_from_planboard():
+    day = date(2026, 11, 7)
+    _plan(day)
+    data = dl.build("lucca", "breakfast", day)
+    assert _row(data, "20")["count"] == 6  # label ONTBIJT, 6 personen (CPB-4276-002390)
+    assert _row(data, "15")["count"] == 2 and _row(data, "14")["count"] == 1
+    assert _row(data, "12")["count"] == 1  # wie de nacht ervoor sliep, niet wie op 7/11 aankomt
+    assert _row(data, "11")["check"]  # label, maar aantal personen niet op het planbord
+    s31 = _row(data, "31")  # geen label en reservatie niet gekend: nakijken
+    assert s31["check"] and s31["count"] is None and "nakijken" in s31["remark"]
+    assert _row(data, "33")["count"] is None and not _row(data, "33")["check"]  # komt pas aan
