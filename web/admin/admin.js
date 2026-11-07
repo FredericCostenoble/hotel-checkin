@@ -704,7 +704,7 @@ function renderMatches() {
   $("#matches-title").textContent = t("m_title", m.length);
   const who = g => `<strong>${esc(g.name)}</strong> <span class="muted">${esc([g.country, g.email || g.phone, g.stays + "×"].filter(Boolean).join(" · "))}</span>`;
   $("#matches").innerHTML = m.map(x => `
-    <tr><td>${who(guestById(x.a))}</td><td>${who(guestById(x.b))}</td><td class="muted">${esc(t("m_" + x.reason))}</td>
+    <tr><td>${who(guestById(x.a))}</td><td>${who(guestById(x.b))}</td><td class="muted">${esc(t("m_" + x.reason))}${x.contact ? `: <strong>${esc(x.contact)}</strong>` : ""}</td>
       <td><button type="button" class="secondary" data-act="merge" data-a="${esc(x.a)}" data-b="${esc(x.b)}">${esc(t("m_merge"))}</button>
         <button type="button" class="secondary" data-act="different" data-a="${esc(x.a)}" data-b="${esc(x.b)}">${esc(t("m_different"))}</button></td></tr>`).join("");
   document.querySelectorAll("#matches button").forEach(b => b.onclick = async () => {

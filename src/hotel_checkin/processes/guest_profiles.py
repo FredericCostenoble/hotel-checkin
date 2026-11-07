@@ -377,13 +377,13 @@ def possible_matches(hotel_id: str, limit: int = 50) -> list[dict]:
     seen: set[tuple[str, str]] = set()
     out: list[dict] = []
 
-    def add(a: GuestProfile, b: GuestProfile, reason: str) -> bool:
+    def add(a: GuestProfile, b: GuestProfile, reason: str, contact: str = "") -> bool:
         """Voeg het paar toe als het nieuw is. True = de limiet is bereikt."""
         pair = tuple(sorted((a.guest_id, b.guest_id)))
         if a.guest_id == b.guest_id or pair in seen or profiles.is_marked_different(different, *pair):
             return False
         seen.add(pair)
-        out.append({"a": pair[0], "b": pair[1], "reason": reason})
+        out.append({"a": pair[0], "b": pair[1], "reason": reason, **({"contact": contact} if contact else {})})
         return len(out) >= limit
 
     # extra adres of nummer uit het formulier van de ene gast = adres of nummer van de andere:
@@ -400,7 +400,7 @@ def possible_matches(hotel_id: str, limit: int = 50) -> list[dict]:
         for i, a in enumerate(group):
             for b in group[i + 1:]:
                 both_own = value in contacts[a.guest_id] and value in contacts[b.guest_id]
-                if add(a, b, "same_contact" if both_own else "extra_contact"):
+                if add(a, b, "same_contact" if both_own else "extra_contact", value):
                     return out
 
     pool = [g for g in all_profiles if g.first_name or g.last_name]

@@ -152,7 +152,8 @@ def test_extra_contact_is_proposed_not_merged():
     profiles.save_profile(a)
     profiles.save_profile(b)
     m = guest_profiles.possible_matches("lucca")
-    assert {"a": min(a.guest_id, b.guest_id), "b": max(a.guest_id, b.guest_id), "reason": "extra_contact"} in m
+    assert {"a": min(a.guest_id, b.guest_id), "b": max(a.guest_id, b.guest_id), "reason": "extra_contact",
+            "contact": "els@gmail.com"} in m  # het gedeelde adres staat erbij
 
 
 def _rsv(rid, first, last, email=None, phone=None):
