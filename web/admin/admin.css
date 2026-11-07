@@ -278,8 +278,10 @@ ul.plan .pl-head .reason { white-space: nowrap; overflow: hidden; text-overflow:
 td .small { font-size: 12px; }
 
 /* Hoofdschakelaars bovenaan: groen = aan, grijs = uit */
-.switches { display: inline-flex; gap: 6px; flex-wrap: wrap; text-decoration: none; }
-.switches .sw { font-size: 12px; padding: 2px 8px; border-radius: 10px; border: 1px solid var(--line); white-space: nowrap; }
+/* Hoofdschakelaars: klein, in het midden van de bovenbalk; lopen daar door op een 2e regel als het moet, zodat
+   Instellingen en NL/EN altijd rechts op de eerste regel blijven */
+.switches { display: flex; gap: 4px; flex-wrap: wrap; flex: 1 1 0; min-width: 0; text-decoration: none; }
+.switches .sw { font-size: 11px; line-height: 16px; padding: 1px 7px; border-radius: 9px; border: 1px solid var(--line); white-space: nowrap; }
 .switches .sw.on { background: #E8F5EC; color: #1E6B3A; border-color: #9FD3AE; }
 .switches .sw.off { background: #F1F2F5; color: #6B7280; }
 
@@ -315,3 +317,9 @@ table.rates tr.off th, table.rates tr.off td { background: #F2F3F5; color: #8A90
 .task-ontbijtlijst { background: #FFF6D6; color: #7A5A00; }
 .task-kuislijst { background: #E4F4F8; color: #135E70; }
 .list-view { overflow-x: auto; padding: 6px 0 10px; }
+
+/* Bovenbalk op één regel: links merk en omgeving, midden de schakelaars, rechts hotel, versie, Instellingen, taal */
+header { flex-wrap: nowrap; gap: 16px; }
+header > * { flex-shrink: 0; }
+header > .switches { flex-shrink: 1; }
+header label, .version { white-space: nowrap; }
