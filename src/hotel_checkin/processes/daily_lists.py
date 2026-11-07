@@ -56,7 +56,9 @@ REQUEST_STATE = "daily_lists_requests"  # RobotState: gevraagde lijsten (schrijf
 MADE_STATE = "daily_lists_made"  # RobotState: wanneer de robot de gevraagde lijst maakte (schrijft alleen de robot)
 CATALOG_STATE = "room_catalog"  # RobotState: kamer -> omschrijving in Lighthouse
 PLANBOARD_STATE = "planboard:{day}"  # RobotState: wie verblijft in welke kamer op die dag, zoals de robot het planbord las
-CLEANING_LABELS = ("BABY BED", "DOUBLE OPMAKEN", "SPECIAAL VERZOEK", "LATE ARRIVAL")  # standaard voor [kuislijst] labels
+CLEANING_LABELS = ("BABY BED", "LATE ARRIVAL")  # standaard voor [kuislijst] labels
+TWIN_LABELS = ("DOUBLE OPMAKEN",)  # standaard voor [kuislijst] labels_twin: alleen op een twin kamer ([kamers.N] twin)
+MEMO_LABELS = ("SPECIAAL VERZOEK",)  # standaard voor [kuislijst] labels_memo: de interne memo komt bij de opmerkingen
 SEPARATOR = "-"  # in [kamers] lijst_volgorde: lege rij (nieuwe verdieping)
 
 
@@ -79,7 +81,15 @@ def settings(hotel_id: str, kind: str) -> dict:
             "email": _list(cfg.get("email")), "whatsapp": _list(cfg.get("whatsapp")),
             "words": _list(cfg.get("woorden")), "controle": str(cfg.get("controle") or ""),
             "extra_rows": _list(cfg.get("extra_rijen")),
-            "labels": _list(cfg["labels"] if "labels" in cfg else (list(CLEANING_LABELS) if kind == "cleaning" else []))}
+            "labels": _list(cfg["labels"] if "labels" in cfg else (list(CLEANING_LABELS) if kind == "cleaning" else [])),
+            "labels_twin": _list(cfg.get("labels_twin", list(TWIN_LABELS))),
+            "labels_memo": _list(cfg.get("labels_memo", list(MEMO_LABELS)))}
+
+
+def twin_rooms(hotel_id: str) -> set[str]:
+    """Kamers die standaard met 2 aparte bedden opgemaakt worden ([kamers.<nummer>] twin = true)."""
+    rooms = load_hotel(hotel_id).get("kamers", {})
+    return {k for k, v in rooms.items() if isinstance(v, dict) and v.get("twin")}
 
 
 def _time(value: str) -> tuple[int, int]:
@@ -347,11 +357,16 @@ def build_breakfast(hotel_id: str, day: date, reservations: list[Reservation], w
 
 
 def _cleaning_plan(day: date, reservations: list[Reservation], words: list[str], labels: list[str],
-                   stays: list[dict], per_room: dict) -> None:
-    """Schoonmaaklijst uit het planbord: elke kamer met haar eigen aankomst en vertrek."""
+                   stays: list[dict], per_room: dict, twin: dict | None = None) -> None:
+    """Schoonmaaklijst uit het planbord: elke kamer met haar eigen aankomst en vertrek.
+    twin = {"rooms": twin kamers, "labels": labels die alleen daar gelden (bv. DOUBLE OPMAKEN),
+            "memo": labels waarvoor de interne memo bij de opmerkingen komt (bv. SPECIAAL VERZOEK)}."""
     d = day.isoformat()
+    twin = twin or {}
     by_id = {r.reservation_id.lower(): r for r in reservations}
     wanted = {x.upper() for x in labels}
+    twin_rooms_, twin_labels = set(twin.get("rooms") or []), {x.upper() for x in twin.get("labels") or []}
+    memo_labels = {x.upper() for x in twin.get("memo") or []}
     for rid, st in _by_reservation([x for x in stays if x["arrival"] <= d <= x["departure"]]).items():
         r = by_id.get(rid)
         if r is not None and not _active(r):
@@ -372,7 +387,16 @@ def _cleaning_plan(day: date, reservations: list[Reservation], words: list[str],
             persons = _persons(x, r, st)
             if checkin and persons:
                 remark.append(f"{persons} pers.")
-            remark += [lab.capitalize() for lab in x["labels"] if lab.upper() in wanted]
+            remark += [lab.capitalize() for lab in x["labels"] if lab.upper() in wanted
+                       or (lab.upper() in twin_labels and room in twin_rooms_)]
+            if any(lab.upper() in memo_labels for lab in x["labels"]):
+                memo = " ".join((r.internal_memo or "").split()) if r else ""
+                if memo:
+                    remark.append(f"Speciaal verzoek: {memo if len(memo) <= 200 else memo[:197] + '...'}")
+                else:  # memo (nog) niet gelezen: nakijken
+                    remark.append("Speciaal verzoek: interne memo nakijken in Lighthouse"
+                                  + (f" ({r.booking_number})" if r and r.booking_number else ""))
+                    cur["check"] = True
             if room == "?":
                 remark.append("nog geen kamer toegewezen" + (f" ({r.booking_number})" if r and r.booking_number else ""))
                 cur["check"] = True
@@ -383,11 +407,14 @@ def _cleaning_plan(day: date, reservations: list[Reservation], words: list[str],
 
 
 def build_cleaning(hotel_id: str, day: date, reservations: list[Reservation], words: list[str],
-                   stays: list[dict] | None = None, labels: list[str] | None = None) -> dict:
-    """stays = het planbord (robot), zie build_breakfast. labels = labels op het planbord die als opmerking komen."""
+                   stays: list[dict] | None = None, labels: list[str] | None = None,
+                   labels_twin: list[str] | None = None, labels_memo: list[str] | None = None) -> dict:
+    """stays = het planbord (robot), zie build_breakfast. labels = labels op het planbord die als opmerking komen;
+    labels_twin = alleen op een twin kamer; labels_memo = de interne memo komt bij de opmerkingen."""
     per_room: dict[str, dict] = {}
     if stays is not None:
-        _cleaning_plan(day, reservations, words, labels or [], stays, per_room)
+        _cleaning_plan(day, reservations, words, labels or [], stays, per_room,
+                       {"rooms": twin_rooms(hotel_id), "labels": labels_twin or [], "memo": labels_memo or []})
     for r in reservations if stays is None else []:
         if not _active(r) or not (r.arrival <= day <= r.departure):
             continue
@@ -424,7 +451,8 @@ def build(hotel_id: str, kind: str, day: date) -> dict:
     if kind == "breakfast":
         data = build_breakfast(hotel_id, day, reservations, cfg["words"], stays)
     else:
-        data = build_cleaning(hotel_id, day, reservations, cfg["words"], stays, cfg.get("labels") or [])
+        data = build_cleaning(hotel_id, day, reservations, cfg["words"], stays, cfg.get("labels") or [],
+                              cfg.get("labels_twin") or [], cfg.get("labels_memo") or [])
         data["controle"], data["extra_rows"] = cfg["controle"], cfg["extra_rows"]
     data["source"] = f"planbord van {plan['read_at'][11:16]}" if plan else "reservaties (planbord niet gelezen)"
     return data

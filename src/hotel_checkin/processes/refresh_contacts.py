@@ -89,6 +89,7 @@ def _apply_detail(r, d) -> None:
     if d.rate_plan:  # tarief uit de folio; anders blijft dat uit de lijst
         r.rate_plan, r.non_refundable = d.rate_plan, d.non_refundable
     r.remarks = d.remarks if d.remarks is not None else r.remarks
+    r.internal_memo = d.internal_memo if d.internal_memo is not None else r.internal_memo
     r.transactions = d.transactions
     r.room_statuses = d.room_statuses or r.room_statuses
     if not r.checkin_completed_at:

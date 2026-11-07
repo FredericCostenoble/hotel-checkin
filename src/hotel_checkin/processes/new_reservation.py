@@ -148,6 +148,7 @@ def _keep_known(reservation, existing) -> None:
     if not reservation.rate_plan:  # tarief uit de detailpagina niet wissen
         reservation.rate_plan, reservation.non_refundable = existing.rate_plan, existing.non_refundable
     reservation.remarks = existing.remarks
+    reservation.internal_memo = existing.internal_memo
     reservation.transactions = existing.transactions
     reservation.payout_registered_at = existing.payout_registered_at
     reservation.pay_link = existing.pay_link

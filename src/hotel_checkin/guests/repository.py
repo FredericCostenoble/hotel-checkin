@@ -119,6 +119,7 @@ def _to_entity(r: Reservation) -> dict:
         "rate_plan": r.rate_plan or "",
         "non_refundable": "" if r.non_refundable is None else str(r.non_refundable),
         "remarks": (r.remarks or "")[:4000],
+        "internal_memo": (r.internal_memo or "")[:4000],
         "transactions": json.dumps(r.transactions),
         "payout_registered_at": r.payout_registered_at.isoformat() if r.payout_registered_at else "",
         "breakfast_labeled_at": r.breakfast_labeled_at.isoformat() if r.breakfast_labeled_at else "",
@@ -192,6 +193,7 @@ def _from_entity(e: dict) -> Reservation:
         rate_plan=e.get("rate_plan") or None,
         non_refundable=None if e.get("non_refundable") in (None, "") else e["non_refundable"] == "True",
         remarks=e.get("remarks") or None,
+        internal_memo=e.get("internal_memo") or None,
         transactions=json.loads(e["transactions"]) if e.get("transactions") else [],
         payout_registered_at=datetime.fromisoformat(e["payout_registered_at"]) if e.get("payout_registered_at") else None,
         breakfast_labeled_at=datetime.fromisoformat(e["breakfast_labeled_at"]) if e.get("breakfast_labeled_at") else None,
@@ -236,7 +238,7 @@ CONTACT_FIELDS = ("email", "phone", "language", "country", "backup_email", "back
                   "contact_checked_at")
 DETAIL_FIELDS = ("rooms", "room_names", "arrival", "departure", "paid", "open_amount", "folio", "folio_total", "status",
                  "pms_status", "email", "phone", "rate_plan", "non_refundable", "remarks", "transactions",
-                 "room_statuses")
+                 "room_statuses", "internal_memo")
 PAYOUT_FIELDS = ("payout_registered_at",)
 BREAKFAST_FIELDS = ("breakfast_labeled_at",)
 PMS_LABEL_FIELDS = ("pms_labels",)

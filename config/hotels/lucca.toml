@@ -90,7 +90,9 @@ email = ["management@hotellucca.be"]   # mail met de Excel als bijlage; leeg = g
 whatsapp = []                 # gsm-nummers (+32...): WhatsApp, of sms als er geen WhatsApp-sjabloon is
 controle = "verantwoordelijke housekeeping"   # functie bovenaan de lijst (Controle: ...), geen naam; leeg = geen regel
 extra_rijen = ["TOILETTEN"]   # vaste rijen onderaan de lijst
-labels = ["BABY BED", "DOUBLE OPMAKEN", "SPECIAAL VERZOEK", "LATE ARRIVAL"]   # labels op het planbord die als opmerking komen (wie blijft of aankomt)
+labels = ["BABY BED", "LATE ARRIVAL"]   # labels op het planbord die als opmerking komen (wie blijft of aankomt)
+labels_twin = ["DOUBLE OPMAKEN"]        # alleen als opmerking op een twin kamer ([kamers.<nummer>] twin = true)
+labels_memo = ["SPECIAAL VERZOEK"]      # de interne memo van de reservatie komt bij de opmerkingen
 woorden = ["babybed", "baby bed", "baby cot", "cot", "crib", "kinderbed", "kinderbett", "babybett", "lit bébé", "lit parapluie", "extra bed", "bijzetbed", "lit d'appoint", "zusatzbett", "romant", "versiering", "decoratie", "decoration", "décoration", "rozen", "roses", "bloemen", "flowers", "fleurs", "champagne", "cava", "verjaardag", "birthday", "anniversaire", "geburtstag", "anniversary", "jubileum", "huwelijk", "honeymoon", "lune de miel", "aparte bedden", "separate beds", "lits séparés", "kussen", "pillow", "oreiller"]   # zinnen uit de opmerking of de folio met deze woorden komen bij de opmerkingen
 
 [wifi]
@@ -223,6 +225,11 @@ toegang_nl = "Uw appartement is in het gebouw rechts naast het hotel: u gaat nie
 toegang_fr = "Votre appartement se trouve dans le bâtiment à droite de l'hôtel : vous ne passez pas par la porte d'entrée de l'hôtel. Face à la porte d'entrée de l'hôtel, le bâtiment à sa droite a son propre clavier pour votre code PIN."
 toegang_en = "Your apartment is in the building to the right of the hotel: you do not use the front door of the hotel. Facing the hotel's front door, the building to its right has its own keypad for your PIN code."
 toegang_de = "Ihr Apartment befindet sich im Gebäude rechts neben dem Hotel: Sie gehen nicht durch die Haustür des Hotels. Mit Blick auf die Haustür des Hotels hat das Gebäude rechts davon ein eigenes Tastenfeld für Ihren PIN-Code."
+
+[kamers.16]
+# Twin kamer: standaard opgemaakt met 2 aparte bedden. Staat het label DOUBLE OPMAKEN op de reservatie, dan komt dat bij
+# de opmerkingen op de schoonmaaklijst ([kuislijst] labels_twin).
+twin = true
 
 [lighthouse]
 # Reservation Manager. Aanmelden met robotgebruiker uit Key Vault: lucca-lighthouse-username / -password

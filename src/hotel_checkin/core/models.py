@@ -65,6 +65,7 @@ class Reservation:
     rate_plan: str | None = None  # tarief in Lighthouse, bv. "NRF BREAKFAST EXCL" of "STANDARD RATE"
     non_refundable: bool | None = None  # niet annuleerbaar (NRF); None = niet gekend
     remarks: str | None = None  # blok Opmerkingen op de detailpagina (bv. betaalinfo van het boekingskanaal)
+    internal_memo: str | None = None  # interne memo van het hotel in Lighthouse (bij het label SPECIAAL VERZOEK)
     transactions: list[str] = field(default_factory=list)  # regels onder Transacties (detailpagina), bv. "Overschrijving ... € 362,00"
     pay_requested_at: datetime | None = None  # betaalverzoek in Lighthouse gemaakt (processes/pay_requests.py)
     breakfast_labeled_at: datetime | None = None  # label ONTBIJT op het planbord gezet (processes/breakfast_labels.py)

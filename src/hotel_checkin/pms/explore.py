@@ -412,6 +412,39 @@ def explore_planboard(lh: LighthouseSession, day: str) -> str:
     return "\n".join(out) + "\n"
 
 
+def explore_memo(lh: LighthouseSession, detail_id: str) -> str:
+    """Waar staat de interne memo van een reservatie? Detailpagina opgevraagd (HTML) en geopend zoals een mens ze
+    ziet (de memo komt soms als pop-up). Alleen lezen: er wordt niets aangeklikt of bewaard."""
+    import re as _re
+
+    path = f"/Customer/Reservations/Detail/{detail_id}"
+    resp = lh.page.request.get(lh.base + path)
+    body = resp.text()
+    out = [f"# Interne memo van {detail_id} (opgevraagd en geopend, niets gewijzigd)", f"HTTP {resp.status}", ""]
+    pat = _re.compile(r"memo|intern|note|notitie", _re.IGNORECASE)
+    out.append("## Regels in scripts over memo of notitie (adressen die de pagina opvraagt)")
+    for script in _re.findall(r"<script[^>]*>(.*?)</script>", body, flags=_re.DOTALL):
+        out += [f"    {line.strip()[:200]}" for line in script.splitlines() if pat.search(line)][:40]
+    clean = _re.sub(r"<script.*?</script>", "", body, flags=_re.DOTALL)
+    out += ["", "## HTML rond memo/notitie (zonder scripts)"]
+    seen = -10_000
+    for m in pat.finditer(clean):
+        if m.start() - seen < 700 or len(out) > 200:
+            continue
+        seen = m.start()
+        out += ["```html", clean[max(0, m.start() - 400): m.start() + 500], "```"]
+    # Zoals een mens de pagina opent: pop-ups (bv. de memo) die vanzelf verschijnen
+    lh.page.goto(lh.base + path)
+    lh.page.wait_for_load_state("networkidle")
+    modals = lh.page.evaluate("""() => [...document.querySelectorAll('.modal, .popover, [class*=memo], [id*=memo]')]
+        .map(e => ({tag: e.tagName, id: e.id, cls: e.className, visible: !!(e.offsetWidth || e.offsetHeight),
+                    text: (e.innerText || '').trim().slice(0, 300)}))""")
+    out += ["", "## Pop-ups en elementen met memo na het openen"]
+    out += [f"- {m['tag']} id={m['id']!r} class={str(m['cls'])[:80]!r} zichtbaar={m['visible']} TEKST: {m['text']!r}"
+            for m in modals if m["text"] or "memo" in (m["id"] + str(m["cls"])).lower()]
+    return "\n".join(out) + "\n"
+
+
 def main() -> None:
     p = argparse.ArgumentParser()
     p.add_argument("hotel_id")
@@ -423,7 +456,15 @@ def main() -> None:
     p.add_argument("--folio", help="folio van deze reservatie (uuid): wat de 3 puntjes bij ontbijt tonen; wijzigt niets")
     p.add_argument("--charge-ids", help="verandert het nummer van een folioregel door te lezen? (uuid); wijzigt niets")
     p.add_argument("--planboard", help="planbord rond deze dag (JJJJ-MM-DD): blokken per kamer; wijzigt niets")
+    p.add_argument("--memo", help="waar de interne memo van deze reservatie (uuid) staat; wijzigt niets")
     args = p.parse_args()
+
+    if args.memo:
+        OUT.mkdir(exist_ok=True)
+        with LighthouseSession(args.hotel_id, headless=not args.show, debug_dir=OUT) as lh:
+            (OUT / "memo.md").write_text(explore_memo(lh, args.memo), encoding="utf-8")
+        print(f"Klaar: {OUT}/memo.md (niets gewijzigd).")
+        return
 
     if args.planboard:
         OUT.mkdir(exist_ok=True)

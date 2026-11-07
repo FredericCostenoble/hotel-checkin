@@ -361,7 +361,7 @@ def test_cleaning_from_planboard():
     assert pick("stay") == ["11", "15", "16", "20", "22", "24", "25", "32"]
     assert pick("checkin") == ["12", "21", "30", "31", "33"]
     assert data["totals"] == {"leave": 4, "stay": 8, "checkin": 5}
-    assert "Double opmaken" in _row(data, "32")["remark"]
+    assert "Double opmaken" not in _row(data, "32")["remark"]  # label DOUBLE OPMAKEN telt alleen op een twin kamer
     assert "Late arrival" in _row(data, "30")["remark"] and "Late arrival" not in _row(data, "31")["remark"]  # vertrekker
     assert "2 pers." in _row(data, "12")["remark"]  # check in, personen op het planbord
     assert _row(data, "24")["desc"] == "QUAD KAMER - 2e verdiep"  # omschrijving uit het planbord
@@ -413,3 +413,18 @@ def test_robot_reads_planboard_for_requested_list(robot, monkeypatch):
     made = repo.get_daily_list("lucca", "cleaning", day.isoformat())
     assert made["totals"] == {"leave": 13, "stay": 0, "checkin": 9} and made["source"].startswith("planbord van")
     assert dl.pending_reads("lucca") == []
+
+
+def test_cleaning_twin_and_special_request():
+    """Twin kamer (16): DOUBLE OPMAKEN bij de opmerkingen. SPECIAAL VERZOEK: de interne memo, of nakijken."""
+    day = date(2026, 11, 8)
+    _plan(day)
+    data = dl.build("lucca", "cleaning", day)
+    assert "Double opmaken" in _row(data, "16")["remark"]
+    day = date(2026, 11, 9)
+    _plan(day)
+    s14 = _row(dl.build("lucca", "cleaning", day), "14")  # label SPECIAAL VERZOEK, memo nog niet gelezen
+    assert s14["check"] and "interne memo nakijken" in s14["remark"]
+    _r("51299db6-b392-4f28-8728-2d66444f5c85", "14", day, 1, internal_memo="Bloemen en kaartje op de kamer")
+    s14 = _row(dl.build("lucca", "cleaning", day), "14")
+    assert not s14["check"] and "Speciaal verzoek: Bloemen en kaartje op de kamer" in s14["remark"]
