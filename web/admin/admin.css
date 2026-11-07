@@ -103,13 +103,13 @@ a.jump svg { vertical-align: -1px; }
 #wf-side h3 { font-size: 0.85em; text-transform: uppercase; color: #5C6478; margin: 6px 0; }
 #wf-side label { display: grid; gap: 4px; margin-bottom: 10px; }
 #wf-side input[type=text] { width: 100%; }
-/* Knoppen voor acties: overal dezelfde vorm. primary = hoofdactie (gevuld), secondary = andere actie (omlijnd). */
+/* Knoppen voor acties: overal exact dezelfde stijl (vorm en kleur), welke klasse ze ook hebben (primary, secondary,
+   de knop Instellingen). Een nieuwe knop met een van die klassen ziet er vanzelf hetzelfde uit. */
 button.primary, button.secondary, a.settings-btn { font: inherit; font-size: 14px; line-height: 20px; padding: 5px 14px;
-  border-radius: 4px; border: 1px solid #5C6478; cursor: pointer; white-space: nowrap; }
-button.primary { background: #5C6478; color: #fff; }
-button.primary:hover:not(:disabled) { background: #4A5164; border-color: #4A5164; }
-button.secondary, a.settings-btn { background: #fff; color: #3A4050; border-color: #C3C8D4; }
-button.secondary:hover:not(:disabled), a.settings-btn:hover { background: #EEF1F8; border-color: #5C6478; color: #3A4050; }
+  border-radius: 4px; border: 1px solid #5C6478; cursor: pointer; white-space: nowrap;
+  background: #5C6478; color: #fff; }
+button.primary:hover:not(:disabled), button.secondary:hover:not(:disabled), a.settings-btn:hover {
+  background: #4A5164; border-color: #4A5164; color: #fff; }
 /* Zelfde vorm, kleiner: knoppen in een regel van een lijst (bv. Versturen in de tijdlijn van een reservatie) */
 button.primary.small, button.secondary.small { font-size: 12px; line-height: 16px; padding: 2px 10px; }
 button.primary:disabled, button.secondary:disabled { opacity: 0.4; cursor: default; }
