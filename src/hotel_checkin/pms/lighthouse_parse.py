@@ -294,6 +294,7 @@ def parse_detail(hotel_id: str, reservation_id: str, d: dict) -> Reservation:
         rate_plan=", ".join(plans) or None,
         non_refundable=refund,
         remarks=(d.get("remarks") or "").strip() or None,
+        internal_memo=None if d.get("internal_memo") is None else (d.get("internal_memo") or "").strip(),
         room_statuses=room_statuses,
         transactions=[t.strip() for t in d.get("transactions", []) if t and t.strip()],
         folio=folio["lines"],

@@ -152,6 +152,8 @@ _DETAIL_JS = r"""() => {
                       let box = h.closest('li') || h.closest('p')?.parentElement || h.parentElement;
                       while (box && box !== document.body && txt(box).replace(/Opmerkingen:?/, '').trim() === '') box = box.parentElement;
                       return box && box !== document.body ? txt(box).replace(/^\s*Opmerkingen:?\s*/, '') : ''; })(),
+    // Blok "Interne memo" (tekstvak, alleen lezen): wensen die het hotel zelf noteerde, bv. bij het label SPECIAAL VERZOEK
+    internal_memo: document.querySelector('textarea#InternalMemo')?.value ?? null,
     // Hele folio (lijnen links, transacties rechts): eerste blok rond "Transacties" waar ook "Totaal" in staat
     // Extra's in de folio met hun venster "Bewerken" (3 puntjes): daar staan de dagen, bv. bij ontbijt
     folio_charges: [...document.querySelectorAll('.js-folio-component-overview tr')]

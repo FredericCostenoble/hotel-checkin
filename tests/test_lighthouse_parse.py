@@ -99,6 +99,9 @@ def test_parse_detail():
     assert r.rooms == ["15", "16"] and r.paid is True
     assert r.status == ReservationStatus.CHECKED_IN and r.source == "Booking.com"
     assert r.booking_number == "CPB-4276-001258" and r.pms_status == "Nieuw"
+    assert r.internal_memo is None  # tekstvak niet op de pagina: niet gekend
+    r = parse_detail("lucca", "0A1B2C3D-1111-2222-3333-444455556666", {**DETAIL, "internal_memo": "\nwilt douche, geen bad"})
+    assert r.internal_memo == "wilt douche, geen bad"
 
 
 def test_parse_detail_cancelled_and_open():
