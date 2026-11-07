@@ -228,9 +228,7 @@ def main() -> int:
 
     for hotel_id in [args.hotel] if args.hotel else list_hotels():
         progress.step(hotel_id, SKIP_TASK, "robot gestart in Azure, check-in-formulieren nakijken", force=True)
-        from hotel_checkin.processes import send_messages
-
-        from hotel_checkin.processes import daily_lists
+        from hotel_checkin.processes import daily_lists, send_messages
 
         if not send_messages.robot_needed(hotel_id) and not daily_lists.pending_reads(hotel_id):
             # Bevroren (bv. TST als PRD goed loopt): Lighthouse niet openen, behalve voor een gevraagde lijst
