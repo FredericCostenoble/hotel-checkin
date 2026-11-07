@@ -53,7 +53,12 @@ th[data-sort].sorted[data-dir="desc"]::after { content: " \2193"; }
 .chip { background: #E6EAF2; border-radius: 12px; padding: 2px 10px; font-size: 0.9em; }
 #matches-wrap { margin: 0 0 14px; border: 1px solid var(--line); border-radius: 6px; padding: 6px 12px; background: #FFFBEA; }
 #matches-wrap summary { cursor: pointer; font-weight: bold; }
-#matches td { padding: 6px 8px; }
+#matches-wrap table { width: 100%; }
+#matches td { padding: 6px 8px; vertical-align: top; white-space: normal; }
+#matches .m-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 24px; }
+#matches .m-pair > span { overflow-wrap: anywhere; }
+#matches .m-why { color: #8A90A0; font-size: 0.9em; margin-top: 2px; }  /* reden: lichtgrijs, onder de namen */
+#matches .m-act { white-space: nowrap; width: 1%; text-align: right; }
 th[data-gsort] { cursor: pointer; user-select: none; white-space: nowrap; }
 th[data-gsort].sorted[data-dir="asc"]::after { content: " \2191"; }
 th[data-gsort].sorted[data-dir="desc"]::after { content: " \2193"; }
