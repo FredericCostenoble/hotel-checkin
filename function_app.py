@@ -195,6 +195,9 @@ def admin_api(req: func.HttpRequest) -> func.HttpResponse:
                 day = date.fromisoformat(req.params.get("day", ""))
             except ValueError:
                 return _json(400, {"error": "day"})
+            if req.params.get("action") == "delete":  # vuilbak in de monitor: de bewaarde lijst van die dag wissen
+                daily_lists.delete(hotel, kind, day)
+                return _json(200, {"ok": True})
             # Eerst leest de robot de reservaties van die dag in Lighthouse; daarna maakt de timer de lijst
             result = daily_lists.request(hotel, kind, day, by=_admin_user(req) or "", send_now=req.params.get("send") == "1")
             return _json(200, {"ok": True} | result)

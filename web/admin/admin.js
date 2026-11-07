@@ -7,7 +7,7 @@ const T = {
     tab_breakfast: "Ontbijt", tab_cleaning: "Schoonmaak", dl_day: "Lijst voor", dl_make: "Lijst maken", dl_send: "Maken en versturen",
     dl_c_day: "Dag", dl_c_made: "Gemaakt", dl_c_by: "Door", dl_c_content: "Inhoud", dl_c_sent: "Verstuurd", dl_view: "Bekijken", dl_hide: "Verbergen",
     dl_auto: "automatisch", dl_busy: "Bezig...", dl_made: day => `Lijst voor ${day} gemaakt.`, dl_sent_ok: day => `Lijst voor ${day} gemaakt en verstuurd.`,
-    dl_sent_fail: n => `Gemaakt, maar ${n} verzending(en) niet gelukt (zie Verstuurd).`, dl_none: "Nog geen lijsten.",
+    dl_sent_fail: n => `Gemaakt, maar ${n} verzending(en) niet gelukt (zie Verstuurd).`, dl_none: "Nog geen lijsten.", dl_del_confirm: d => `De lijst van ${d} verwijderen?`,
     dl_not_sent: "niet verstuurd", dl_no_to: "geen ontvangers", dl_confirm: (day, to) => `Lijst voor ${day} opnieuw maken en versturen naar ${to}?`,
     dl_info: (on, time, days, to, keep) => `Automatisch: ${on ? `elke dag om ${time} voor ${days === 0 ? "dezelfde dag" : days === 1 ? "de dag erna" : `${days} dagen later`}` : "uit (hoofdschakelaar)"}. Naar: ${to || "niemand (instellingen)"}. De laatste ${keep} lijsten blijven bewaard.`,
     dl_waiting: (day, at) => `Gevraagd om ${at}: de robot leest de reservaties van ${day} in Lighthouse en maakt de lijst (enkele minuten). Zie ook het robotlog.`, dl_sending: (day, at) => `Lijst voor ${day} gemaakt door de robot, wordt verstuurd...`, dl_no_robot: (day, at) => `Lijst voor ${day} gevraagd om ${at}, maar er draait geen robot (niet gestart, zie robotlog). Klik opnieuw om het nog eens te proberen.`, dl_ready: day => `Lijst voor ${day} gemaakt.`,
@@ -99,7 +99,7 @@ const T = {
     tab_breakfast: "Breakfast", tab_cleaning: "Cleaning", dl_day: "List for", dl_make: "Make list", dl_send: "Make and send",
     dl_c_day: "Day", dl_c_made: "Made", dl_c_by: "By", dl_c_content: "Content", dl_c_sent: "Sent", dl_view: "View", dl_hide: "Hide",
     dl_auto: "automatic", dl_busy: "Working...", dl_made: day => `List for ${day} made.`, dl_sent_ok: day => `List for ${day} made and sent.`,
-    dl_sent_fail: n => `Made, but ${n} sending(s) failed (see Sent).`, dl_none: "No lists yet.",
+    dl_sent_fail: n => `Made, but ${n} sending(s) failed (see Sent).`, dl_none: "No lists yet.", dl_del_confirm: d => `Delete the list of ${d}?`,
     dl_not_sent: "not sent", dl_no_to: "no recipients", dl_confirm: (day, to) => `Make the list for ${day} again and send it to ${to}?`,
     dl_info: (on, time, days, to, keep) => `Automatic: ${on ? `every day at ${time} for ${days === 0 ? "the same day" : days === 1 ? "the next day" : `${days} days later`}` : "off (main switch)"}. To: ${to || "nobody (settings)"}. The last ${keep} lists are kept.`,
     dl_waiting: (day, at) => `Requested at ${at}: the robot reads the reservations of ${day} in Lighthouse and makes the list (a few minutes). See also the robot log.`, dl_sending: (day, at) => `List for ${day} made by the robot, being sent...`, dl_no_robot: (day, at) => `List for ${day} requested at ${at}, but no robot is running (not started, see robot log). Click again to retry.`, dl_ready: day => `List for ${day} made.`,
@@ -1839,9 +1839,16 @@ function renderList(kind) {
       <td>${esc(x.summary)}</td>
       <td class="wrap">${sentCell(x)}</td>
       <td style="white-space:nowrap"><button type="button" class="link" data-view="${esc(x.day)}">${esc(t(listOpen[kind] === x.day ? "dl_hide" : "dl_view"))}</button>
-        <a class="jump" href="${API}/api/monitor/${hotel}/list-xlsx?kind=${kind}&day=${esc(x.day)}">Excel</a></td>
+        <a class="jump" href="${API}/api/monitor/${hotel}/list-xlsx?kind=${kind}&day=${esc(x.day)}">Excel</a>
+        <button type="button" class="bin" data-del="${esc(x.day)}" title="${esc(t("del"))}" aria-label="${esc(t("del"))}">${BIN}</button></td>
     </tr>${listOpen[kind] === x.day ? `<tr><td colspan="6"><div class="list-view">${x.html}</div></td></tr>` : ""}`).join("")
     || `<tr><td colspan="6" class="muted">${esc(t("dl_none"))}</td></tr>`;
+  document.querySelectorAll(`#${kind}-rows button[data-del]`).forEach(b => b.onclick = async () => {
+    if (!confirm(t("dl_del_confirm", dayLong(b.dataset.del)))) return;
+    await get(`/api/monitor/${hotel}/lists?kind=${kind}&day=${encodeURIComponent(b.dataset.del)}&action=delete`, { method: "POST" });
+    if (listOpen[kind] === b.dataset.del) listOpen[kind] = "";
+    loadList(kind);
+  });
   document.querySelectorAll(`#${kind}-rows button[data-view]`).forEach(b => b.onclick = () => {
     listOpen[kind] = listOpen[kind] === b.dataset.view ? "" : b.dataset.view;
     renderList(kind);

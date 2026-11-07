@@ -257,6 +257,9 @@ def test_monitor_routes(monkeypatch):
     x = call("GET", "list-xlsx", {"kind": "breakfast", "day": DAY.isoformat()})
     assert x.status_code == 200 and x.get_body()[:2] == b"PK"
     assert call("GET", "lists", {"kind": "lunch"}).status_code == 400
+    # vuilbak: de lijst van die dag wissen
+    assert call("POST", "lists", {"kind": "breakfast", "day": DAY.isoformat(), "action": "delete"}).status_code == 200
+    assert json.loads(call("GET", "lists", {"kind": "breakfast"}).get_body())["records"] == []
 
 
 def test_frozen_when_all_switches_off(monkeypatch):

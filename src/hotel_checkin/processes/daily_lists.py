@@ -558,6 +558,13 @@ def _sent_text(sent: list[dict]) -> str:
                      + ("gelukt" if s["ok"] else f"({s.get('error') or 'mislukt'})"[:160]) for s in sent)
 
 
+def delete(hotel_id: str, kind: str, day: date) -> None:
+    """Een bewaarde lijst wissen (vuilbak in de monitor). Een openstaande vraag voor die dag blijft staan."""
+    if kind not in KINDS:
+        raise ValueError(kind)
+    guests.delete_daily_list(hotel_id, kind, day.isoformat())
+
+
 def prune(hotel_id: str, kind: str, keep: int = KEEP) -> int:
     old = guests.daily_lists(hotel_id, kind)[keep:]
     for d in old:
