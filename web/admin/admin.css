@@ -323,3 +323,13 @@ header { flex-wrap: nowrap; gap: 16px; }
 header > * { flex-shrink: 0; }
 header > .switches { flex-shrink: 1; }
 header label, .version { white-space: nowrap; }
+
+/* Ontbijt- en schoonmaaklijst: in beide tabbladen dezelfde kolombreedtes */
+table.lists { table-layout: fixed; width: 100%; }
+table.lists col.c-day { width: 210px; }
+table.lists col.c-made { width: 120px; }
+table.lists col.c-by { width: 240px; }
+table.lists col.c-sent { width: 260px; }
+table.lists col.c-act { width: 150px; }
+table.lists td { white-space: normal; overflow-wrap: anywhere; }
+table.lists td:last-child { white-space: nowrap; }
