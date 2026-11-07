@@ -210,3 +210,16 @@ def test_name_variants(a, b, reason):
         profiles.save_profile(g)
     found = [m["reason"] for m in guest_profiles.possible_matches("lucca")]
     assert found == ([reason] if reason else [])
+
+
+def test_placeholder_phone_of_expedia_never_matches():
+    """Expedia geeft gasten het nepnummer +11111111111111: geen koppeling, geen voorstel, geen bericht."""
+    from hotel_checkin.checkin.service import normalize_phone, placeholder_phone
+
+    assert placeholder_phone("+11111111111111") and placeholder_phone("+32000000000")
+    assert not placeholder_phone("+32470000001") and normalize_phone("+11111111111111") is None
+    a = gp.link(_res("e1", "Bas", "Schutte", email="f80yuq3f8k@m.expediapartnercentral.com", phone="+11111111111111",
+                     source="Expedia"))
+    b = gp.link(_res("e2", "Eva", "Krikken", email="tlvudwu8y9@m.expediapartnercentral.com", phone="+11111111111111",
+                     source="Expedia"))
+    assert a.guest_id != b.guest_id and gp.possible_matches("lucca") == []

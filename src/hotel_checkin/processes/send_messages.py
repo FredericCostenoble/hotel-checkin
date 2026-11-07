@@ -328,7 +328,9 @@ def recipients(r: Reservation, kind: str, own_from_profile=_LOOKUP) -> list[str]
     reservatie verschillend en wordt dus nooit bij een andere reservatie gebruikt.
     """
     if kind == "phone":
-        values = [r.guest.phone, r.guest.backup_phone]
+        from hotel_checkin.checkin.service import placeholder_phone
+
+        values = [p for p in (r.guest.phone, r.guest.backup_phone) if not placeholder_phone(p)]  # geen nepnummer
     else:
         values = [v for v in (r.guest.email, r.guest.backup_email) if is_own_email(v)]
         if not values:

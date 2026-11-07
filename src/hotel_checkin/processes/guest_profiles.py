@@ -126,7 +126,10 @@ def own_emails(g: GuestProfile) -> set[str]:
 
 
 def phones(g: GuestProfile) -> set[str]:
-    return {p for p in [g.phone, *g.known_phones] if p}
+    """Eigen nummers van een profiel, zonder nepnummers van boekingssites (bv. +11111111111111 van Expedia)."""
+    from hotel_checkin.checkin.service import placeholder_phone
+
+    return {p for p in [g.phone, *g.known_phones] if p and not placeholder_phone(p)}
 
 
 def names_fit(first: str, last: str, g: GuestProfile) -> bool:
@@ -140,7 +143,9 @@ def _strong_match(r: Reservation, candidates: list[GuestProfile]) -> GuestProfil
     """Zeker dezelfde gast: hetzelfde eigen e-mailadres of gsm-nummer (huidig of vroeger), en de
     naam past. Doorstuuradressen van Booking.com/Expedia tellen nooit (ze zijn per reservatie)."""
     mine_e = {e.lower() for e in (r.guest.email,) if e and is_own_email(e)}
-    mine_p = {p for p in (r.guest.phone,) if p}
+    from hotel_checkin.checkin.service import placeholder_phone
+
+    mine_p = {p for p in (r.guest.phone,) if p and not placeholder_phone(p)}
     for g in candidates:
         if ((mine_e & own_emails(g)) or (mine_p & phones(g))) and names_fit(r.guest.first_name, r.guest.last_name, g):
             return g
@@ -363,7 +368,10 @@ def possible_matches(hotel_id: str, limit: int = 50) -> list[dict]:
     """Paren die misschien dezelfde gast zijn, voor de monitor. Nooit automatisch samengevoegd.
 
     Volgorde: zelfde (of extra) adres of nummer, dan dezelfde naam, dan bijna dezelfde naam.
+    Nepnummers van boekingssites (bv. +11111111111111 van Expedia) tellen niet.
     """
+    from hotel_checkin.checkin.service import placeholder_phone
+
     all_profiles = profiles.list_profiles(hotel_id)
     different = profiles.different_pairs(hotel_id)
     seen: set[tuple[str, str]] = set()
@@ -384,7 +392,7 @@ def possible_matches(hotel_id: str, limit: int = 50) -> list[dict]:
     contacts = {g.guest_id: own_emails(g) | phones(g) for g in all_profiles}
     by_contact: dict[str, list[GuestProfile]] = {}
     for g in all_profiles:
-        extra = {(g.backup_email or "").lower(), g.backup_phone or ""}
+        extra = {(g.backup_email or "").lower(), "" if placeholder_phone(g.backup_phone) else (g.backup_phone or "")}
         for v in contacts[g.guest_id] | extra:
             if v and (("@" not in v) or is_own_email(v)):
                 by_contact.setdefault(v, []).append(g)

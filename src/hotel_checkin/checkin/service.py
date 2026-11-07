@@ -20,8 +20,16 @@ from hotel_checkin.messaging.templates import LANGUAGES, load_hotel_config
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]{2,}$")
 
 
+def placeholder_phone(phone: str | None) -> bool:
+    """Nepnummer van een boekingssite (bv. Expedia: +11111111111111): na de landcode overal hetzelfde cijfer.
+    Zo'n nummer is van niemand: nooit gebruiken om gasten te koppelen of een bericht te sturen."""
+    digits = re.sub(r"\D", "", phone or "")
+    return len(digits) >= 8 and (len(set(digits)) == 1 or len(set(digits[3:])) == 1)
+
+
 def normalize_phone(raw: str) -> str | None:
-    """Maak een gsm-nummer E.164 (+32...). Belgische nummers mogen met 0 beginnen. None = ongeldig."""
+    """Maak een gsm-nummer E.164 (+32...). Belgische nummers mogen met 0 beginnen. None = ongeldig of een
+    nepnummer van een boekingssite (placeholder_phone)."""
     s = re.sub(r"[\s.\-/()]", "", raw or "")
     if not s:
         return None
@@ -29,7 +37,7 @@ def normalize_phone(raw: str) -> str | None:
         s = "+" + s[2:]
     elif s.startswith("0"):
         s = "+32" + s[1:]
-    return s if re.fullmatch(r"\+\d{8,15}", s) else None
+    return s if re.fullmatch(r"\+\d{8,15}", s) and not placeholder_phone(s) else None
 
 
 def hotel_info(hotel_id: str, language: str) -> dict:
