@@ -152,6 +152,7 @@ def _to_entity(r: Reservation) -> dict:
         "cancel_counted_at": r.cancel_counted_at.isoformat() if r.cancel_counted_at else "",
         "stairs_help": "" if r.stairs_help is None else ("1" if r.stairs_help else "0"),
         "stairs_memo_at": r.stairs_memo_at.isoformat() if r.stairs_memo_at else "",
+        "stairs_label_at": r.stairs_label_at.isoformat() if r.stairs_label_at else "",
         "updated_at": _now().isoformat(),
     }
 
@@ -225,13 +226,14 @@ def _from_entity(e: dict) -> Reservation:
         cancel_counted_at=datetime.fromisoformat(e["cancel_counted_at"]) if e.get("cancel_counted_at") else None,
         stairs_help=None if e.get("stairs_help") in (None, "") else e["stairs_help"] == "1",
         stairs_memo_at=datetime.fromisoformat(e["stairs_memo_at"]) if e.get("stairs_memo_at") else None,
+        stairs_label_at=datetime.fromisoformat(e["stairs_label_at"]) if e.get("stairs_label_at") else None,
         created_at=datetime.fromisoformat(e["created_at"]) if e.get("created_at") else None,
         updated_at=datetime.fromisoformat(e["updated_at"]) if e.get("updated_at") else None,
     )
 
 
 # Velden die niet meetellen voor "bijgewerkt": tijdstempels en technische velden van de tabel
-_NOT_DATA = {"created_at", "updated_at", "contact_checked_at", "stay_counted_at", "cancel_counted_at", "stairs_memo_at", "Timestamp", "etag", "odata.etag", "odata.metadata"}
+_NOT_DATA = {"created_at", "updated_at", "contact_checked_at", "stay_counted_at", "cancel_counted_at", "stairs_memo_at", "stairs_label_at", "Timestamp", "etag", "odata.etag", "odata.metadata"}
 
 # Wie welke velden van een reservatie schrijft. Een proces dat maar een deel bezit, geeft dat deel mee
 # aan save_reservation(fields=...): de andere velden blijven zoals ze nu in de tabel staan. Zo wist de
@@ -251,7 +253,7 @@ PAY_LINK_FIELDS = ("pay_link",)
 PMS_SYNC_FIELDS = ("pms_codes_line", "room_statuses")
 FORM_FIELDS = ("email", "phone", "language", "backup_email", "backup_phone", "relay_email", "channels",
                "checkin_completed_at", "stairs_help")
-STAIRS_MEMO_FIELDS = ("stairs_memo_at", "internal_memo")
+STAIRS_MEMO_FIELDS = ("stairs_memo_at", "stairs_label_at", "internal_memo")
 SALTO_FIELDS = ("access_codes", "room_moves", "access_valid_from", "access_valid_until", "access_pin", "salto_user_id",
                 "salto_group_id", "salto_schedule_id", "access_rooms")
 PROFILE_FIELDS = ("guest_id", "stay_counted_at", "cancel_counted_at")

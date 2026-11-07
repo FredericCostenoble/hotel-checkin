@@ -16,7 +16,7 @@
   Alleen lezen, behalve in PRD: de pincode bovenaan de opmerking zetten en de kamers op KLAAR OM IN TE CHECKEN
   (processes/pms_sync.py), de overschrijving van Booking.com registreren (processes/booking_payout.py),
   betaalverzoeken maken, het label ONTBIJT zetten en een regel achteraan de interne memo zetten als de gast moeilijk
-  ter been is (processes/stairs_memo.py). Bestaande tekst in Lighthouse nooit overschrijven, alleen aanvullen. Buiten PRD alleen schrijven op reservaties van een
+  ter been is, met het label NIET VERPLAATSEN als hij al op een lage verdieping ligt (processes/stairs_memo.py). Bestaande tekst in Lighthouse nooit overschrijven, alleen aanvullen. Buiten PRD alleen schrijven op reservaties van een
   testgast ([test] guest_names, Lucca: Seppe Meersseman; core/safety.py, may_write_pms).
   Pagina's altijd volledig laten laden (folio/transacties laden asynchroon), en niet met vaste wachttijden
   maar door na te gaan of wat nodig is er staat. Nooit klikken op Bevestigen, Annuleren of Nieuwe reservering.

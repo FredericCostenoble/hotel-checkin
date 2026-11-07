@@ -252,7 +252,11 @@ trappen_uitleg_en = "Hotel Lucca is housed in a medieval building without a lift
 trappen_uitleg_de = "Das Hotel Lucca befindet sich in einem mittelalterlichen Gebäude ohne Aufzug. Hat einer der Gäste Schwierigkeiten beim Treppensteigen, versuchen wir, Ihnen ein Zimmer in einem unteren Stockwerk zu geben. Dies ist nur möglich, wenn bei Ihrer Ankunft noch ein geeignetes Zimmer frei ist."
 trappen_niet_bij = ["apartment", "appartement", "suite"]
 trappen_memo = "Moeilijk ter been (check-in-formulier): lagere verdieping indien vrij"
-trappen_label = ""   # naam van het label op het planbord (eerst aanmaken in Lighthouse); leeg = geen label
+# Ligt de gast (al) op een lage verdieping (hoogstens trappen_label_verdieping), dan zet de robot dit label op het planbord,
+# zodat de kamer niet meer verschoven wordt naar boven. Ligt hij hoger, dan alleen de memo; wordt hij later verplaatst
+# naar een lage verdieping, dan zet de robot het label alsnog. Leeg = geen label.
+trappen_label = "NIET VERPLAATSEN"
+trappen_label_verdieping = 1
 
 [privacy]
 # URL van de privacyverklaring per taal (komt van Wim, de webdesigner). TODO: invullen.

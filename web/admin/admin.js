@@ -1361,7 +1361,8 @@ const HS_TEXT = {
    "checkin.trappen_uitleg_de": ["Trappen: uitleg (DE)", "Tekst onder de vraag."],
    "checkin.trappen_niet_bij": ["Trappen: niet bij kamertype", "De vraag staat niet op het formulier als het kamertype een van deze woorden bevat (bv. appartement, suite): daar kan het hotel niet van kamer wisselen."],
    "checkin.trappen_memo": ["Trappen: regel in de interne memo", "De robot zet deze regel achteraan de interne memo in Lighthouse (alleen aanvullen, alleen PRD)."],
-   "checkin.trappen_label": ["Trappen: label op het planbord", "Naam van het label (eerst aanmaken in Lighthouse). Leeg = geen label."],
+   "checkin.trappen_label": ["Trappen: label op het planbord", "Bv. NIET VERPLAATSEN. Alleen als de gast al op een lage verdieping ligt (zie hieronder); later naar beneden verplaatst: alsnog. Leeg = geen label."],
+   "checkin.trappen_label_verdieping": ["Trappen: lage verdieping tot", "Het label komt er alleen als alle kamers op deze verdieping of lager liggen (1 = gelijkvloers en 1e verdieping)."],
    "checkin.formulier_url": [
     "Adres van het formulier",
     "{token} wordt per gast ingevuld. In TST gaat de link naar het testformulier."
@@ -1634,7 +1635,8 @@ const HS_TEXT = {
    "checkin.trappen_uitleg_de": ["Stairs: explanation (DE)", "Text under the question."],
    "checkin.trappen_niet_bij": ["Stairs: not for room type", "The question is not shown when the room type contains one of these words (e.g. apartment, suite): there the hotel cannot change rooms."],
    "checkin.trappen_memo": ["Stairs: line in the internal memo", "The robot adds this line at the end of the internal memo in Lighthouse (append only, PRD only)."],
-   "checkin.trappen_label": ["Stairs: label on the planboard", "Name of the label (create it in Lighthouse first). Empty = no label."],
+   "checkin.trappen_label": ["Stairs: label on the planboard", "E.g. NIET VERPLAATSEN. Only when the guest is already on a low floor (see below); moved down later: then too. Empty = no label."],
+   "checkin.trappen_label_verdieping": ["Stairs: low floor up to", "The label is only set when all rooms are on this floor or lower (1 = ground and first floor)."],
    "checkin.formulier_url": [
     "Form address",
     "{token} is filled in per guest. In TST the link goes to the test form."

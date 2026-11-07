@@ -64,6 +64,7 @@ def test_robot_appends_memo_once(monkeypatch):
     monkeypatch.setenv("LUCCA_SCHAKELAARS_RESERVATIES", "true")
     monkeypatch.setattr("hotel_checkin.core.safety.is_production", lambda: True)
     _save(stairs_help=True, internal_memo="wilt douche, geen bad")
+    monkeypatch.setattr(stairs_memo, "settings", lambda h: {"memo": stairs_memo.DEFAULT_MEMO, "label": "", "max_floor": 1})
     calls = []
     monkeypatch.setattr(lighthouse, "append_internal_memo", lambda h, rid, line, lh: calls.append(line) or "added")
     today = date(2099, 1, 1)
@@ -127,3 +128,28 @@ def test_append_internal_memo_keeps_existing_text():
     assert posted == [("https://x/Customer/Reservations/EditInternalMemo",
                        {"ID": "1", "__RequestVerificationToken": "t", "InternalMemo": "wilt douche, geen bad\n" + line})]
     assert lighthouse.append_internal_memo("lucca", "1", line, Session()) == "present" and len(posted) == 1
+
+
+def test_label_only_on_low_floor(monkeypatch):
+    """NIET VERPLAATSEN alleen als de gast al op een lage verdieping ligt; later verplaatst naar beneden: alsnog."""
+    from hotel_checkin.pms import lighthouse
+
+    monkeypatch.setenv("LUCCA_SCHAKELAARS_RESERVATIES", "true")
+    monkeypatch.setattr("hotel_checkin.core.safety.is_production", lambda: True)
+    monkeypatch.setattr(lighthouse, "append_internal_memo", lambda *a: "added")
+    labels = []
+    monkeypatch.setattr(lighthouse, "reservation_labels", lambda *a: {
+        "names": {"NIET VERPLAATSEN": "15907"}, "rooms": [{"accommodation_id": "acc", "labels": ["15912"]}]})
+    monkeypatch.setattr(lighthouse, "add_label", lambda h, rid, acc, cur, lid, lh: labels.append((acc, cur, lid)))
+    r = _save(stairs_help=True)
+    r.rooms = ["32"]  # 3e verdieping: alleen de memo
+    repo.save_reservation(r)
+    today = date(2099, 1, 1)
+    assert stairs_memo.run("lucca", object(), today)["done"] == ["CPB-1 (memo aangevuld)"] and labels == []
+    assert stairs_memo.due("lucca", today) == []  # niets meer te doen zolang hij boven ligt
+    r = repo.get_reservation("lucca", "R1")
+    r.rooms = ["12"]  # verplaatst naar de 1e verdieping
+    repo.save_reservation(r)
+    done = stairs_memo.run("lucca", object(), today)["done"]
+    assert done == ["CPB-1 (label NIET VERPLAATSEN (kamer 12))"] and labels == [("acc", ["15912"], "15907")]
+    assert stairs_memo.due("lucca", today) == []
