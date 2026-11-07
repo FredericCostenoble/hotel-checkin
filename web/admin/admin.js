@@ -53,7 +53,7 @@ const T = {
     rss_before_start: "voor de startdatum", rss_booked_late: "te laat geboekt", rss_stored_late: "boeking al lang achter de rug", rss_later_due: "zit in de latere mail",
     rss_window_passed: "moment voorbij", rss_messaging_off: "berichten uit", rss_disabled: "stap uit", rss_not_ready: "nog niet gebouwd", sb_other: "Ander adres...", sb_bad_email: "Ongeldig e-mailadres", sb_bad_phone: "Ongeldig nummer (met landcode, bv. +32...)", src_test: "testadres", src_form: "check-in-formulier",
     src_form_extra: "extra, check-in-formulier", src_relay: "doorstuuradres", src_profile: "gastprofiel", src_used: "eerder gebruikt", src_earlier: "vroeger", sb_to: "naar", sb_go: "Versturen", sb_off: "(nog niet actief)", send_to: "Versturen naar...", send_to_ask: "Naar welk e-mailadres (of gsm-nummer met +32...) versturen? Het wordt bij de reservatie bewaard.", ct_add: "E-mailadres of gsm-nummer toevoegen", ct_email: "e-mailadres", ct_phone: "gsm-nummer met landcode (+32...)", env_to_prd: "Naar PRD", env_bar_tst: "TESTOMGEVING (TST): berichten gaan alleen naar het testadres, nooit naar gasten",
-    env_bar_prd: "PRODUCTIE (PRD): berichten gaan naar echte gasten", env_to_tst: "Naar TST", sw_title: "Hoofdschakelaars (instellingen, tabblad Hotel)", sw_payout: "Overschrijvingen", sw_messages: "Berichten en Salto", sw_breakfast: "Ontbijt labels", sw_on: "AAN", sw_off: "UIT",
+    env_bar_prd: "PRODUCTIE (PRD): berichten gaan naar echte gasten", env_to_tst: "Naar TST", sw_title: "Hoofdschakelaars (instellingen, tabblad Hotel)", sw_payout: "Overschrijvingen", sw_messages: "Gastcommunicatie", sw_breakfast: "Ontbijt labels", sw_on: "AAN", sw_off: "UIT",
     env_confirm_prd: "Overschakelen naar PRODUCTIE? Daar gaan berichten naar echte gasten.", env_confirm_tst: "Overschakelen naar de testomgeving (TST)?", pl_not_sent: "niet verstuurd", relay_hint: "Doorstuuradres van het boekingsplatform, geen eigen adres van de gast.", relay_kept: "Doorstuuradres van het boekingsplatform. Bewaard, maar het eigen adres uit het check-in-formulier gaat voor.", mg_test_addr: "testadres", mg_for: "bedoeld voor", tab_hotel: "Hotel",
     hs_intro: "Gegevens en instellingen van het hotel. Standaard uit het hotelbestand; wat u hier wijzigt, gaat voor (alleen in deze omgeving).",
     hs_default: "standaard", hs_env: "In deze omgeving vastgelegd in Key Vault of de Function App: die waarde gaat voor.",
@@ -145,7 +145,7 @@ const T = {
     rss_before_start: "before start date", rss_booked_late: "booked too late", rss_stored_late: "booking long past", rss_later_due: "included in the later mail",
     rss_window_passed: "moment passed", rss_messaging_off: "messages off", rss_disabled: "step off", rss_not_ready: "not built yet", sb_other: "Other address...", sb_bad_email: "Invalid e-mail address", sb_bad_phone: "Invalid number (with country code, e.g. +32...)", src_test: "test address", src_form: "check-in form",
     src_form_extra: "extra, check-in form", src_relay: "relay address", src_profile: "guest profile", src_used: "used before", src_earlier: "earlier", sb_to: "to", sb_go: "Send", sb_off: "(not active yet)", send_to: "Send to...", send_to_ask: "Send to which e-mail address (or mobile number with +32...)? It is saved with the reservation.", ct_add: "Add e-mail address or mobile number", ct_email: "e-mail address", ct_phone: "mobile number with country code (+32...)", env_to_prd: "To PRD", env_bar_tst: "TEST ENVIRONMENT (TST): messages only go to the test address, never to guests",
-    env_bar_prd: "PRODUCTION (PRD): messages go to real guests", env_to_tst: "To TST", sw_title: "Main switches (settings, Hotel tab)", sw_payout: "Bank transfers", sw_messages: "Messages and Salto", sw_breakfast: "Breakfast labels", sw_on: "ON", sw_off: "OFF",
+    env_bar_prd: "PRODUCTION (PRD): messages go to real guests", env_to_tst: "To TST", sw_title: "Main switches (settings, Hotel tab)", sw_payout: "Bank transfers", sw_messages: "Guest communication", sw_breakfast: "Breakfast labels", sw_on: "ON", sw_off: "OFF",
     env_confirm_prd: "Switch to PRODUCTION? Messages there go to real guests.", env_confirm_tst: "Switch to the test environment (TST)?", pl_not_sent: "not sent", relay_hint: "Relay address of the booking platform, not the guest's own address.", relay_kept: "Relay address of the booking platform. Kept, but the guest's own address from the check-in form takes precedence.", mg_test_addr: "test address", mg_for: "meant for", tab_hotel: "Hotel",
     hs_intro: "Hotel details and settings. Default from the hotel file; what you change here takes precedence (in this environment only).",
     hs_default: "default", hs_env: "Set for this environment in Key Vault or the Function App: that value takes precedence.",
@@ -246,7 +246,8 @@ function renderSwitches() {
   if (!sw) return;
   el.title = t("sw_title");
   el.innerHTML = [["reservaties", "sw_read"], ["overschrijvingen", "sw_payout"], ["berichten", "sw_messages"], ["ontbijt_labels", "sw_breakfast"], ["ontbijtlijst", "sw_blist"], ["kuislijst", "sw_clist"]].map(([k, label]) =>
-    `<span class="sw ${sw[k] ? "on" : "off"}${NOT_BUILT.includes(k) ? " todo" : ""}">${esc(t(label))}: <b>${t(sw[k] ? "sw_on" : "sw_off")}</b>${NOT_BUILT.includes(k) ? ` (${t("sw_not_built")})` : ""}</span>`).join("");
+    // Groen = aan, grijs = uit (geen AAN/UIT in de tekst; staat wel in de tooltip)
+    `<span class="sw ${sw[k] ? "on" : "off"}${NOT_BUILT.includes(k) ? " todo" : ""}" title="${esc(t(label))}: ${t(sw[k] ? "sw_on" : "sw_off")}">${esc(t(label))}${NOT_BUILT.includes(k) ? ` (${t("sw_not_built")})` : ""}</span>`).join("");
 }
 
 async function refreshSwitches() {
@@ -1307,7 +1308,7 @@ const HS_TEXT = {
    "kamers.lijst_volgorde": ["Kamers op de ontbijt- en schoonmaaklijst", "In deze volgorde, met een komma; - = lege rij (nieuwe verdieping). Naast het nummer komt de omschrijving uit Lighthouse."],
    "kamers.20.lijst": ["Naam op de lijsten", "Eigen naam in plaats van het nummer op de ontbijt- en schoonmaaklijst (bv. App). Leeg = het nummer."],
    "schakelaars.berichten": [
-    "Berichten en Salto",
+    "Gastcommunicatie",
     "Mails, sms en WhatsApp aan gasten, en de pincodes bij Salto. Uit = niets naar gasten en geen codes. Geldt alleen voor deze omgeving; buiten PRD gaat alles naar het testadres."
    ],
    "messaging.start": [
@@ -1569,7 +1570,7 @@ const HS_TEXT = {
    "kamers.lijst_volgorde": ["Rooms on the breakfast and cleaning list", "In this order, separated by commas; - = empty row (new floor). The description from Lighthouse is shown next to the number."],
    "kamers.20.lijst": ["Name on the lists", "Own name instead of the number on the breakfast and cleaning list (e.g. App). Empty = the number."],
    "schakelaars.berichten": [
-    "Messages and Salto",
+    "Guest communication",
     "Mails, SMS and WhatsApp to guests, and the Salto PIN codes. Off = nothing to guests and no codes. Applies to this environment only; outside PRD everything goes to the test address."
    ],
    "messaging.start": [
