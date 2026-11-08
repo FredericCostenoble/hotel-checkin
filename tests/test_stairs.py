@@ -83,8 +83,11 @@ def test_not_outside_prd_for_real_guests(monkeypatch):
     assert stairs_memo.due("lucca", date(2099, 1, 1)) == []
 
 
-def test_cleaning_list_remark():
+def test_cleaning_list_remark(monkeypatch):
     from hotel_checkin.processes import daily_lists as dl
+
+    orig = dl.settings
+    monkeypatch.setattr(dl, "settings", lambda h, k: orig(h, k) | {"notes": True})  # alleen met [kuislijst] opmerkingen
 
     _save(stairs_help=True, stairs_memo_at=datetime.now(UTC))
     data = dl.build_cleaning("lucca", date(2099, 1, 1), repo.list_reservations("lucca"), [])

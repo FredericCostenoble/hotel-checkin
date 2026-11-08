@@ -84,7 +84,11 @@ def settings(hotel_id: str, kind: str) -> dict:
             "extra_rows": _list(cfg.get("extra_rijen")),
             "labels": _list(cfg["labels"] if "labels" in cfg else (list(CLEANING_LABELS) if kind == "cleaning" else [])),
             "labels_twin": _list(cfg.get("labels_twin", list(TWIN_LABELS))),
-            "labels_memo": _list(cfg.get("labels_memo", list(MEMO_LABELS)))}
+            "labels_memo": _list(cfg.get("labels_memo", list(MEMO_LABELS))),
+            # Schoonmaaklijst: alleen wat de schoonmaakploeg nodig heeft (labels zoals BABY BED, DOUBLE OPMAKEN en de
+            # memo bij SPECIAAL VERZOEK). Aantal personen en vrije opmerkingen uit de reservatie alleen als aangezet.
+            "persons": bool(cfg.get("personen", False)),
+            "notes": bool(cfg.get("opmerkingen", False))}
 
 
 def twin_rooms(hotel_id: str) -> set[str]:
@@ -386,7 +390,7 @@ def _cleaning_plan(day: date, reservations: list[Reservation], words: list[str],
                 continue  # wensen van wie vertrekt, gelden niet meer
             remark = []
             persons = _persons(x, r, st)
-            if checkin and persons:
+            if checkin and persons and twin.get("persons"):
                 remark.append(f"{persons} pers.")
             remark += [lab.capitalize() for lab in x["labels"] if lab.upper() in wanted
                        or (lab.upper() in twin_labels and room in twin_rooms_)]
@@ -401,7 +405,7 @@ def _cleaning_plan(day: date, reservations: list[Reservation], words: list[str],
             if room == "?":
                 remark.append("nog geen kamer toegewezen" + (f" ({r.booking_number})" if r and r.booking_number else ""))
                 cur["check"] = True
-            if r is not None and not found_done:  # opmerkingen van de reservatie: bij de eerste kamer
+            if r is not None and not found_done and twin.get("notes"):  # opmerkingen van de reservatie: eerste kamer
                 if r.stairs_help and checkin:
                     remark.append(STAIRS_REMARK)
                 remark += notes(_texts(r), words)
@@ -415,15 +419,17 @@ def build_cleaning(hotel_id: str, day: date, reservations: list[Reservation], wo
     """stays = het planbord (robot), zie build_breakfast. labels = labels op het planbord die als opmerking komen;
     labels_twin = alleen op een twin kamer; labels_memo = de interne memo komt bij de opmerkingen."""
     per_room: dict[str, dict] = {}
+    cfg = settings(hotel_id, "cleaning")
     if stays is not None:
         _cleaning_plan(day, reservations, words, labels or [], stays, per_room,
-                       {"rooms": twin_rooms(hotel_id), "labels": labels_twin or [], "memo": labels_memo or []})
+                       {"rooms": twin_rooms(hotel_id), "labels": labels_twin or [], "memo": labels_memo or [],
+                        "persons": cfg["persons"], "notes": cfg["notes"]})
     for r in reservations if stays is None else []:
         if not _active(r) or not (r.arrival <= day <= r.departure):
             continue
         leave, checkin = r.departure == day, r.arrival == day
         stay = r.arrival < day < r.departure
-        found = notes(_texts(r), words) if (stay or checkin) else []
+        found = notes(_texts(r), words) if (stay or checkin) and cfg["notes"] else []
         for room in r.rooms or ["?"]:
             cur = per_room.setdefault(room, {"leave": False, "stay": False, "checkin": False, "remark": "",
                                              "check": False})
@@ -431,12 +437,12 @@ def build_cleaning(hotel_id: str, day: date, reservations: list[Reservation], wo
             cur["stay"] = cur["stay"] or stay
             cur["checkin"] = cur["checkin"] or checkin
             remark = []
-            if checkin and r.guest_count:
+            if checkin and r.guest_count and cfg["persons"]:
                 remark.append(f"{r.guest_count} pers.")
             if room == "?":
                 remark.append(f"nog geen kamer toegewezen ({r.booking_number or ''})")
                 cur["check"] = True
-            if checkin and r.stairs_help and room == (r.rooms or ["?"])[0]:
+            if checkin and r.stairs_help and room == (r.rooms or ["?"])[0] and cfg["notes"]:
                 remark.append(STAIRS_REMARK)
             remark += found
             cur["remark"] = "; ".join(x for x in (cur["remark"], *remark) if x)

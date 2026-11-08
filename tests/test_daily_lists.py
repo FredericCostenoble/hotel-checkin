@@ -66,7 +66,20 @@ def test_breakfast_list():
     assert {"sep": True} in data["rows"] and not data["rows"][-1].get("sep")
 
 
-def test_cleaning_list():
+def _all_remarks(monkeypatch):
+    """Schoonmaaklijst met aantal personen en vrije opmerkingen ([kuislijst] personen en opmerkingen = true)."""
+    orig = dl.settings
+    monkeypatch.setattr(dl, "settings", lambda h, k: orig(h, k) | ({"persons": True, "notes": True} if k == "cleaning" else {}))
+
+
+def test_cleaning_list_only_what_housekeeping_needs():
+    """Standaard: geen aantal personen en geen vrije opmerkingen (de schoonmaakploeg leest geen Nederlands)."""
+    _r("b", "12", DAY, 1, persons=3, remarks="Please a baby cot. Arrival 20h")
+    assert _row(dl.build("lucca", "cleaning", DAY), "12")["remark"] == ""
+
+
+def test_cleaning_list(monkeypatch):
+    _all_remarks(monkeypatch)
     _r("a", "12", DAY - timedelta(days=2), 2)  # vertrek
     _r("b", "12", DAY, 1, persons=3, remarks="Please a baby cot. Arrival 20h")  # en dezelfde dag check in
     _r("c", "21", DAY - timedelta(days=1), 3, remarks="Romantische versiering voor verjaardag")  # blijft
@@ -366,10 +379,10 @@ def test_cleaning_from_planboard():
     assert data["totals"] == {"leave": 4, "stay": 8, "checkin": 5}
     assert "Double opmaken" not in _row(data, "32")["remark"]  # label DOUBLE OPMAKEN telt alleen op een twin kamer
     assert "Late arrival" in _row(data, "30")["remark"] and "Late arrival" not in _row(data, "31")["remark"]  # vertrekker
-    assert "2 pers." in _row(data, "12")["remark"]  # check in, personen op het planbord
+    assert _row(data, "12")["remark"] == ""  # standaard geen aantal personen
     assert _row(data, "24")["desc"] == "QUAD KAMER - 2e verdiep"  # omschrijving uit het planbord
     assert data["source"].startswith("planbord van 08:00")
-    assert sum("babybed" in x["remark"] for x in rows) == 1  # opmerking van de groep: één keer, bij de eerste kamer
+    assert not any("babybed" in x["remark"] for x in rows)  # vrije opmerking van de groep: standaard niet (stond bij 16)
 
 
 def test_breakfast_from_planboard():
