@@ -259,11 +259,11 @@ trappen_label = "NIET VERPLAATSEN"
 trappen_label_verdieping = 1
 
 [privacy]
-# URL van de privacyverklaring per taal (komt van Wim, de webdesigner). TODO: invullen.
-url_nl = "https://www.hotellucca.be/privacy"
-url_fr = "https://www.hotellucca.be/privacy"
-url_en = "https://www.hotellucca.be/privacy"
-url_de = "https://www.hotellucca.be/privacy"
+# URL van de privacyverklaring per taal (op de website van het hotel)
+url_nl = "https://hotellucca.be/nl/privacy-policy-nl/"
+url_fr = "https://hotellucca.be/fr/privacy-policy-fr/"
+url_en = "https://hotellucca.be/en/privacy-policy/"
+url_de = "https://hotellucca.be/de/privacy-policy-de/"
 
 [kleuren]
 accent = "#B4BCCC"        # grijsblauw van het logo
