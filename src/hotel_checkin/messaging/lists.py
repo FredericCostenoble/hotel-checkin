@@ -47,10 +47,12 @@ def xlsx(data: dict, hotel_name: str) -> bytes:
     bold, big = Font(bold=True), Font(bold=True, size=14)
     thin = Side(style="thin", color="999999")
     box = Border(left=thin, right=thin, top=thin, bottom=thin)
-    yellow = PatternFill("solid", fgColor="FFF2A8")
+    yellow = PatternFill("solid", fgColor="FFF2A8")  # nakijken
+    todo = PatternFill("solid", fgColor="FFFF00")  # opmerking voor de schoonmaakploeg (zoals in de lijst van het hotel)
     ws["A1"], ws["B1"], ws["C1"] = TITLES[data["kind"]], "Date:", date.fromisoformat(data["day"])
     ws["A1"].font, ws["C1"].font = big, bold
-    ws["C1"].number_format = "dddd dd/mm/yyyy"
+    ws["C1"].number_format = "[$-813]ddd dd/mm/yyyy"  # Nederlandse dagnaam (zo 08/11/2026), ook in een Engelse Excel
+    ws.merge_cells("C1:D1")  # anders te smal voor de datum (#####)
     ws["G1" if data["kind"] == "cleaning" else "E1"] = hotel_name
     if data["kind"] == "breakfast":
         head = ("KAMER", "TYPE", "AANTAL", "OPMERKINGEN")
@@ -60,9 +62,11 @@ def xlsx(data: dict, hotel_name: str) -> bytes:
         widths = (8, 24, 8, 8, 10, 60)
         if data.get("controle"):
             ws["E1"] = f"Controle: {data['controle']}"
+    center = {3, 4, 5} if data["kind"] == "cleaning" else {3}  # x, check in en aantal: gecentreerd
     for col, (text, width) in enumerate(zip(head, widths, strict=True), 1):
         c = ws.cell(row=3, column=col, value=text)
         c.font, c.border = bold, box
+        c.alignment = Alignment(horizontal="center" if col in center or col == len(head) else None)
         ws.column_dimensions[c.column_letter].width = width
     row = 4
     first = row
@@ -81,23 +85,29 @@ def xlsx(data: dict, hotel_name: str) -> bytes:
         for col, v in enumerate(values, 1):
             c = ws.cell(row=row, column=col, value=v)
             c.border = box
-            c.alignment = Alignment(vertical="top", wrap_text=col == len(values))
+            c.alignment = Alignment(vertical="top", wrap_text=col == len(values),
+                                    horizontal="center" if col in center else None)
             if r.get("check"):
                 c.fill = yellow
+            elif data["kind"] == "cleaning" and col == len(values) and v:
+                c.fill, c.font = todo, bold  # iets te doen voor de schoonmaakploeg: in het geel en vet
         row += 1
     last = row - 1
     row += 1
     ws.cell(row=row, column=1, value="TOTAAL").font = bold
     if data["kind"] == "breakfast":
-        ws.cell(row=row, column=3, value=f"=SUM(C{first}:C{last})").font = bold
+        c = ws.cell(row=row, column=3, value=f"=SUM(C{first}:C{last})")
+        c.font, c.alignment = bold, Alignment(horizontal="center")
     else:
         for col, letter, text in ((3, "C", "x"), (4, "D", "x"), (5, "E", "check in")):
-            ws.cell(row=row, column=col, value=f'=COUNTIF({letter}{first}:{letter}{last},"{text}")').font = bold
+            c = ws.cell(row=row, column=col, value=f'=COUNTIF({letter}{first}:{letter}{last},"{text}")')
+            c.font, c.alignment = bold, Alignment(horizontal="center")
         for extra in data.get("extra_rows") or []:
             row += 2
             ws.cell(row=row, column=1, value=extra).font = bold
     ws.print_options.gridLines = True
-    ws.page_setup.fitToWidth = 1
+    ws.sheet_properties.pageSetUpPr.fitToPage = True  # afdrukken op één pagina breed (opmerkingen niet op een 2e blad)
+    ws.page_setup.fitToWidth, ws.page_setup.fitToHeight = 1, 0
     out = io.BytesIO()
     wb.save(out)
     return out.getvalue()
@@ -131,8 +141,17 @@ def table_html(data: dict) -> str:
         else:
             cells = [r["room"], r.get("desc"), "x" if r.get("leave") else "", "x" if r.get("stay") else "",
                      "check in" if r.get("checkin") else "", r.get("remark")]
+        mid = {2, 3, 4} if data["kind"] == "cleaning" else {2}
+
+        def style(i, v, cells=cells, mid=mid, r=r):
+            extra = "font-weight:bold;" if i == 0 else ""
+            extra += "text-align:center;" if i in mid else ""
+            if data["kind"] == "cleaning" and i == len(cells) - 1 and v and not r.get("check"):
+                extra += "background:#FFFF00;font-weight:bold;"  # iets te doen voor de schoonmaakploeg
+            return extra
+
         body += f'<tr style="background:{bg};">' + "".join(
-            f'<td style="{_TD}{"font-weight:bold;" if i == 0 else ""}">{_e(v)}</td>' for i, v in enumerate(cells)) + "</tr>"
+            f'<td style="{_TD}{style(i, v)}">{_e(v)}</td>' for i, v in enumerate(cells)) + "</tr>"
     if data["kind"] == "breakfast":
         foot = [("Totaal", "", data.get("total", 0), "")]
     else:

@@ -88,7 +88,9 @@ def settings(hotel_id: str, kind: str) -> dict:
             # Schoonmaaklijst: alleen wat de schoonmaakploeg nodig heeft (labels zoals BABY BED, DOUBLE OPMAKEN en de
             # memo bij SPECIAAL VERZOEK). Aantal personen en vrije opmerkingen uit de reservatie alleen als aangezet.
             "persons": bool(cfg.get("personen", False)),
-            "notes": bool(cfg.get("opmerkingen", False))}
+            "notes": bool(cfg.get("opmerkingen", False)),
+            # Hoe een label op de lijst staat (bv. DOUBLE OPMAKEN -> DOUBLE); anders de naam van het label
+            "label_texts": {str(k).upper(): str(v) for k, v in dict(cfg.get("label_tekst") or {}).items()}}
 
 
 def twin_rooms(hotel_id: str) -> set[str]:
@@ -392,7 +394,8 @@ def _cleaning_plan(day: date, reservations: list[Reservation], words: list[str],
             persons = _persons(x, r, st)
             if checkin and persons and twin.get("persons"):
                 remark.append(f"{persons} pers.")
-            remark += [lab.capitalize() for lab in x["labels"] if lab.upper() in wanted
+            texts = twin.get("label_texts") or {}
+            remark += [texts.get(lab.upper(), lab.capitalize()) for lab in x["labels"] if lab.upper() in wanted
                        or (lab.upper() in twin_labels and room in twin_rooms_)]
             if any(lab.upper() in memo_labels for lab in x["labels"]):
                 memo = " ".join((r.internal_memo or "").split()) if r else ""
@@ -423,7 +426,7 @@ def build_cleaning(hotel_id: str, day: date, reservations: list[Reservation], wo
     if stays is not None:
         _cleaning_plan(day, reservations, words, labels or [], stays, per_room,
                        {"rooms": twin_rooms(hotel_id), "labels": labels_twin or [], "memo": labels_memo or [],
-                        "persons": cfg["persons"], "notes": cfg["notes"]})
+                        "persons": cfg["persons"], "notes": cfg["notes"], "label_texts": cfg["label_texts"]})
     for r in reservations if stays is None else []:
         if not _active(r) or not (r.arrival <= day <= r.departure):
             continue

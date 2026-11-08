@@ -436,7 +436,7 @@ def test_cleaning_twin_and_special_request():
     day = date(2026, 11, 8)
     _plan(day)
     data = dl.build("lucca", "cleaning", day)
-    assert "Double opmaken" in _row(data, "16")["remark"]
+    assert _row(data, "16")["remark"] == "DOUBLE"  # label DOUBLE OPMAKEN als DOUBLE ([kuislijst] label_tekst)
     day = date(2026, 11, 9)
     _plan(day)
     s14 = _row(dl.build("lucca", "cleaning", day), "14")  # label SPECIAAL VERZOEK, memo nog niet gelezen
