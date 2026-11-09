@@ -107,21 +107,40 @@ def arrivals(hotel_id: str, today: date) -> dict[str, list[dict]]:
     return out
 
 
-def robot_problem(hotel_id: str, max_hours: float) -> str | None:
-    """Geen geslaagde run meer sinds max_hours. Nooit korter dan het vangnet van de robot plus een uur: in een
-    omgeving die maar om de 4 uur draait (bv. TST) is 3 uur zonder run normaal."""
-    from hotel_checkin.processes import new_reservation, robot_schedule
+GRACE_MINUTES = 30  # zoveel na een vast uur van het vangnet moet de run van dat uur gelukt zijn
 
-    max_hours = max(max_hours, robot_schedule.minutes(hotel_id) / 60 + 1)
+
+def robot_problem(hotel_id: str, max_hours: float, now: datetime | None = None) -> str | None:
+    """Alarm alleen als de robot een gepland uur van het vangnet gemist heeft: het uur is meer dan GRACE_MINUTES
+    voorbij en er is sinds dat uur geen geslaagde run (ook niet door een melding van Lighthouse). Zo geeft een
+    omgeving die maar om de 4 uur draait (TST) geen alarm tussen twee runs. Een bevroren omgeving (robot niet
+    nodig) geeft nooit alarm. Zonder vangnet (0 minuten): alarm na max_hours zonder geslaagde run."""
+    from hotel_checkin.processes import new_reservation, robot_schedule
+    from hotel_checkin.processes.send_messages import robot_needed
+
+    if not robot_needed(hotel_id):
+        return None
     runs = guests.robot_runs(hotel_id, limit=20, task=new_reservation.TASK)
     ok = [r for r in runs if r.get("ok")]
     if not ok:
         return "de robot heeft nog geen geslaagde run" if runs else None
     last = datetime.fromisoformat(ok[0]["started_at"])
-    if datetime.now(UTC) - last > timedelta(hours=max_hours):
-        err = next((r.get("error") for r in runs if not r.get("ok")), "")
-        return f"de robot lukte niet meer sinds {last.astimezone(clock.tz(hotel_id)):%d/%m %H:%M}" + (f" ({err[:150]})" if err else "")
-    return None
+    now = (now or datetime.now(UTC)).astimezone(clock.tz(hotel_id))
+    every = robot_schedule.minutes(hotel_id)
+    if every > 0:
+        slot = robot_schedule._slot_start(every, now)
+        if now - slot < timedelta(minutes=GRACE_MINUTES):
+            slot -= timedelta(minutes=max(int(every), 5))  # de run van dit uur mag nog bezig zijn: het vorige uur
+        missed = last < slot
+        what = f"geen geslaagde run voor het geplande uur van {slot:%H:%M}"
+    else:
+        missed = now - last > timedelta(hours=max_hours)
+        what = f"geen geslaagde run in {max_hours:g} uur"
+    if not missed:
+        return None
+    err = next((r.get("error") for r in runs if not r.get("ok")), "")
+    return (f"de robot lukte niet meer sinds {last.astimezone(clock.tz(hotel_id)):%d/%m %H:%M} ({what})"
+            + (f": {err[:150]}" if err else ""))
 
 
 def _monitor_url() -> str:
@@ -167,7 +186,9 @@ def robot_failures(hotel_id: str, hours: int = 24) -> list[str]:
             continue
         task = _TASK_NAMES.get(r.get("task"), r.get("task"))
         text = (r.get("error") or "").strip()
-        found = _PER_RESERVATION.findall(text)
+        # Alleen wat niet lukte ("niet gelezen", "overgeslagen"), niet wat de robot alleen opmerkte
+        failed = " ".join(x for x in re.split(r"\.\s+(?=[A-Z0-9])", text) if "niet gelezen:" in x or "overgeslagen:" in x)
+        found = _PER_RESERVATION.findall(failed)
         for number, why in found:
             n = per_res.get(number, ("", "", 0))[2]
             per_res[number] = (task, why.strip(), n + 1)

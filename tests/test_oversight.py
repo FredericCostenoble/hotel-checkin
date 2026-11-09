@@ -81,15 +81,19 @@ def test_failures_per_reservation_under_the_tables(setup):
     assert "Wat de robot niet lukte" in html and "CPB-4276-001805" in html
 
 
-def test_robot_alert_not_before_the_safety_net(setup, monkeypatch):
-    """TST draait om de 4 uur: 3,5 uur zonder run is dan geen probleem."""
-    monkeypatch.setenv("LUCCA_ROBOT_CHECK_MINUTES", "240")
+def test_robot_alert_only_when_a_planned_run_was_missed(setup, monkeypatch):
+    """TST draait om de 4 uur (00:00, 04:00, 08:00 ...): tussen twee runs geen alarm, pas als een gepland uur
+    meer dan een halfuur voorbij is zonder geslaagde run."""
     from hotel_checkin.processes import new_reservation
 
-    repo.log_robot_run("lucca", new_reservation.TASK, datetime.now(UTC) - timedelta(hours=3.5), True, 0, 0, "ok")
-    assert oversight.robot_problem("lucca", 3) is None
-    monkeypatch.setenv("LUCCA_ROBOT_CHECK_MINUTES", "60")
-    assert oversight.robot_problem("lucca", 3)
+    monkeypatch.setenv("LUCCA_ROBOT_CHECK_MINUTES", "240")
+    monkeypatch.setenv("LUCCA_SCHAKELAARS_RESERVATIES", "true")
+    tz = oversight.clock.tz("lucca")
+    repo.log_robot_run("lucca", new_reservation.TASK, datetime(2026, 11, 9, 4, 18, tzinfo=tz), True, 0, 0, "ok")
+    assert oversight.robot_problem("lucca", 3, datetime(2026, 11, 9, 7, 55, tzinfo=tz)) is None  # 08:00 nog niet
+    assert oversight.robot_problem("lucca", 3, datetime(2026, 11, 9, 8, 20, tzinfo=tz)) is None  # run van 08:00 bezig
+    alarm = oversight.robot_problem("lucca", 3, datetime(2026, 11, 9, 8, 40, tzinfo=tz))  # 08:00 gemist
+    assert alarm and "08:00" in alarm
 
 
 def test_check_warns_once_for_missing_code_mail(setup, monkeypatch):

@@ -247,5 +247,16 @@ def test_detail_group_with_different_dates_per_room():
                    {"status": "", "text": "za 7 nov. 2026 - ma 9 nov. 2026\n24 QUAD ROOM"}]}
     r = parse_detail("lucca", "0A1B2C3D-1111-2222-3333-444455556666", d)
     assert (r.arrival, r.departure) == (date(2026, 11, 6), date(2026, 11, 9))
-    with pytest.raises(ValueError, match="geen aankomst of vertrek"):
+    with pytest.raises(ValueError, match="geen aankomst of vertrek: .*kamers: 'geen kamers'"):
         parse_detail("lucca", "x", {**d, "rooms": []})
+
+
+def test_detail_dates_note_is_not_an_error():
+    from hotel_checkin.pms.lighthouse_parse import parse_detail
+
+    d = {**DETAIL, "general": "Via Booking.com\nStatus: Nieuw\nAankomst op verschillende\nVertrek op do 29 okt. 2026"}
+    r = parse_detail("lucca", "0A1B2C3D-1111-2222-3333-444455556666", d)
+    assert (r.arrival, r.departure) == (date(2026, 10, 25), date(2026, 10, 29))
+    assert r.read_notes == [("data van de kamers gebruikt (25/10 tot 29/10), want Aankomst op 'verschillende', "
+                             "Vertrek op 'do 29 okt. 2026'")]
+    assert parse_detail("lucca", "0A1B2C3D-1111-2222-3333-444455556666", DETAIL).read_notes == []

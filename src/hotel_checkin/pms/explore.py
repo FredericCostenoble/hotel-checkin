@@ -445,6 +445,50 @@ def explore_memo(lh: LighthouseSession, detail_id: str) -> str:
     return "\n".join(out) + "\n"
 
 
+def explore_dates(lh: LighthouseSession, hotel_id: str, items: list[str]) -> str:
+    """Aankomst en vertrek zoals de robot ze leest, voor reservaties die niet gelezen konden worden: wat er letterlijk
+    bij "Aankomst op" / "Vertrek op" en bij elke kamer staat, en wat de robot ervan maakt. Alleen lezen, geen
+    contactgegevens. items: reservatienummers (CPB-...) of uuid's."""
+    import re as _re
+
+    from hotel_checkin.pms import lighthouse
+    from hotel_checkin.pms.lighthouse_parse import _after, _stay_dates
+
+    ids = {}
+    numbers = [x for x in items if not _re.fullmatch(r"[0-9a-fA-F-]{36}", x)]
+    if numbers:  # nummer -> uuid uit de eigen opslag
+        from hotel_checkin.guests import repository as guests
+
+        known = {r.booking_number: r.reservation_id for r in guests.list_reservations(hotel_id) if r.booking_number}
+        ids |= {n: known.get(n, "") for n in numbers}
+    ids |= {x: x for x in items if x not in ids}
+    out = ["# Aankomst en vertrek op de detailpagina (alleen gelezen)", ""]
+    for name, rid in ids.items():
+        out.append(f"## {name}")
+        if not rid:
+            out += ["niet gevonden in de opslag: geef de uuid (uit de link in Lighthouse)", ""]
+            continue
+        page = lh.goto(lighthouse.DETAIL_PATH.format(id=rid), ready=lighthouse._TRANSACTIONS_LOADED, timeout=10_000)
+        lh.close_popups()
+        d = page.evaluate(lighthouse._DETAIL_JS)
+        general = d.get("general", "")
+        out.append(f"- uuid: {rid}")
+        out.append("- Algemene informatie (zonder contact):")
+        out += [f"    {line}" for line in general.splitlines() if line.strip()]
+        out.append(f"- Aankomst op -> {_after('Aankomst op', general)!r}")
+        out.append(f"- Vertrek op -> {_after('Vertrek op', general)!r}")
+        for i, room in enumerate(d.get("rooms", []), 1):
+            out.append(f"- kamer {i}: status {room.get('status', '')!r}, tekst {' '.join((room.get('text') or '').split())!r}")
+        try:
+            a, b, note = _stay_dates(_after("Aankomst op", general), _after("Vertrek op", general),
+                                     [r.get("text", "") for r in d.get("rooms", [])])
+            out.append(f"- robot: aankomst {a}, vertrek {b}" + (f" ({note})" if note else ""))
+        except ValueError as exc:
+            out.append(f"- robot: niet gelezen: {exc}")
+        out.append("")
+    return "\n".join(out) + "\n"
+
+
 def main() -> None:
     p = argparse.ArgumentParser()
     p.add_argument("hotel_id")
@@ -457,7 +501,15 @@ def main() -> None:
     p.add_argument("--charge-ids", help="verandert het nummer van een folioregel door te lezen? (uuid); wijzigt niets")
     p.add_argument("--planboard", help="planbord rond deze dag (JJJJ-MM-DD): blokken per kamer; wijzigt niets")
     p.add_argument("--memo", help="waar de interne memo van deze reservatie (uuid) staat; wijzigt niets")
+    p.add_argument("--dates", nargs="+", help="aankomst en vertrek van deze reservaties (CPB-nummers of uuid's); wijzigt niets")
     args = p.parse_args()
+
+    if args.dates:
+        OUT.mkdir(exist_ok=True)
+        with LighthouseSession(args.hotel_id, headless=not args.show, debug_dir=OUT) as lh:
+            (OUT / "dates.md").write_text(explore_dates(lh, args.hotel_id, args.dates), encoding="utf-8")
+        print(f"Klaar: {OUT}/dates.md (niets gewijzigd).")
+        return
 
     if args.memo:
         OUT.mkdir(exist_ok=True)

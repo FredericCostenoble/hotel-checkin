@@ -146,6 +146,7 @@ def run(hotel_id: str) -> int:
     access_changes: list[str] = []
     stats = _ContactStats()
     skipped: list[str] = []
+    noted: list[str] = []  # geen fout, wel goed om te weten (bv. groep met kamers op verschillende data)
     timings: dict[str, float] = {}  # gemeten duur per onderdeel (seconden), voor de monitor
     try:
         if todo or arrivals or payouts or syncs or breakfasts or pay_todo or lists_due or stairs_todo:
@@ -210,6 +211,7 @@ def run(hotel_id: str) -> int:
                     except Exception as exc:  # noqa: BLE001 - volgende keer opnieuw
                         skipped.append(f"{reservation.booking_number or 'reservatie'}: {_why(exc)}")
                         continue
+                    noted += [f"{reservation.booking_number or 'reservatie'}: {x}" for x in detail.read_notes]
                     _apply_detail(reservation, detail)
                     guests.save_reservation(reservation, fields=guests.DETAIL_FIELDS)
                     details_read += 1
@@ -267,6 +269,8 @@ def run(hotel_id: str) -> int:
         parts.append("Salto aangepast: " + ", ".join(access_changes))
     if skipped:
         parts.append(f"{len(skipped)} niet gelezen: " + "; ".join(skipped[:5]))
+    if noted:
+        parts.append("Opgemerkt (geen fout): " + "; ".join(noted[:5]))
     if not parts:
         parts.append("niets nagelezen: alle aankomsten van de komende dagen zijn al bijgewerkt")
     # Te doen: reservaties die nagelezen moesten worden; gedaan: hoeveel daarvan nagelezen zijn

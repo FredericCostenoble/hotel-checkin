@@ -36,24 +36,27 @@ def _all_dates(text: str) -> list[date]:
     return [date(int(y), MONTHS[m], int(d)) for d, m, y in re.findall(_DATE, text.lower()) if m in MONTHS]
 
 
-def _stay_dates(arrival_line: str, departure_line: str, room_texts: list[str]) -> tuple[date, date]:
-    """Aankomst en vertrek van de reservatie. Staat er bij "Aankomst op" of "Vertrek op" geen datum (bv. een groep
-    waarvan de kamers op verschillende dagen aankomen of vertrekken), dan de vroegste en de laatste datum van de kamers."""
-    try:
-        return parse_date(arrival_line), parse_date(departure_line)
-    except ValueError:
-        found = sorted(d for t in room_texts for d in _all_dates(t))
-        if len(found) < 2:
-            raise ValueError(f"geen aankomst of vertrek ({arrival_line[:40]!r}, {departure_line[:40]!r})") from None
+def _stay_dates(arrival_line: str, departure_line: str, room_texts: list[str]) -> tuple[date, date, str]:
+    """Aankomst en vertrek van de reservatie, en een notitie als ze niet bij "Aankomst op" / "Vertrek op" stonden.
+    Dat is geen fout: bij een groep met kamers op verschillende dagen kan daar geen (of een andere) datum staan.
+    Dan de vroegste aankomst en het laatste vertrek van de kamers, met in de notitie wat er letterlijk stond.
+    Alleen als ook de kamers geen data hebben, kan de reservatie niet gelezen worden (fout met de letterlijke tekst)."""
+    room_dates = sorted(d for t in room_texts for d in _all_dates(t))
+    found: dict[str, date | None] = {}
+    for key, line in (("arrival", arrival_line), ("departure", departure_line)):
         try:
-            arrival = parse_date(arrival_line)
+            found[key] = parse_date(line)
         except ValueError:
-            arrival = found[0]
-        try:
-            departure = parse_date(departure_line)
-        except ValueError:
-            departure = found[-1]
-        return arrival, departure
+            found[key] = None
+    if found["arrival"] and found["departure"]:
+        return found["arrival"], found["departure"], ""
+    seen = f"Aankomst op {arrival_line.strip()[:60]!r}, Vertrek op {departure_line.strip()[:60]!r}"
+    if len(room_dates) < 2:
+        rooms = " / ".join(" ".join(t.split())[:60] for t in room_texts) or "geen kamers"
+        raise ValueError(f"geen aankomst of vertrek: {seen}, kamers: {rooms!r}")
+    arrival = found["arrival"] or room_dates[0]
+    departure = found["departure"] or room_dates[-1]
+    return arrival, departure, f"data van de kamers gebruikt ({arrival:%d/%m} tot {departure:%d/%m}), want {seen}"
 
 
 def parse_date(text: str) -> date:
@@ -290,7 +293,8 @@ def parse_detail(hotel_id: str, reservation_id: str, d: dict) -> Reservation:
         room_statuses.append((r.get("value") or "").strip())
     status = (ReservationStatus.CANCELLED if "annul" in pms_status.lower()
               else accommodation_status([r.get("status", "") for r in d.get("rooms", [])]))
-    arrival, departure = _stay_dates(arrival_line, departure_line, [r.get("text", "") for r in d.get("rooms", [])])
+    arrival, departure, dates_note = _stay_dates(arrival_line, departure_line,
+                                                 [r.get("text", "") for r in d.get("rooms", [])])
     paid_text = d.get("paid_text", "").lower()
     folio = parse_folio(d.get("folio_text", "") or d.get("paid_text", ""))
     plans = rate_plans_from("\n".join(x["label"] for x in folio["lines"]))
@@ -320,6 +324,7 @@ def parse_detail(hotel_id: str, reservation_id: str, d: dict) -> Reservation:
         non_refundable=refund,
         remarks=(d.get("remarks") or "").strip() or None,
         internal_memo=None if d.get("internal_memo") is None else (d.get("internal_memo") or "").strip(),
+        read_notes=[dates_note] if dates_note else [],
         room_statuses=room_statuses,
         transactions=[t.strip() for t in d.get("transactions", []) if t and t.strip()],
         folio=folio["lines"],
