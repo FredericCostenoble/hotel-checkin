@@ -178,9 +178,22 @@ _TRANSACTIONS_LOADED = r"""() => {
 }"""
 
 
+# Wat zeker op de pagina moet staan voor de robot ze leest: aankomst en vertrek (met een jaartal) in Algemene informatie
+_GENERAL_LOADED = r"""() => /Aankomst op[^\n]*\d{4}/.test(document.body.innerText)
+                        && /Vertrek op[^\n]*\d{4}/.test(document.body.innerText)"""
+
+
 def _read_detail(session: LighthouseSession, hotel_id: str, reservation_id: str, contact: bool = True) -> Reservation:
-    # Klaar zodra de transacties ingevuld zijn (laden asynchroon); geen transactieblok: na 10 s verder
-    page = session.goto(DETAIL_PATH.format(id=reservation_id), ready=_TRANSACTIONS_LOADED, timeout=10_000)
+    # Klaar zodra de transacties ingevuld zijn (laden asynchroon); geen transactieblok: na 10 s verder.
+    # Maar nooit met een half geladen pagina: aankomst en vertrek moeten er staan. Anders langer wachten, en nog niet:
+    # de pagina één keer opnieuw laden. Staan ze er dan nog niet, dan niet gelezen (volgende run opnieuw).
+    path = DETAIL_PATH.format(id=reservation_id)
+    page = session.goto(path, ready=_TRANSACTIONS_LOADED, timeout=10_000)
+    if not session._wait_loaded(_GENERAL_LOADED, timeout=15_000):
+        page = session.goto(path, ready=_TRANSACTIONS_LOADED, timeout=20_000)
+        if not session._wait_loaded(_GENERAL_LOADED, timeout=20_000):
+            raise RuntimeError("pagina niet volledig geladen: geen aankomst en vertrek in Algemene informatie "
+                               "(na opnieuw laden)")
     session.close_popups()
     d = page.evaluate(_DETAIL_JS)
     if contact and "*" in (d.get("email") or "") + (d.get("phone") or ""):
