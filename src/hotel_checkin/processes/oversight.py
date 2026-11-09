@@ -19,6 +19,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+import re
 from datetime import UTC, date, datetime, timedelta
 
 from hotel_checkin.core import clock, safety, workflow
@@ -107,8 +108,11 @@ def arrivals(hotel_id: str, today: date) -> dict[str, list[dict]]:
 
 
 def robot_problem(hotel_id: str, max_hours: float) -> str | None:
-    from hotel_checkin.processes import new_reservation
+    """Geen geslaagde run meer sinds max_hours. Nooit korter dan het vangnet van de robot plus een uur: in een
+    omgeving die maar om de 4 uur draait (bv. TST) is 3 uur zonder run normaal."""
+    from hotel_checkin.processes import new_reservation, robot_schedule
 
+    max_hours = max(max_hours, robot_schedule.minutes(hotel_id) / 60 + 1)
     runs = guests.robot_runs(hotel_id, limit=20, task=new_reservation.TASK)
     ok = [r for r in runs if r.get("ok")]
     if not ok:
@@ -148,8 +152,35 @@ _TASK_NAMES = {"overschrijving_booking": "Overschrijvingen", "ontbijt_labels": "
                "ontbijtlijst": "Ontbijtlijst", "kuislijst": "Schoonmaaklijst"}
 
 
+_PER_RESERVATION = re.compile(r"\b([A-Z]{2,5}-\d+-\d+): ([^;|]+?)(?=;|\||\.\s|\.$|$| En nog)")
+
+
+def robot_failures(hotel_id: str, hours: int = 24) -> list[str]:
+    """Wat misliep de voorbije uren, voor onder de tabellen: per reservatie één regel met de laatste reden
+    (dezelfde fout in elke run telt één keer), en de andere meldingen per taak."""
+    since = datetime.now(UTC) - timedelta(hours=hours)
+    runs = [r for r in guests.robot_runs(hotel_id, limit=500) if datetime.fromisoformat(r["started_at"]) >= since]
+    per_res: dict[str, tuple[str, str, int]] = {}  # nummer -> (taak, reden, aantal runs)
+    other: dict[str, int] = {}
+    for r in sorted(runs, key=lambda x: x["started_at"]):
+        if r.get("ok") and not int(r.get("skipped") or 0):
+            continue
+        task = _TASK_NAMES.get(r.get("task"), r.get("task"))
+        text = (r.get("error") or "").strip()
+        found = _PER_RESERVATION.findall(text)
+        for number, why in found:
+            n = per_res.get(number, ("", "", 0))[2]
+            per_res[number] = (task, why.strip(), n + 1)
+        if not found:
+            other[f"{task}: {text[:200]}"] = other.get(f"{task}: {text[:200]}", 0) + 1
+    out = [f"{number} ({task}): {why}" + (f" ({n} runs)" if n > 1 else "") for number, (task, why, n) in per_res.items()]
+    out += [t + (f" ({n} keer)" if n > 1 else "") for t, n in other.items()]
+    return out
+
+
 def activity(hotel_id: str, hours: int = 24) -> list[str]:
-    """Wat er de voorbije 24 uur gebeurde, in een paar regels: wat gedaan werd en wat misliep."""
+    """Wat er de voorbije 24 uur gebeurde, in een paar regels: wat gedaan werd en wat misliep (kort; de details
+    staan onder de tabellen, zie robot_failures)."""
     since = datetime.now(UTC) - timedelta(hours=hours)
     runs = [r for r in guests.robot_runs(hotel_id, limit=500) if datetime.fromisoformat(r["started_at"]) >= since]
     if not runs:
@@ -173,9 +204,7 @@ def activity(hotel_id: str, hours: int = 24) -> list[str]:
            + (", " + ", ".join(f"{n} {words[t]}" for t, n in done.items()) if done else ", niets geregistreerd of gezet")
            + "."]
     if problems:
-        items = [t + (f" ({n} keer)" if n > 1 else "") for t, n in list(problems.items())[:5]]
-        more = f" En nog {len(problems) - 5} andere." if len(problems) > 5 else ""
-        out.append("Wat misliep: " + " | ".join(items) + "." + more + " Details in de monitor (Robot).")
+        out.append("Er liep iets mis: zie onderaan.")
     else:
         out.append("Niets misgelopen.")
     return out
@@ -197,7 +226,7 @@ def send_overview(hotel_id: str, today: date) -> bool:
     intro += activity(hotel_id)
     body = report.overview_html(f"{name}: aankomsten {today:%d/%m}", intro,
                                 [(f"Vandaag {today:%d/%m}", a["today"]), (f"Morgen {today + timedelta(days=1):%d/%m}", a["tomorrow"])],
-                                _monitor_url())
+                                _monitor_url(), problems=robot_failures(hotel_id))
     subject = f"{name}: aankomsten {today:%d/%m}" + (f" ({problems} probleem)" if problems == 1 else f" ({problems} problemen)" if problems else "")
     return _send(hotel_id, subject, body)
 

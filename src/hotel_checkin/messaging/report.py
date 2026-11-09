@@ -22,7 +22,8 @@ COLUMNS = (("kamer", "Kamer"), ("gast", "Gast"), ("via", "Via"), ("contact", "Co
            ("code", "Code"), ("code_mail", "Code-mail"), ("lighthouse", "Code in Lighthouse"))
 
 
-def overview_html(title: str, intro: list[str], sections: list[tuple[str, list[dict]]], monitor_url: str) -> str:
+def overview_html(title: str, intro: list[str], sections: list[tuple[str, list[dict]]], monitor_url: str,
+                  problems: list[str] | None = None) -> str:
     """sections: (titel, rijen); een rij: kolommen hierboven plus "problemen" (lijst, rood bovenaan), "info"
     (lijst, grijs: goed om te weten, geen fout) en "nummer"."""
     parts = [f'<h2 style="font-family:Arial,sans-serif;font-size:18px;">{html.escape(title)}</h2>']
@@ -51,6 +52,13 @@ def overview_html(title: str, intro: list[str], sections: list[tuple[str, list[d
                          + html.escape(f"{r.get('nummer', '')}: " + "; ".join(r["info"])) + "</td></tr>")
         parts.append(f'<table style="border-collapse:collapse;font-family:Arial,sans-serif;font-size:13px;">'
                      f"<tr>{head}</tr>{body}</table>")
+    if problems:  # onder de tabellen: wat de robot de voorbije 24 uur niet lukte, per reservatie
+        parts.append('<h3 style="font-family:Arial,sans-serif;font-size:15px;margin-top:20px;">'
+                     "Wat de robot niet lukte (voorbije 24 uur)</h3>")
+        parts.append('<ul style="font-family:Arial,sans-serif;font-size:13px;color:#555;">'
+                     + "".join(f"<li>{html.escape(p)}</li>" for p in problems[:15]) + "</ul>"
+                     + (f'<p style="font-family:Arial,sans-serif;font-size:13px;color:#555;">En nog {len(problems) - 15} '
+                        "andere: zie de monitor (Robot).</p>" if len(problems) > 15 else ""))
     parts.append(f'<p style="font-family:Arial,sans-serif;font-size:13px;margin-top:20px;">Opvolgen en opnieuw '
                  f'versturen: <a href="{html.escape(monitor_url)}">{html.escape(monitor_url)}</a></p>')
     return "\n".join(parts)

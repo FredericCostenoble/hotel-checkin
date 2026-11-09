@@ -97,6 +97,12 @@ def _apply_detail(r, d) -> None:
         r.guest.phone = r.guest.phone or d.guest.phone
 
 
+def _why(exc: Exception) -> str:
+    """Korte reden van een fout voor het robotlog (type en boodschap, zonder ; of | die de opsomming breken)."""
+    msg = " ".join(str(exc).split()).replace(";", ",").replace("|", "/")
+    return f"{type(exc).__name__}" + (f" ({msg[:90]})" if msg else "")
+
+
 def run(hotel_id: str) -> int:
     """Lees de contactgegevens van die reservaties opnieuw. Geeft het aantal gevonden e-mailadressen terug."""
     started = datetime.now(UTC)
@@ -186,7 +192,7 @@ def run(hotel_id: str) -> int:
                         contact = lighthouse.get_contact(hotel_id, reservation.reservation_id, lh)
                         stats.add(contact, time.monotonic() - t0)
                     except Exception as exc:  # noqa: BLE001 - volgende keer opnieuw
-                        skipped.append(f"{reservation.booking_number or 'reservatie'}: {type(exc).__name__}")
+                        skipped.append(f"{reservation.booking_number or 'reservatie'}: {_why(exc)}")
                         continue
                     _apply_contact(reservation, contact)
                     guests.save_reservation(reservation, fields=guests.CONTACT_FIELDS)
@@ -202,7 +208,7 @@ def run(hotel_id: str) -> int:
                     try:
                         detail = lighthouse.get_reservation(hotel_id, reservation.reservation_id, lh)
                     except Exception as exc:  # noqa: BLE001 - volgende keer opnieuw
-                        skipped.append(f"{reservation.booking_number or 'reservatie'}: {type(exc).__name__}")
+                        skipped.append(f"{reservation.booking_number or 'reservatie'}: {_why(exc)}")
                         continue
                     _apply_detail(reservation, detail)
                     guests.save_reservation(reservation, fields=guests.DETAIL_FIELDS)

@@ -234,3 +234,18 @@ def test_rate_plan_in_normal_case():
     assert rate_plans_from("Non-refundable rate including breakfast BDC, € 796,07") == \
         ["Non-refundable rate including breakfast BDC"]
     assert rate_plans_from("Citytax") == [] and rate_plans_from("Ontbijt") == []
+
+
+def test_detail_group_with_different_dates_per_room():
+    """Groep met kamers op verschillende data: geen datum bij Aankomst/Vertrek, dan de vroegste en laatste van de kamers."""
+    import pytest
+
+    from hotel_checkin.pms.lighthouse_parse import parse_detail
+
+    d = {**DETAIL, "general": "Via Booking.com\nStatus: Nieuw\nAankomst op\nVertrek op",
+         "rooms": [{"status": "", "text": "vr 6 nov. 2026 - zo 8 nov. 2026\n22 BUDGET DOUBLE ROOM"},
+                   {"status": "", "text": "za 7 nov. 2026 - ma 9 nov. 2026\n24 QUAD ROOM"}]}
+    r = parse_detail("lucca", "0A1B2C3D-1111-2222-3333-444455556666", d)
+    assert (r.arrival, r.departure) == (date(2026, 11, 6), date(2026, 11, 9))
+    with pytest.raises(ValueError, match="geen aankomst of vertrek"):
+        parse_detail("lucca", "x", {**d, "rooms": []})

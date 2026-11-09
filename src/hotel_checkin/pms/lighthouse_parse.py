@@ -32,6 +32,30 @@ COUNTRY_LANGUAGE = {
 _UUID = re.compile(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}", re.IGNORECASE)
 
 
+def _all_dates(text: str) -> list[date]:
+    return [date(int(y), MONTHS[m], int(d)) for d, m, y in re.findall(_DATE, text.lower()) if m in MONTHS]
+
+
+def _stay_dates(arrival_line: str, departure_line: str, room_texts: list[str]) -> tuple[date, date]:
+    """Aankomst en vertrek van de reservatie. Staat er bij "Aankomst op" of "Vertrek op" geen datum (bv. een groep
+    waarvan de kamers op verschillende dagen aankomen of vertrekken), dan de vroegste en de laatste datum van de kamers."""
+    try:
+        return parse_date(arrival_line), parse_date(departure_line)
+    except ValueError:
+        found = sorted(d for t in room_texts for d in _all_dates(t))
+        if len(found) < 2:
+            raise ValueError(f"geen aankomst of vertrek ({arrival_line[:40]!r}, {departure_line[:40]!r})") from None
+        try:
+            arrival = parse_date(arrival_line)
+        except ValueError:
+            arrival = found[0]
+        try:
+            departure = parse_date(departure_line)
+        except ValueError:
+            departure = found[-1]
+        return arrival, departure
+
+
 def parse_date(text: str) -> date:
     m = re.search(_DATE, text.lower())
     if not m:
@@ -266,6 +290,7 @@ def parse_detail(hotel_id: str, reservation_id: str, d: dict) -> Reservation:
         room_statuses.append((r.get("value") or "").strip())
     status = (ReservationStatus.CANCELLED if "annul" in pms_status.lower()
               else accommodation_status([r.get("status", "") for r in d.get("rooms", [])]))
+    arrival, departure = _stay_dates(arrival_line, departure_line, [r.get("text", "") for r in d.get("rooms", [])])
     paid_text = d.get("paid_text", "").lower()
     folio = parse_folio(d.get("folio_text", "") or d.get("paid_text", ""))
     plans = rate_plans_from("\n".join(x["label"] for x in folio["lines"]))
@@ -283,8 +308,8 @@ def parse_detail(hotel_id: str, reservation_id: str, d: dict) -> Reservation:
             language=COUNTRY_LANGUAGE.get(country_code or "", "en"),
             country=country_code,
         ),
-        arrival=parse_date(arrival_line),
-        departure=parse_date(departure_line),
+        arrival=arrival,
+        departure=departure,
         rooms=rooms,
         room_names=room_names,
         status=status,
