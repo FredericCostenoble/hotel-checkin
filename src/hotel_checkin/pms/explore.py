@@ -445,6 +445,49 @@ def explore_memo(lh: LighthouseSession, detail_id: str) -> str:
     return "\n".join(out) + "\n"
 
 
+def find_by_number(lh: LighthouseSession, hotel_id: str, numbers: list[str]) -> dict[str, str]:
+    """Reservatienummer (CPB-4276-001726) -> uuid, via de reservatielijst (15 per pagina, nieuwste boeking eerst,
+    dus aflopende nummers): per nummer een binaire zoektocht over de pagina's. Alleen lezen."""
+    import re as _re
+
+    from hotel_checkin.pms import lighthouse
+
+    cache: dict[int, list] = {}
+
+    def page(n: int) -> list:
+        if n not in cache:
+            cache[n] = lighthouse.list_page(hotel_id, n, lh)
+        return cache[n]
+
+    def seq(text: str) -> int:
+        m = _re.search(r"(\d+)$", text or "")
+        return int(m.group(1)) if m else -1
+
+    last = 1
+    while page(last):  # aantal pagina's: verdubbelen tot een lege pagina
+        last *= 2
+    out = {}
+    for number in numbers:
+        want, lo, hi = seq(number), 0, last
+        out[number] = ""
+        while lo <= hi:
+            mid = (lo + hi) // 2
+            rows = page(mid)
+            if not rows:
+                hi = mid - 1
+                continue
+            hit = next((r for r in rows if r.booking_number == number), None)
+            if hit:
+                out[number] = hit.reservation_id
+                break
+            found = [seq(r.booking_number) for r in rows if r.booking_number]
+            if found and want > max(found):
+                hi = mid - 1  # nieuwer: vroegere pagina
+            else:
+                lo = mid + 1
+    return out
+
+
 def explore_dates(lh: LighthouseSession, hotel_id: str, items: list[str]) -> str:
     """Aankomst en vertrek zoals de robot ze leest, voor reservaties die niet gelezen konden worden: wat er letterlijk
     bij "Aankomst op" / "Vertrek op" en bij elke kamer staat, en wat de robot ervan maakt. Alleen lezen, geen
@@ -456,17 +499,14 @@ def explore_dates(lh: LighthouseSession, hotel_id: str, items: list[str]) -> str
 
     ids = {}
     numbers = [x for x in items if not _re.fullmatch(r"[0-9a-fA-F-]{36}", x)]
-    if numbers:  # nummer -> uuid uit de eigen opslag
-        from hotel_checkin.guests import repository as guests
-
-        known = {r.booking_number: r.reservation_id for r in guests.list_reservations(hotel_id) if r.booking_number}
-        ids |= {n: known.get(n, "") for n in numbers}
+    if numbers:  # nummer -> uuid: opzoeken in de reservatielijst van Lighthouse (geen opslag nodig)
+        ids |= find_by_number(lh, hotel_id, numbers)
     ids |= {x: x for x in items if x not in ids}
     out = ["# Aankomst en vertrek op de detailpagina (alleen gelezen)", ""]
     for name, rid in ids.items():
         out.append(f"## {name}")
         if not rid:
-            out += ["niet gevonden in de opslag: geef de uuid (uit de link in Lighthouse)", ""]
+            out += ["niet gevonden in de reservatielijst: geef de uuid (uit de link in Lighthouse)", ""]
             continue
         page = lh.goto(lighthouse.DETAIL_PATH.format(id=rid), ready=lighthouse._TRANSACTIONS_LOADED, timeout=10_000)
         lh.close_popups()
