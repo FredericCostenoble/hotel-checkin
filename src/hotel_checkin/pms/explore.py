@@ -525,6 +525,16 @@ def explore_dates(lh: LighthouseSession, hotel_id: str, items: list[str]) -> str
             out.append(f"- robot: aankomst {a}, vertrek {b}" + (f" ({note})" if note else ""))
         except ValueError as exc:
             out.append(f"- robot: niet gelezen: {exc}")
+        # Volledig lezen zoals de robot het doet (zonder het oog-icoon), met de plaats van een fout
+        import traceback
+
+        try:
+            r = lighthouse.get_reservation(hotel_id, rid, lh, contact=False)
+            out.append(f"- volledig gelezen zoals de robot: ok (kamers {r.rooms}, status {r.status.value}, "
+                       f"{len(r.folio)} folioregels)")
+        except Exception:  # noqa: BLE001 - net wat we willen zien
+            out.append("- volledig gelezen zoals de robot: FOUT")
+            out += ["```", traceback.format_exc().rstrip(), "```"]
         out.append("")
     return "\n".join(out) + "\n"
 
