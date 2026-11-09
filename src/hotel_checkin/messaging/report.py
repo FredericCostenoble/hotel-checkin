@@ -22,11 +22,18 @@ COLUMNS = (("kamer", "Kamer"), ("gast", "Gast"), ("via", "Via"), ("contact", "Co
            ("code", "Code"), ("code_mail", "Code-mail"), ("lighthouse", "Code in Lighthouse"))
 
 
+_BANNER = {"red": ("#FDECEC", "#B42318"), "orange": ("#FFF4E5", "#B54708")}
+
+
 def overview_html(title: str, intro: list[str], sections: list[tuple[str, list[dict]]], monitor_url: str,
-                  problems: list[str] | None = None) -> str:
+                  problems: list[str] | None = None, banners: list[tuple[str, str]] | None = None) -> str:
     """sections: (titel, rijen); een rij: kolommen hierboven plus "problemen" (lijst, rood bovenaan), "info"
     (lijst, grijs: goed om te weten, geen fout) en "nummer"."""
     parts = [f'<h2 style="font-family:Arial,sans-serif;font-size:18px;">{html.escape(title)}</h2>']
+    for level, text in banners or []:  # bovenaan: rood = moet nagekeken worden, oranje = opgelet
+        bg, fg = _BANNER.get(level, _BANNER["orange"])
+        parts.append(f'<p style="font-family:Arial,sans-serif;font-size:14px;background:{bg};color:{fg};'
+                     f'border-left:4px solid {fg};padding:8px 12px;font-weight:bold;">{html.escape(text)}</p>')
     parts += [f'<p style="font-family:Arial,sans-serif;font-size:14px;">{html.escape(p)}</p>' for p in intro]
     for name, rows in sections:
         parts.append(f'<h3 style="font-family:Arial,sans-serif;font-size:15px;margin-top:20px;">{html.escape(name)} '

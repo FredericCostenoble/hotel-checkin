@@ -517,6 +517,79 @@ def append_internal_memo(hotel_id: str, reservation_id: str, line: str, session:
     return "added"
 
 
+def self_test(hotel_id: str, session: LighthouseSession, sample_id: str | None, day) -> list[dict]:
+    """Zelftest: staat alles wat de robot nodig heeft nog op de pagina's van Lighthouse? Alleen lezen.
+    Per onderdeel {"part", "ok", "why", "html"} (html: de pagina, als bewijs bij een probleem).
+    sample_id: een reservatie met een kamer om de detailpagina na te kijken (None: de nieuwste uit de lijst)."""
+    out: list[dict] = []
+
+    def result(part: str, problems: list[str], page_html: str) -> None:
+        out.append({"part": part, "ok": not problems, "why": "; ".join(problems), "html": "" if not problems else page_html})
+
+    # 1. Reservatielijst: rijen met nummer, gast en data
+    problems: list[str] = []
+    skipped: list[str] = []
+    try:
+        rows = list_page(hotel_id, 0, session, skipped)
+        if not rows:
+            problems.append("geen enkele reservatie gelezen op de eerste pagina")
+        elif not all(r.booking_number for r in rows):
+            problems.append("reservatienummer ontbreekt in de lijst")
+        if skipped and len(skipped) >= max(len(rows), 1):  # één rare rij kan; de helft of meer niet
+            problems.append(f"{len(skipped)} rij(en) niet leesbaar: {skipped[0][:80]}")
+    except Exception as exc:  # noqa: BLE001
+        rows, problems = [], [f"{type(exc).__name__}: {str(exc)[:100]}"]
+    result("reservatielijst", problems, session.page.content())
+    sample_id = sample_id or next((r.reservation_id for r in rows), None)
+
+    # 2. Detailpagina: aankomst en vertrek, transacties, kamers, interne memo
+    problems = []
+    page_html = ""
+    if sample_id:
+        try:
+            page = session.goto(DETAIL_PATH.format(id=sample_id), ready=_TRANSACTIONS_LOADED, timeout=20_000)
+            if not session._wait_loaded(_GENERAL_LOADED, timeout=20_000):
+                problems.append("Algemene informatie zonder aankomst of vertrek")
+            if not session._wait_loaded(_TRANSACTIONS_LOADED, timeout=5_000):
+                problems.append("blok Transacties niet gevonden of niet geladen")
+            page_html = page.content()
+            d = page.evaluate(_DETAIL_JS)
+            if not d.get("rooms"):
+                problems.append("geen kamers gevonden")
+            if parse_internal_memo_form(page_html) is None:
+                problems.append("blok Interne memo niet gevonden")
+            if not problems:
+                parse_detail(hotel_id, sample_id, d)
+        except Exception as exc:  # noqa: BLE001
+            problems.append(f"{type(exc).__name__}: {str(exc)[:100]}")
+    else:
+        problems.append("geen reservatie om na te kijken")
+    result("detailpagina", problems, page_html)
+
+    # 3. Planbord: kamers met nummer, blokken met data, labels met naam
+    problems = []
+    page_html = ""
+    try:
+        resp = session.page.request.get(session.base + PLANBOARD_PATH.format(start=day.isoformat(),
+                                                                             end=(day + timedelta(days=1)).isoformat()))
+        page_html = resp.text()
+        if not resp.ok or "/Customer/" not in resp.url:
+            problems.append(f"planbord niet geopend ({resp.status})")
+        else:
+            board = parse_planboard_stays(page_html)
+            if not any(u.get("room") for u in board["units"].values()):
+                problems.append("geen kamers met een nummer")
+            # Geen enkel blok kan (rustige periode): geen probleem. Wel als er blokken zijn zonder data of labelnaam.
+            if any(lab.isdigit() for x in board["stays"] for lab in x["labels"]):
+                problems.append("labels zonder naam (lijst met labels niet gevonden)")
+            if any(not x["arrival"] or not x["departure"] for x in board["stays"]):
+                problems.append("blokken zonder aankomst of vertrek")
+    except Exception as exc:  # noqa: BLE001
+        problems.append(f"{type(exc).__name__}: {str(exc)[:100]}")
+    result("planbord", problems, page_html)
+    return out
+
+
 def add_label(hotel_id: str, reservation_id: str, accommodation_id: str, current: list[str], label_id: str,
               session: LighthouseSession) -> None:
     """Een label toevoegen aan een kamer van een reservatie, zoals het menu Labels op het planbord.

@@ -143,6 +143,21 @@ def robot_problem(hotel_id: str, max_hours: float, now: datetime | None = None) 
             + (f": {err[:150]}" if err else ""))
 
 
+def health_warning(hotel_id: str) -> str | None:
+    """Rode waarschuwing als de zelftest van Lighthouse een probleem vond (processes/pms_health.py)."""
+    from hotel_checkin.processes import pms_health
+
+    st = pms_health.state(hotel_id)
+    if st.get("ok") is not False:
+        return None
+    since = datetime.fromisoformat(st.get("since") or st["checked_at"]).astimezone(clock.tz(hotel_id))
+    parts = "; ".join(f"{f['part']}: {f['why']}" for f in st.get("failures", []))
+    return (f"MOET NAGEKEKEN WORDEN: Lighthouse is mogelijk veranderd (sinds {since:%d/%m %H:%M}). De robot vindt niet "
+            f"meer alles wat hij nodig heeft ({parts}). Hij schrijft daarom niets meer in Lighthouse (pincode, status, "
+            "labels, overschrijvingen, betaalverzoeken) tot dit opgelost is; lezen gaat door. Pincodes die al "
+            "verstuurd zijn, blijven werken.")
+
+
 def _monitor_url() -> str:
     host = os.environ.get("MONITOR_HOST") or os.environ.get("WEBSITE_HOSTNAME") or ""
     return f"https://{host}/monitor/" if host else "/monitor/"
@@ -245,9 +260,16 @@ def send_overview(hotel_id: str, today: date) -> bool:
     if rp:
         intro.append(f"Let op: {rp}.")
     intro += activity(hotel_id)
+    failures = robot_failures(hotel_id)
+    banners = [("red", text) for text in [health_warning(hotel_id)] if text]
+    unread = [x for x in failures if "niet gelezen" in x or "Error" in x or "niet volledig geladen" in x]
+    if failures and not banners:
+        banners.append(("orange", f"Opgelet: de robot liep de voorbije 24 uur {len(failures)} keer vast"
+                                  + (f" ({len(unread)} reservatie(s) niet gelezen)" if unread else "")
+                                  + ". Zie onderaan wat en bij welke reservatie."))
     body = report.overview_html(f"{name}: aankomsten {today:%d/%m}", intro,
                                 [(f"Vandaag {today:%d/%m}", a["today"]), (f"Morgen {today + timedelta(days=1):%d/%m}", a["tomorrow"])],
-                                _monitor_url(), problems=robot_failures(hotel_id))
+                                _monitor_url(), problems=failures, banners=banners)
     subject = f"{name}: aankomsten {today:%d/%m}" + (f" ({problems} probleem)" if problems == 1 else f" ({problems} problemen)" if problems else "")
     return _send(hotel_id, subject, body)
 
@@ -309,6 +331,27 @@ def run(hotel_id: str, now: datetime | None = None) -> list[str]:
                       "(instellingen, Robot) of de robot opnieuw starten.")], [], _monitor_url())):
             st["robot_alert_at"] = datetime.now(UTC).isoformat()
             done.append(f"mail verstuurd naar {', '.join(cfg['email'])}: waarschuwing, {rp}")
+    # Zelftest van Lighthouse: meteen een waarschuwing (één keer per probleem), en een mail als het opgelost is
+    from hotel_checkin.processes import pms_health
+
+    health = pms_health.state(hotel_id)
+    warn = health_warning(hotel_id)
+    name = load_hotel(hotel_id)["hotel"]["naam"]
+    if warn and st.get("health_alerted") != health.get("since"):
+        if _send(hotel_id, f"WAARSCHUWING {name}: Lighthouse is veranderd, de robot schrijft niets meer",
+                 report.overview_html("Lighthouse is mogelijk veranderd", [
+                     ("De dagelijkse zelftest (of een run waarin meerdere reservaties niet gelezen konden worden) vond "
+                      "niet meer alles wat de robot nodig heeft. Het bewijs (de pagina's) is bewaard in de monitor.")],
+                     [], _monitor_url(), banners=[("red", warn)])):
+            st["health_alerted"] = health.get("since")
+            done.append(f"mail verstuurd naar {', '.join(cfg['email'])}: waarschuwing, Lighthouse veranderd")
+    elif health.get("ok") and st.get("health_alerted") and _send(
+            hotel_id, f"Opgelost {name}: de robot werkt weer volledig in Lighthouse",
+            report.overview_html("Lighthouse: opgelost", [
+                "De zelftest vindt weer alles wat de robot nodig heeft. De robot schrijft weer in Lighthouse."],
+                [], _monitor_url())):
+        st.pop("health_alerted", None)
+        done.append(f"mail verstuurd naar {', '.join(cfg['email'])}: Lighthouse weer in orde")
     _save_state(hotel_id, st)
     if done:
         guests.log_robot_run(hotel_id, TASK, datetime.now(UTC), True, 0, 0, "; ".join(done))

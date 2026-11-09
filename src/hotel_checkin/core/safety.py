@@ -35,7 +35,12 @@ def is_test_guest(hotel_id: str, first_name: str | None, last_name: str | None) 
 
 def may_write_pms(hotel_id: str, first_name: str | None, last_name: str | None) -> bool:
     """Mag de robot iets in Lighthouse schrijven voor deze reservatie? In PRD wel, daarbuiten alleen
-    op reservaties van een testgast. TST mag de echte reservaties alleen lezen."""
+    op reservaties van een testgast. TST mag de echte reservaties alleen lezen. Nooit als de zelftest
+    van Lighthouse een probleem vond (processes/pms_health.py): dan alleen lezen tot het opgelost is."""
+    from hotel_checkin.processes import pms_health
+
+    if pms_health.blocked(hotel_id):
+        return False
     return is_production() or is_test_guest(hotel_id, first_name, last_name)
 
 

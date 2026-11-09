@@ -551,8 +551,26 @@ def main() -> None:
     p.add_argument("--charge-ids", help="verandert het nummer van een folioregel door te lezen? (uuid); wijzigt niets")
     p.add_argument("--planboard", help="planbord rond deze dag (JJJJ-MM-DD): blokken per kamer; wijzigt niets")
     p.add_argument("--memo", help="waar de interne memo van deze reservatie (uuid) staat; wijzigt niets")
+    p.add_argument("--selftest", action="store_true", help="de zelftest van de robot op het echte Lighthouse; wijzigt niets")
     p.add_argument("--dates", nargs="+", help="aankomst en vertrek van deze reservaties (CPB-nummers of uuid's); wijzigt niets")
     args = p.parse_args()
+
+    if args.selftest:
+        from datetime import date
+
+        from hotel_checkin.pms import lighthouse
+
+        OUT.mkdir(exist_ok=True)
+        with LighthouseSession(args.hotel_id, headless=not args.show, debug_dir=OUT) as lh:
+            results = lighthouse.self_test(args.hotel_id, lh, None, date.today())
+        lines = ["# Zelftest van de robot op Lighthouse (alleen gelezen)", ""]
+        for x in results:
+            lines.append(f"- {x['part']}: {'OK' if x['ok'] else 'PROBLEEM: ' + x['why']}")
+            if x["html"]:
+                (OUT / f"selftest-{x['part']}.html").write_text(x["html"], encoding="utf-8")
+        (OUT / "selftest.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
+        print("\n".join(lines))
+        return
 
     if args.dates:
         OUT.mkdir(exist_ok=True)

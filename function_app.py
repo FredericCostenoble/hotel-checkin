@@ -169,6 +169,20 @@ def admin_api(req: func.HttpRequest) -> func.HttpResponse:
                 return _json(400, {"error": "json"})
             ok, data = admin.workflow_save(hotel, body, _admin_user(req) or "")
             return _json(200 if ok else 400, data)
+    if what == "evidence" and req.method == "GET":
+        # Zelftest van Lighthouse: toestand en bewaarde pagina's (bewijs). ?key=... = die pagina downloaden
+        from hotel_checkin.guests import repository as guests
+        from hotel_checkin.processes import pms_health
+
+        key = req.params.get("key", "")
+        if not key:
+            return _json(200, {"health": pms_health.state(hotel), "evidence": guests.evidence_list(hotel)})
+        content = guests.get_evidence(hotel, key)
+        if content is None:
+            return _json(404, {"error": "not_found"})
+        return func.HttpResponse(content.encode("utf-8"), headers={
+            "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "no-store",
+            "Content-Disposition": f'attachment; filename="lighthouse-{key}.html.txt"'})
     if what in ("lists", "list-xlsx"):
         # Tabbladen Ontbijt en Kuis: ?kind=breakfast|cleaning. GET = bewaarde lijsten; POST &day=JJJJ-MM-DD[&send=1]
         # = (opnieuw) maken en eventueel versturen; list-xlsx&day=... = de Excel downloaden

@@ -141,6 +141,10 @@ def run(hotel_id: str) -> int:
     from hotel_checkin.processes import stairs_memo
 
     stairs_todo = stairs_memo.due(hotel_id, today)  # moeilijk ter been (formulier): in de interne memo zetten
+    from hotel_checkin.processes import pms_health
+
+    health_due = pms_health.due(hotel_id, today)  # zelftest van Lighthouse: één keer per dag
+    health_done = False
 
     details_read = 0
     access_changes: list[str] = []
@@ -149,7 +153,7 @@ def run(hotel_id: str) -> int:
     noted: list[str] = []  # geen fout, wel goed om te weten (bv. groep met kamers op verschillende data)
     timings: dict[str, float] = {}  # gemeten duur per onderdeel (seconden), voor de monitor
     try:
-        if todo or arrivals or payouts or syncs or breakfasts or pay_todo or lists_due or stairs_todo:
+        if todo or arrivals or payouts or syncs or breakfasts or pay_todo or lists_due or stairs_todo or health_due:
             t0 = time.monotonic()
             with lighthouse.connect(hotel_id) as lh:
                 timings["login"] = round(time.monotonic() - t0, 1)
@@ -158,6 +162,14 @@ def run(hotel_id: str) -> int:
                 if ready is not None:
                     timings["ready"] = ready
                 deadline = run_context.stop_at(MAX_SECONDS)
+                # Zelftest eerst (één keer per dag): klopt er iets niet meer, dan schrijft deze run al niets
+                if health_due:
+                    from hotel_checkin.core import progress
+
+                    progress.step(hotel_id, pms_health.TASK, "zelftest: staat alles nog op de pagina's van Lighthouse",
+                                  force=True)
+                    pms_health.run(hotel_id, lh)
+                    health_done = True
                 # Gevraagde ontbijt- of schoonmaaklijst: eerst het planbord van die dag (kamers, aankomst, vertrek,
                 # personen, labels), één keer opvragen, zodat de tijdslimiet van de run het nooit overslaat
                 if lists_due:
@@ -223,6 +235,12 @@ def run(hotel_id: str) -> int:
                             continue
                         if changes:
                             access_changes.append(f"{reservation.booking_number}: {'; '.join(changes)}")
+                # Meerdere reservaties niet gelezen in deze run: geen toeval meer, meteen de zelftest
+                if len(skipped) >= pms_health.FORCE_AFTER and not health_done:
+                    pms_health.run(hotel_id, lh, reason=f"{len(skipped)} reservaties niet gelezen in deze run")
+                    health_done = True
+                if pms_health.blocked(hotel_id):  # zelftest vond een probleem: niets schrijven in Lighthouse
+                    syncs, stairs_todo, breakfasts = [], [], []
                 # Pincode in de opmerking en kamers op KLAAR OM IN TE CHECKEN (PRD of testgast), zie pms_sync.py
                 if syncs and time.monotonic() <= deadline:
                     progress.step(hotel_id, pms_sync.TASK, f"{len(syncs)} reservaties met een code nakijken", force=True)

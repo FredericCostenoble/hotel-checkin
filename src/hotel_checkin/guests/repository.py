@@ -46,6 +46,7 @@ T_CONFIG = "HotelConfig"  # instellingen die in de monitor gewijzigd werden (bv.
 T_STATE = "RobotState"  # kleine toestand per hotel, bv. tot waar de mailbox gelezen is
 T_FORMS = "CheckinForms"  # elke indiening van het check-in-formulier, nooit overschreven (vangnet)
 T_LISTS = "DailyLists"  # ontbijtlijst en kuislijst per dag (alleen de laatste 15 per soort)
+T_EVIDENCE = "PmsEvidence"  # zelftest Lighthouse: de pagina's die niet meer klopten (bewijs om te herstellen)
 
 _client_factory = None  # alleen voor tests: functie die een tabelnaam krijgt en een tabel teruggeeft
 
@@ -829,6 +830,50 @@ class MemoryTable:
         hits = [dict(e) for k, e in sorted(self.rows.items())
                 if all(self._OPS[op](str(e.get(f, "")), v) for f, op, v in conds)]
         return iter(hits)
+
+
+_CHUNK = 30_000  # tekens per eigenschap (Table Storage: max. 32 K tekens per tekst)
+
+
+def save_evidence(hotel_id: str, name: str, meta: dict, content: str, keep: int = 20) -> str:
+    """Bewijs van de zelftest bewaren: een pagina van Lighthouse (gecomprimeerd) met wat er niet klopte.
+    Alleen de laatste `keep` blijven. Geeft de sleutel terug."""
+    import base64
+    import gzip
+
+    key = f"{_now():%Y%m%d%H%M%S}-{name}"
+    packed = base64.b64encode(gzip.compress(content.encode("utf-8"))).decode("ascii")[: _CHUNK * 30]
+    entity = {"PartitionKey": _key(hotel_id), "RowKey": _key(key), "meta": json.dumps(meta), "parts": 0,
+              "created_at": _now().isoformat()}
+    for i in range(0, len(packed), _CHUNK):
+        entity[f"p{i // _CHUNK}"] = packed[i:i + _CHUNK]
+        entity["parts"] = i // _CHUNK + 1
+    _table(T_EVIDENCE).upsert_entity(entity)
+    old = sorted(evidence_list(hotel_id), key=lambda e: e["key"], reverse=True)[keep:]
+    for e in old:
+        try:
+            _table(T_EVIDENCE).delete_entity(_key(hotel_id), _key(e["key"]))
+        except Exception:  # noqa: BLE001
+            pass
+    return key
+
+
+def evidence_list(hotel_id: str) -> list[dict]:
+    rows = _table(T_EVIDENCE).query_entities(f"PartitionKey eq '{_q(_key(hotel_id))}'")
+    return sorted(({"key": e["RowKey"], "created_at": e.get("created_at", ""), **json.loads(e.get("meta") or "{}")}
+                   for e in rows), key=lambda e: e["key"], reverse=True)
+
+
+def get_evidence(hotel_id: str, key: str) -> str | None:
+    import base64
+    import gzip
+
+    try:
+        e = _table(T_EVIDENCE).get_entity(_key(hotel_id), _key(key))
+    except Exception:  # noqa: BLE001
+        return None
+    packed = "".join(e.get(f"p{i}", "") for i in range(int(e.get("parts") or 0)))
+    return gzip.decompress(base64.b64decode(packed)).decode("utf-8") if packed else ""
 
 
 def use_memory_store() -> None:

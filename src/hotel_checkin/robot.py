@@ -187,6 +187,10 @@ def _refresh_due(hotel_id: str) -> bool:
 
     if stairs_memo.due(hotel_id, today):
         return True  # moeilijk ter been in de interne memo te zetten
+    from hotel_checkin.processes import pms_health
+
+    if pms_health.due(hotel_id, today):
+        return True  # zelftest van Lighthouse (één keer per dag)
     hours = float(hotel_setting(hotel_id, "ROBOT_CONTACT_REFRESH_HOURS", default="2", shared=False))
     runs = [r for r in guests.robot_runs(hotel_id, task=refresh_contacts.TASK)
             if r.get("ok") and not (r.get("error") or "").startswith(IDLE_PREFIX)]  # alleen echte nalezingen
