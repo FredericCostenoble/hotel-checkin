@@ -5,6 +5,8 @@
 # Regio's instelbaar met de GitHub-variabelen AZURE_LOCATION en SWA_LOCATION (zie infra/README.md).
 
 name: Deploy
+# Naam van elke uitrol: "Deploy tst" of "Deploy prd" (de monitor zoekt zo welke versie waar draait)
+run-name: Deploy ${{ github.event_name == 'workflow_dispatch' && inputs.environment || 'tst' }}
 
 on:
   push:
@@ -122,6 +124,8 @@ jobs:
           sed -i "s/__ENV__/${ENV_NAME}/g" build/func/web/admin/*.html
           # Versie rechtsboven: nummer van de uitrol en commit (zelfde commit = zelfde code in TST en PRD)
           sed -i -e "s/__COMMIT__/${GITHUB_SHA::7}/g" -e "s/__BUILT__/$(TZ=Europe/Brussels date '+%d\/%m\/%Y %H:%M')/g" build/func/web/admin/*.html
+          # Welke versie dit is (processes/repair.py: wat draait waar, is de zelftest met deze versie gebeurd)
+          echo "{\"version\": ${{ github.run_number }}, \"sha\": \"${GITHUB_SHA}\", \"env\": \"${ENV_NAME}\", \"built_utc\": \"$(date -u +%Y-%m-%dT%H:%M:%S)\"}" > build/func/config/build.json
 
       - uses: Azure/functions-action@v1
         with:

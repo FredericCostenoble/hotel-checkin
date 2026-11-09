@@ -169,6 +169,20 @@ def admin_api(req: func.HttpRequest) -> func.HttpResponse:
                 return _json(400, {"error": "json"})
             ok, data = admin.workflow_save(hotel, body, _admin_user(req) or "")
             return _json(200 if ok else 400, data)
+    if what == "repair":
+        # Lighthouse veranderd: wat er aan de hand is (GET) en, op TST, de geteste versie naar PRD zetten (POST)
+        from hotel_checkin.processes import repair
+
+        if req.method == "POST":
+            ok, message = repair.promote(hotel, _admin_user(req))
+            return _json(200 if ok else 400, {"ok": ok, "message": message})
+        from hotel_checkin.processes import oversight
+
+        s = repair.status(hotel)
+        s["may_promote"] = repair.allowed(hotel, _admin_user(req))
+        s["tst_url"] = repair.tst_url()
+        s["banner"] = oversight.monitor_banner(hotel, s)
+        return _json(200, s)
     if what == "evidence" and req.method == "GET":
         # Zelftest van Lighthouse: toestand en bewaarde pagina's (bewijs). ?key=... = die pagina downloaden
         from hotel_checkin.guests import repository as guests
@@ -296,6 +310,12 @@ def mail_trigger(timer: func.TimerRequest) -> None:
             robot_schedule.run(hotel_id)
         except Exception:
             logging.exception("%s: robot op schema starten mislukt", hotel_id)
+        try:  # TST: nieuwe versie met een herstelling voor Lighthouse? Dan meteen de zelftest
+            from hotel_checkin.processes import repair
+
+            repair.ensure_selftest(hotel_id)
+        except Exception:
+            logging.exception("%s: zelftest na herstelling niet gevraagd", hotel_id)
 
 
 

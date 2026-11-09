@@ -396,3 +396,8 @@ days = 1
 only_if = ["not_cancelled"]
 channels = ["email"]
 pay = "open_amount"
+
+[beheer]
+# Wie op TST een geteste herstelling voor Lighthouse naar PRD mag zetten (knop bovenaan de monitor op TST,
+# processes/repair.py). Het e-mailadres waarmee je je aanmeldt bij de monitor.
+prd_vrijgeven = ["frederic@hotellucca.be", "management@hotellucca.be"]

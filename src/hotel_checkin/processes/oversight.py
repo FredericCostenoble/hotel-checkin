@@ -144,18 +144,71 @@ def robot_problem(hotel_id: str, max_hours: float, now: datetime | None = None) 
 
 
 def health_warning(hotel_id: str) -> str | None:
-    """Rode waarschuwing als de zelftest van Lighthouse een probleem vond (processes/pms_health.py)."""
+    """Rode waarschuwing als de zelftest van Lighthouse een probleem vond (processes/pms_health.py), in gewone woorden."""
     from hotel_checkin.processes import pms_health
 
     st = pms_health.state(hotel_id)
     if st.get("ok") is not False:
         return None
     since = datetime.fromisoformat(st.get("since") or st["checked_at"]).astimezone(clock.tz(hotel_id))
-    parts = "; ".join(f"{f['part']}: {f['why']}" for f in st.get("failures", []))
-    return (f"MOET NAGEKEKEN WORDEN: Lighthouse is mogelijk veranderd (sinds {since:%d/%m %H:%M}). De robot vindt niet "
-            f"meer alles wat hij nodig heeft ({parts}). Hij schrijft daarom niets meer in Lighthouse (pincode, status, "
-            "labels, overschrijvingen, betaalverzoeken) tot dit opgelost is; lezen gaat door. Pincodes die al "
+    return (f"LIGHTHOUSE IS VERANDERD (sinds {since:%d/%m %H:%M}). De robot vindt niet meer alles terug in Lighthouse. "
+            "Daarom zet hij tijdelijk niets meer in Lighthouse: geen pincode in de opmerking, geen kamerstatus, geen "
+            "labels, geen overschrijvingen, geen betaalverzoeken. Hij leest wel nog alles, en pincodes die al "
             "verstuurd zijn, blijven werken.")
+
+
+def repair_steps(hotel_id: str) -> list[str]:
+    """Wat er met de herstelling gebeurt en wat te doen, voor iemand zonder IT-kennis (onder de rode waarschuwing)."""
+    from hotel_checkin.processes import pms_health, repair
+
+    health = pms_health.state(hotel_id)
+    if health.get("ok") is not False:
+        return []
+    s = repair.status(hotel_id)
+    manual = ("Tot het opgelost is: wat de robot anders in Lighthouse zet, doe je zelf (pincode in de opmerking, kamer "
+              "op KLAAR OM IN TE CHECKEN, label ONTBIJT). De pincodes staan in de monitor.")
+    if s.get("fix") and s.get("fix_on_tst"):
+        return [f"Er staat een oplossing klaar om te testen: {s['fix'].get('summary', '')}",
+                "Wat te doen (alleen Frederic of Seppe):",
+                f"1. Open de testomgeving: {repair.tst_url()} (bovenaan staat wat er nieuw is).",
+                "2. Kijk of de reservaties van vandaag en morgen kloppen (kamers, data) en maak een schoonmaaklijst.",
+                ("3. Klopt alles en staat er 'zelftest in orde', klik dan bovenaan op 'Deze versie naar PRD zetten'. "
+                 "Na ongeveer 5 minuten werkt de robot weer gewoon en krijg je de mail 'Opgelost'."),
+                "Twijfel je? Niets doen en Frederic verwittigen.",
+                manual]
+    if not s.get("github") or "niet" in str(health.get("repair", "")):
+        return ["De herstelrobot kon niet starten. Frederic moet dit bekijken.", manual]
+    return [("De herstelrobot zoekt een oplossing. Je krijgt een mail zodra ze klaar is om te testen. Je hoeft nu "
+             "niets te doen."), manual]
+
+
+def monitor_banner(hotel_id: str, s: dict) -> dict | None:
+    """Balk bovenaan de monitor: wat er aan de hand is en wat te doen (s = repair.status).
+    {"level": "red"|"blue", "lines": [...], "promote": bool} of None."""
+    warn = health_warning(hotel_id)
+    own = (s.get("repair") or {}).get("id")
+    fix = s.get("fix") or {}
+    if s.get("env") == "tst" and own and own == fix.get("id"):
+        health = s.get("health") or {}
+        if s.get("tested_here"):
+            test = "Zelftest op TST met deze versie: in orde."
+        elif health.get("ok") is False:
+            test = ("Zelftest op TST met deze versie: NIET in orde ("
+                    + "; ".join(f"{f['part']}: {f['why']}" for f in health.get("failures", [])) + "). Niet naar PRD zetten.")
+        else:
+            test = "Zelftest op TST met deze versie: nog bezig. Vernieuw deze pagina binnen enkele minuten."
+        prd = (s.get("prd") or {}).get("version")
+        return {"level": "blue", "promote": True, "lines": [
+            f"TESTVERSIE v{s.get('version')} met een oplossing voor een wijziging in Lighthouse"
+            + (f". PRD draait nog v{prd}." if prd else "."),
+            f"Wat is er anders: {fix.get('summary', '')}",
+            test,
+            "Testen: kijk of de reservaties van vandaag en morgen kloppen (kamers, data) en maak een schoonmaaklijst.",
+            ("Klopt alles, klik dan op 'Deze versie naar PRD zetten' (alleen Frederic of Seppe). Twijfel je: niets "
+             "doen en Frederic verwittigen.")]}
+    if warn:
+        return {"level": "red", "promote": False, "lines": [warn, *repair_steps(hotel_id)]}
+    return None
 
 
 def _monitor_url() -> str:
@@ -262,8 +315,9 @@ def send_overview(hotel_id: str, today: date) -> bool:
     intro += activity(hotel_id)
     failures = robot_failures(hotel_id)
     banners = [("red", text) for text in [health_warning(hotel_id)] if text]
+    banners += [("orange", line) for line in repair_steps(hotel_id)]
     unread = [x for x in failures if "niet gelezen" in x or "Error" in x or "niet volledig geladen" in x]
-    if failures and not banners:
+    if failures and not any(level == "red" for level, _ in banners):
         banners.append(("orange", f"Opgelet: de robot liep de voorbije 24 uur {len(failures)} keer vast"
                                   + (f" ({len(unread)} reservatie(s) niet gelezen)" if unread else "")
                                   + ". Zie onderaan wat en bij welke reservatie."))
@@ -337,14 +391,23 @@ def run(hotel_id: str, now: datetime | None = None) -> list[str]:
     health = pms_health.state(hotel_id)
     warn = health_warning(hotel_id)
     name = load_hotel(hotel_id)["hotel"]["naam"]
-    if warn and st.get("health_alerted") != health.get("since"):
-        if _send(hotel_id, f"WAARSCHUWING {name}: Lighthouse is veranderd, de robot schrijft niets meer",
-                 report.overview_html("Lighthouse is mogelijk veranderd", [
-                     ("De dagelijkse zelftest (of een run waarin meerdere reservaties niet gelezen konden worden) vond "
-                      "niet meer alles wat de robot nodig heeft. Het bewijs (de pagina's) is bewaard in de monitor.")],
-                     [], _monitor_url(), banners=[("red", warn)])):
-            st["health_alerted"] = health.get("since")
-            done.append(f"mail verstuurd naar {', '.join(cfg['email'])}: waarschuwing, Lighthouse veranderd")
+    if warn and st.get("health_alerted") != health.get("since") and _send(
+            hotel_id, f"WAARSCHUWING {name}: Lighthouse is veranderd, de robot schrijft niets meer",
+            report.overview_html("Lighthouse is veranderd", repair_steps(hotel_id), [], _monitor_url(),
+                                 banners=[("red", warn)])):
+        st["health_alerted"] = health.get("since")
+        done.append(f"mail verstuurd naar {', '.join(cfg['email'])}: waarschuwing, Lighthouse veranderd")
+    if warn:  # oplossing klaar om te testen op TST: meteen laten weten (één keer per oplossing)
+        from hotel_checkin.processes import repair
+
+        rs = repair.status(hotel_id)
+        fix_id = (rs.get("fix") or {}).get("id")
+        if rs.get("fix_on_tst") and fix_id and st.get("fix_announced") != fix_id and _send(
+                hotel_id, f"{name}: oplossing klaar om te testen", report.overview_html(
+                    "Oplossing klaar om te testen", repair_steps(hotel_id), [], _monitor_url(),
+                    banners=[("red", warn)])):
+            st["fix_announced"] = fix_id
+            done.append(f"mail verstuurd naar {', '.join(cfg['email'])}: oplossing klaar om te testen op TST")
     elif health.get("ok") and st.get("health_alerted") and _send(
             hotel_id, f"Opgelost {name}: de robot werkt weer volledig in Lighthouse",
             report.overview_html("Lighthouse: opgelost", [

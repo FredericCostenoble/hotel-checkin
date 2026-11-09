@@ -255,6 +255,33 @@ async function refreshSwitches() {
   renderSwitches();
 }
 
+// Lighthouse veranderd: balk bovenaan met wat er aan de hand is en wat te doen; op TST de knop naar PRD
+async function loadRepair() {
+  const box = $("#repair-banner");
+  if (!box) return;
+  let s;
+  const h = encodeURIComponent($("#hotel").value);
+  try { s = await get(`/api/monitor/${h}/repair`); } catch (e) { box.hidden = true; return; }
+  const b = s.banner;
+  if (!b) { box.hidden = true; return; }
+  box.className = `repair-banner ${b.level}`;
+  const link = t => esc(t).replace(/(https?:\/\/\S+?)([).,]?)(\s|$)/g, '<a href="$1">$1</a>$2$3');
+  box.innerHTML = b.lines.map((l, i) => `<p${i === 0 ? ' class="first"' : ""}>${link(l)}</p>`).join("")
+    + (b.promote && s.may_promote ? `<p><button type="button" class="primary" id="promote" ${s.can_promote ? "" : "disabled"}
+         title="${esc(s.why_not || "")}">Deze versie naar PRD zetten</button>
+         <span class="muted" id="promote-msg">${s.can_promote ? "" : esc("Kan nu niet: " + (s.why_not || ""))}</span></p>` : "");
+  box.hidden = false;
+  const btn = $("#promote");
+  if (btn) btn.onclick = async () => {
+    if (!confirm(`Versie v${s.version} naar PRD zetten? Doe dit alleen als alles op TST klopt.`)) return;
+    btn.disabled = true;
+    let r;
+    try { r = await (await apiFetch(`${API}/api/monitor/${h}/repair`, { method: "POST" })).json(); }
+    catch (e) { r = { message: String(e.message || e) }; }
+    $("#promote-msg").textContent = r.message || "";
+  };
+}
+
 async function init() {
   document.querySelectorAll(".langs button").forEach(b => b.onclick = () => setLang(b.dataset.lang));
   setLang(store("lang") || (navigator.language || "nl").slice(0, 2));
@@ -263,8 +290,9 @@ async function init() {
   $("#hotel").innerHTML = hotels.map(h => `<option value="${esc(h.id)}">${esc(h.name)}</option>`).join("");
   const saved = store("hotel");
   if (saved && hotels.some(h => h.id === saved)) $("#hotel").value = saved;
-  $("#hotel").onchange = () => { store("hotel", $("#hotel").value); renderSwitches(); load(); };
+  $("#hotel").onchange = () => { store("hotel", $("#hotel").value); renderSwitches(); loadRepair(); load(); };
   renderSwitches();
+  loadRepair();
   if ($("#version").textContent.includes("__")) $("#version").textContent = "dev";  // lokaal, niet uitgerold
   envSwitch();
   // Twee aparte pagina's: de monitor (index.html: reservaties, gasten) en de instellingen

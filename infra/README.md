@@ -94,6 +94,24 @@ Eigen adres (monitor.hotellucca.be, monitor-tst.hotellucca.be): DNS-records zett
 Iemand anders toegang geven: `bash infra/setup-admin.sh iemand@hotellucca.be`.
 Zolang `ADMIN_CLIENT_ID` niet gezet is, blijft de opvolgpagina dicht.
 
+## Herstelrobot (Lighthouse veranderd)
+
+De robot doet elke dag een zelftest (processes/pms_health.py). Vindt hij niet meer alles in Lighthouse, dan schrijft
+hij niets meer in Lighthouse, bewaart hij de pagina's als bewijs en vraagt hij de herstelrobot een oplossing
+(.github/workflows/repair.yml). Die zet een geteste oplossing alleen op TST. Op TST zetten Frederic of Seppe
+ze na het testen met een knop naar PRD ([beheer] prd_vrijgeven). Eenmalig nodig:
+
+1. GitHub-secret `ANTHROPIC_API_KEY` (Settings > Secrets and variables > Actions).
+2. Een fine-grained GitHub-token, alleen deze repo, rechten Actions lezen en schrijven en Contents lezen, als
+   secret `github-deploy-token` in de Key Vault van TST en van PRD (kv-checkin-tst-... en kv-checkin-prd-...).
+3. De deploy-identiteit (GitHub-variabele AZURE_CLIENT_ID) de rol Storage Table Data Reader op de opslag van
+   TST en PRD (om het bewijs te lezen):
+   `az role assignment create --assignee <AZURE_CLIENT_ID> --role "Storage Table Data Reader" --scope $(az storage account list -g rg-checkin-prd --query "[0].id" -o tsv)` (en hetzelfde met rg-checkin-tst).
+4. Settings > Actions > General: "Allow GitHub Actions to create and approve pull requests" aan.
+5. Geen verplichte goedkeurders op de GitHub-omgeving prd (anders wacht de herstelrobot op goedkeuring).
+
+Proef: Actions > Repair > Run workflow (prd). Zonder probleem vindt hij niets en verandert hij niets.
+
 ## Opmerkingen
 
 - De API van het formulier draait in de Function App, in dezelfde regio als de gegevens, met

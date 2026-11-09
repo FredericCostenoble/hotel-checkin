@@ -42,9 +42,9 @@ def test_change_blocks_writes_keeps_evidence_and_warns(monkeypatch):
     ev = repo.evidence_list("lucca")
     assert ev[0]["part"] == "detailpagina" and repo.get_evidence("lucca", ev[0]["key"]) == "<html>nieuwe pagina</html>"
     warn = oversight.health_warning("lucca")
-    assert warn.startswith("MOET NAGEKEKEN WORDEN") and "Interne memo" in warn
+    assert warn.startswith("LIGHTHOUSE IS VERANDERD")
     html = oversight.report.overview_html("t", [], [], "/m", banners=[("red", warn)])
-    assert "#B42318" in html and "MOET NAGEKEKEN WORDEN" in html
+    assert "#B42318" in html and "LIGHTHOUSE IS VERANDERD" in html
     # Opgelost (bv. na een herstelling): de volgende zelftest is in orde, de robot mag weer schrijven
     _test(monkeypatch, False)
     pms_health.run("lucca", object())

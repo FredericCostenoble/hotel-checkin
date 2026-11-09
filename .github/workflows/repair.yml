@@ -1,0 +1,103 @@
+# Herstelrobot: Lighthouse veranderde en de zelftest van de robot vond niet meer alles (processes/pms_health.py).
+# Gestart door de robot (processes/repair.py), of manueel (Actions > Repair > Run workflow).
+#
+# 1. Het bewijs (de pagina's die niet meer klopten) uit de opslag halen.
+# 2. Claude past de code aan (alleen lezen in Lighthouse blijft de regel) en voegt een test toe met de nieuwe pagina.
+# 3. Alle tests moeten slagen. Dan: in main zetten en uitrollen naar TST, NOOIT naar PRD.
+#    Naar PRD gaat het pas als Frederic of Seppe op TST getest heeft en op de knop drukt (monitor).
+# 4. Slagen de tests niet: een pull request ter info, niets uitgerold.
+#
+# Nodig: secret ANTHROPIC_API_KEY; de deploy-identiteit (vars.AZURE_CLIENT_ID) met de rol
+# "Storage Table Data Reader" op de opslag van de omgeving. Zie infra/README.md (Herstelrobot).
+
+name: Repair
+run-name: Herstelling Lighthouse (${{ inputs.environment }})
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Omgeving waar de zelftest het probleem vond
+        type: choice
+        options: [prd, tst]
+        default: prd
+      hotel:
+        description: Hotel
+        default: lucca
+
+permissions:
+  id-token: write
+  contents: write
+  pull-requests: write
+  actions: write
+
+concurrency:
+  group: repair
+  cancel-in-progress: false
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -e '.[storage,functions,dev]'
+
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Bewijs ophalen (alleen lezen)
+        run: |
+          export STORAGE_TABLE_ENDPOINT=$(az storage account list -g "rg-checkin-${{ inputs.environment }}" \
+            --query "[0].primaryEndpoints.table" -o tsv)
+          python -m hotel_checkin.admin.evidence_dump "${{ inputs.hotel }}" --out lighthouse-explore/repair
+
+      - name: Claude zoekt de oplossing
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          npm install -g @anthropic-ai/claude-code
+          claude -p "$(cat .github/repair-prompt.md)" \
+            --permission-mode acceptEdits \
+            --allowedTools "Read,Edit,Write,Glob,Grep,Bash(pytest*),Bash(python -m pytest*),Bash(ruff*)" \
+            --max-turns 60 > repair-log.txt || true
+          tail -50 repair-log.txt
+
+      - name: Tests
+        id: tests
+        run: |
+          rm -rf lighthouse-explore
+          if pytest -q && ruff check .; then echo "ok=true" >> "$GITHUB_OUTPUT"; else echo "ok=false" >> "$GITHUB_OUTPUT"; fi
+
+      - name: In main zetten en uitrollen naar TST (alleen als alle tests slagen)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git config user.name "herstelrobot"
+          git config user.email "herstelrobot@users.noreply.github.com"
+          if [ -z "$(git status --porcelain)" ]; then echo "Geen wijziging gevonden."; exit 0; fi
+          # Alleen uitrollen met een notitie voor de mensen (config/repair.json) en als alle tests slagen
+          if git status --porcelain config/repair.json | grep -q .; then NOTE=true; else NOTE=false; fi
+          BRANCH="herstel/lighthouse-$(date -u +%Y%m%d-%H%M)"
+          git checkout -b "$BRANCH"
+          git add -A
+          git commit -m "Herstelling Lighthouse: $(python -c 'import json;print(json.load(open("config/repair.json"))["summary"])' 2>/dev/null || echo 'zie de pull request')"
+          git push origin "$BRANCH"
+          if [ "${{ steps.tests.outputs.ok }}" = "true" ] && [ "$NOTE" = "true" ]; then
+            gh pr create --base main --head "$BRANCH" --title "Herstelling Lighthouse" --body-file repair-log.txt
+            gh pr merge "$BRANCH" --squash --delete-branch
+            gh workflow run deploy.yml -f environment=tst
+          else
+            gh pr create --base main --head "$BRANCH" --title "Herstelling Lighthouse (tests falen, niet uitgerold)" \
+              --body-file repair-log.txt
+          fi

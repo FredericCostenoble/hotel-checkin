@@ -46,8 +46,11 @@ def blocked(hotel_id: str) -> bool:
 
 
 def due(hotel_id: str, today: date | None = None) -> bool:
+    """Eén keer per dag, en meteen als ze gevraagd werd (bv. een nieuwe versie met een herstelling op TST)."""
+    from hotel_checkin.processes import repair
+
     today = today or clock.today(hotel_id)
-    return state(hotel_id).get("day") != today.isoformat()
+    return state(hotel_id).get("day") != today.isoformat() or bool(guests.get_state(hotel_id, repair.SELFTEST_REQUEST))
 
 
 def _sample(hotel_id: str, today: date) -> str | None:
@@ -72,11 +75,18 @@ def run(hotel_id: str, lh, reason: str = "dagelijks") -> dict:
     before = state(hotel_id)
     st = {"checked_at": started.isoformat(), "day": today.isoformat(), "ok": not failures, "failures": failures,
           "since": (before.get("since") if before.get("ok") is False else started.isoformat()) if failures else ""}
+    from hotel_checkin.processes import repair
+
+    if failures and before.get("ok") is not False:  # nieuw probleem: de herstelrobot vragen (één keer)
+        st["repair"] = repair.request(hotel_id, failures)
+    elif failures:
+        st["repair"] = before.get("repair", "")
     guests.set_state(hotel_id, STATE, json.dumps(st))
+    guests.delete_state(hotel_id, repair.SELFTEST_REQUEST)
     _cache.pop(hotel_id, None)
     if failures:
         note = ("Lighthouse is mogelijk veranderd, de robot schrijft niets meer in Lighthouse tot dit opgelost is: "
-                + "; ".join(f"{f['part']}: {f['why']}" for f in failures))
+                + "; ".join(f"{f['part']}: {f['why']}" for f in failures) + f". {st.get('repair', '')}")
     else:
         note = ("alles gevonden (reservatielijst, detailpagina, planbord)"
                 + (": de robot mag weer schrijven in Lighthouse" if before.get("ok") is False else ""))
