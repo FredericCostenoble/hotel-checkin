@@ -45,11 +45,18 @@ def _with(monkeypatch, **extra):
     monkeypatch.setattr(oversight, "settings", lambda h: base(h) | extra)
 
 
-def test_only_morning_mail_by_default(setup):
+def test_monitoring_off_only_morning_mail(setup, monkeypatch):
+    """[bewaking] monitoring uit: geen aparte waarschuwingen, alleen het dagelijkse overzicht."""
+    orig = oversight.settings
+    monkeypatch.setattr(oversight, "settings", lambda h: orig(h) | {"monitoring": False})
     evening = datetime(2026, 11, 3, 17, 5, tzinfo=oversight.clock.tz("lucca"))
     repo.log_robot_run("lucca", "nieuwe_reservaties", datetime.now(UTC) - timedelta(hours=5), False, error="TimeoutError")
     assert oversight.run("lucca", evening) == [] or all("overzicht" in d for d in oversight.run("lucca", evening))
     assert not [m for m in setup if "WAARSCHUWING" in m[1]]  # geen controle- of robotmail
+
+
+def test_monitoring_on_by_default():
+    assert oversight.settings("lucca")["monitoring"] is True
 
 
 def test_overview_tells_what_happened(setup):

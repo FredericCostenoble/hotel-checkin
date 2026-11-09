@@ -75,10 +75,11 @@ def run(hotel_id: str, lh, reason: str = "dagelijks") -> dict:
     before = state(hotel_id)
     st = {"checked_at": started.isoformat(), "day": today.isoformat(), "ok": not failures, "failures": failures,
           "since": (before.get("since") if before.get("ok") is False else started.isoformat()) if failures else ""}
-    from hotel_checkin.processes import repair
+    from hotel_checkin.processes import oversight, repair
 
     if failures and before.get("ok") is not False:  # nieuw probleem: de herstelrobot vragen (één keer)
-        st["repair"] = repair.request(hotel_id, failures)
+        st["repair"] = (repair.request(hotel_id, failures) if oversight.settings(hotel_id)["monitoring"]
+                        else "herstelrobot niet gevraagd (monitoring staat uit)")
     elif failures:
         st["repair"] = before.get("repair", "")
     guests.set_state(hotel_id, STATE, json.dumps(st))

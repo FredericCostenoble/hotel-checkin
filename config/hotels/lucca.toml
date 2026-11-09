@@ -134,12 +134,15 @@ mail_trigger = true
 # Dagelijks overzicht van de aankomsten en waarschuwingen als er iets misloopt (processes/oversight.py).
 # Buiten PRD gaan deze mails naar het testadres ([test] email).
 # Eén mail per dag, 's ochtends: aankomsten van vandaag en morgen, wat er de voorbije 24 uur gebeurde, en wat
-# misliep (ook de robot). Geen andere mails, tenzij controle_uren of robot_waarschuwing aangezet worden.
+# misliep (ook de robot). Daarnaast, als monitoring aan staat: meteen een mail als er iets echt misloopt (zie hieronder).
 email = ["management@hotellucca.be"]          # het dagelijkse overzicht
 overzicht_uur = "07:30"                       # dagelijks overzicht
 controle_uren = []                            # extra controles op die uren met een mail als iets ontbreekt (uit)
-robot_max_uren = 3                            # in het overzicht: robot zo lang niet gelukt = probleem
-robot_waarschuwing = false                    # aparte mail als de robot stilvalt (uit: staat in het overzicht)
+# Monitoring: meteen een mail als de robot een gepland uur mist, als Lighthouse veranderd is (de robot schrijft dan
+# niets meer in Lighthouse), als er een oplossing klaarstaat om te testen op TST en als het opgelost is; en de
+# herstelrobot zoekt dan zelf een oplossing. Uit: alleen het dagelijkse overzicht (de zelftest en de beveiliging
+# blijven altijd werken).
+monitoring = true
 
 [betaalverzoek]
 # De robot maakt in Lighthouse een betaalverzoek (online transactie, Betaling, Stuur verzoek) voor het

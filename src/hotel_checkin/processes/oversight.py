@@ -8,7 +8,7 @@ Salto onbereikbaar, ...).
   betaald, code, code-mail verstuurd, code in Lighthouse. Problemen bovenaan in het rood.
 - Controle om [bewaking] controle_uren (17:00, 20:00): zijn er problemen bij de aankomsten van vandaag en
   morgen, dan meteen een waarschuwing (alleen als er iets nieuws is).
-- Robot: lukte de taak "nieuwe reservaties" al [bewaking] robot_max_uren niet meer, dan een waarschuwing
+- Robot: mist de robot een gepland uur van het vangnet, dan een waarschuwing ([bewaking] monitoring)
   (hoogstens eens per 3 uur).
 Naar [bewaking] email. Buiten PRD naar het testadres (core/safety.py). Draait in de Function App (timer),
 los van de robot: een robot die stilvalt, kan zichzelf niet melden.
@@ -37,7 +37,8 @@ def settings(hotel_id: str) -> dict:
     to = cfg.get("email") or []
     return {"email": [to] if isinstance(to, str) else list(to), "overview": cfg.get("overzicht_uur", "07:30"),
             "checks": list(cfg.get("controle_uren", [])), "robot_hours": float(cfg.get("robot_max_uren", 3)),
-            "robot_alert": str(cfg.get("robot_waarschuwing", False)).lower() in ("true", "1", "ja")}
+            # Eén schakelaar voor alle waarschuwingen en de herstelrobot ([bewaking] monitoring, standaard aan)
+            "monitoring": str(cfg.get("monitoring", True)).lower() in ("true", "1", "ja")}
 
 
 def _state(hotel_id: str) -> dict:
@@ -374,7 +375,7 @@ def run(hotel_id: str, now: datetime | None = None) -> list[str]:
                                                   if n else "alle aankomsten in orde, geen mail nodig"))
     from hotel_checkin.processes.send_messages import switch
 
-    rp = robot_problem(hotel_id, cfg["robot_hours"]) if cfg["robot_alert"] and switch(hotel_id, "reservaties") else None
+    rp = robot_problem(hotel_id, cfg["robot_hours"]) if cfg["monitoring"] and switch(hotel_id, "reservaties") else None
     last = st.get("robot_alert_at")
     if rp and (not last or datetime.fromisoformat(last) < datetime.now(UTC) - timedelta(hours=3)):
         name = load_hotel(hotel_id)["hotel"]["naam"]
@@ -389,7 +390,7 @@ def run(hotel_id: str, now: datetime | None = None) -> list[str]:
     from hotel_checkin.processes import pms_health
 
     health = pms_health.state(hotel_id)
-    warn = health_warning(hotel_id)
+    warn = health_warning(hotel_id) if cfg["monitoring"] else None  # monitoring uit: alleen in het dagelijkse overzicht
     name = load_hotel(hotel_id)["hotel"]["naam"]
     if warn and st.get("health_alerted") != health.get("since") and _send(
             hotel_id, f"WAARSCHUWING {name}: Lighthouse is veranderd, de robot schrijft niets meer",
@@ -408,7 +409,7 @@ def run(hotel_id: str, now: datetime | None = None) -> list[str]:
                     banners=[("red", warn)])):
             st["fix_announced"] = fix_id
             done.append(f"mail verstuurd naar {', '.join(cfg['email'])}: oplossing klaar om te testen op TST")
-    elif health.get("ok") and st.get("health_alerted") and _send(
+    elif cfg["monitoring"] and health.get("ok") and st.get("health_alerted") and _send(
             hotel_id, f"Opgelost {name}: de robot werkt weer volledig in Lighthouse",
             report.overview_html("Lighthouse: opgelost", [
                 "De zelftest vindt weer alles wat de robot nodig heeft. De robot schrijft weer in Lighthouse."],
