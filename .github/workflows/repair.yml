@@ -57,12 +57,20 @@ jobs:
           subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
 
       - name: Bewijs ophalen (alleen lezen)
+        id: evidence
         run: |
           export STORAGE_TABLE_ENDPOINT=$(az storage account list -g "rg-checkin-${{ inputs.environment }}" \
             --query "[0].primaryEndpoints.table" -o tsv)
           python -m hotel_checkin.admin.evidence_dump "${{ inputs.hotel }}" --out lighthouse-explore/repair
+          # Zelftest in orde: niets te herstellen (Claude niet starten, geen kosten)
+          if python -c "import json,sys; sys.exit(0 if json.load(open('lighthouse-explore/repair/health.json')).get('ok') is False else 1)"; then
+            echo "problem=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "problem=false" >> "$GITHUB_OUTPUT"; echo "De zelftest is in orde: niets te herstellen."
+          fi
 
       - name: Claude zoekt de oplossing
+        if: steps.evidence.outputs.problem == 'true'
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
@@ -74,12 +82,14 @@ jobs:
           tail -50 repair-log.txt
 
       - name: Tests
+        if: steps.evidence.outputs.problem == 'true'
         id: tests
         run: |
           rm -rf lighthouse-explore
           if pytest -q && ruff check .; then echo "ok=true" >> "$GITHUB_OUTPUT"; else echo "ok=false" >> "$GITHUB_OUTPUT"; fi
 
       - name: In main zetten en uitrollen naar TST (alleen als alle tests slagen)
+        if: steps.evidence.outputs.problem == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
