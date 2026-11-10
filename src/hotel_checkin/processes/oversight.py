@@ -317,12 +317,8 @@ def activity(hotel_id: str, hours: int = 24) -> list[str]:
     out = [f"De voorbije {hours} uur: {robot_runs} robotrun(s)"
            + (", " + ", ".join(f"{n} {words[t]}" for t, n in done.items()) if done else ", niets geregistreerd of gezet")
            + "."]
-    if robot_failures(hotel_id, hours):
+    if robot_failures(hotel_id, hours):  # wat vanzelf weer in orde kwam, is voor niemand nuttig: niet vermelden
         out.append("Er loopt nog iets mis: zie onderaan.")
-    elif problems:
-        out.append("Wat misliep, is intussen vanzelf opgelost.")
-    else:
-        out.append("Niets misgelopen.")
     return out
 
 
