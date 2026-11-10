@@ -64,14 +64,14 @@ def test_overview_tells_what_happened(setup):
     repo.log_robot_run("lucca", "ontbijt_labels", datetime.now(UTC) - timedelta(hours=2), True, 3, 1, "y", skipped=1)
     lines = oversight.activity("lucca")
     assert "2 overschrijving(en) geregistreerd" in lines[0] and "1 ontbijtlabel(s) gezet" in lines[0]
-    assert lines[1] == "Er liep iets mis: zie onderaan."
-    assert oversight.robot_failures("lucca") == ["Ontbijt labels: y"]
+    assert lines[1] == "Er loopt nog iets mis: zie onderaan."
+    assert _no_time(oversight.robot_failures("lucca")) == ["Ontbijt labels: y"]
 
 
 def test_same_problem_counted_once(setup):
     for _ in range(3):
         repo.log_robot_run("lucca", "meldingen", datetime.now(UTC) - timedelta(hours=1), False, 1, 0, "robot niet gestart")
-    assert oversight.robot_failures("lucca") == ["Mailbox nakijken: robot niet gestart (3 keer)"]
+    assert _no_time(oversight.robot_failures("lucca")) == ["Mailbox nakijken: robot niet gestart (3 keer)"]
 
 
 def test_failures_per_reservation_under_the_tables(setup):
@@ -81,9 +81,36 @@ def test_failures_per_reservation_under_the_tables(setup):
     for _ in range(2):
         repo.log_robot_run("lucca", "contactgegevens_nalezen", datetime.now(UTC) - timedelta(hours=1), True, 35, 33,
                            note, skipped=2)
-    assert oversight.robot_failures("lucca") == [
+    assert _no_time(oversight.robot_failures("lucca")) == [
         "CPB-4276-001805 (contactgegevens_nalezen): ValueError (Geen datum gevonden in '') (2 runs)",
         "CPB-4276-002417 (contactgegevens_nalezen): ValueError (2 runs)"]
+    assert ", laatste keer " in oversight.robot_failures("lucca")[0]  # wanneer het laatst misliep
+
+
+def test_reason_with_a_date_is_not_cut(setup):
+    note = ("33 aankomsten en verblijven nagekeken. 1 niet gelezen: CPB-4276-001805: RuntimeError (pagina niet volledig "
+            "geladen na zaterdag, 07 nov. 2026 om 14:30)")
+    repo.log_robot_run("lucca", "contactgegevens_nalezen", datetime.now(UTC), True, 34, 33, note, skipped=1)
+    assert _no_time(oversight.robot_failures("lucca")) == [
+        ("CPB-4276-001805 (contactgegevens_nalezen): RuntimeError (pagina niet volledig geladen na zaterdag, "
+         "07 nov. 2026 om 14:30)")]
+
+
+def test_only_what_still_fails(setup):
+    """Een tijdelijke storing die de volgende run al weg is (bv. 502 bij Microsoft), staat er niet meer."""
+    t = datetime.now(UTC)
+    repo.log_robot_run("lucca", "meldingen", t - timedelta(hours=3), False, 1, 0, "HTTPStatusError: 502 Bad Gateway")
+    repo.log_robot_run("lucca", "meldingen", t - timedelta(hours=2), True, 1, 1, "ok")
+    note = "280 reservaties nagekeken. 8 met te weinig ontbijten in de folio, nog geen label: CPB-1-2: maar 1 van 4"
+    repo.log_robot_run("lucca", "ontbijt_labels", t - timedelta(hours=1), True, 280, 0, note + ". 1 fout: CPB-1-3: TimeoutError",
+                       skipped=1)
+    assert _no_time(oversight.robot_failures("lucca")) == ["CPB-1-3 (Ontbijt labels): TimeoutError"]
+
+
+def _no_time(lines):
+    import re
+
+    return [re.sub(r", laatste keer \d\d/\d\d \d\d:\d\d", "", x) for x in lines]
     html = oversight.report.overview_html("t", [], [], "/m", problems=oversight.robot_failures("lucca"))
     assert "Wat de robot niet lukte" in html and "CPB-4276-001805" in html
 

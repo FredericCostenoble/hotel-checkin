@@ -26,7 +26,8 @@ _BANNER = {"red": ("#FDECEC", "#B42318"), "orange": ("#FFF4E5", "#B54708")}
 
 
 def overview_html(title: str, intro: list[str], sections: list[tuple[str, list[dict]]], monitor_url: str,
-                  problems: list[str] | None = None, banners: list[tuple[str, str]] | None = None) -> str:
+                  problems: list[str] | None = None, banners: list[tuple[str, str]] | None = None,
+                  advice: str = "") -> str:
     """sections: (titel, rijen); een rij: kolommen hierboven plus "problemen" (lijst, rood bovenaan), "info"
     (lijst, grijs: goed om te weten, geen fout) en "nummer"."""
     parts = [f'<h2 style="font-family:Arial,sans-serif;font-size:18px;">{html.escape(title)}</h2>']
@@ -61,7 +62,9 @@ def overview_html(title: str, intro: list[str], sections: list[tuple[str, list[d
                      f"<tr>{head}</tr>{body}</table>")
     if problems:  # onder de tabellen: wat de robot de voorbije 24 uur niet lukte, per reservatie
         parts.append('<h3 style="font-family:Arial,sans-serif;font-size:15px;margin-top:20px;">'
-                     "Wat de robot niet lukte (voorbije 24 uur)</h3>")
+                     "Wat de robot nu nog niet lukt</h3>")
+        if advice:
+            parts.append(f'<p style="font-family:Arial,sans-serif;font-size:13px;">{html.escape(advice)}</p>')
         parts.append('<ul style="font-family:Arial,sans-serif;font-size:13px;color:#555;">'
                      + "".join(f"<li>{html.escape(p)}</li>" for p in problems[:15]) + "</ul>"
                      + (f'<p style="font-family:Arial,sans-serif;font-size:13px;color:#555;">En nog {len(problems) - 15} '

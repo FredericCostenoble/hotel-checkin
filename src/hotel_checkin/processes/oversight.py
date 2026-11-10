@@ -240,32 +240,56 @@ _TASK_NAMES = {"overschrijving_booking": "Overschrijvingen", "ontbijt_labels": "
                "ontbijtlijst": "Ontbijtlijst", "kuislijst": "Schoonmaaklijst"}
 
 
-_PER_RESERVATION = re.compile(r"\b([A-Z]{2,5}-\d+-\d+): ([^;|]+?)(?=;|\||\.\s|\.$|$| En nog)")
+_PER_RESERVATION = re.compile(r"\b([A-Z]{2,5}-\d+-\d+): ([^;|]+?)(?=;|\||\.\s+(?:[A-Z]|\d+ [a-z]{4,})|\.?$| En nog)")
 
 
 def robot_failures(hotel_id: str, hours: int = 24) -> list[str]:
-    """Wat misliep de voorbije uren, voor onder de tabellen: per reservatie één regel met de laatste reden
-    (dezelfde fout in elke run telt één keer), en de andere meldingen per taak."""
+    """Wat NU nog misloopt, voor onder de tabellen. Alleen de laatste run van elke taak telt: was een probleem
+    tijdelijk (de volgende run lukte, bv. een storing bij Microsoft), dan staat het er niet meer. Per reservatie één
+    regel met de reden en het tijdstip; bij een taak alleen de fout zelf (niet de hele notitie)."""
     since = datetime.now(UTC) - timedelta(hours=hours)
-    runs = [r for r in guests.robot_runs(hotel_id, limit=500) if datetime.fromisoformat(r["started_at"]) >= since]
-    per_res: dict[str, tuple[str, str, int]] = {}  # nummer -> (taak, reden, aantal runs)
-    other: dict[str, int] = {}
-    for r in sorted(runs, key=lambda x: x["started_at"]):
+    runs = sorted((r for r in guests.robot_runs(hotel_id, limit=500)
+                   if datetime.fromisoformat(r["started_at"]) >= since), key=lambda x: x["started_at"])
+    latest: dict[str, dict] = {}
+    count: dict[str, int] = {}  # in hoeveel runs dezelfde reservatie misliep
+    for r in runs:
+        latest[r.get("task")] = r
+        for number, _ in _PER_RESERVATION.findall(_failed_part(r.get("error") or "")):
+            count[number] = count.get(number, 0) + 1
+    tz = clock.tz(hotel_id)
+    out = []
+    for task, r in latest.items():
         if r.get("ok") and not int(r.get("skipped") or 0):
-            continue
-        task = _TASK_NAMES.get(r.get("task"), r.get("task"))
+            continue  # laatste run in orde: wat eerder misliep, is opgelost
+        name = _TASK_NAMES.get(task, task)
+        at = datetime.fromisoformat(r["started_at"]).astimezone(tz)
         text = (r.get("error") or "").strip()
-        # Alleen wat niet lukte ("niet gelezen", "overgeslagen"), niet wat de robot alleen opmerkte
-        failed = " ".join(x for x in re.split(r"\.\s+(?=[A-Z0-9])", text) if "niet gelezen:" in x or "overgeslagen:" in x)
-        found = _PER_RESERVATION.findall(failed)
+        found = _PER_RESERVATION.findall(_failed_part(text))
         for number, why in found:
-            n = per_res.get(number, ("", "", 0))[2]
-            per_res[number] = (task, why.strip(), n + 1)
+            n = count.get(number, 1)
+            out.append(f"{number} ({name}): {why.strip()}, laatste keer {at:%d/%m %H:%M}"
+                       + (f" ({n} runs)" if n > 1 else ""))
         if not found:
-            other[f"{task}: {text[:200]}"] = other.get(f"{task}: {text[:200]}", 0) + 1
-    out = [f"{number} ({task}): {why}" + (f" ({n} runs)" if n > 1 else "") for number, (task, why, n) in per_res.items()]
-    out += [t + (f" ({n} keer)" if n > 1 else "") for t, n in other.items()]
+            n = sum(1 for x in runs if x.get("task") == task and not (x.get("ok") and not int(x.get("skipped") or 0)))
+            out.append(f"{name}: {_failed_part(text) or text}"[:220] + f", laatste keer {at:%d/%m %H:%M}"
+                       + (f" ({n} keer)" if n > 1 else ""))
     return out
+
+
+def _failed_part(text: str) -> str:
+    """Alleen wat niet lukte uit een notitie ("niet gelezen: ...", "fout: ...", "overgeslagen: ..."), niet wat de
+    robot gewoon deed of opmerkte. Niet knippen in een datum ("07 nov. 2026")."""
+    parts = re.split(r"\.\s+(?=[A-Z]|\d+ [a-z]{4,})", text)
+    keep = [x for x in parts if re.search(r"niet gelezen:|overgeslagen:|\bfout:", x)]
+    return " ".join(keep)
+
+
+def failure_advice(lines: list[str]) -> str:
+    """Wat de manager met de lijst onderaan moet doen, in gewone woorden."""
+    if not lines:
+        return ""
+    return ("Wat te doen: meestal niets, de robot probeert het elk uur opnieuw. Staat dezelfde reservatie er morgen nog, "
+            "kijk ze dan zelf na in Lighthouse (kamer, data, betaling) en verwittig Frederic.")
 
 
 def activity(hotel_id: str, hours: int = 24) -> list[str]:
@@ -293,8 +317,10 @@ def activity(hotel_id: str, hours: int = 24) -> list[str]:
     out = [f"De voorbije {hours} uur: {robot_runs} robotrun(s)"
            + (", " + ", ".join(f"{n} {words[t]}" for t, n in done.items()) if done else ", niets geregistreerd of gezet")
            + "."]
-    if problems:
-        out.append("Er liep iets mis: zie onderaan.")
+    if robot_failures(hotel_id, hours):
+        out.append("Er loopt nog iets mis: zie onderaan.")
+    elif problems:
+        out.append("Wat misliep, is intussen vanzelf opgelost.")
     else:
         out.append("Niets misgelopen.")
     return out
@@ -319,12 +345,13 @@ def send_overview(hotel_id: str, today: date) -> bool:
     banners += [("orange", line) for line in repair_steps(hotel_id)]
     unread = [x for x in failures if "niet gelezen" in x or "Error" in x or "niet volledig geladen" in x]
     if failures and not any(level == "red" for level, _ in banners):
-        banners.append(("orange", f"Opgelet: de robot liep de voorbije 24 uur {len(failures)} keer vast"
-                                  + (f" ({len(unread)} reservatie(s) niet gelezen)" if unread else "")
-                                  + ". Zie onderaan wat en bij welke reservatie."))
+        banners.append(("orange", f"Opgelet: de robot heeft nu {len(failures)} probleem/problemen"
+                                  + (f" ({len(unread)} reservatie(s) nog niet gelezen)" if unread else "")
+                                  + ". Zie onderaan wat, bij welke reservatie en wat te doen."))
     body = report.overview_html(f"{name}: aankomsten {today:%d/%m}", intro,
                                 [(f"Vandaag {today:%d/%m}", a["today"]), (f"Morgen {today + timedelta(days=1):%d/%m}", a["tomorrow"])],
-                                _monitor_url(), problems=failures, banners=banners)
+                                _monitor_url(), problems=failures, banners=banners,
+                                advice=failure_advice(failures))
     subject = f"{name}: aankomsten {today:%d/%m}" + (f" ({problems} probleem)" if problems == 1 else f" ({problems} problemen)" if problems else "")
     return _send(hotel_id, subject, body)
 
