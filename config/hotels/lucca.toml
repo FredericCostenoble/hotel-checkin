@@ -290,6 +290,7 @@ achtergrond = "#F4F5F8"
 # Dit is de standaard; in de monitor (tabblad Workflow) kan hij gewijzigd worden en die versie gaat voor.
 # Flows: booking (Booking.com), expedia (Expedia), website_paid en website_unpaid (andere kanalen,
 # volgens betaalstatus). Per stap: when = after_booking of days_before_arrival (met days),
+# channels = email en/of whatsapp (WhatsApp met sms als terugval, alleen als er een gsm-nummer is),
 # only_if = voorwaarden, skip_if_booked_late = geen herinnering als de boeking pas op of na die dag
 # kwam, pay = betaalknop (none of open_amount: wat nog openstaat, alleen de taks of alles). Vaste regel: een bericht gaat niet weg als
 # een later bericht nu al aan de beurt is (late boeking: meteen alleen de code-mail).
@@ -317,7 +318,7 @@ step = "reminder"   # herinnering als het formulier niet ingevuld is
 when = "days_before_arrival"
 days = 7
 only_if = ["form_not_completed", "not_cancelled"]
-channels = ["email"]
+channels = ["email", "whatsapp"]
 skip_if_booked_late = true
 pay = "none"
 
@@ -326,7 +327,7 @@ step = "access_code"   # pincode en praktische info
 when = "days_before_arrival"
 days = 2
 only_if = ["room_paid", "not_cancelled"]
-channels = ["email", "sms"]
+channels = ["email", "whatsapp"]
 pay = "open_amount"
 
 [[flows.booking.steps]]
@@ -352,7 +353,7 @@ step = "reminder"   # herinnering als het formulier niet ingevuld is
 when = "days_before_arrival"
 days = 7
 only_if = ["form_not_completed", "not_cancelled"]
-channels = ["email"]
+channels = ["email", "whatsapp"]
 skip_if_booked_late = true
 pay = "none"
 
@@ -361,7 +362,7 @@ step = "access_code"   # pincode en praktische info
 when = "days_before_arrival"
 days = 2
 only_if = ["room_paid", "not_cancelled"]
-channels = ["email", "sms"]
+channels = ["email", "whatsapp"]
 pay = "open_amount"
 
 [[flows.expedia.steps]]
@@ -389,7 +390,7 @@ step = "reminder"   # herinnering als het formulier niet ingevuld is
 when = "days_before_arrival"
 days = 7
 only_if = ["form_not_completed", "not_cancelled"]
-channels = ["email"]
+channels = ["email", "whatsapp"]
 skip_if_booked_late = true
 pay = "none"
 
@@ -398,7 +399,7 @@ step = "access_code"   # pincode en praktische info
 when = "days_before_arrival"
 days = 2
 only_if = ["room_paid", "not_cancelled"]
-channels = ["email", "sms"]
+channels = ["email", "whatsapp"]
 pay = "open_amount"
 
 [[flows.website.steps]]

@@ -67,7 +67,7 @@ const T = {
     rs_now: "Nu versturen", rs_again: "Opnieuw versturen", rs_confirm: (step, ch, to) => `${step} nu versturen per ${ch} naar ${to}?`,
     rs_confirm_test: (step, ch, test, to) => `${step} nu versturen per ${ch} naar het testadres ${test}? (bedoeld voor ${to}; in de testomgeving gaat niets naar de gast)`,
     rs_no_test: "Er is geen testadres ingesteld voor deze omgeving, dus er wordt niets verstuurd. Vul het in op Instellingen > Hotel > Testomgeving.",
-    chr_muted: "uitgezet voor deze gast", chr_phone_off: "nog niet actief (Twilio)", chr_fallback: "alleen als WhatsApp niet lukt",
+    chr_muted: "uitgezet voor deze gast", chr_phone_off: "nog niet actief (Twilio)", chr_fallback: "alleen als WhatsApp niet lukt", chr_step_off: "niet aangevinkt bij deze stap (workflow)", wfch_email: "Mail", wfch_whatsapp: "WhatsApp (sms als terugval, alleen met gsm-nummer)",
     rs_disabled: "stap staat uit", rs_rate_off_nfr: "uit voor NFR (niets aangevinkt bij dit tarief)", rs_rate_off_standard: "uit voor Standaard (niets aangevinkt bij dit tarief)", rs_messaging_off: "berichten staan uit in deze omgeving", rs_before_start: "niet automatisch: reservatie kwam binnen vóór de startdatum van de berichten (Instellingen > Hotel > Berichten > Vanaf)",
     rs_booked_late: "boeking kwam te laat", rs_stored_late: "oudere boeking, later binnengehaald: het moment van de boeking is voorbij (de herinnering en de code-mail komen wel)", rs_later_due: "een latere mail is al aan de beurt, de inhoud zit daarin", rs_not_ready: "nog niet gebouwd",
     rs_no_contact: "Geen e-mailadres of gsm-nummer in Lighthouse. Versturen kan wel: klik bij een bericht op Versturen en kies of typ een adres.", rs_window_passed: "moment voorbij", rs_condition: "voorwaarde niet voldaan",
@@ -159,7 +159,7 @@ const T = {
     rs_now: "Send now", rs_again: "Send again", rs_confirm: (step, ch, to) => `Send ${step} now by ${ch} to ${to}?`,
     rs_confirm_test: (step, ch, test, to) => `Send ${step} now by ${ch} to the test address ${test}? (meant for ${to}; in the test environment nothing goes to the guest)`,
     rs_no_test: "No test address is set for this environment, so nothing will be sent. Fill it in under Settings > Hotel > Test environment.",
-    chr_muted: "switched off for this guest", chr_phone_off: "not active yet (Twilio)", chr_fallback: "only if WhatsApp fails",
+    chr_muted: "switched off for this guest", chr_phone_off: "not active yet (Twilio)", chr_fallback: "only if WhatsApp fails", chr_step_off: "not ticked for this step (workflow)", wfch_email: "Email", wfch_whatsapp: "WhatsApp (SMS as fallback, only with a mobile number)",
     rs_disabled: "step is off", rs_rate_off_nfr: "off for NFR (nothing ticked for this rate)", rs_rate_off_standard: "off for Standard (nothing ticked for this rate)", rs_messaging_off: "messages are off in this environment", rs_before_start: "not automatic: reservation came in before the messages start date (Settings > Hotel > Messages > From)",
     rs_booked_late: "booked too late", rs_stored_late: "older booking, imported later: the booking moment has passed (reminder and code mail still follow)", rs_later_due: "a later mail is already due, the content is included there", rs_not_ready: "not built yet",
     rs_no_contact: "No e-mail address or mobile number in Lighthouse. You can still send: click Send at a message and pick or type an address.", rs_window_passed: "moment passed", rs_condition: "condition not met",
@@ -1054,6 +1054,7 @@ function stepCard(s, i, flow, c) {
           <label><span class="lbl">${esc(t("f_when"))}</span>
             ${s.when !== "after_booking" ? `<input type="number" class="days" min="0" max="365" data-i="${i}" data-f="days" value="${s.days}">` : ""}
             <select data-i="${i}" data-f="when">${c.when.map(w => `<option value="${w}" ${w === s.when ? "selected" : ""}>${esc(t("when_" + w))}</option>`).join("")}</select></label>
+          <div><span class="lbl">${esc(t("f_channels"))}</span>${checks("channels", i, c.channels, s.channels || ["email"], x => t("wfch_" + x))}</div>
           <div><span class="lbl">${esc(t("f_only_if"))}</span>${checks("only_if", i, c.conditions, s.only_if, x => t("c_" + x))}</div>
           ${s.when === "days_before_arrival" ? `<label class="chk"><input type="checkbox" data-i="${i}" data-f="skip_if_booked_late" ${s.skip_if_booked_late ? "checked" : ""}> ${esc(t("f_late"))}</label>` : ""}
         </div>

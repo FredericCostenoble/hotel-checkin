@@ -10,8 +10,8 @@ Veiligheid: alleen reservaties die na [messaging] start toegevoegd werden, en al
 Late boeking (bv. 2 dagen voor aankomst): stappen met replaced_by = ["access_code"] vallen weg,
 de gast krijgt meteen alleen de code-mail.
 
-Kanalen (geen keuze voor de gast): altijd per mail. Is er een gsm-nummer, dan ook per WhatsApp;
-heeft het nummer geen WhatsApp, dan per sms. WhatsApp en sms pas als [messaging] phone = true
+Kanalen (geen keuze voor de gast): per stap in de workflow (channels: email en/of whatsapp). Met whatsapp en een
+gsm-nummer per WhatsApp; heeft het nummer geen WhatsApp, dan per sms. WhatsApp en sms pas als [messaging] phone = true
 (Twilio betaald, WhatsApp-sjablonen goedgekeurd: [whatsapp] template_<stap>_<taal> = "HX..."). Stappen die meer vragen dan een bericht (access_code: eerst een code
 bij Salto) of een kanaal dat er nog niet is (sms, WhatsApp), worden overgeslagen.
 """
@@ -388,13 +388,16 @@ def deliver(hotel_id: str, step: workflow.Step, r: Reservation, cfg: dict,
 
     out: list[tuple[str, SendResult]] = []
     # Met de hand (monitor): precies dat kanaal en adres, ook een adres dat niet bij de reservatie hoort
-    email_targets = [only[1]] if only and only[0] == "email" else ([] if only else recipients(r, "email"))
+    # Automatisch: alleen de kanalen van de stap in de workflow (mail, WhatsApp met sms als terugval)
+    email_targets = [only[1]] if only and only[0] == "email" else (
+        [] if only or "email" not in step.channels else recipients(r, "email"))
     for to in email_targets:
         if wanted("email", to, key):
             result = send_mail(hotel_id, step, r, cfg, to=to, extra=extra)
             guests.log_message(hotel_id, r.reservation_id, step.step, result, note=note, room=key)
             out.append(("email", result))
-    phones = [only[1]] if only and only[0] != "email" else ([] if only else recipients(r, "phone"))
+    phones = [only[1]] if only and only[0] != "email" else (
+        [] if only or "whatsapp" not in step.channels else recipients(r, "phone"))
     if not phones or not phone_enabled(hotel_id):
         return out
     msg, data = _rendered(hotel_id, step, r, cfg, extra)
@@ -511,8 +514,11 @@ def plan(hotel_id: str, r: Reservation, rows: list[dict], cfg: dict, ready: tupl
     for step in steps:
         mine = [m for m in rows if m["message_type"] == step.step]
         due = step.due_date(r) or (r.created_at.date() if r.created_at else None)
+        # Kanaal niet aangevinkt bij deze stap (workflow): zo tonen, met de reden
+        mine_ch = [c | {"reason": c["reason"] or "step_off"} if ("whatsapp" if c["channel"] == "sms" else c["channel"])
+                   not in step.channels else c for c in channels]
         item = {"step": step.step, "when": step.when, "days": step.days,
-                "due": due.isoformat() if due else "", "state": "", "reason": "", "channels": channels}
+                "due": due.isoformat() if due else "", "state": "", "reason": "", "channels": mine_ch}
         failed_now = [c for c in step.only_if if not workflow.CONDITIONS[c](r)]
         if any(m["ok"] for m in mine):
             item["state"] = "sent"
@@ -622,7 +628,7 @@ def notify_room_change(hotel_id: str, r: Reservation, cfg: dict, today: date) ->
     extra = room_change_data(hotel_id, r, move)
     if not extra:
         return []
-    step = workflow.Step(step=ROOM_CHANGE, when="after_booking")
+    step = workflow.Step(step=ROOM_CHANGE, when="after_booking", channels=["email", "whatsapp"])
     label = f"{ROOM_CHANGE} {r.booking_number or r.reservation_id[:8]} {move['from']}>{move['to']}"
     return [(channel, result, f"{label} {channel}")
             for channel, result in deliver(hotel_id, step, r, cfg, key=extra["_key"], extra=extra)]

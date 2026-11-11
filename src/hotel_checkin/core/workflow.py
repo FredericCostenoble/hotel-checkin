@@ -50,7 +50,14 @@ FLOWS = ("booking", "expedia", "website")
 _OLD_FLOWS = {"website_unpaid": "website"}
 WHEN = ("after_booking", "days_before_arrival", "days_after_departure")
 AFTER_DEPARTURE_WINDOW = 14  # dagen: een bericht na vertrek dat zo lang niet weg kon, vervalt
-CHANNELS = ("email", "sms", "whatsapp")
+CHANNELS = ("email", "whatsapp")  # whatsapp = per gsm-nummer WhatsApp, met sms als terugval
+_OLD_CHANNELS = {"sms": "whatsapp"}  # vroeger apart; nu is sms altijd de terugval van WhatsApp
+
+
+def channels_of(raw) -> list[str]:
+    """Kanalen van een stap, oude namen omgezet, in vaste volgorde."""
+    got = {_OLD_CHANNELS.get(str(c), str(c)) for c in (raw if raw is not None else ["email"])}
+    return [c for c in CHANNELS if c in got] + sorted(got - set(CHANNELS))
 PAY = ("none", "open_amount")
 _OLD_PAY = {"city_tax": "open_amount"}  # vroeger een aparte knop voor de toeristenbelasting
 STEP_TYPES = ("confirmation", "reminder", "access_code", "thank_you")
@@ -229,7 +236,7 @@ def validate(hotel_id: str, cfg: dict) -> dict:
             try:
                 step = Step(
                     step=str(s["step"]), when=str(s["when"]), days=int(s.get("days", 0) or 0),
-                    only_if=list(s.get("only_if", [])), channels=list(s.get("channels", ["email"])),
+                    only_if=list(s.get("only_if", [])), channels=channels_of(s.get("channels")),
                     replaced_by=list(s.get("replaced_by", [])),
                     skip_if_booked_late=bool(s.get("skip_if_booked_late", False)),
                     pay=_OLD_PAY.get(str(s.get("pay", "none")), str(s.get("pay", "none"))), enabled=bool(s.get("enabled", True)),
