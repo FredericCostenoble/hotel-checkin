@@ -59,7 +59,7 @@ onderwerp = "One week until your stay at {hotel_naam}"
 voorvertoning = "Complete your check-in details and receive your personal PIN code."
 aanhef = "Dear {voornaam},"
 afsluiting = "See you next week,"
-sms = "{hotel_naam}: dear {voornaam}, in one week you will be our guest. Complete your check-in details and receive your personal PIN code: {checkin_link}"
+sms = "{hotel_naam}: dear {voornaam}, in one week you will be our guest. Check or complete your check-in details and receive your personal PIN code: {checkin_link}"
 
 [[reminder.blokken]]
 type = "text"
@@ -138,7 +138,7 @@ type = "text"
 alineas = ["Any questions? Call us on {hotel_telefoon} or simply reply to this email."]
 
 [at_the_door]
-sms = "{hotel_naam}: welcome, {voornaam}! Enter {pincode} followed by the arrow key, first at the front door, then at room {kamernummer}. Any problems? Call {nood_nummer}."
+sms = "{hotel_naam}: welcome, {voornaam}! Enter {pincode} followed by the arrow key on the keypad of the entrance and of room {kamernummer}. Any problems? Call {nood_nummer}."
 
 
 [room_change]
@@ -333,3 +333,9 @@ alineas = ["The city of Bruges charges a city tax of {toeristenbelasting_tarief}
 type = "button"
 tekst = "Pay city tax ({toeristenbelasting})"
 link = "{betaal_link}"
+
+
+[incoming]
+# Automatisch antwoord als een gast een WhatsApp of sms terugstuurt naar het nummer van de automatische berichten
+# (processes/incoming.py). Het bericht zelf gaat per mail naar het hotel ([twilio] doorsturen).
+antwoord = "{hotel_naam}: this number only sends automatic messages. Your message has been forwarded to reception. For a faster reply, message us on WhatsApp at {twilio_contact_whatsapp} or call {hotel_telefoon}."

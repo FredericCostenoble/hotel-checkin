@@ -444,3 +444,53 @@ def test_cleaning_twin_and_special_request():
     _r("51299db6-b392-4f28-8728-2d66444f5c85", "14", day, 1, internal_memo="Bloemen en kaartje op de kamer")
     s14 = _row(dl.build("lucca", "cleaning", day), "14")
     assert not s14["check"] and "Speciaal verzoek: Bloemen en kaartje op de kamer" in s14["remark"]
+
+
+def test_pdf_and_signed_link(monkeypatch):
+    """De pdf voor de WhatsApp aan het personeel: alleen met een geldige, niet vervallen link."""
+    monkeypatch.setenv("TWILIO_AUTH_TOKEN", "token")
+    _r("c", "23", DAY - timedelta(days=1), 3, folio=[{"label": "Ontbijt", "qty": 2, "amount": 40.0}],
+       remarks="Graag 1pax glutenfree ontbijt 🥐")  # emoji: geen fout in de pdf
+    data = dl.generate("lucca", "breakfast", DAY)
+    content = lists.pdf(data, "Hotel Lucca")
+    assert content[:5] == b"%PDF-" and lists.pdf_name(data) == f"ontbijtlijst-{DAY.isoformat()}.pdf"
+    now = datetime(2026, 11, 5, 17, 45, tzinfo=TZ)
+    path = dl.pdf_path("lucca", data, now)
+    hotel, kind, day, expires, sig, name = path.split("/")
+    assert (hotel, kind, day, name) == ("lucca", "breakfast", DAY.isoformat(), lists.pdf_name(data))
+    assert dl.pdf_for_link(hotel, kind, day, expires, sig, now)[1][:5] == b"%PDF-"
+    assert dl.pdf_for_link(hotel, kind, day, expires, "0" * 32, now) is None  # andere handtekening
+    assert dl.pdf_for_link(hotel, "cleaning", day, expires, sig, now) is None  # ander lijst
+    assert dl.pdf_for_link(hotel, kind, day, expires, sig, now + timedelta(hours=25)) is None  # vervallen
+    cleaning = dl.generate("lucca", "cleaning", DAY)
+    assert lists.pdf(cleaning, "Hotel Lucca")[:5] == b"%PDF-"
+
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+    import function_app as fa
+
+    monkeypatch.setattr(dl, "datetime", type("D", (datetime,), {"now": staticmethod(lambda tz=None: now)}))
+    fn = fa.list_pdf.build().get_user_function()
+    req = func.HttpRequest("GET", "/api/lists/" + path, body=b"", route_params=dict(zip(
+        ("hotel", "kind", "day", "expires", "sig", "name"), path.split("/"), strict=True)))
+    res = fn(req)
+    assert res.status_code == 200 and res.mimetype == "application/pdf" and res.get_body()[:5] == b"%PDF-"
+
+
+def test_whatsapp_list_with_pdf(monkeypatch):
+    monkeypatch.setenv("TWILIO_AUTH_TOKEN", "token")
+    from hotel_checkin.processes import send_messages
+
+    orig = dl.settings
+    monkeypatch.setattr(dl, "settings", lambda h, k: orig(h, k) | {"email": [], "whatsapp": ["0470 12 34 56"]})
+    monkeypatch.setattr(send_messages, "phone_enabled", lambda h: True)
+    monkeypatch.setattr(send_messages, "whatsapp_template", lambda h, s, lang: "HX" + s)
+    sent = []
+    monkeypatch.setattr("hotel_checkin.messaging.whatsapp.send_whatsapp_template",
+                        lambda h, to, sid, v, **k: sent.append((to, sid, v)) or SendResult(Channel.WHATSAPP, to, True))
+    _r("a", "20", DAY - timedelta(days=1), 2, rate="STANDARD RATE BREAKFAST INCL")
+    data = dl.build("lucca", "breakfast", DAY)
+    out = dl.send("lucca", data)
+    to, sid, v = sent[0]
+    assert out[0]["ok"] and to == "+32470123456" and sid == "HXbreakfast_list"
+    assert v["1"] == lists.day_text(DAY.isoformat()) and v["2"].startswith("2 personen in 1 kamers")
+    assert "volgens" not in v["2"] and v["3"].startswith(f"lucca/breakfast/{DAY.isoformat()}/")

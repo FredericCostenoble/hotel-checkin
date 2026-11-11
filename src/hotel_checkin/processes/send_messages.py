@@ -243,10 +243,13 @@ def message_data(hotel_id: str, r: Reservation) -> dict[str, str]:
 
 MAX_ATTEMPTS = 3  # per stap en kanaal; daarna niet meer opnieuw (staat rood in de monitor)
 # WhatsApp-sjabloon: welke gegevens in welke plaats ({{1}}, {{2}}, ...), per berichttype
+# checkin_suffix: het deel van de formulierlink na het vaste begin, voor de knop van het sjabloon
+# (zie docs/whatsapp-sjablonen.md voor de teksten).
 WHATSAPP_VARIABLES = {
-    "confirmation": ("voornaam", "checkin_link"),
-    "reminder": ("voornaam", "checkin_link"),
-    "access_code": ("kamer_kort", "pincode"),  # per kamer: "Uw verblijf @ Hotel Lucca, kamer {{1}}, code: {{2}} ↵"
+    "confirmation": ("voornaam", "checkin_suffix"),
+    "reminder": ("voornaam", "checkin_suffix"),
+    "access_code": ("kamer_kort", "pincode", "checkin_suffix"),  # per kamer, knop naar het formulier (betalen)
+    "room_change": ("kamer_kort", "pincode"),
 }
 
 
@@ -396,7 +399,9 @@ def deliver(hotel_id: str, step: workflow.Step, r: Reservation, cfg: dict,
         return out
     msg, data = _rendered(hotel_id, step, r, cfg, extra)
     template = whatsapp_template(hotel_id, step.step, r.guest.language)
-    values = {**data, "checkin_link": templates.checkin_link(hotel_id, r.token or "", normalize_language(r.guest.language))}
+    lang = normalize_language(r.guest.language)
+    values = {**data, "checkin_link": templates.checkin_link(hotel_id, r.token or "", lang),
+              "checkin_suffix": templates.checkin_suffix(hotel_id, r.token or "", lang)}
     for room, text, vals in phone_messages(hotel_id, step, r, msg.sms, values):
         variables = {str(i): str(vals.get(k, "")) for i, k in enumerate(WHATSAPP_VARIABLES.get(step.step, ()), 1)}
         for to in phones:

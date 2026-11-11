@@ -114,6 +114,9 @@ const API = window.CHECKIN_API || "";
     if (!langChosenByGuest && I18N[data.language]) lang = data.language;
     render();
     if (data.state !== "open") return showMessage(data.state);
+    // Betaalknop: alleen als er iets openstaat en Lighthouse een betaallink maakte. Blijft staan na het bewaren.
+    $("pay-box").hidden = !(data.pay && data.pay.url);
+    if (data.pay && data.pay.url) { $("pay-amount").textContent = data.pay.amount; $("pay-link").href = data.pay.url; }
     $("email").value = data.email;
     $("backup_email").value = data.backup_email;
     setPhone("phone", data.phone);

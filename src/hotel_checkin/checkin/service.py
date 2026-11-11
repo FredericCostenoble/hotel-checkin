@@ -94,8 +94,20 @@ def _demo(token: str, today: date) -> dict | None:
         "room_type": "Superior Double Room", "email": "anna.peeters@example.com", "phone": "", "country": "BE",
         "backup_email": "", "backup_phone": "", "language": "nl", "completed": False, "no_marketing": False,
         "hotel": hotel_info(hotel_id, "nl"), "stairs": stairs_question(hotel_id, "Superior Double Room"),
-        "stairs_help": False,
+        "stairs_help": False, "pay": {"amount": "\u20ac\u00a016,80", "url": "#"},
     }
+
+
+def pay_info(r) -> dict | None:
+    """Betaalknop op het formulier: alleen als er iets openstaat en Lighthouse al een betaallink maakte
+    (processes/pay_requests.py, normaal een paar dagen voor de code-mail). Zo komt de gast er ook via WhatsApp."""
+    if not r.pay_link or r.paid is True or r.open_amount is None or r.open_amount <= 0.004:
+        return None
+    from hotel_checkin.core import workflow
+    from hotel_checkin.processes.send_messages import money
+
+    currency = workflow.config(r.hotel_id)["parameters"]["currency"]
+    return {"amount": money(r.open_amount, currency), "url": r.pay_link}
 
 
 def form_data(token: str, today: date | None = None) -> dict | None:
@@ -138,6 +150,7 @@ def form_data(token: str, today: date | None = None) -> dict | None:
         "hotel": hotel_info(r.hotel_id, r.guest.language),
         "stairs": stairs_question(r.hotel_id, r.room_type, list(r.room_names.values())),
         "stairs_help": bool(r.stairs_help),
+        "pay": pay_info(r) if state == "open" else None,
     }
 
 

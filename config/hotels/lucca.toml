@@ -39,7 +39,7 @@ logo_url = "https://hotellucca.be/wp-content/uploads/2025/06/Logo-website-hotel-
 # Buiten PRD (TST en codespace) gaat elk bericht naar dit adres en nummer, nooit naar de gast.
 # Leeg = niets versturen.
 email = "frederic@hotellucca.be"
-phone = ""
+phone = "+32476896274"
 # Reservaties van deze gasten (achternaam) zijn testreservaties: de robot mag er ook in TST in Lighthouse
 # schrijven (bv. de overschrijving van Booking.com registreren). Echte reservaties leest TST alleen.
 guest_names = ["meersseman"]
@@ -116,6 +116,12 @@ nummer = "+32 471 18 15 74"   # TODO: nummer voor 's avonds en 's nachts
 # Afzendnummers van dit hotel (niet geheim). Het Twilio-account zelf is gedeeld (Key Vault).
 sms_from = "+4915888620339"        # TODO: trialnummer, vervangen door eigen nummer na opwaardering
 whatsapp_from = "+4915888620339"   # TODO: idem
+# Antwoorden van gasten (of personeel) op het nummer van de automatische berichten (processes/incoming.py):
+# het bericht gaat per mail naar doorsturen, en de afzender krijgt een automatisch antwoord met dit WhatsApp-nummer
+# van het hotel (de WhatsApp Business-app). In Twilio bij het nummer en de WhatsApp-afzender instellen:
+# "A message comes in" = https://<function app>/api/twilio/incoming?h=lucca (POST).
+contact_whatsapp = "+32 478 08 30 49"
+doorsturen = ["info@hotellucca.be"]
 
 [robot]
 # De robot zoekt bij elke run nieuwe reservaties. Om de zoveel uur leest hij ook de contactgegevens
@@ -160,10 +166,13 @@ start = "2026-10-30T15:30:00+01:00"
 phone = false
 
 [whatsapp]
+# Teksten van de sjablonen: docs/whatsapp-sjablonen.md.
 # Door Meta goedgekeurde sjablonen (Twilio Content SID, HX...) per bericht en taal; ontbreekt de
 # taal, dan Engels. Zonder sjabloon gaat het bericht meteen per sms.
-# Plaatsen in het sjabloon: confirmation en reminder {{1}} voornaam, {{2}} link naar het formulier;
-# access_code {{1}} voornaam, {{2}} pincode, {{3}} kamer.
+# Plaatsen in het sjabloon (processes/send_messages.py, WHATSAPP_VARIABLES):
+# confirmation en reminder {{1}} voornaam, {{2}} formulierlink vanaf het token (knop);
+# access_code {{1}} kamer, {{2}} pincode, {{3}} formulierlink vanaf het token (knop); room_change {{1}} kamer, {{2}} pincode;
+# breakfast_list en cleaning_list (alleen nl) {{1}} dag, {{2}} samenvatting, {{3}} pad van de pdf (document bovenaan).
 # template_confirmation_nl = "HX..."
 
 [retention]

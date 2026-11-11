@@ -97,11 +97,23 @@ def checkin_link(hotel_id: str, token: str, language: str | None = None) -> str:
     """Link naar het check-in-formulier. In TST naar het testformulier (instelling CHECKIN_FORM_URL),
     anders naar het formulier van het hotel uit config/hotels/<hotel_id>.toml.
     Met language opent het formulier in de taal van het bericht (&lang=fr)."""
-    url = os.environ.get("CHECKIN_FORM_URL") or load_hotel_config(hotel_id)["checkin"]["formulier_url"]
-    url = url.replace("{token}", token)
+    url = _form_url(hotel_id).replace("{token}", token)
     if language:
         url += ("&" if "?" in url else "?") + "lang=" + language
     return url
+
+
+def _form_url(hotel_id: str) -> str:
+    return os.environ.get("CHECKIN_FORM_URL") or load_hotel_config(hotel_id)["checkin"]["formulier_url"]
+
+
+def checkin_suffix(hotel_id: str, token: str, language: str | None = None) -> str:
+    """Deel van de formulierlink vanaf het token (bv. "abc123&lang=nl"), voor de knop in een WhatsApp-sjabloon.
+    De knop in het sjabloon heeft het vaste begin van de link (bv. https://checkin.hotellucca.be/?r=), WhatsApp
+    zet dit deel erachter. Daarom heeft elke omgeving (TST, PRD) een eigen sjabloon als het adres verschilt."""
+    link = checkin_link(hotel_id, token, language)
+    base = _form_url(hotel_id).split("{token}", 1)[0]
+    return link.removeprefix(base)
 
 
 MODULES = ("code", "reservation", "checkin_form", "checkin_form_done", "pay", "practical_info")  # volgorde in de mail: pincode altijd bovenaan

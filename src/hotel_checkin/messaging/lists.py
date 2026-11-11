@@ -113,6 +113,87 @@ def xlsx(data: dict, hotel_name: str) -> bytes:
     return out.getvalue()
 
 
+# ---------------------------------------------------------------- pdf (WhatsApp naar het personeel)
+
+
+def pdf_name(data: dict) -> str:
+    """Bestandsnaam van de pdf (zo staat ze in WhatsApp), zonder spaties: ze komt ook in de link."""
+    what = "ontbijtlijst" if data["kind"] == "breakfast" else "schoonmaaklijst"
+    return f"{what}-{data['day']}.pdf"
+
+
+def _latin(value) -> str:
+    """De standaardletters van een pdf kennen alleen Latin-1: andere tekens (emoji, ...) worden een vraagteken."""
+    return str(value if value is not None else "").encode("latin-1", "replace").decode("latin-1")
+
+
+def pdf(data: dict, hotel_name: str) -> bytes:
+    """Zelfde lijst als de Excel, als pdf op A4: opent met één tik op een gsm en is zo af te drukken."""
+    from fpdf import FPDF
+    from fpdf.fonts import FontFace
+
+    breakfast = data["kind"] == "breakfast"
+    doc = FPDF(orientation="P", unit="mm", format="A4")
+    doc.set_auto_page_break(auto=True, margin=12)
+    doc.set_margins(10, 10, 10)
+    doc.add_page()
+    doc.set_font("Helvetica", "B", 16)
+    doc.cell(0, 8, _latin(f"{TITLES[data['kind']]}  {day_text(data['day'])}"), new_x="LMARGIN", new_y="NEXT")
+    doc.set_font("Helvetica", "", 11)
+    doc.cell(0, 6, _latin(hotel_name), new_x="LMARGIN", new_y="NEXT")
+    if not breakfast and data.get("controle"):
+        doc.cell(0, 6, _latin(f"Controle: {data['controle']}"), new_x="LMARGIN", new_y="NEXT")
+    doc.ln(3)
+    if breakfast:
+        head = ("Kamer", "Type", "Aantal", "Opmerkingen")
+        widths = (16, 52, 18, 104)
+        mid = {2}
+    else:
+        head = ("Kamer", "Type", "Leave", "Stay", "Check in", "Opmerkingen")
+        widths = (16, 46, 14, 14, 18, 82)
+        mid = {2, 3, 4}
+    check = FontFace(fill_color=(255, 242, 168))  # nakijken in Lighthouse
+    todo = FontFace(emphasis="BOLD", fill_color=(255, 255, 0))  # iets te doen voor de schoonmaakploeg
+    bold = FontFace(emphasis="BOLD")
+    doc.set_font("Helvetica", "", 10)
+    with doc.table(col_widths=widths, line_height=6, first_row_as_headings=True,
+                   headings_style=FontFace(emphasis="BOLD", fill_color=(244, 245, 248))) as table:
+        row = table.row()
+        for h in head:
+            row.cell(h)
+        for r in data["rows"]:
+            if r.get("sep"):
+                row = table.row()
+                for _ in head:
+                    row.cell("")
+                continue
+            if breakfast:
+                count = r.get("count") if r.get("count") is not None else ("?" if r.get("check") else "")
+                cells = [r["room"], r.get("desc"), count, r.get("remark")]
+            else:
+                cells = [r["room"], r.get("desc"), "x" if r.get("leave") else "", "x" if r.get("stay") else "",
+                         "check in" if r.get("checkin") else "", r.get("remark")]
+            row = table.row()
+            for i, v in enumerate(cells):
+                style = check if r.get("check") else None
+                if not breakfast and i == len(cells) - 1 and v and not r.get("check"):
+                    style = todo
+                elif i == 0 and not r.get("check"):
+                    style = bold
+                row.cell(_latin(v), style=style, align="C" if i in mid else "L")
+        tot = data.get("totals", {})
+        foot = (["Totaal", "", str(data.get("total", 0)), ""] if breakfast
+                else ["Totaal", "", str(tot.get("leave", 0)), str(tot.get("stay", 0)), str(tot.get("checkin", 0)), ""])
+        row = table.row()
+        for i, v in enumerate(foot):
+            row.cell(v, style=bold, align="C" if i in mid else "L")
+    for extra in data.get("extra_rows") or []:
+        doc.ln(4)
+        doc.set_font("Helvetica", "B", 11)
+        doc.cell(0, 6, _latin(extra), new_x="LMARGIN", new_y="NEXT")
+    return bytes(doc.output())
+
+
 # ---------------------------------------------------------------- HTML (mail en monitor)
 
 _TD = "padding:4px 8px;border:1px solid #ccc;vertical-align:top;"

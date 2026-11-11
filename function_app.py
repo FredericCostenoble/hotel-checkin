@@ -81,6 +81,50 @@ def twilio_status(req: func.HttpRequest) -> func.HttpResponse:
     return func.HttpResponse(status_code=204)
 
 
+@app.route(route="api/twilio/incoming", methods=["POST"], auth_level=func.AuthLevel.ANONYMOUS)
+def twilio_incoming(req: func.HttpRequest) -> func.HttpResponse:
+    """Een gast antwoordt per WhatsApp of sms op het nummer van de automatische berichten (processes/incoming.py).
+    Alleen met een geldige handtekening van Twilio. Antwoord aan Twilio: een leeg TwiML-antwoord."""
+    from urllib.parse import parse_qsl
+
+    from hotel_checkin.messaging._twilio import valid_signature
+    from hotel_checkin.processes import incoming
+
+    hotel = req.params.get("h", "")
+    form = dict(parse_qsl(req.get_body().decode("utf-8", "replace")))
+    if hotel not in list_hotels() or not valid_signature(hotel, req.url, form, req.headers.get("X-Twilio-Signature", "")):
+        return func.HttpResponse(status_code=403)
+    sender = form.get("From", "")
+    channel = "whatsapp" if sender.startswith("whatsapp:") else "sms"
+    try:
+        incoming.handle(hotel, channel, sender.removeprefix("whatsapp:"), form.get("Body", ""),
+                        int(form.get("NumMedia", "0") or 0))
+    except Exception:
+        import logging
+
+        logging.exception("binnenkomend bericht niet verwerkt")
+    return func.HttpResponse("<Response></Response>", mimetype="text/xml")
+
+
+@app.route(route="api/lists/{hotel}/{kind}/{day}/{expires}/{sig}/{name}", methods=["GET"],
+           auth_level=func.AuthLevel.ANONYMOUS)
+def list_pdf(req: func.HttpRequest) -> func.HttpResponse:
+    """Pdf van de ontbijt- of schoonmaaklijst voor de WhatsApp aan het personeel. Twilio haalt ze op bij het
+    versturen. Alleen met een geldige handtekening en niet vervallen (processes/daily_lists.py, pdf_path)."""
+    from hotel_checkin.processes import daily_lists
+
+    p = req.route_params
+    if p.get("hotel") not in list_hotels():
+        return func.HttpResponse(status_code=404)
+    found = daily_lists.pdf_for_link(p["hotel"], p.get("kind", ""), p.get("day", ""), p.get("expires", ""),
+                                     p.get("sig", ""))
+    if found is None:
+        return func.HttpResponse(status_code=404)
+    name, content = found
+    return func.HttpResponse(content, mimetype="application/pdf", headers={
+        "Content-Disposition": f'inline; filename="{name}"', "Cache-Control": "no-store"})
+
+
 # ---------------------------------------------------------------- opvolgpagina
 
 ADMIN_WEB = Path(__file__).parent / "web" / "admin"

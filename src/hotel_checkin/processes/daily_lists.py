@@ -498,9 +498,9 @@ def save_planboard(hotel_id: str, day: date, parsed: dict, read_at: datetime) ->
     return len(keep)
 
 
-def describe(data: dict) -> str:
-    """Inhoud in een paar woorden (robotlog, monitor)."""
-    source = f", volgens {data['source']}" if data.get("source") else ""
+def describe(data: dict, with_source: bool = True) -> str:
+    """Inhoud in een paar woorden (robotlog, monitor; zonder bron in de WhatsApp aan het personeel)."""
+    source = f", volgens {data['source']}" if data.get("source") and with_source else ""
     if data["kind"] == "breakfast":
         rooms = sum(1 for r in data["rows"] if not r.get("sep") and (r.get("count") or r.get("check")))
         missing = (data.get("breakfast_lines") or {}).get("without_days", 0)
@@ -514,9 +514,62 @@ def describe(data: dict) -> str:
 # ---------------------------------------------------------------- versturen
 
 
+PDF_VALID = timedelta(hours=24)  # zo lang werkt de link naar de pdf (Twilio haalt ze meteen op bij het versturen)
+
+
+def _pdf_key(hotel_id: str) -> bytes:
+    """Sleutel voor de handtekening van de pdf-link, afgeleid van het Twilio-geheim van het hotel (geen extra geheim)."""
+    import hashlib
+    import hmac
+
+    from hotel_checkin.core.config import hotel_setting
+
+    token = hotel_setting(hotel_id, "TWILIO_AUTH_TOKEN")
+    return hmac.new(token.encode(), b"daily-list-pdf", hashlib.sha256).digest()
+
+
+def _pdf_sig(hotel_id: str, kind: str, day: str, expires: int) -> str:
+    import hashlib
+    import hmac
+
+    msg = f"{hotel_id}|{kind}|{day}|{expires}".encode()
+    return hmac.new(_pdf_key(hotel_id), msg, hashlib.sha256).hexdigest()[:32]
+
+
+def pdf_path(hotel_id: str, data: dict, now: datetime | None = None) -> str:
+    """Pad van de pdf achter /api/lists/ (variabele {{3}} van het WhatsApp-sjabloon), met vervaldatum en handtekening:
+    <hotel>/<soort>/<dag>/<vervalt>/<handtekening>/<bestandsnaam>."""
+    expires = int(((now or datetime.now(UTC)) + PDF_VALID).timestamp())
+    sig = _pdf_sig(hotel_id, data["kind"], data["day"], expires)
+    return f"{hotel_id}/{data['kind']}/{data['day']}/{expires}/{sig}/{lists.pdf_name(data)}"
+
+
+def pdf_for_link(hotel_id: str, kind: str, day: str, expires: str, sig: str,
+                 now: datetime | None = None) -> tuple[str, bytes] | None:
+    """De pdf achter een link uit pdf_path, of None als de link niet klopt of vervallen is. Altijd de bewaarde lijst
+    zoals ze nu is (opnieuw gemaakt: de nieuwe versie)."""
+    import hmac
+
+    if kind not in KINDS or not expires.isdigit():
+        return None
+    if int(expires) < (now or datetime.now(UTC)).timestamp():
+        return None
+    try:
+        if not hmac.compare_digest(_pdf_sig(hotel_id, kind, day, int(expires)), sig):
+            return None
+    except Exception:  # noqa: BLE001 - geen geheim voor dit hotel
+        return None
+    data = guests.get_daily_list(hotel_id, kind, day)
+    if not data:
+        return None
+    name = load_hotel(hotel_id)["hotel"]["naam"]
+    return lists.pdf_name(data), lists.pdf(data, name)
+
+
 def _send_phone(hotel_id: str, data: dict, to: str, hotel_name: str) -> dict:
-    """WhatsApp met het goedgekeurde sjabloon ([whatsapp] template_breakfast_list_nl / template_cleaning_list_nl:
-    {{1}} titel, {{2}} de lijst op één regel), anders of als dat mislukt per sms met de hele lijst."""
+    """WhatsApp met het goedgekeurde sjabloon ([whatsapp] template_breakfast_list_nl / template_cleaning_list_nl):
+    de pdf als document bovenaan, {{1}} de dag, {{2}} kort wat erop staat, {{3}} pad van de pdf. Anders, of als dat
+    mislukt, per sms met de hele lijst."""
     from hotel_checkin.checkin.service import normalize_phone
     from hotel_checkin.messaging import sms, whatsapp
     from hotel_checkin.processes import send_messages
@@ -529,9 +582,8 @@ def _send_phone(hotel_id: str, data: dict, to: str, hotel_name: str) -> dict:
         return {"channel": "whatsapp", "to": to, "ok": False, "error": "ongeldig gsm-nummer"}
     template = send_messages.whatsapp_template(hotel_id, f"{data['kind']}_list", "nl")
     if template:
-        title = lists.subject(data, hotel_name)
-        res = whatsapp.send_whatsapp_template(hotel_id, number, template,
-                                              {"1": title, "2": lists.summary(data)[:900]})
+        res = whatsapp.send_whatsapp_template(hotel_id, number, template, {
+            "1": lists.day_text(data["day"]), "2": describe(data, with_source=False), "3": pdf_path(hotel_id, data)})
         if res.ok:
             return {"channel": "whatsapp", "to": to, "ok": True}
         logging.warning("%s: %s per WhatsApp naar %s mislukt (%s), nu per sms", hotel_id, data["kind"], to, res.error)

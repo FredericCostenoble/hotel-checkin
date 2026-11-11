@@ -17,7 +17,7 @@ dependencies = [
 messaging = ["twilio~=9.12"]
 lighthouse = ["playwright~=1.63", "pyotp~=2.10"]
 storage = ["azure-data-tables~=12.7"]
-functions = ["azure-functions~=1.25", "openpyxl~=3.1"]
+functions = ["azure-functions~=1.25", "openpyxl~=3.1", "fpdf2~=2.8"]
 all = ["hotel-checkin[messaging,lighthouse,storage,functions]"]
 dev = ["pytest>=8", "ruff>=0.5"]
 

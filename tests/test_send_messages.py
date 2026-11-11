@@ -138,7 +138,7 @@ def test_phone_whatsapp_then_sms_fallback(setup, monkeypatch):
     r.guest.phone = "+32470000001"
     repo.save_reservation(r)
     send_messages.run("lucca")
-    assert [c[0] for c in calls] == ["wa"] and calls[0][1]["1"] == "Jan" and "http" in calls[0][1]["2"]
+    assert [c[0] for c in calls] == ["wa"] and calls[0][1]["1"] == "Jan" and calls[0][1]["2"].endswith("&lang=nl") and "http" not in calls[0][1]["2"]
     send_messages.run("lucca")
     assert len(calls) == 1  # WhatsApp gelukt: niets meer
     # Twilio meldt later: geen WhatsApp op dit nummer -> volgende run per sms

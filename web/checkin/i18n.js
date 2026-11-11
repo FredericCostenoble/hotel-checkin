@@ -1,6 +1,7 @@
 // Teksten van het check-in-formulier. {voornaam} wordt ingevuld met de voornaam van de gast.
 const I18N = {
   nl: {
+    pay_title: "Openstaand bedrag", pay_text: "Voor uw verblijf staat nog open:", pay_button: "Nu online betalen", pay_hint: "Veilig betalen via onze betaalpagina. Hebt u net betaald, dan verdwijnt dit bericht na een tijdje vanzelf.",
     intro_confirm: "Beste {voornaam}, kloppen onderstaande gegevens? Pas aan waar nodig en bevestig. Zo sturen we u voor uw aankomst alle praktische informatie en uw persoonlijke pincode voor de voordeur en uw kamerdeur.",
     backup_toggle: "Extra e-mailadres of gsm-nummer toevoegen (optioneel)", backup_hint: "Een tweede e-mailadres of nummer waarop we u kunnen bereiken.",
     backup_email: "Extra e-mailadres", backup_phone: "Extra gsm-nummer", preferences: "Voorkeuren",
@@ -24,6 +25,7 @@ const I18N = {
     closed_title: "Verblijf afgelopen", closed_text: "Deze reservatie is afgelopen. Bedankt voor uw bezoek en graag tot een volgende keer.",
   },
   fr: {
+    pay_title: "Montant restant dû", pay_text: "Il reste à payer pour votre séjour :", pay_button: "Payer maintenant en ligne", pay_hint: "Paiement sécurisé via notre page de paiement. Si vous venez de payer, ce message disparaîtra de lui-même après un moment.",
     intro_confirm: "Bonjour {voornaam}, les données ci-dessous sont-elles correctes ? Modifiez-les si nécessaire et confirmez. Avant votre arrivée, nous vous enverrons toutes les informations pratiques ainsi que votre code PIN personnel pour la porte d'entrée et la porte de votre chambre.",
     backup_toggle: "Ajouter une adresse e-mail ou un numéro supplémentaire (facultatif)", backup_hint: "Une deuxième adresse e-mail ou un deuxième numéro où nous pouvons vous joindre.",
     backup_email: "Adresse e-mail supplémentaire", backup_phone: "Numéro de portable supplémentaire", preferences: "Préférences",
@@ -47,6 +49,7 @@ const I18N = {
     closed_title: "Séjour terminé", closed_text: "Cette réservation est terminée. Merci pour votre visite et à une prochaine fois.",
   },
   en: {
+    pay_title: "Amount due", pay_text: "Still to be paid for your stay:", pay_button: "Pay online now", pay_hint: "Secure payment via our payment page. If you have just paid, this message will disappear by itself after a while.",
     intro_confirm: "Dear {voornaam}, are the details below correct? Change them where needed and confirm. Before you arrive, we will send you all practical information and your personal PIN code for the front door and your room door.",
     backup_toggle: "Add an extra email address or mobile number (optional)", backup_hint: "A second email address or number where we can reach you.",
     backup_email: "Additional email address", backup_phone: "Additional mobile number", preferences: "Preferences",
@@ -70,6 +73,7 @@ const I18N = {
     closed_title: "Stay completed", closed_text: "This reservation has ended. Thank you for your visit, we hope to see you again.",
   },
   de: {
+    pay_title: "Offener Betrag", pay_text: "Für Ihren Aufenthalt ist noch offen:", pay_button: "Jetzt online bezahlen", pay_hint: "Sichere Zahlung über unsere Zahlungsseite. Wenn Sie gerade bezahlt haben, verschwindet dieser Hinweis nach einer Weile von selbst.",
     intro_confirm: "Guten Tag {voornaam}, sind die unten stehenden Angaben korrekt? Ändern Sie sie bei Bedarf und bestätigen Sie. Vor Ihrer Anreise senden wir Ihnen alle praktischen Informationen und Ihren persönlichen PIN-Code für die Haustür und Ihre Zimmertür.",
     backup_toggle: "Zusätzliche E-Mail-Adresse oder Handynummer hinzufügen (optional)", backup_hint: "Eine zweite E-Mail-Adresse oder Nummer, unter der wir Sie erreichen können.",
     backup_email: "Zusätzliche E-Mail-Adresse", backup_phone: "Zusätzliche Handynummer", preferences: "Einstellungen",

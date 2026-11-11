@@ -131,3 +131,26 @@ def test_form_submission_kept_and_reapplied():
     assert service.reapply_forms("lucca") == 1
     assert repo.get_reservation("lucca", "fs1").guest.email == "caner@elbonet.be"
     assert service.reapply_forms("lucca") == 0
+
+
+def test_pay_button_on_form():
+    """Betaalknop op het formulier alleen met een betaallink van Lighthouse en iets dat openstaat."""
+    _save()
+    assert service.form_data("tok")["pay"] is None
+    r = repo.get_reservation("lucca", "R1")
+    r.pay_link, r.open_amount = "https://pay.example/abc", 16.8
+    repo.save_reservation(r)
+    assert service.form_data("tok")["pay"] == {"amount": "€ 16,80", "url": "https://pay.example/abc"}
+    r.open_amount = 0
+    repo.save_reservation(r)
+    assert service.form_data("tok")["pay"] is None
+    assert service.form_data("voorbeeld-lucca")["pay"]["url"]  # voorbeeld in de monitor
+
+
+def test_checkin_suffix(monkeypatch):
+    from hotel_checkin.messaging import templates
+
+    monkeypatch.delenv("CHECKIN_FORM_URL", raising=False)
+    assert templates.checkin_suffix("lucca", "abc", "fr") == "abc&lang=fr"
+    monkeypatch.setenv("CHECKIN_FORM_URL", "https://test.example/form?r={token}")
+    assert templates.checkin_suffix("lucca", "abc") == "abc"
