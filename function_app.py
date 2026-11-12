@@ -341,7 +341,8 @@ def mail_trigger(timer: func.TimerRequest) -> None:
 
     for hotel_id in list_hotels():
         try:
-            if process.enabled(hotel_id):
+            # 's nachts niet: de meldingen blijven in de mailbox en starten de robot aan het einde van de nacht
+            if process.enabled(hotel_id) and not robot_schedule.is_night(hotel_id):
                 process.run(hotel_id)
                 process.cleanup(hotel_id)  # eenmalig: oude verwerkte mails naar hun map
         except Exception:

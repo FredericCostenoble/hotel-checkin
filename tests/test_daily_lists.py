@@ -309,6 +309,34 @@ def test_robot_schedule_from_the_function_app(monkeypatch):
     assert robot_schedule.run("lucca", t + timedelta(hours=5)) == "" and starts == [1]
 
 
+def test_robot_at_night_only_on_night_times(monkeypatch):
+    """'s Nachts (23:00 tot 06:00) alleen om 01:00 en 04:00, niet elk uur; daarna weer elk uur."""
+    from hotel_checkin.admin import cloud_robot
+    from hotel_checkin.processes import new_reservation, robot_schedule
+
+    starts = []
+    monkeypatch.setattr(cloud_robot, "available", lambda: True)
+    monkeypatch.setattr(cloud_robot, "running", lambda execs=None: False)
+    monkeypatch.setattr(cloud_robot, "start", lambda: starts.append(1) or True)
+    monkeypatch.setenv("LUCCA_SCHAKELAARS_RESERVATIES", "true")
+    night = datetime(2026, 11, 5, 22, 5, tzinfo=TZ)
+    repo.log_robot_run("lucca", new_reservation.TASK, night, True)  # run van 22:00
+    assert robot_schedule.is_night("lucca", night + timedelta(hours=1)) and not robot_schedule.is_night("lucca", night)
+
+    def at(h, m=0, day=6):
+        return datetime(2026, 11, day, h, m, tzinfo=TZ)
+
+    for t, expect in ((at(23, day=5), False), (at(0), False), (at(1), True), (at(2), False), (at(3), False),
+                      (at(4), True), (at(5), False), (at(6), True)):
+        before = len(starts)
+        got = robot_schedule.run("lucca", t)
+        if got:
+            repo.log_robot_run("lucca", new_reservation.TASK, t + timedelta(minutes=1), True)
+        assert (len(starts) > before) == expect, t
+    monkeypatch.setenv("LUCCA_ROBOT_NACHT_UREN", "00:30, 01:00, 02:00, 03:00, 04:00")
+    assert len(robot_schedule.night_times("lucca")) == robot_schedule.MAX_NIGHT_RUNS
+
+
 def test_breakfast_per_day_from_lighthouse():
     """Ontbijt als extra met de dagen uit Lighthouse: alleen op die dag, met het aantal van die dag."""
     line = {"label": "Ontbijt", "qty": 5, "amount": 90.0, "days": {DAY.isoformat(): 5}, "room": "20"}
@@ -423,6 +451,8 @@ def test_robot_reads_planboard_for_requested_list(robot, monkeypatch):
     monkeypatch.setattr(lighthouse, "connect", connect)
     monkeypatch.setattr(lighthouse, "planboard_stays", stays)
     monkeypatch.setattr(pay_requests, "run", lambda *a: {"todo": 0, "made": [], "errors": [], "left": 0})
+    # klok vast: anders ruimt het bewaren de lijst op zodra die dag meer dan 3 dagen voorbij is
+    monkeypatch.setattr(dl, "_now", lambda now, h: (now or datetime(2026, 11, 7, 9, 5, tzinfo=TZ)).astimezone(TZ))
     dl.request("lucca", "cleaning", day, by="frederic", now=datetime(2026, 11, 7, 9, 0, tzinfo=TZ))
     refresh_contacts.run("lucca")
     assert opened == ["lucca"] and asked == [(date(2026, 11, 7), day)]

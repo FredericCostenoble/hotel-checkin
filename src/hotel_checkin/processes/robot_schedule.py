@@ -6,6 +6,9 @@ kost geld. De Function App kijkt elke minuut (timer van de meldingen) en start d
 - het een vast uur is (om de [robot] check_minutes vanaf middernacht, bv. 60 = elk heel uur; instelling in de monitor,
   per omgeving; 0 = nooit op schema, alleen bij een meldingsmail, een gevraagde lijst of de knop "Robot nu draaien"),
   en er sinds dat uur nog geen run was.
+'s Nachts ([robot] nacht_van tot nacht_tot, bv. 23:00 tot 06:00) gebeurt er met nieuwe reservaties toch niets: dan
+start de robot alleen op de nachtelijke uren ([robot] nacht_uren, hoogstens MAX_NIGHT_RUNS), niet op de gewone
+vaste uren, en ook niet door een meldingsmail (die wacht tot het einde van de nacht, mail_trigger).
 Een bevroren omgeving (alle hoofdschakelaars uit) start dus geen enkele container.
 """
 
@@ -19,10 +22,72 @@ from hotel_checkin.guests import repository as guests
 
 STATE = "robot_schedule_started"  # RobotState: wanneer deze timer de robot voor het laatst startte (of probeerde)
 RETRY_MINUTES = 10  # mislukt starten: zo lang wachten voor een nieuwe poging
+MAX_NIGHT_RUNS = 3  # meer runs per nacht heeft geen zin (kost)
 
 
 def minutes(hotel_id: str) -> float:
     return float(hotel_setting(hotel_id, "ROBOT_CHECK_MINUTES", default="60", shared=False) or 0)
+
+
+def _times(raw) -> list[tuple[int, int]]:
+    """Uren uit een instelling ("01:00, 04:00" of een lijst), als (uur, minuut)."""
+    import re
+
+    out = []
+    for h, m in re.findall(r"(\d{1,2}):(\d{2})", str(raw or "")):
+        if int(h) < 24 and int(m) < 60:
+            out.append((int(h), int(m)))
+    return out
+
+
+def night_window(hotel_id: str) -> tuple[tuple[int, int], tuple[int, int]] | None:
+    """Begin en einde van de nacht ([robot] nacht_van, nacht_tot), of None als er geen nacht ingesteld is."""
+    start = _times(hotel_setting(hotel_id, "ROBOT_NACHT_VAN", default="", shared=False))
+    end = _times(hotel_setting(hotel_id, "ROBOT_NACHT_TOT", default="", shared=False))
+    if not start or not end or start[0] == end[0]:
+        return None
+    return start[0], end[0]
+
+
+def night_times(hotel_id: str) -> list[tuple[int, int]]:
+    """De nachtelijke uren van het vangnet ([robot] nacht_uren), hoogstens MAX_NIGHT_RUNS, alleen binnen de nacht."""
+    window = night_window(hotel_id)
+    if window is None:
+        return []
+    times = sorted(set(_times(hotel_setting(hotel_id, "ROBOT_NACHT_UREN", default="", shared=False))))
+    return [t for t in times if _in_window(t, window)][:MAX_NIGHT_RUNS]
+
+
+def _in_window(t: tuple[int, int], window: tuple[tuple[int, int], tuple[int, int]]) -> bool:
+    start, end = window
+    return (start <= t or t < end) if start > end else start <= t < end
+
+
+def is_night(hotel_id: str, now: datetime | None = None) -> bool:
+    """Is het nu nacht voor dit hotel (lokale tijd)?"""
+    from hotel_checkin.core import clock
+
+    window = night_window(hotel_id)
+    if window is None:
+        return False
+    now = (now or datetime.now(UTC)).astimezone(clock.tz(hotel_id))
+    return _in_window((now.hour, now.minute), window)
+
+
+def _night_slot_start(hotel_id: str, now: datetime) -> datetime | None:
+    """Het laatste nachtelijke uur dat al voorbij is in deze nacht (now in lokale tijd), of None."""
+    window = night_window(hotel_id)
+    (sh, sm), _ = window
+    begin = now.replace(hour=sh, minute=sm, second=0, microsecond=0)
+    if begin > now:
+        begin -= timedelta(days=1)  # de nacht begon gisteren
+    found = None
+    for h, m in night_times(hotel_id):
+        for day in (0, 1):
+            t = (begin + timedelta(days=day)).replace(hour=h, minute=m)
+            if begin <= t <= now and (found is None or t > found):
+                found = t
+    return found
 
 
 def _last_run(hotel_id: str) -> datetime | None:
@@ -60,7 +125,12 @@ def due(hotel_id: str, now: datetime | None = None) -> bool:
     if every <= 0 or not robot_needed(hotel_id):
         return False
     now = (now or datetime.now(UTC)).astimezone(clock.tz(hotel_id))
-    start = _slot_start(every, now)
+    if is_night(hotel_id, now):
+        start = _night_slot_start(hotel_id, now)
+        if start is None:
+            return False  # nog geen nachtelijk uur voorbij
+    else:
+        start = _slot_start(every, now)
     last = _last_run(hotel_id)
     tried = guests.get_state(hotel_id, STATE)
     if tried and datetime.fromisoformat(tried) >= start and now - datetime.fromisoformat(tried) < timedelta(
@@ -90,6 +160,6 @@ def run(hotel_id: str, now: datetime | None = None) -> str:
         return f"robot niet gestart: {cloud_robot.LAST_ERROR}"
     from hotel_checkin.core import progress
 
-    progress.step(hotel_id, "robot", f"gestart op schema (om de {minutes(hotel_id):g} minuten): Azure start de robot",
-                  force=True)
+    why = "op een nachtelijk uur" if is_night(hotel_id, now) else f"op schema (om de {minutes(hotel_id):g} minuten)"
+    progress.step(hotel_id, "robot", f"gestart {why}: Azure start de robot", force=True)
     return "robot gestart op schema"

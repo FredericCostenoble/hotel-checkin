@@ -1300,6 +1300,18 @@ const HS_TEXT = {
     "Vangnet: om de hoeveel minuten",
     "Normaal start de meldingsmail van Lighthouse de robot. Daarnaast start hij als vangnet op vaste uren vanaf middernacht: 60 = elk heel uur, 240 = 00:00, 04:00, 08:00, ... Uit die uren kies je ook het uur van de ontbijt- en schoonmaaklijst. 0 = nooit op schema. Met alle hoofdschakelaars uit start hij nooit."
    ],
+   "robot.nacht_van": [
+    "Nacht: van",
+    "Vanaf dit uur start de robot alleen op de nachtelijke uren hieronder, niet elk uur en niet door een meldingsmail. Leeg = geen nacht."
+   ],
+   "robot.nacht_tot": [
+    "Nacht: tot",
+    "Tot dit uur. Meldingsmails van 's nachts starten de robot dan."
+   ],
+   "robot.nacht_uren": [
+    "Nacht: robot om",
+    "Uren waarop de robot 's nachts toch draait, bv. 01:00, 04:00. Hoogstens 3."
+   ],
    "robot.contact_refresh_hours": [
     "Reservaties bijwerken: om de hoeveel uur",
     "Contactgegevens, kamer, data en betaling opnieuw lezen voor reservaties die binnenkort aankomen."
@@ -1580,6 +1592,18 @@ const HS_TEXT = {
    "robot.check_minutes": [
     "Safety net: every how many minutes",
     "Normally the Lighthouse notification mail starts the robot. It also starts as a safety net at fixed times from midnight: 60 = every full hour, 240 = 00:00, 04:00, 08:00, ... The time of the breakfast and cleaning list is chosen from these times. 0 = never on schedule. With all main switches off it never starts."
+   ],
+   "robot.nacht_van": [
+    "Night: from",
+    "From this time the robot only starts at the night times below, not every hour and not from a notification mail. Empty = no night."
+   ],
+   "robot.nacht_tot": [
+    "Night: until",
+    "Until this time. Notification mails from the night start the robot then."
+   ],
+   "robot.nacht_uren": [
+    "Night: robot at",
+    "Times at which the robot still runs at night, e.g. 01:00, 04:00. At most 3."
    ],
    "robot.contact_refresh_hours": [
     "Update reservations: every how many hours",

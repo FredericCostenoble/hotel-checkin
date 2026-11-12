@@ -130,6 +130,11 @@ doorsturen = ["info@hotellucca.be"]
 # robot). De robot heeft geen eigen schema in Azure: er start nooit een container om niets te doen, en met alle
 # hoofdschakelaars uit start hij helemaal niet (processes/robot_schedule.py). Per omgeving in de monitor te wijzigen.
 check_minutes = 60  # 0 = nooit op schema (alleen meldingsmail, gevraagde lijst of de knop)
+# 's Nachts gebeurt er met nieuwe reservaties toch niets: dan start de robot alleen op de nachtelijke uren (hoogstens 3),
+# niet elk uur en niet door een meldingsmail (die starten de robot aan het einde van de nacht). Leeg = geen nacht.
+nacht_van = "23:00"
+nacht_tot = "06:00"
+nacht_uren = "01:00, 04:00"
 contact_refresh_hours = 2
 # mail_trigger: de mailbox van checkin@ elke minuut nakijken op meldingen van Lighthouse/Cubilis
 # (via een regel doorgestuurd van info@) en dan meteen de robot starten. Per omgeving uit te zetten
