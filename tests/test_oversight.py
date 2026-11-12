@@ -155,3 +155,15 @@ def test_robot_down_alert(setup, monkeypatch):
     assert any("robot Lighthouse werkt niet" in m[1] for m in setup)
     repo.log_robot_run("lucca", "nieuwe_reservaties", datetime.now(UTC), True)
     assert oversight.robot_problem("lucca", 3) is None
+
+
+def test_not_placed_is_todo_not_problem():
+    """Nog geen kamer: gewone manier van werken (te doen, rood), geen probleem."""
+    from hotel_checkin.messaging import report
+
+    today = date(2026, 11, 12)
+    r = Reservation("lucca", "np", Guest("Ann", "Brand", email="a@b.be"), today, today + timedelta(days=1))
+    row = oversight.row("lucca", repo.save_reservation(r), today, today, True, True)
+    assert row["todo"] == ["nog niet geplaatst: kamer toewijzen"] and row["problemen"] == []
+    html = report.overview_html("t", [], [("Vandaag", [row])], "https://x")
+    assert "#FDECEC" in html and "kamer toewijzen" in html

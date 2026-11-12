@@ -66,6 +66,7 @@ def row(hotel_id: str, r: Reservation, day: date, today: date, code_active: bool
     in_pms = bool(r.access_codes) and r.pms_codes_line == pms_sync.wanted_line(r)
     problems = []  # echt mis: iemand moet iets doen (rood)
     info = []  # gewoon goed om te weten, geen fout (grijs)
+    todo = []  # gewone manier van werken, geen fout, maar iemand moet het nog doen (ook rood)
     if not (r.guest.email or r.guest.phone):
         problems.append("geen e-mailadres of gsm-nummer")
     if code_active and code_due:
@@ -77,8 +78,8 @@ def row(hotel_id: str, r: Reservation, day: date, today: date, code_active: bool
             problems.append("code-mail niet verstuurd")
         if has_code and safety.is_production() and not in_pms:
             problems.append("code staat nog niet in Lighthouse")
-    if not r.rooms:
-        problems.append("nog geen kamer toegewezen")
+    if not r.rooms:  # nieuwe reservatie die het hotel nog niet plaatste: te doen, geen fout
+        todo.append("nog niet geplaatst: kamer toewijzen")
     failed = [m for m in msgs if not m["ok"] and m["message_type"] in ("access_code", "pms_sync", "booking_payout")
               and not any(x["ok"] and x["message_type"] == m["message_type"] for x in msgs if x["RowKey"] > m["RowKey"])]
     if failed:
@@ -88,7 +89,7 @@ def row(hotel_id: str, r: Reservation, day: date, today: date, code_active: bool
             "contact": "ja" if (r.guest.email or r.guest.phone) else "nee",
             "betaald": paid, "code": has_code if (code_active and salto_live) else "-",
             "code_mail": code_mail if (code_active and messaging_on) else "-", "lighthouse": in_pms if has_code else "-",
-            "problemen": problems, "info": info, "_day": day.isoformat()}
+            "problemen": problems, "todo": todo, "info": info, "_day": day.isoformat()}
 
 
 def arrivals(hotel_id: str, today: date) -> dict[str, list[dict]]:
@@ -325,10 +326,12 @@ def activity(hotel_id: str, hours: int = 24) -> list[str]:
 def send_overview(hotel_id: str, today: date) -> bool:
     a = arrivals(hotel_id, today)
     problems = sum(1 for rows in a.values() for x in rows if x["problemen"])
+    todo = sum(1 for rows in a.values() for x in rows if x["todo"])
     name = load_hotel(hotel_id)["hotel"]["naam"]
     unpaid = sum(1 for rows in a.values() for x in rows if x["info"] and not x["problemen"])
     intro = [f"{len(a['today'])} aankomst(en) vandaag, {len(a['tomorrow'])} morgen."
              + (f" {problems} met een probleem (rood): nakijken." if problems else " Geen problemen.")
+             + (f" {todo} nog niet geplaatst (rood): kamer toewijzen." if todo else "")
              + (f" {unpaid} betaalt nog (code volgt na betaling), dat is normaal." if unpaid else "")]
     from hotel_checkin.processes.send_messages import switch
 
@@ -348,23 +351,26 @@ def send_overview(hotel_id: str, today: date) -> bool:
                                 [(f"Vandaag {today:%d/%m}", a["today"]), (f"Morgen {today + timedelta(days=1):%d/%m}", a["tomorrow"])],
                                 _monitor_url(), problems=failures, banners=banners,
                                 advice=failure_advice(failures))
-    subject = f"{name}: aankomsten {today:%d/%m}" + (f" ({problems} probleem)" if problems == 1 else f" ({problems} problemen)" if problems else "")
+    counts = ([f"{problems} probleem" if problems == 1 else f"{problems} problemen"] if problems else []) \
+        + ([f"{todo} nog te plaatsen"] if todo else [])
+    subject = f"{name}: aankomsten {today:%d/%m}" + (f" ({', '.join(counts)})" if counts else "")
     return _send(hotel_id, subject, body)
 
 
 def check(hotel_id: str, today: date, st: dict) -> int:
     """Waarschuwing als er bij de aankomsten van vandaag en morgen iets ontbreekt dat nog niet gemeld werd."""
     a = arrivals(hotel_id, today)
-    bad = [x for rows in a.values() for x in rows if x["problemen"]]
-    signature = sorted(f"{x['nummer']}:{'|'.join(x['problemen'])}" for x in bad)
+    bad = [x for rows in a.values() for x in rows if x["problemen"] or x["todo"]]
+    signature = sorted(f"{x['nummer']}:{'|'.join(x['problemen'] + x['todo'])}" for x in bad)
     reported = set(st.get("reported", {}).get(today.isoformat(), []))
     if not bad or set(signature) <= reported:
         return 0
     name = load_hotel(hotel_id)["hotel"]["naam"]
     body = report.overview_html(f"Let op: {len(bad)} aankomst(en) zonder alles wat nodig is",
                                 ["Dit moet nagekeken worden, anders staat de gast misschien zonder code aan de deur."],
-                                [(f"Vandaag {today:%d/%m}", [x for x in a["today"] if x["problemen"]]),
-                                 (f"Morgen {today + timedelta(days=1):%d/%m}", [x for x in a["tomorrow"] if x["problemen"]])],
+                                [(f"Vandaag {today:%d/%m}", [x for x in a["today"] if x["problemen"] or x["todo"]]),
+                                 (f"Morgen {today + timedelta(days=1):%d/%m}",
+                                  [x for x in a["tomorrow"] if x["problemen"] or x["todo"]])],
                                 _monitor_url())
     if _send(hotel_id, f"WAARSCHUWING {name}: {len(bad)} aankomst(en) niet in orde", body):
         st.setdefault("reported", {})[today.isoformat()] = sorted(reported | set(signature))
