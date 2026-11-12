@@ -167,3 +167,15 @@ def test_not_placed_is_todo_not_problem():
     assert row["todo"] == ["nog niet geplaatst: kamer toewijzen"] and row["problemen"] == []
     html = report.overview_html("t", [], [("Vandaag", [row])], "https://x")
     assert "#FDECEC" in html and "kamer toewijzen" in html
+
+
+def test_check_not_placed_is_no_warning(setup, monkeypatch):
+    """Alleen nog niet geplaatst: de controle mailt het wel, maar zonder WAARSCHUWING (geen fout)."""
+    _with(monkeypatch, checks=["17:00"])
+    today = date(2026, 11, 3)
+    r = Reservation("lucca", "n", Guest("Ann", "Peeters", email="ann@example.com"), today + timedelta(days=1),
+                    today + timedelta(days=2), booking_number="CPB-n", paid=True)
+    repo.save_reservation(r)
+    oversight.run("lucca", datetime(2026, 11, 3, 17, 5, tzinfo=oversight.clock.tz("lucca")))
+    sent = [m for m in setup if "nog te plaatsen" in m[1]]
+    assert sent and "WAARSCHUWING" not in sent[0][1] and "kamer toewijzen" in sent[0][2]

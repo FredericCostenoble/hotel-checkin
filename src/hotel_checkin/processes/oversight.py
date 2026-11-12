@@ -366,13 +366,20 @@ def check(hotel_id: str, today: date, st: dict) -> int:
     if not bad or set(signature) <= reported:
         return 0
     name = load_hotel(hotel_id)["hotel"]["naam"]
-    body = report.overview_html(f"Let op: {len(bad)} aankomst(en) zonder alles wat nodig is",
-                                ["Dit moet nagekeken worden, anders staat de gast misschien zonder code aan de deur."],
+    errors = sum(1 for x in bad if x["problemen"])
+    todo = sum(1 for x in bad if x["todo"])
+    # Nog niet geplaatst is gewoon te doen, geen fout: dan geen WAARSCHUWING
+    what = ", ".join(([f"{errors} niet in orde"] if errors else []) + ([f"{todo} nog te plaatsen"] if todo else []))
+    intro = (["Dit moet nagekeken worden, anders staat de gast misschien zonder code aan de deur."] if errors else [])
+    if todo:
+        intro.append("Nog niet geplaatst: kamer toewijzen in Lighthouse, dan volgt de code vanzelf.")
+    body = report.overview_html(f"Let op: aankomsten {what}", intro,
                                 [(f"Vandaag {today:%d/%m}", [x for x in a["today"] if x["problemen"] or x["todo"]]),
                                  (f"Morgen {today + timedelta(days=1):%d/%m}",
                                   [x for x in a["tomorrow"] if x["problemen"] or x["todo"]])],
                                 _monitor_url())
-    if _send(hotel_id, f"WAARSCHUWING {name}: {len(bad)} aankomst(en) niet in orde", body):
+    subject = (f"WAARSCHUWING {name}: aankomsten {what}" if errors else f"{name}: aankomsten {what}")
+    if _send(hotel_id, subject, body):
         st.setdefault("reported", {})[today.isoformat()] = sorted(reported | set(signature))
     return len(bad)
 
@@ -400,7 +407,7 @@ def run(hotel_id: str, now: datetime | None = None) -> list[str]:
         if _due(hm, at, day.get(f"check_{at}")):
             n = check(hotel_id, today, st)
             day[f"check_{at}"] = True
-            done.append(f"controle van {at}: " + (f"{n} aankomst(en) met een probleem, mail verstuurd naar {', '.join(cfg['email'])}"
+            done.append(f"controle van {at}: " + (f"{n} aankomst(en) niet in orde of nog te plaatsen, mail verstuurd naar {', '.join(cfg['email'])}"
                                                   if n else "alle aankomsten in orde, geen mail nodig"))
     from hotel_checkin.processes.send_messages import switch
 
