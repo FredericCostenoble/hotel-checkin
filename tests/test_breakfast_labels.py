@@ -109,3 +109,18 @@ def test_including_breakfast_rate_in_normal_case():
     r.folio = [{"label": "Family apartment - Non-refundable rate including breakfast BDC", "qty": None, "amount": 796.07},
                {"label": "Citytax", "qty": 12, "amount": 50.4}]
     assert breakfast(r)[0]
+
+
+def test_not_yet_placed_is_status_not_error(monkeypatch):
+    """Nog geen kamer op het planbord (nieuw, nog niet geplaatst): geen fout, label volgt in een latere run."""
+    r = repo.save_reservation(_r("NRF BREAKFAST INCL"))
+    monkeypatch.setattr(bl.lighthouse, "reservation_labels", lambda *a: {"rooms": [], "names": {"ONTBIJT": "15912"}})
+    logged = []
+    monkeypatch.setattr(bl.guests, "log_robot_run", lambda *a, **k: logged.append((a, k)))
+    result = bl.run("lucca", None, TODAY)
+    assert result["errors"] == [] and len(result["unplaced"]) == 1
+    assert not repo.get_reservation("lucca", r.reservation_id).breakfast_labeled_at  # volgende run opnieuw
+    bl.log_run("lucca", TODAY, result)
+    (_, _, _, ok, *_), kw = logged[0]
+    note = logged[0][0][-1]
+    assert ok and kw["skipped"] == 0 and "nog niet geplaatst" in note and "fout" not in note

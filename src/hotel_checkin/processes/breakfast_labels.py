@@ -17,6 +17,8 @@ aankomsten binnen zoveel dagen).
   keer gelezen als de robot ze nog niet kent.
 - Later ontbijt bijgeboekt: bij een melding "gewijzigd" en kort voor de aankomst leest de robot de reservatie
   opnieuw (Reservaties bijwerken); daarna kijkt deze taak de nieuwe folio na.
+Nog niet geplaatst (nog geen kamer op het planbord): geen fout maar een status. Het hotel plaatst nieuwe
+reservaties zelf; zolang dat niet gebeurd is, wacht de robot en zet hij het label in een latere run.
 Hoogstens MAX_SECONDS per run (eerst wie het eerst aankomt); de rest in een volgende run.
 """
 
@@ -103,7 +105,7 @@ def run(hotel_id: str, lh, today: date | None = None) -> dict:
     from hotel_checkin.processes.send_messages import switch
 
     result: dict = {"checked": 0, "labeled": [], "no": 0, "partial": [], "errors": [], "off": False,
-                    "read": 0, "left": 0}
+                    "read": 0, "left": 0, "unplaced": []}
     if not switch(hotel_id, "ontbijt_labels"):
         result["off"] = True
         return result
@@ -145,8 +147,9 @@ def run(hotel_id: str, lh, today: date | None = None) -> dict:
             label_id = board["names"].get(name)
             if not label_id:
                 raise RuntimeError(f"label {name} bestaat niet op het planbord")
-            if not board["rooms"]:
-                raise RuntimeError("reservatie niet gevonden op het planbord")
+            if not board["rooms"]:  # nog niet geplaatst door het hotel: wachten, geen fout
+                result["unplaced"].append(f"{label} (aankomst {r.arrival:%d/%m})")
+                continue
             added = 0
             for room in board["rooms"]:
                 if label_id not in room["labels"]:
@@ -208,6 +211,9 @@ def log_run(hotel_id: str, started: datetime, result: dict) -> None:
                      + "; ".join(result["partial"][:8]))
     if result["no"]:
         parts.append(f"{result['no']} zonder ontbijt")
+    if result["unplaced"]:
+        parts.append(f"{len(result['unplaced'])} nog niet geplaatst, label volgt na het plaatsen: "
+                     + ", ".join(result["unplaced"][:8]))
     if result["errors"]:
         parts.append(f"{len(result['errors'])} fout: " + "; ".join(result["errors"][:5]))
     if result["left"]:
