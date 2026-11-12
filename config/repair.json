@@ -1,0 +1,5 @@
+{
+  "id": "202611122304",
+  "summary": "Lighthouse zet nu soms een uitleg achter de kamerstatus (bijvoorbeeld \"INGECHECKT (De vorige gast is nog aanwezig)\"), waardoor de robot de kamers op de reservatie niet meer vond; de robot kijkt nu alleen naar het begin van die status en leest de kamers weer.",
+  "at": "2026-11-12T23:04:48+00:00"
+}
