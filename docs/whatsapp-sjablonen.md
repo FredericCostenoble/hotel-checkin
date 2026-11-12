@@ -11,6 +11,14 @@ Welke gegevens in welke plaats staan: `WHATSAPP_VARIABLES` in `processes/send_me
 Regels van Meta: een sjabloon begint en eindigt niet met een variabele, een variabele bevat geen nieuwe regel, en er
 moet genoeg vaste tekst zijn voor het aantal variabelen. Knoptekst hoogstens 25 tekens.
 
+## Toestemming
+
+WhatsApp en sms gaan alleen naar gsm-nummers die de gast zelf in het check-in-formulier invulde (zin onder het
+gsm-veld: met het nummer kan het hotel hem contacteren en ook via WhatsApp of sms berichten sturen). Een nummer dat
+alleen van Booking.com of Expedia komt, krijgt nooit WhatsApp of sms (`Guest.phone_consent`,
+`send_messages.recipients`). Daardoor gaan in de praktijk alleen de code-mail en de kamerwissel ook per WhatsApp:
+de herinnering gaat alleen naar wie het formulier nog niet invulde.
+
 ## Knop naar het check-in-formulier
 
 De knop heeft een vast begin en een variabel einde: `https://checkin.hotellucca.be/?r={{n}}`. De variabele is het

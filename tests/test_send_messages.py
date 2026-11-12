@@ -138,6 +138,7 @@ def test_confirmation_only_by_mail(setup, monkeypatch):
     monkeypatch.setattr(send_messages.whatsapp, "send_whatsapp_template", lambda *a, **k: calls.append(a))
     r = _res("c1")
     r.guest.phone = "+32470000001"
+    r.guest.phone_consent = ["+32470000001"]
     repo.save_reservation(r)
     send_messages.run("lucca")
     assert repo.was_sent("lucca", "c1", "confirmation") and not calls
@@ -159,6 +160,7 @@ def test_phone_whatsapp_then_sms_fallback(setup, monkeypatch):
                         or SendResult(Channel.SMS, to, True))
     r = _res("p1")
     r.guest.phone = "+32470000001"
+    r.guest.phone_consent = ["+32470000001"]
     repo.save_reservation(r)
     send_messages.run("lucca")
     assert [c[0] for c in calls] == ["wa"] and calls[0][1]["1"] == "Jan" and calls[0][1]["2"].endswith("&lang=nl") and "http" not in calls[0][1]["2"]
@@ -172,6 +174,20 @@ def test_phone_whatsapp_then_sms_fallback(setup, monkeypatch):
     rows = repo.messages_for("lucca", "p1")
     assert {(m["channel"], m["ok"]) for m in rows} == {("email", True), ("whatsapp", False), ("sms", True)}
     assert any(m.get("note") == "terugval: geen WhatsApp" for m in rows)
+
+
+def test_phone_only_with_consent_from_the_form(setup):
+    """WhatsApp en sms alleen naar nummers die de gast zelf in het check-in-formulier invulde."""
+    r = _res("k1")
+    r.guest.phone = "+32470000001"  # van de boekingssite
+    repo.save_reservation(r)
+    assert send_messages.recipients(repo.get_reservation("lucca", "k1"), "phone") == []
+    repo.mark_checkin_completed("lucca", "k1", "jan@example.com", None, "nl", backup_phone="+32470000009")
+    r = repo.get_reservation("lucca", "k1")
+    assert r.guest.phone_consent == ["+32470000009"]
+    assert send_messages.recipients(r, "phone") == ["+32470000009"]  # niet het nummer van de boekingssite
+    repo.mark_checkin_completed("lucca", "k1", "jan@example.com", "+32470000005", "nl")
+    assert send_messages.recipients(repo.get_reservation("lucca", "k1"), "phone") == ["+32470000005"]
 
 
 def test_failed_mail_retried_max_three_times(setup, monkeypatch):
@@ -251,6 +267,7 @@ def test_backup_contacts_get_messages_and_resend(setup, monkeypatch):
                         lambda h, to, text, status_callback=None: texts.append(to) or SendResult(Channel.SMS, to, True))
     r = _res("b1")
     r.guest.backup_email, r.guest.phone, r.guest.backup_phone = "Partner@example.com", "+32470000001", "+32470000002"
+    r.guest.phone_consent = ["+32470000001", "+32470000002"]
     repo.save_reservation(r)
     send_messages.run("lucca")
     assert sorted(to for to, _ in setup) == ["jan@example.com", "partner@example.com"]

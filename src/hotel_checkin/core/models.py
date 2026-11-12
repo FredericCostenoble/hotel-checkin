@@ -44,6 +44,9 @@ class Guest:
     backup_phone: str | None = None  # E.164
     relay_email: str | None = None  # doorstuuradres van Booking.com, Expedia, ... (bewaard als de gast een eigen adres gaf)
     channels: list[str] | None = None  # gekozen in het check-in-formulier: email (altijd), sms, whatsapp; None = nog niet gekozen
+    # Gsm-nummers die de gast zelf in het check-in-formulier invulde: daarmee gaf hij toestemming voor WhatsApp en sms
+    # (zin onder het gsm-veld). Alleen naar deze nummers gaan WhatsApp en sms; None = formulier niet ingevuld.
+    phone_consent: list[str] | None = None
 
 
 @dataclass

@@ -112,6 +112,7 @@ def _to_entity(r: Reservation) -> dict:
         "relay_email": (r.guest.relay_email or "").lower(),
         "backup_phone": r.guest.backup_phone or "",
         "channels": json.dumps(r.guest.channels) if r.guest.channels is not None else "",
+        "phone_consent": json.dumps(r.guest.phone_consent) if r.guest.phone_consent is not None else "",
         "arrival": r.arrival.isoformat(),
         "departure": r.departure.isoformat(),
         "rooms": json.dumps(r.rooms),
@@ -185,6 +186,7 @@ def _from_entity(e: dict) -> Reservation:
             relay_email=e.get("relay_email") or None,
             backup_phone=e.get("backup_phone") or None,
             channels=json.loads(e["channels"]) if e.get("channels") else None,
+            phone_consent=json.loads(e["phone_consent"]) if e.get("phone_consent") else None,
         ),
         arrival=date.fromisoformat(e["arrival"]),
         departure=date.fromisoformat(e["departure"]),
@@ -252,7 +254,7 @@ PMS_LABEL_FIELDS = ("pms_labels",)
 PAY_REQUEST_FIELDS = ("pay_requested_at",)
 PAY_LINK_FIELDS = ("pay_link",)
 PMS_SYNC_FIELDS = ("pms_codes_line", "room_statuses")
-FORM_FIELDS = ("email", "phone", "language", "backup_email", "backup_phone", "relay_email", "channels",
+FORM_FIELDS = ("email", "phone", "language", "backup_email", "backup_phone", "relay_email", "channels", "phone_consent",
                "checkin_completed_at", "stairs_help")
 STAIRS_MEMO_FIELDS = ("stairs_memo_at", "stairs_label_at", "internal_memo")
 SALTO_FIELDS = ("access_codes", "room_moves", "access_valid_from", "access_valid_until", "access_pin", "salto_user_id",
@@ -365,7 +367,7 @@ def all_form_submissions(hotel_id: str) -> list[dict]:
     return list(latest.values())
 
 
-_FORM_FIELDS = ("email", "phone", "backup_email", "backup_phone", "relay_email", "language")
+_FORM_FIELDS = ("email", "phone", "backup_email", "backup_phone", "relay_email", "language", "phone_consent")
 
 
 def _keep_form(reservation: Reservation, old: dict | None) -> None:
@@ -483,6 +485,8 @@ def mark_checkin_completed(
         r.guest.language = language
     r.guest.backup_email = backup_email or None
     r.guest.backup_phone = backup_phone or None
+    # Toestemming voor WhatsApp en sms: de nummers die de gast nu zelf invulde (een leeg veld = geen toestemming)
+    r.guest.phone_consent = [p for p in (phone, backup_phone) if p]
     if channels is not None:
         r.guest.channels = channels
     if stairs_help is not None:  # alleen als de vraag op het formulier stond

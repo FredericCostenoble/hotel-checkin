@@ -10,7 +10,8 @@ const API = window.CHECKIN_API || "";
   let langChosenByGuest = !!params.get("lang");
 
   const $ = (id) => document.getElementById(id);
-  const t = (key) => (I18N[lang][key] || I18N.en[key] || "").replace("{voornaam}", data ? data.first_name : "");
+  const t = (key) => (I18N[lang][key] || I18N.en[key] || "").replace("{voornaam}", data ? data.first_name : "")
+    .replace("{hotel}", data && data.hotel ? data.hotel.name : "");
 
   function fmtDate(iso) {
     const [y, m, d] = iso.split("-").map(Number);

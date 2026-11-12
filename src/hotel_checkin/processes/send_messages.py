@@ -333,7 +333,10 @@ def recipients(r: Reservation, kind: str, own_from_profile=_LOOKUP) -> list[str]
     if kind == "phone":
         from hotel_checkin.checkin.service import placeholder_phone
 
-        values = [p for p in (r.guest.phone, r.guest.backup_phone) if not placeholder_phone(p)]  # geen nepnummer
+        # Alleen nummers die de gast zelf in het check-in-formulier invulde (toestemming voor WhatsApp en sms),
+        # nooit een nummer dat alleen van de boekingssite komt; geen nepnummer
+        consent = set(r.guest.phone_consent or [])
+        values = [p for p in (r.guest.phone, r.guest.backup_phone) if p in consent and not placeholder_phone(p)]
     else:
         values = [v for v in (r.guest.email, r.guest.backup_email) if is_own_email(v)]
         if not values:
