@@ -4,7 +4,7 @@ from datetime import UTC, date, datetime, timedelta
 
 import pytest
 
-from hotel_checkin.core import workflow
+from hotel_checkin.core import clock, workflow
 from hotel_checkin.core.models import Channel, Guest, Reservation, ReservationStatus, SendResult
 from hotel_checkin.guests import repository as repo
 from hotel_checkin.messaging import templates
@@ -27,7 +27,7 @@ def setup(monkeypatch):
 
 
 def _res(rid, email="jan@example.com", arrival_in=30, status=ReservationStatus.READY_FOR_CHECKIN, paid=True):
-    arr = date.today() + timedelta(days=arrival_in)
+    arr = clock.today("lucca") + timedelta(days=arrival_in)  # kalender van het hotel, niet die van de server (UTC)
     r = Reservation("lucca", rid, Guest("Jan", "Voorbeeld", email=email, language="nl"), arr,
                     arr + timedelta(days=2), status=status, booking_number="CPB-1-" + rid, paid=paid)
     return repo.save_reservation(r)

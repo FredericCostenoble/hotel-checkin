@@ -8,6 +8,7 @@ import httpx
 import pytest
 
 from hotel_checkin.access import salto
+from hotel_checkin.core import clock
 from hotel_checkin.core.models import Guest, Reservation, ReservationStatus
 from hotel_checkin.guests import repository as repo
 from hotel_checkin.processes import grant_access
@@ -311,11 +312,12 @@ def test_users_removed_right_after_checkout(monkeypatch):
     monkeypatch.setattr(grant_access, "_cleanup", lambda h, u, g, f=None: removed.append(g))
     r = _res()
     r.access_codes = [{"room": "12", "pin": "1", "user_id": "u", "group_id": "g"}]
-    r.arrival, r.departure = date.today() - timedelta(days=2), date.today()
+    today = clock.today("lucca")  # kalender van het hotel, niet die van de server (UTC)
+    r.arrival, r.departure = today - timedelta(days=2), today
     r.access_valid_until = datetime.now(UTC) - timedelta(minutes=5)
     monkeypatch.setattr(grant_access.salto, "update_time_schedule", lambda *a: None)
     monkeypatch.setattr(grant_access.salto, "add_time_schedule", lambda *a: "s")
     # vertrekdag: de voordeur werkt nog tot het einde van de dag, dus nog niet opruimen
     assert "vertrokken: toegang ingetrokken" not in grant_access.follow_changes("lucca", r) and removed == []
-    r.arrival, r.departure = date.today() - timedelta(days=3), date.today() - timedelta(days=1)
+    r.arrival, r.departure = today - timedelta(days=3), today - timedelta(days=1)
     assert grant_access.follow_changes("lucca", r) == ["vertrokken: toegang ingetrokken"] and removed == ["g"]
