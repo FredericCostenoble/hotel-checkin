@@ -1,0 +1,22 @@
+De robot leest de kamers op de detailpagina weer. Ik heb config/repair.json geschreven en niets gecommit. Eén kanttekening: in de gewone UTC-run slagen 340 van de 342 tests, niet allemaal (zie hieronder).
+
+**Wat er veranderde in Lighthouse**
+De zelftest gaf "geen kamers gevonden" op de detailpagina. De robot vindt de kamers via de keuzelijst met de kamerstatus. Hij zocht daarin een optie die exact "INGECHECKT" heet. Op de nieuwe pagina staat er soms een uitleg achter die naam: `INGECHECKT (De vorige gast is nog aanwezig)`. Daardoor vond hij geen enkele kamer meer. De kamerrij zelf is niet veranderd.
+
+**Wat ik aanpaste** (alleen lezen, er komen geen schrijfacties bij)
+- `src/hotel_checkin/pms/lighthouse.py` (`_DETAIL_JS`): de keuzelijst wordt nu herkend aan een optie die *begint* met "INGECHECKT".
+- `src/hotel_checkin/pms/lighthouse_parse.py` (`accommodation_status`): een uitleg tussen haakjes achter de status wordt weggelaten. Zo telt een kamer met zo'n uitleg nog als ingecheckt.
+- `tests/test_lighthouse_parse.py`: een nieuwe test met een ingekorte kamerrij uit de nieuwe pagina, zonder gastnaam en met verzonnen ID's. Hier is geen browser beschikbaar, dus de echte code in Lighthouse heb ik niet kunnen draaien. De test bootst na hoe de browser de keuzelijst leest en controleert dat dezelfde regel als in `_DETAIL_JS` ze vindt.
+
+**Testresultaten**
+- `ruff check .` slaagt.
+- `pytest -q` geeft 340 geslaagd en 2 mislukt:
+  - `test_salto.py::test_users_removed_right_after_checkout`
+  - `test_send_messages.py::test_booking_on_arrival_day_gets_code`
+
+  Ik draaide de tests om 23:04 UTC, net na middernacht in Brussel. Op dat uur valt "vandaag" in UTC (12/11) niet samen met "vandaag" in Brussel (13/11). Met `TZ=Europe/Brussels pytest -q` slagen alle 342 tests. De twee tests gebruiken niets van wat ik wijzigde. Ik wilde ze ook draaien zonder mijn wijziging (`git stash`), maar dat werd geweigerd, dus dat heb ik niet kunnen controleren. Het is wel een zwakke plek: deze twee tests kunnen elke avond tussen 23:00 en 00:00 UTC mislukken, los van Lighthouse.
+
+**config/repair.json**
+De samenvatting zegt dat Lighthouse soms een uitleg achter de kamerstatus zet, dat de robot daardoor de kamers niet meer vond, en dat hij nu alleen naar het begin van de status kijkt en ze weer leest.
+
+`repair-log.txt` stond al los in de map voor ik begon; daar heb ik niet aan gekomen.

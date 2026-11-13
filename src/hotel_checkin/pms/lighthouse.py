@@ -123,8 +123,10 @@ _DETAIL_JS = r"""() => {
     const h = [...document.querySelectorAll('h1,h2,h3,h4,header *')].find(e => e.textContent.trim() === title);
     return h ? (h.closest('.jarviswidget') || h.parentElement.parentElement) : null;
   };
+  // Keuzelijst met de kamerstatus. Een optie kan een uitleg achter de naam hebben, bv.
+  // "INGECHECKT (De vorige gast is nog aanwezig)" (sinds 12/11/2026): alleen het begin telt.
   const rooms = [...document.querySelectorAll('select')]
-    .filter(s => [...s.options].some(o => o.text === 'INGECHECKT'))
+    .filter(s => [...s.options].some(o => /^\s*INGECHECKT\b/.test(o.text)))
     .map(s => ({ status: s.selectedOptions[0]?.text || '', value: s.value || '', text: txt(s.closest('tr') || s.parentElement.parentElement) }));
   const contactName = document.querySelector('#contact-name');
   const trans = [...document.querySelectorAll('h1,h2,h3,h4,h5,h6,legend,strong,b,span,div,p')].find(e => [...e.childNodes].filter(n => n.nodeType === 3).map(n => n.textContent).join('').trim() === 'Transacties');

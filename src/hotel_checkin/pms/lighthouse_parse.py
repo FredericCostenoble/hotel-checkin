@@ -258,7 +258,9 @@ def _after(label: str, text: str) -> str:
 
 def accommodation_status(statuses: list[str]) -> ReservationStatus:
     """Status per kamer (KLAAR OM IN TE CHECKEN / INGECHECKT / UITGECHECKT) naar één status."""
-    s = [x.upper() for x in statuses if x and x != "-"]
+    # Lighthouse zet soms uitleg achter de naam, bv. "INGECHECKT (De vorige gast is nog aanwezig)": weglaten
+    s = [re.sub(r"\(.*?\)", "", x).replace("\xa0", " ").strip().upper() for x in statuses if x]
+    s = [x for x in s if x and x != "-"]
     if s and all(x == "UITGECHECKT" for x in s):
         return ReservationStatus.CHECKED_OUT
     if s and all(x in ("INGECHECKT", "UITGECHECKT") for x in s):

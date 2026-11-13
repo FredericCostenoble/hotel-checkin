@@ -1,5 +1,6 @@
 """Lighthouse-tekst omzetten, met verzonnen voorbeeldgegevens in de opmaak van Lighthouse."""
 
+import re
 from datetime import date, datetime
 
 from hotel_checkin.core.models import ReservationStatus
@@ -260,3 +261,68 @@ def test_detail_dates_note_is_not_an_error():
     assert r.read_notes == [("data van de kamers gebruikt (25/10 tot 29/10), want Aankomst op 'verschillende', "
                              "Vertrek op 'do 29 okt. 2026'")]
     assert parse_detail("lucca", "0A1B2C3D-1111-2222-3333-444455556666", DETAIL).read_notes == []
+
+
+# Kamerrij uit de detailpagina zoals Lighthouse ze sinds 12/11/2026 toont (ingekort, zonder gastnaam, ID's verzonnen):
+# de optie INGECHECKT heeft nu uitleg achter de naam als de vorige gast nog aanwezig is.
+ROOM_ROW_2026_11_12 = """<table><tbody>
+<tr class="accommodation-row " data-id="00000000-0000-0000-0000-000000000001" data-unit="45058"
+    data-searchabledata="23 SUPERIOR DOUBLE ROOM">
+    <td class=" td-checkinout-accommodation">
+            <select class="form-control btn_checkinout" data-href="/Customer/Reservations/EditAccommodationCheckInOut?reservationIdentifier=00000000-0000-0000-0000-000000000002&amp;detailIdentifier=00000000-0000-0000-0000-000000000001&amp;target=checkin" data-accommodationid="00000000-0000-0000-0000-000000000001">
+                <option selected="selected" value="none">-</option>
+                    <option value="readyforcheckin">
+                        KLAAR OM IN TE CHECKEN
+                    </option>
+                <option value="checkin" disabled="">
+                    INGECHECKT
+                 (De vorige gast is nog aanwezig)&nbsp;&nbsp;</option>
+                <option value="checkout">
+                    UITGECHECKT
+                </option>
+            </select>
+    </td>
+</tr></tbody></table>"""
+
+
+def _option_texts(html: str) -> list[str]:
+    """Zoals option.text in de browser: witruimte samengevoegd en aan de randen weg (een harde spatie blijft)."""
+    from html.parser import HTMLParser
+
+    texts: list[str] = []
+
+    class Options(HTMLParser):
+        current: str | None = None
+
+        def handle_starttag(self, tag, attrs):
+            if tag == "option":
+                self.current = ""
+
+        def handle_data(self, data):
+            if self.current is not None:
+                self.current += data
+
+        def handle_endtag(self, tag):
+            if tag == "option" and self.current is not None:
+                texts.append(re.sub(r"[ \t\n\r\f]+", " ", self.current).strip(" \t\n\r\f"))
+                self.current = None
+
+    Options().feed(html)
+    return texts
+
+
+def test_room_status_select_with_explanation_2026_11_12():
+    from hotel_checkin.pms.lighthouse import _DETAIL_JS
+    from hotel_checkin.pms.lighthouse_parse import accommodation_status
+
+    texts = _option_texts(ROOM_ROW_2026_11_12)
+    assert "INGECHECKT" not in texts  # daarom vond de oude, exacte vergelijking geen kamers meer
+    # Dezelfde regel als in _DETAIL_JS vindt de keuzelijst wel
+    assert r"/^\s*INGECHECKT\b/.test(o.text)" in _DETAIL_JS
+    assert any(re.match(r"^\s*INGECHECKT\b", t) for t in texts)
+    # Een status met uitleg telt nog als ingecheckt
+    checked_in = next(t for t in texts if t.startswith("INGECHECKT"))
+    assert accommodation_status([checked_in]) == ReservationStatus.CHECKED_IN
+    assert accommodation_status([checked_in, "UITGECHECKT"]) == ReservationStatus.CHECKED_IN
+    assert accommodation_status(["KLAAR OM IN TE CHECKEN"]) == ReservationStatus.READY_FOR_CHECKIN
+    assert accommodation_status(["-"]) == ReservationStatus.READY_FOR_CHECKIN
