@@ -74,3 +74,18 @@ def test_new_problem_asks_the_repair_robot(setup, monkeypatch):
     pms_health.run("lucca", object())
     pms_health.run("lucca", object())  # zelfde probleem: niet opnieuw
     assert setup == [("repair.yml", {"environment": "tst", "hotel": "lucca"})]
+
+
+def test_selftest_right_after_deploy_on_prd_only_when_blocked(setup, monkeypatch):
+    from hotel_checkin.admin import cloud_robot
+
+    started = []
+    monkeypatch.setattr(cloud_robot, "start", lambda: started.append(1))
+    monkeypatch.setenv("APP_ENV", "prd")
+    monkeypatch.setattr(repair, "env", lambda: "prd")
+    _health(True, at="2026-11-09T00:01:00+00:00")  # PRD in orde: geen extra run
+    assert not repair.ensure_selftest("lucca") and started == []
+    _health(False, at="2026-11-09T00:01:00+00:00")  # geblokkeerd, zelftest van voor de uitrol: meteen opnieuw
+    assert repair.ensure_selftest("lucca") and started == [1]
+    assert repo.get_state("lucca", repair.SELFTEST_REQUEST) == "360"  # pms_health.due ziet de vraag
+    assert not repair.ensure_selftest("lucca") and started == [1]  # één keer per versie

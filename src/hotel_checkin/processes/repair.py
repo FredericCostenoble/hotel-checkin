@@ -4,7 +4,8 @@
    vraagt de herstelrobot een oplossing (GitHub-workflow repair.yml, één keer per probleem).
 2. De herstelrobot past de code aan met het bewaarde bewijs. Slagen alle tests, dan gaat de oplossing vanzelf
    naar TST (nooit naar PRD). Ze laat een notitie achter in config/repair.json (id, wat er veranderde).
-3. Op TST draait de zelftest meteen opnieuw (ensure_selftest), op het echte Lighthouse.
+3. Op TST draait de zelftest meteen opnieuw (ensure_selftest), op het echte Lighthouse. Na de uitrol naar PRD
+   ook daar meteen, zolang de robot er geblokkeerd is.
 4. De mail en de monitor zeggen in gewone woorden wat er aan de hand is en wat te doen. Op TST kunnen alleen
    de mensen uit [beheer] prd_vrijgeven de oplossing naar PRD zetten (promote), en alleen als de zelftest op TST
    in orde is en er intussen niets anders bij kwam.
@@ -120,13 +121,17 @@ def _promotable(s: dict) -> tuple[bool, str]:
 
 
 def ensure_selftest(hotel_id: str) -> bool:
-    """Op TST: draait er een nieuwe versie met een herstelling waarvoor de zelftest nog niet gebeurde, dan de
-    zelftest vragen en de robot starten (één keer per versie). Aangeroepen door de timer."""
+    """Draait er een nieuwe versie met een herstelling waarvoor de zelftest nog niet gebeurde, dan de zelftest
+    vragen en de robot starten (één keer per versie). Aangeroepen door de timer.
+    Op TST altijd (om de knop naar PRD vrij te geven). Op PRD alleen als de robot geblokkeerd is: anders wacht de
+    geblokkeerde robot na de uitrol tot de dagelijkse zelftest van de volgende dag."""
     from hotel_checkin.admin import cloud_robot
     from hotel_checkin.processes import pms_health
 
     b = build()
-    if env() != "tst" or not own_repair() or not b.get("built_utc"):
+    if not own_repair() or not b.get("built_utc"):
+        return False
+    if env() != "tst" and pms_health.state(hotel_id).get("ok") is not False:
         return False
     if pms_health.state(hotel_id).get("checked_at", "") >= b["built_utc"]:
         return False

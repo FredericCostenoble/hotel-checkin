@@ -355,7 +355,7 @@ def mail_trigger(timer: func.TimerRequest) -> None:
             robot_schedule.run(hotel_id)
         except Exception:
             logging.exception("%s: robot op schema starten mislukt", hotel_id)
-        try:  # TST: nieuwe versie met een herstelling voor Lighthouse? Dan meteen de zelftest
+        try:  # Nieuwe versie met een herstelling voor Lighthouse? Dan meteen de zelftest (PRD: alleen als geblokkeerd)
             from hotel_checkin.processes import repair
 
             repair.ensure_selftest(hotel_id)
