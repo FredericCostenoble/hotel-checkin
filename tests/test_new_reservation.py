@@ -157,26 +157,6 @@ def test_robot_refresh_every_two_hours(monkeypatch):
     assert not robot._refresh_due("lucca")
 
 
-def test_robot_check_interval_per_hotel(monkeypatch):
-    from datetime import timedelta
-
-    from hotel_checkin import robot
-
-    monkeypatch.delenv("ROBOT_MANUAL", raising=False)
-    assert robot._check_due("lucca") is None  # Lucca: check_minutes = 0, elke run op schema
-    monkeypatch.setenv("LUCCA_ROBOT_CHECK_MINUTES", "60")  # een trager hotel
-    assert robot._check_due("lucca") is None  # None = tijd voor een run (nog geen run)
-    now = datetime.now(UTC)
-    repo.log_robot_run("lucca", new_reservation.TASK, now - timedelta(minutes=5), True)
-    why = robot._check_due("lucca")  # om de 60 minuten
-    assert why and "overgeslagen" in why and "60 minuten" in why
-    monkeypatch.setenv("LUCCA_ROBOT_CHECK_MINUTES", "5")
-    assert robot._check_due("lucca") is None  # per omgeving overschreven
-    monkeypatch.setenv("LUCCA_ROBOT_CHECK_MINUTES", "60")
-    monkeypatch.setenv("ROBOT_MANUAL", "1")
-    assert robot._check_due("lucca") is None  # knop in de monitor
-
-
 def test_robot_skips_when_other_run_busy():
     from hotel_checkin import robot
 

@@ -30,7 +30,8 @@ def _choices(hotel_id: str, section: str, key: str, changes: dict | None = None)
         from hotel_checkin.processes import robot_schedule
 
         every = (changes or {}).get("robot", {}).get("check_minutes")
-        return tuple(robot_schedule.slots(float(every) if every not in (None, "") else robot_schedule.minutes(hotel_id)))
+        return tuple(robot_schedule.slots(float(every) if every not in (None, "") else robot_schedule.minutes(hotel_id),
+                                          hotel_id))
     return CHOICES.get((section, key), ())
 
 

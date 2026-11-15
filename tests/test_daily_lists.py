@@ -298,6 +298,9 @@ def test_robot_schedule_from_the_function_app(monkeypatch):
     monkeypatch.setattr(cloud_robot, "start", lambda: starts.append(1) or True)
     monkeypatch.setenv("LUCCA_SCHAKELAARS_RESERVATIES", "true")
     assert robot_schedule.slots(60)[:3] == ["00:00", "01:00", "02:00"] and len(robot_schedule.slots(240)) == 6
+    # met het hotel: 's nachts (23:00 tot 06:00) alleen 01:00 en 04:00, zoals de robot echt draait
+    assert robot_schedule.slots(60, "lucca")[:4] == ["01:00", "04:00", "06:00", "07:00"]
+    assert "23:00" not in robot_schedule.slots(60, "lucca") and "22:00" in robot_schedule.slots(60, "lucca")
     t = datetime(2026, 11, 5, 9, 0, tzinfo=TZ)
     repo.log_robot_run("lucca", new_reservation.TASK, t - timedelta(minutes=30), True)  # 08:30 (meldingsmail)
     assert robot_schedule.run("lucca", t - timedelta(minutes=10)) == ""  # 08:50: run van 08:30 hoort bij dit uur

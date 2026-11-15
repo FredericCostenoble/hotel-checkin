@@ -107,29 +107,6 @@ def _store_session(hotel_id: str) -> None:
         logging.warning("%s: sessie van Lighthouse niet bewaard", hotel_id, exc_info=True)
 
 
-def _check_due(hotel_id: str) -> str | None:
-    """Is het tijd om opnieuw naar nieuwe reservaties te kijken voor dit hotel? None = ja, anders de reden
-    waarom niet (voor het robotlog)."""
-    if os.environ.get("ROBOT_MANUAL"):
-        return None
-    minutes = float(hotel_setting(hotel_id, "ROBOT_CHECK_MINUTES", default="0", shared=False) or 0)
-    if minutes <= 0:
-        return None  # elke run op schema gaat door
-    runs = [r for r in guests.robot_runs(hotel_id, task=new_reservation.TASK) if r.get("ok")]
-    if not runs:
-        return None
-    last = datetime.fromisoformat(runs[0]["started_at"])
-    # 2 minuten marge: een run op schema start nooit precies op dezelfde seconde
-    if datetime.now(UTC) - last >= timedelta(minutes=minutes) - timedelta(minutes=2):
-        return None
-    from hotel_checkin.core import clock
-
-    tz = clock.tz(hotel_id)
-    nxt = last + timedelta(minutes=minutes) - timedelta(minutes=2)
-    return (f"run op schema overgeslagen: vorige run om {last.astimezone(tz):%H:%M}, de robot kijkt om de "
-            f"{minutes:g} minuten (instelling Robot: hoe vaak), volgende vanaf {nxt.astimezone(tz):%H:%M}")
-
-
 SKIP_TASK = "robot"  # regel in het robotlog als een run niets doet (overgeslagen of al een andere bezig)
 LOCK_KEY = "robot_running"
 LOCK_MINUTES = 35  # een run duurt hoogstens 30 minuten (time-out van de job); ouder = vastgelopen
@@ -256,7 +233,8 @@ def main() -> int:
         except Exception:
             logging.exception("%s: formulieren nakijken mislukt", hotel_id)
         me = os.environ.get("CONTAINER_APP_JOB_EXECUTION_NAME", "") or f"lokaal-{os.getpid()}"
-        skip = (None if args.hours else _check_due(hotel_id)) or _other_run(hotel_id, me)
+        # Wanneer de robot draait, beslist alleen de Function App (processes/robot_schedule.py): geen eigen schema hier
+        skip = _other_run(hotel_id, me)
         if skip:
             logging.info("%s: %s", hotel_id, skip)
             guests.log_robot_run(hotel_id, SKIP_TASK, datetime.now(UTC), True, 0, 0, skip)

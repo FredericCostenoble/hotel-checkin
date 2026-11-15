@@ -3,7 +3,8 @@
 De robot (Container Apps Job) start nooit meer op een eigen schema in Azure: een container starten om niets te doen
 kost geld. De Function App kijkt elke minuut (timer van de meldingen) en start de robot alleen als:
 - de robot iets te doen heeft (niet alle hoofdschakelaars uit, send_messages.robot_needed), en
-- het een vast uur is (om de [robot] check_minutes vanaf middernacht, bv. 60 = elk heel uur; instelling in de monitor,
+- het een vast uur is (last_planned: het enige schema, ook gebruikt door het alarm en de keuze van het uur van de
+  lijsten; om de [robot] check_minutes vanaf middernacht, bv. 60 = elk heel uur; instelling in de monitor,
   per omgeving; 0 = nooit op schema, alleen bij een meldingsmail, een gevraagde lijst of de knop "Robot nu draaien"),
   en er sinds dat uur nog geen run was.
 's Nachts ([robot] nacht_van tot nacht_tot, bv. 23:00 tot 06:00) gebeurt er met nieuwe reservaties toch niets: dan
@@ -98,14 +99,19 @@ def _last_run(hotel_id: str) -> datetime | None:
     return datetime.fromisoformat(runs[0]["started_at"]) if runs else None
 
 
-def slots(every: float) -> list[str]:
+def slots(every: float, hotel_id: str | None = None) -> list[str]:
     """Vaste uren van het vangnet ("HH:MM"), elke dag vanaf middernacht om de `every` minuten, bv. om de 60 minuten:
-    00:00, 01:00, ... De ontbijt- en schoonmaaklijst kiezen een van deze uren: dan is hun robotrun meteen de run van
-    het vangnet, zonder extra run."""
+    00:00, 01:00, ... Met een hotel: 's nachts alleen de nachtelijke uren, zoals de robot echt draait. De ontbijt- en
+    schoonmaaklijst kiezen een van deze uren: dan is hun robotrun meteen de run van het vangnet, zonder extra run."""
     if every <= 0:
         return []
     step = max(int(every), 5)
-    return [f"{m // 60:02d}:{m % 60:02d}" for m in range(0, 24 * 60, step)]
+    out = [(m // 60, m % 60) for m in range(0, 24 * 60, step)]
+    window = night_window(hotel_id) if hotel_id else None
+    if window:
+        night = night_times(hotel_id)
+        out = sorted({t for t in out if not _in_window(t, window)} | set(night))
+    return [f"{h:02d}:{m:02d}" for h, m in out]
 
 
 def _slot_start(every: float, now: datetime) -> datetime:
@@ -146,12 +152,9 @@ def due(hotel_id: str, now: datetime | None = None) -> bool:
     if every <= 0 or not robot_needed(hotel_id):
         return False
     now = (now or datetime.now(UTC)).astimezone(clock.tz(hotel_id))
-    if is_night(hotel_id, now):
-        start = _night_slot_start(hotel_id, now)
-        if start is None:
-            return False  # nog geen nachtelijk uur voorbij
-    else:
-        start = _slot_start(every, now)
+    if is_night(hotel_id, now) and _night_slot_start(hotel_id, now) is None:
+        return False  # nog geen nachtelijk uur voorbij: de run van voor de nacht volstaat
+    start = last_planned(hotel_id, now)  # hetzelfde schema als het alarm (oversight.robot_problem)
     last = _last_run(hotel_id)
     tried = guests.get_state(hotel_id, STATE)
     if tried and datetime.fromisoformat(tried) >= start and now - datetime.fromisoformat(tried) < timedelta(
