@@ -115,7 +115,8 @@ GRACE_MINUTES = 30  # zoveel na een vast uur van het vangnet moet de run van dat
 def robot_problem(hotel_id: str, max_hours: float, now: datetime | None = None) -> str | None:
     """Alarm alleen als de robot een gepland uur van het vangnet gemist heeft: het uur is meer dan GRACE_MINUTES
     voorbij en er is sinds dat uur geen geslaagde run (ook niet door een melding van Lighthouse). Zo geeft een
-    omgeving die maar om de 4 uur draait (TST) geen alarm tussen twee runs. Een bevroren omgeving (robot niet
+    omgeving die maar om de 4 uur draait (TST) geen alarm tussen twee runs, en 's nachts geen alarm tussen de
+    nachtelijke uren. Een bevroren omgeving (robot niet
     nodig) geeft nooit alarm. Zonder vangnet (0 minuten): alarm na max_hours zonder geslaagde run."""
     from hotel_checkin.processes import new_reservation, robot_schedule
     from hotel_checkin.processes.send_messages import robot_needed
@@ -128,11 +129,10 @@ def robot_problem(hotel_id: str, max_hours: float, now: datetime | None = None) 
         return "de robot heeft nog geen geslaagde run" if runs else None
     last = datetime.fromisoformat(ok[0]["started_at"])
     now = (now or datetime.now(UTC)).astimezone(clock.tz(hotel_id))
-    every = robot_schedule.minutes(hotel_id)
-    if every > 0:
-        slot = robot_schedule._slot_start(every, now)
-        if now - slot < timedelta(minutes=GRACE_MINUTES):
-            slot -= timedelta(minutes=max(int(every), 5))  # de run van dit uur mag nog bezig zijn: het vorige uur
+    # De run van het laatste vaste uur mag nog GRACE_MINUTES bezig zijn. Het schema is dat van de robot zelf,
+    # met de nacht erbij ('s nachts alleen de nachtelijke uren, robot_schedule.last_planned).
+    slot = robot_schedule.last_planned(hotel_id, now - timedelta(minutes=GRACE_MINUTES))
+    if slot is not None:
         missed = last < slot
         what = f"geen geslaagde run voor het geplande uur van {slot:%H:%M}"
     else:

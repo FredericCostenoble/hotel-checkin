@@ -115,6 +115,27 @@ def _slot_start(every: float, now: datetime) -> datetime:
     return now.replace(hour=start // 60, minute=start % 60, second=0, microsecond=0)
 
 
+def last_planned(hotel_id: str, now: datetime) -> datetime | None:
+    """Het laatste vaste uur (now in lokale tijd) waarop de robot volgens het schema moest draaien, met de nacht
+    erbij: 's nachts alleen de nachtelijke uren, en voor het eerste nachtelijke uur het laatste gewone uur voor de
+    nacht. Gebruikt door de controle die alarm geeft als een run gemist werd (oversight.robot_problem), zodat die
+    hetzelfde schema volgt als de robot. None als er geen vast schema is (0 minuten)."""
+    every = minutes(hotel_id)
+    if every <= 0:
+        return None
+    slot = _slot_start(every, now)
+    if not is_night(hotel_id, slot):
+        return slot
+    found = _night_slot_start(hotel_id, now)
+    if found is not None:
+        return found
+    (sh, sm), _ = night_window(hotel_id)
+    begin = now.replace(hour=sh, minute=sm, second=0, microsecond=0)
+    if begin > now:
+        begin -= timedelta(days=1)
+    return _slot_start(every, begin - timedelta(minutes=1))
+
+
 def due(hotel_id: str, now: datetime | None = None) -> bool:
     """Op de vaste uren (slots): de robot starten als er sinds het begin van dit uur nog geen run was (ook niet door
     een meldingsmail of een gevraagde lijst) en hij nog niet gestart werd."""

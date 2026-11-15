@@ -179,3 +179,40 @@ def test_check_not_placed_is_no_warning(setup, monkeypatch):
     oversight.run("lucca", datetime(2026, 11, 3, 17, 5, tzinfo=oversight.clock.tz("lucca")))
     sent = [m for m in setup if "nog te plaatsen" in m[1]]
     assert sent and "WAARSCHUWING" not in sent[0][1] and "kamer toewijzen" in sent[0][2]
+
+
+def test_no_robot_alert_at_night_between_night_times(setup, monkeypatch):
+    """'s Nachts (23:00 tot 06:00) draait de robot alleen om 01:00 en 04:00: geen alarm tussen die uren
+    (15/11: alarm om 05:45 omdat er geen run was om 05:00), wel als de run van 04:00 of van 06:00 gemist werd."""
+    from hotel_checkin.processes import new_reservation
+
+    monkeypatch.setenv("LUCCA_SCHAKELAARS_RESERVATIES", "true")
+    tz = oversight.clock.tz("lucca")
+
+    def at(h, m=0, day=15):
+        return datetime(2026, 11, day, h, m, tzinfo=tz)
+
+    repo.log_robot_run("lucca", new_reservation.TASK, at(22, 1, day=14), True, 0, 0, "ok")
+    assert oversight.robot_problem("lucca", 3, at(0, 30)) is None  # geen uur gepland tussen 23:00 en 01:00
+    assert oversight.robot_problem("lucca", 3, at(1, 20)) is None  # run van 01:00 mag nog bezig zijn
+    alarm = oversight.robot_problem("lucca", 3, at(1, 40))  # 01:00 gemist
+    assert alarm and "01:00" in alarm
+    repo.log_robot_run("lucca", new_reservation.TASK, at(4, 1), True, 0, 0, "ok")
+    for t in (at(4, 40), at(5, 45), at(6, 20)):
+        assert oversight.robot_problem("lucca", 3, t) is None, t
+    alarm = oversight.robot_problem("lucca", 3, at(6, 40))  # 06:00 (einde van de nacht) gemist
+    assert alarm and "06:00" in alarm
+    assert oversight.robot_problem("lucca", 3, at(23, 40, day=14)) is None  # run van 22:00 gebeurd, 23:00 is nacht
+
+
+def test_no_robot_alert_at_night_on_tst_every_4_hours(setup, monkeypatch):
+    """TST (om de 4 uur): de laatste run om 22:44 is genoeg tot het eerste nachtelijke uur (15/11: alarm om 00:30)."""
+    from hotel_checkin.processes import new_reservation
+
+    monkeypatch.setenv("LUCCA_ROBOT_CHECK_MINUTES", "240")
+    monkeypatch.setenv("LUCCA_SCHAKELAARS_RESERVATIES", "true")
+    tz = oversight.clock.tz("lucca")
+    repo.log_robot_run("lucca", new_reservation.TASK, datetime(2026, 11, 14, 22, 44, tzinfo=tz), True, 0, 0, "ok")
+    assert oversight.robot_problem("lucca", 3, datetime(2026, 11, 15, 0, 30, tzinfo=tz)) is None
+    assert oversight.robot_problem("lucca", 3, datetime(2026, 11, 15, 1, 10, tzinfo=tz)) is None
+    assert oversight.robot_problem("lucca", 3, datetime(2026, 11, 15, 1, 40, tzinfo=tz))  # 01:00 gemist
