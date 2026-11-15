@@ -2009,5 +2009,26 @@ function envSwitch() {
   };
 }
 
+// Smartphone: tabellen tonen als kaartjes (CSS, admin.css "Smartphone"). Elke cel krijgt de kolomnaam als label,
+// zodat elke regel "kolom: waarde" leest. Werkt vanzelf voor elke tabel met kolomtitels, ook na opnieuw tekenen.
+function labelCells(table) {
+  const heads = [...table.querySelectorAll("thead th")].map(th => th.textContent.replace(/[\u2191\u2193]/g, "").trim());
+  if (!heads.length) return;
+  table.classList.add("cards");
+  table.querySelectorAll("tbody tr").forEach(tr => {
+    let i = 0;
+    [...tr.children].forEach(td => {
+      const span = Number(td.getAttribute("colspan") || 1);
+      if (span > 1) td.classList.add("full"); else if (heads[i]) td.dataset.label = heads[i];
+      i += span;
+    });
+  });
+}
+let labelTimer = null;
+new MutationObserver(() => {
+  clearTimeout(labelTimer);
+  labelTimer = setTimeout(() => document.querySelectorAll("table").forEach(labelCells), 50);
+}).observe(document.body, { childList: true, subtree: true, characterData: true });
+
 // Als laatste: alle functies en variabelen hierboven bestaan dan
 init().catch(e => { document.body.insertAdjacentHTML("beforeend", `<p class="err">${t("load_error")}: ${esc(e.message)}</p>`); });
