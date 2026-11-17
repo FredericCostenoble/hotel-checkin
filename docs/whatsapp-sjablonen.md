@@ -98,3 +98,9 @@ In Twilio bij het nummer (sms) en de WhatsApp-afzender: "A message comes in" =
 `https://<function app>/api/twilio/incoming?h=lucca` (POST). Het bericht gaat per mail naar `[twilio] doorsturen`,
 de afzender krijgt één keer per 12 uur een automatisch antwoord met `[twilio] contact_whatsapp`
 (`processes/incoming.py`). Het personeel krijgt geen automatisch antwoord.
+
+## Oproepen op het nummer
+
+"A call comes in" = `https://<function app>/api/twilio/voice?h=lucca` (POST): overdag naar `[hotel] telefoon`,
+van `[doorschakelen] avond_van` tot `avond_tot` naar `[nood] nummer` (`processes/call_forward.py`).
+"Primary handler fails" = de TwiML Bin "Forward to hotel" (vast naar de gsm van het hotel), als vangnet.

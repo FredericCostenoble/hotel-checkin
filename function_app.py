@@ -106,6 +106,24 @@ def twilio_incoming(req: func.HttpRequest) -> func.HttpResponse:
     return func.HttpResponse("<Response></Response>", mimetype="text/xml")
 
 
+@app.route(route="api/twilio/voice", methods=["POST"], auth_level=func.AuthLevel.ANONYMOUS)
+def twilio_voice(req: func.HttpRequest) -> func.HttpResponse:
+    """Oproep op het Twilio-nummer: doorschakelen naar het hotel, of 's avonds naar het noodnummer
+    (processes/call_forward.py). Alleen met een geldige handtekening van Twilio. Bij een fout antwoordt Twilio met
+    de vaste TwiML Bin van het nummer ("Primary handler fails")."""
+    from urllib.parse import parse_qsl
+
+    from hotel_checkin.messaging import voice
+    from hotel_checkin.messaging._twilio import valid_signature
+    from hotel_checkin.processes import call_forward
+
+    hotel = req.params.get("h", "")
+    form = dict(parse_qsl(req.get_body().decode("utf-8", "replace")))
+    if hotel not in list_hotels() or not valid_signature(hotel, req.url, form, req.headers.get("X-Twilio-Signature", "")):
+        return func.HttpResponse(status_code=403)
+    return func.HttpResponse(voice.forward_twiml(call_forward.number(hotel)), mimetype="text/xml")
+
+
 @app.route(route="api/lists/{hotel}/{kind}/{day}/{expires}/{sig}/{name}", methods=["GET"],
            auth_level=func.AuthLevel.ANONYMOUS)
 def list_pdf(req: func.HttpRequest) -> func.HttpResponse:

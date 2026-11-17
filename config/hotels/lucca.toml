@@ -110,7 +110,14 @@ naam = "Biekorf"
 minuten = "2"
 
 [nood]
-nummer = "+32 471 18 15 74"   # TODO: nummer voor 's avonds en 's nachts
+nummer = "+32 471 18 15 74"   # nummer voor 's avonds en 's nachts (Seppe)
+
+[doorschakelen]
+# Oproepen naar het Twilio-nummer (processes/call_forward.py): overdag naar [hotel] telefoon, van avond_van tot
+# avond_tot naar [nood] nummer. Leeg = altijd naar [hotel] telefoon. In Twilio bij het nummer: "A call comes in" =
+# https://<function app>/api/twilio/voice?h=lucca (POST), "Primary handler fails" = TwiML Bin naar het hotel.
+avond_van = "18:30"
+avond_tot = "08:00"
 
 [twilio]
 # Afzendnummers van dit hotel (niet geheim). Het Twilio-account zelf is gedeeld (Key Vault).

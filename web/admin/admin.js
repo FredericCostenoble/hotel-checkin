@@ -1300,6 +1300,14 @@ const HS_TEXT = {
     "Vangnet: om de hoeveel minuten",
     "Normaal start de meldingsmail van Lighthouse de robot. Daarnaast start hij als vangnet op vaste uren vanaf middernacht: 60 = elk heel uur, 240 = 00:00, 04:00, 08:00, ... Uit die uren kies je ook het uur van de ontbijt- en schoonmaaklijst. 0 = nooit op schema. Met alle hoofdschakelaars uit start hij nooit."
    ],
+   "doorschakelen.avond_van": [
+    "Oproepen 's avonds: vanaf",
+    "Vanaf dit uur gaan oproepen naar het Twilio-nummer naar het noodnummer in plaats van naar de telefoon van het hotel. Leeg = altijd naar het hotel."
+   ],
+   "doorschakelen.avond_tot": [
+    "Oproepen 's avonds: tot",
+    "Tot dit uur 's morgens gaan oproepen naar het noodnummer."
+   ],
    "robot.nacht_van": [
     "Nacht: van",
     "Vanaf dit uur start de robot alleen op de nachtelijke uren hieronder, niet elk uur en niet door een meldingsmail. Leeg = geen nacht."
@@ -1592,6 +1600,14 @@ const HS_TEXT = {
    "robot.check_minutes": [
     "Safety net: every how many minutes",
     "Normally the Lighthouse notification mail starts the robot. It also starts as a safety net at fixed times from midnight: 60 = every full hour, 240 = 00:00, 04:00, 08:00, ... The time of the breakfast and cleaning list is chosen from these times. 0 = never on schedule. With all main switches off it never starts."
+   ],
+   "doorschakelen.avond_van": [
+    "Evening calls: from",
+    "From this time, calls to the Twilio number go to the emergency number instead of the hotel phone. Empty = always to the hotel."
+   ],
+   "doorschakelen.avond_tot": [
+    "Evening calls: until",
+    "Until this time in the morning, calls go to the emergency number."
    ],
    "robot.nacht_van": [
     "Night: from",
