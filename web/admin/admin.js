@@ -55,12 +55,13 @@ const T = {
     src_form_extra: "extra, check-in-formulier", src_relay: "doorstuuradres", src_profile: "gastprofiel", src_used: "eerder gebruikt", src_earlier: "vroeger", sb_to: "naar", sb_go: "Versturen", sb_off: "(nog niet actief)", send_to: "Versturen naar...", send_to_ask: "Naar welk e-mailadres (of gsm-nummer met +32...) versturen? Het wordt bij de reservatie bewaard.", ct_add: "E-mailadres of gsm-nummer toevoegen", ct_email: "e-mailadres", ct_phone: "gsm-nummer met landcode (+32...)", env_to_prd: "Naar PRD", env_bar_tst: "TESTOMGEVING (TST): berichten gaan alleen naar het testadres, nooit naar gasten",
     env_bar_prd: "PRODUCTIE (PRD): berichten gaan naar echte gasten", env_to_tst: "Naar TST", sw_title: "Hoofdschakelaars (instellingen, tabblad Hotel)", sw_payout: "Overschrijvingen", sw_messages: "Gastcommunicatie", sw_breakfast: "Ontbijt labels", sw_on: "AAN", sw_off: "UIT",
     env_confirm_prd: "Overschakelen naar PRODUCTIE? Daar gaan berichten naar echte gasten.", env_confirm_tst: "Overschakelen naar de testomgeving (TST)?", pl_not_sent: "niet verstuurd", relay_hint: "Doorstuuradres van het boekingsplatform, geen eigen adres van de gast.", relay_kept: "Doorstuuradres van het boekingsplatform. Bewaard, maar het eigen adres uit het check-in-formulier gaat voor.", mg_test_addr: "testadres", mg_for: "bedoeld voor", tab_hotel: "Hotel",
+    hs_func: "Dagelijks", hs_tech: "Technisch",
     hs_intro: "Gegevens en instellingen van het hotel. Standaard uit het hotelbestand; wat u hier wijzigt, gaat voor (alleen in deze omgeving).",
     hs_default: "standaard", hs_env: "In deze omgeving vastgelegd in Key Vault of de Function App: die waarde gaat voor.",
     hs_add: "Toevoegen", hs_key: "naam", hs_value: "waarde", hs_reset_confirm: "Alle instellingen terug naar het hotelbestand? Alle wijzigingen gaan verloren.",
     hs_list: "komma's ertussen",
     sec_schakelaars: "Hoofdschakelaars", sec_hotel: "Hotel", sec_test: "Testomgeving", sec_workflow_parameters: "Toeristenbelasting en munt", sec_reviews: "Reviews", sec_verzending: "Afzender van de mails", sec_receptie: "Receptie", sec_checkout: "Check-out", sec_ontbijt: "Ontbijt", sec_betaalverzoek: "Betaalverzoeken",
-    sec_wifi: "Wifi", sec_parking: "Parking", sec_nood: "Noodnummer", sec_twilio: "Twilio (sms en WhatsApp)", sec_robot: "Robot",
+    sec_wifi: "Wifi", sec_parking: "Parking", sec_nood: "Noodnummer", sec_doorschakelen: "Oproepen doorschakelen", sec_twilio: "Twilio (sms en WhatsApp)", sec_robot: "Robot",
     sec_messaging: "Berichten", sec_whatsapp: "WhatsApp-sjablonen", sec_retention: "Bewaartermijnen", sec_salto: "Salto",
     sec_salto_rooms: "Salto: kamers en deuren", sec_lighthouse: "Lighthouse", sec_checkin: "Check-in-formulier",
     sec_privacy: "Privacyverklaring", sec_kleuren: "Kleuren", settings: "Instellingen", back: "Monitor", open_lh: "Openen in Lighthouse", pl_not_tried: "niet geprobeerd", backup: "extra adres uit het check-in-formulier",
@@ -147,12 +148,13 @@ const T = {
     src_form_extra: "extra, check-in form", src_relay: "relay address", src_profile: "guest profile", src_used: "used before", src_earlier: "earlier", sb_to: "to", sb_go: "Send", sb_off: "(not active yet)", send_to: "Send to...", send_to_ask: "Send to which e-mail address (or mobile number with +32...)? It is saved with the reservation.", ct_add: "Add e-mail address or mobile number", ct_email: "e-mail address", ct_phone: "mobile number with country code (+32...)", env_to_prd: "To PRD", env_bar_tst: "TEST ENVIRONMENT (TST): messages only go to the test address, never to guests",
     env_bar_prd: "PRODUCTION (PRD): messages go to real guests", env_to_tst: "To TST", sw_title: "Main switches (settings, Hotel tab)", sw_payout: "Bank transfers", sw_messages: "Guest communication", sw_breakfast: "Breakfast labels", sw_on: "ON", sw_off: "OFF",
     env_confirm_prd: "Switch to PRODUCTION? Messages there go to real guests.", env_confirm_tst: "Switch to the test environment (TST)?", pl_not_sent: "not sent", relay_hint: "Relay address of the booking platform, not the guest's own address.", relay_kept: "Relay address of the booking platform. Kept, but the guest's own address from the check-in form takes precedence.", mg_test_addr: "test address", mg_for: "meant for", tab_hotel: "Hotel",
+    hs_func: "Everyday", hs_tech: "Technical",
     hs_intro: "Hotel details and settings. Default from the hotel file; what you change here takes precedence (in this environment only).",
     hs_default: "default", hs_env: "Set for this environment in Key Vault or the Function App: that value takes precedence.",
     hs_add: "Add", hs_key: "name", hs_value: "value", hs_reset_confirm: "Reset all settings to the hotel file? All changes will be lost.",
     hs_list: "comma separated",
     sec_schakelaars: "Main switches", sec_hotel: "Hotel", sec_test: "Test environment", sec_workflow_parameters: "City tax and currency", sec_reviews: "Reviews", sec_verzending: "Mail sender", sec_receptie: "Reception", sec_checkout: "Check-out", sec_ontbijt: "Breakfast", sec_betaalverzoek: "Payment requests",
-    sec_wifi: "Wi-Fi", sec_parking: "Parking", sec_nood: "Emergency number", sec_twilio: "Twilio (SMS and WhatsApp)", sec_robot: "Robot",
+    sec_wifi: "Wi-Fi", sec_parking: "Parking", sec_nood: "Emergency number", sec_doorschakelen: "Call forwarding", sec_twilio: "Twilio (SMS and WhatsApp)", sec_robot: "Robot",
     sec_messaging: "Messages", sec_whatsapp: "WhatsApp templates", sec_retention: "Retention", sec_salto: "Salto",
     sec_salto_rooms: "Salto: rooms and doors", sec_lighthouse: "Lighthouse", sec_checkin: "Check-in form",
     sec_privacy: "Privacy statement", sec_kleuren: "Colours", settings: "Settings", back: "Monitor", open_lh: "Open in Lighthouse", pl_not_tried: "not tried", backup: "extra address from the check-in form",
@@ -325,6 +327,11 @@ async function init() {
     $("#wf-save").onclick = saveWorkflow;
     $("#hs-save").onclick = saveSettings;
     $("#hs-reset").onclick = resetSettings;
+    document.querySelectorAll("#hs-groups button").forEach(b => b.onclick = () => {
+      hsGroup = b.dataset.group;
+      try { localStorage.setItem("hsGroup", hsGroup); } catch (e) { /* geen opslag: niet erg */ }
+      renderSettings();
+    });
     $("#wf-reset").onclick = resetWorkflow;
     $("#pv-close").onclick = () => { $("#preview").hidden = true; };
     $("#preview").onclick = e => { if (e.target.id === "preview") $("#preview").hidden = true; };
@@ -1300,9 +1307,21 @@ const HS_TEXT = {
     "Vangnet: om de hoeveel minuten",
     "Normaal start de meldingsmail van Lighthouse de robot. Daarnaast start hij als vangnet op vaste uren vanaf middernacht: 60 = elk heel uur, 240 = 00:00, 04:00, 08:00, ... Uit die uren kies je ook het uur van de ontbijt- en schoonmaaklijst. 0 = nooit op schema. Met alle hoofdschakelaars uit start hij nooit."
    ],
+   "doorschakelen.receptie_van": [
+    "Receptie bereikbaar: vanaf",
+    "Vanaf dit uur gaan oproepen naar het Twilio-nummer naar de vaste lijn van de receptie."
+   ],
+   "doorschakelen.receptie_tot": [
+    "Receptie bereikbaar: tot",
+    ""
+   ],
+   "doorschakelen.receptie_nummer": [
+    "Vaste lijn receptie",
+    "Leeg = tijdens de receptie-uren naar de telefoon van het hotel."
+   ],
    "doorschakelen.avond_van": [
     "Oproepen 's avonds: vanaf",
-    "Vanaf dit uur gaan oproepen naar het Twilio-nummer naar het noodnummer in plaats van naar de telefoon van het hotel. Leeg = altijd naar het hotel."
+    "Vanaf dit uur gaan oproepen naar het Twilio-nummer naar het noodnummer. Buiten de receptie-uren en de avond gaan ze naar de telefoon van het hotel. Leeg = geen avondperiode."
    ],
    "doorschakelen.avond_tot": [
     "Oproepen 's avonds: tot",
@@ -1458,6 +1477,7 @@ const HS_TEXT = {
   },
   "sections": {
    "hotel": "Gegevens die gasten zien in de mails en op het formulier.",
+   "doorschakelen": "Wie het nummer van de automatische berichten belt, wordt doorgeschakeld: tijdens de receptie-uren naar de vaste lijn, 's avonds naar het noodnummer, anders naar de telefoon van het hotel.",
    "twilio": "Het Twilio-account zelf staat in Key Vault.",
    "robot": "De robot leest Lighthouse (alleen lezen).",
    "schakelaars": "Hoofdschakelaars: wat het systeem echt mag doen. Standaard uit, per omgeving apart.",
@@ -1601,9 +1621,21 @@ const HS_TEXT = {
     "Safety net: every how many minutes",
     "Normally the Lighthouse notification mail starts the robot. It also starts as a safety net at fixed times from midnight: 60 = every full hour, 240 = 00:00, 04:00, 08:00, ... The time of the breakfast and cleaning list is chosen from these times. 0 = never on schedule. With all main switches off it never starts."
    ],
+   "doorschakelen.receptie_van": [
+    "Reception reachable: from",
+    "From this time, calls to the Twilio number go to the reception landline."
+   ],
+   "doorschakelen.receptie_tot": [
+    "Reception reachable: until",
+    ""
+   ],
+   "doorschakelen.receptie_nummer": [
+    "Reception landline",
+    "Empty = during reception hours to the hotel phone."
+   ],
    "doorschakelen.avond_van": [
     "Evening calls: from",
-    "From this time, calls to the Twilio number go to the emergency number instead of the hotel phone. Empty = always to the hotel."
+    "From this time, calls to the Twilio number go to the emergency number. Outside reception hours and the evening they go to the hotel phone. Empty = no evening period."
    ],
    "doorschakelen.avond_tot": [
     "Evening calls: until",
@@ -1759,6 +1791,7 @@ const HS_TEXT = {
   },
   "sections": {
    "hotel": "Details guests see in the mails and on the form.",
+   "doorschakelen": "Calls to the number of the automatic messages are forwarded: during reception hours to the landline, in the evening to the emergency number, otherwise to the hotel phone.",
    "twilio": "The Twilio account itself is in Key Vault.",
    "robot": "The robot reads Lighthouse (read only).",
    "schakelaars": "Main switches: what the system is really allowed to do. Off by default, per environment.",
@@ -1808,12 +1841,29 @@ function hsInput(sec, f, i) {
   return `<input type="text" ${attrs} value="${esc(v ?? "")}">`;
 }
 
+// Instellingen in twee groepen: Dagelijks (wat het hotel geregeld aanpast, in deze volgorde) en Technisch (de rest)
+const HS_FUNCTIONAL = ["schakelaars", "hotel", "receptie", "checkout", "doorschakelen", "nood", "ontbijtlijst", "kuislijst",
+  "ontbijt", "wifi", "parking", "reviews", "workflow_parameters"];
+let hsGroup = (() => { try { return localStorage.getItem("hsGroup") || "func"; } catch (e) { return "func"; } })();
+
+function hsShown() {
+  // Een deelsectie (bv. kuislijst.label_tekst) hoort bij haar hoofdsectie
+  const root = s => s.section.split(".")[0];
+  const order = s => { const i = HS_FUNCTIONAL.indexOf(root(s)); return i < 0 ? 999 : i; };
+  return hs.sections
+    .map((s, n) => [s, n])
+    .filter(([s]) => (hsGroup === "func") === HS_FUNCTIONAL.includes(root(s)))
+    .sort(([a, i], [b, j]) => order(a) - order(b) || i - j)
+    .map(([s]) => s);
+}
+
 function renderSettings() {
   if (!hs || !$("#hs-sections")) return;
+  document.querySelectorAll("#hs-groups button").forEach(b => b.classList.toggle("active", b.dataset.group === hsGroup));
   $("#hs-meta").textContent = hs.meta.source === "monitor" ? t("wf_changed", hs.meta.updated_by || "?", stamp(hs.meta.updated_at)) : t("wf_from_file");
   $("#hs-save").disabled = !hsDirty;
   let i = 0;
-  $("#hs-sections").innerHTML = hs.sections.map(sec => {
+  $("#hs-sections").innerHTML = hsShown().map(sec => {
     const title = t("sec_" + sec.section.replace(".", "_")) || sec.section;
     let rows;
     if (sec.free) {

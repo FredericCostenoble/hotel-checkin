@@ -1,11 +1,13 @@
 """Proces: naar welk nummer een oproep op het Twilio-nummer doorgeschakeld wordt.
 
-Overdag naar de telefoon van het hotel ([hotel] telefoon), 's avonds en 's nachts naar het noodnummer
-([nood] nummer), volgens [doorschakelen] avond_van en avond_tot (lokale tijd van het hotel, bv. 18:30 tot 08:00).
-Leeg of ongeldig uur, of geen noodnummer: altijd de telefoon van het hotel.
+Volgens [doorschakelen] (lokale tijd van het hotel, instelbaar in de monitor):
+1. van avond_van tot avond_tot (bv. 18:30 tot 08:00): [nood] nummer;
+2. van receptie_van tot receptie_tot (bv. 10:00 tot 18:30): receptie_nummer (vaste lijn van de receptie);
+3. anders: [hotel] telefoon (gsm van het hotel).
+Een leeg of ongeldig uur of een leeg nummer: die periode valt weg.
 
 Twilio roept /api/twilio/voice?h=<hotel_id> op (function_app.py). Als dat niet lukt, gebruikt Twilio de vaste
-TwiML Bin van het nummer ("Primary handler fails"), die naar de telefoon van het hotel doorschakelt.
+TwiML Bin van het nummer ("Primary handler fails"), die naar de gsm van het hotel doorschakelt.
 """
 
 from __future__ import annotations
@@ -23,22 +25,34 @@ def _time(raw) -> tuple[int, int] | None:
     return int(m[1]), int(m[2])
 
 
-def is_evening(hotel_id: str, now: datetime | None = None) -> bool:
-    """Valt dit moment in het avond- en nachtvenster van het hotel?"""
-    from hotel_checkin.core import clock
-
-    cfg = load_hotel(hotel_id).get("doorschakelen", {})
-    start, end = _time(cfg.get("avond_van")), _time(cfg.get("avond_tot"))
+def _within(cfg: dict, prefix: str, t: tuple[int, int]) -> bool:
+    start, end = _time(cfg.get(f"{prefix}_van")), _time(cfg.get(f"{prefix}_tot"))
     if start is None or end is None or start == end:
         return False
+    return (start <= t or t < end) if start > end else start <= t < end
+
+
+def period(hotel_id: str, now: datetime | None = None) -> str:
+    """"avond", "receptie" of "dag" op dit moment (alleen perioden met een nummer)."""
+    from hotel_checkin.core import clock
+
+    hotel = load_hotel(hotel_id)
+    cfg = hotel.get("doorschakelen", {})
     local = (now or datetime.now(UTC)).astimezone(clock.tz(hotel_id))
     t = (local.hour, local.minute)
-    return (start <= t or t < end) if start > end else start <= t < end
+    if hotel.get("nood", {}).get("nummer") and _within(cfg, "avond", t):
+        return "avond"
+    if cfg.get("receptie_nummer") and _within(cfg, "receptie", t):
+        return "receptie"
+    return "dag"
 
 
 def number(hotel_id: str, now: datetime | None = None) -> str:
     """Het nummer om naar door te schakelen."""
     hotel = load_hotel(hotel_id)
-    day = str(hotel["hotel"]["telefoon"])
-    evening = str(hotel.get("nood", {}).get("nummer") or "")
-    return evening if evening and is_evening(hotel_id, now) else day
+    which = period(hotel_id, now)
+    if which == "avond":
+        return str(hotel["nood"]["nummer"])
+    if which == "receptie":
+        return str(hotel["doorschakelen"]["receptie_nummer"])
+    return str(hotel["hotel"]["telefoon"])

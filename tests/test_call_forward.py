@@ -14,16 +14,16 @@ from hotel_checkin.messaging import voice
 from hotel_checkin.processes import call_forward
 
 TZ = ZoneInfo("Europe/Brussels")
-HOTEL, NIGHT = "+32 478 08 30 49", "+32 471 18 15 74"
+HOTEL, NIGHT, DESK = "+32 478 08 30 49", "+32 471 18 15 74", "+32 50 34 20 67"
 
 
 def at(h, m=0):
     return datetime(2026, 11, 17, h, m, tzinfo=TZ)
 
 
-def test_day_to_hotel_evening_to_emergency_number():
-    for t, expect in ((at(8), HOTEL), (at(12), HOTEL), (at(18, 29), HOTEL), (at(18, 30), NIGHT), (at(23), NIGHT),
-                      (at(3), NIGHT), (at(7, 59), NIGHT)):
+def test_reception_day_and_evening():
+    for t, expect in ((at(8), HOTEL), (at(9, 59), HOTEL), (at(10), DESK), (at(14), DESK), (at(18, 29), DESK),
+                      (at(18, 30), NIGHT), (at(23), NIGHT), (at(3), NIGHT), (at(7, 59), NIGHT)):
         assert call_forward.number("lucca", t) == expect, t
 
 
@@ -32,7 +32,7 @@ def test_empty_window_always_hotel(monkeypatch):
 
     orig = hotels.load_hotel
     monkeypatch.setattr(call_forward, "load_hotel", lambda h: orig(h) | {"doorschakelen": {"avond_van": ""}})
-    assert call_forward.number("lucca", at(23)) == HOTEL
+    assert call_forward.number("lucca", at(23)) == HOTEL and call_forward.number("lucca", at(12)) == HOTEL
 
 
 def test_twiml():
