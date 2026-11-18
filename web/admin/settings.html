@@ -36,16 +36,15 @@
 <div id="repair-banner" class="repair-banner" hidden></div>
 
   <section id="tab-hotel" class="content v2">
-    <div class="ph"><div><h1><span data-t="settings"></span>: <span data-t="tab_hotel"></span></h1><div id="hs-sub" class="sub"></div></div>
-      <div id="hs-groups" class="seg" role="radiogroup"><label data-group="func"><input type="radio" name="grp"><span data-t="hs_func"></span></label><label data-group="tech"><input type="radio" name="grp"><span data-t="hs_tech"></span></label></div></div>
+    <div class="ph"><div><h1><span data-t="settings"></span>: <span data-t="tab_hotel"></span></h1><div id="hs-sub" class="sub"></div></div></div>
     <div class="m-only" style="display:flex;flex-direction:column;gap:14px">
       <div class="mh1" data-t="settings"></div>
       <div class="seg" style="display:flex"><label class="on" style="flex:1;justify-content:center"><input type="radio" name="ms" checked><span data-t="tab_hotel"></span></label><label style="flex:1;justify-content:center" onclick="location.hash='workflow'"><input type="radio" name="ms"><span data-t="nav_messages"></span></label><label style="flex:1;justify-content:center" onclick="location.hash='robot'"><input type="radio" name="ms"><span data-t="tab_robot"></span></label></div>
-      <div class="row" style="flex-wrap:nowrap"><select id="hs-mgroup" class="select" style="min-height:44px" aria-label="Groep"><option value="func" data-t="hs_func"></option><option value="tech" data-t="hs_tech"></option></select><select id="hs-msec" class="select" style="min-height:44px" aria-label="Sectie"></select></div>
+      <div class="row" style="flex-wrap:nowrap"><select id="hs-msec" class="select" style="min-height:44px" aria-label="Sectie"></select></div>
     </div>
     <div id="hs-state" class="small muted"></div>
     <span id="hs-meta" hidden></span><button id="hs-reset" type="button" hidden></button><button id="hs-save" type="button" hidden></button>
-    <div class="cols"><nav aria-label="Secties" style="flex:0 0 200px;position:relative"><div id="hs-nav" class="card" style="padding:8px;position:sticky;top:12px"></div></nav>
+    <div class="cols"><nav aria-label="Secties" style="flex:0 0 200px;position:relative"><div id="hs-nav" class="card" style="padding:8px;position:sticky;top:12px;max-height:calc(100vh - 24px);overflow-y:auto"></div></nav>
       <div id="hs-sections" class="col-main"></div></div>
   </section>
   <section id="tab-robot" class="content v2" hidden>
