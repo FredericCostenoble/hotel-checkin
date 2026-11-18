@@ -56,7 +56,7 @@ def test_breakfast_list():
     assert data["rows"][0]["room"] == "20" and _row(data, "20")["count"] == 2  # appartement, bovenaan
     assert _row(data, "16")["count"] == 1
     c = _row(data, "23")
-    assert c["count"] is None and c["check"] and "nakijken" in c["remark"] and "glutenfree" in c["remark"]
+    assert c["count"] is None and c["check"] and "check in Lighthouse" in c["remark"] and "glutenfree" in c["remark"]
     assert "PrePay" not in c["remark"]  # alleen zinnen met een van de woorden
     assert _row(data, "11")["count"] is None and _row(data, "12")["count"] is None
     assert [_row(data, x)["count"] for x in ("30", "31", "32")] == [2, 2, 1]
@@ -95,15 +95,15 @@ def test_cleaning_list(monkeypatch):
     assert r21["stay"] and not r21["leave"] and "Romantische versiering" in r21["remark"]
     assert not any(_row(data, "24")[k] for k in ("leave", "stay", "checkin"))
     assert data["totals"] == {"leave": 1, "stay": 1, "checkin": 1}
-    assert data["controle"] == "verantwoordelijke housekeeping" and data["extra_rows"] == ["TOILETTEN"]
-    assert "vertrek 1 (12)" in lists.summary(data) and "12: vertrek, check in" in lists.text(data, "Hotel Lucca")
+    assert data["controle"] == "head of housekeeping" and data["extra_rows"] == ["TOILETTEN"]
+    assert "leave 1 (12)" in lists.summary(data) and "12: leave, check in" in lists.text(data, "Hotel Lucca")
 
 
 def test_room_without_number():
     _r("a", [], DAY, 2)
     data = dl.build("lucca", "cleaning", DAY)
     unknown = _row(data, "?")
-    assert unknown["checkin"] and unknown["check"] and "nog geen kamer" in unknown["remark"]
+    assert unknown["checkin"] and unknown["check"] and "no room assigned yet" in unknown["remark"]
 
 
 def test_excel_like_the_hand_made_list():
@@ -116,7 +116,7 @@ def test_excel_like_the_hand_made_list():
         html = lists.mail_html(data, "Hotel Lucca", ["x"])
         assert "<table" in html and "Apartment" in html
     ws = load_workbook(io.BytesIO(lists.xlsx(dl.build("lucca", "cleaning", DAY), "L"))).active
-    assert ws["E1"].value == "Controle: verantwoordelijke housekeeping"
+    assert ws["E1"].value == "Checked by: head of housekeeping"
 
 
 def test_room_descriptions_from_lighthouse():
@@ -137,12 +137,12 @@ def test_generate_sends_mail_with_excel_and_keeps_15(setup):
     _r("a", "20", DAY - timedelta(days=1), 2, rate="STANDARD RATE BREAKFAST INCL")
     data = dl.generate("lucca", "breakfast", DAY, by="frederic@hotellucca.be", send_now=True)
     to, subject, body, k = setup[0]
-    assert to == "management@hotellucca.be" and "ontbijtlijst vrijdag 06/11/2026" in subject and "<table" in body
+    assert to == "management@hotellucca.be" and "breakfast list Friday 06/11/2026" in subject and "<table" in body
     name, content = k["attachments"][0]
     assert name.endswith(".xlsx") and content[:2] == b"PK"
     assert data["sent"][0]["ok"] and repo.get_daily_list("lucca", "breakfast", DAY.isoformat())["generated_by"]
     run = repo.robot_runs("lucca", task="ontbijtlijst")[0]
-    assert run["ok"] and "2 personen in 1 kamers" in run["error"]
+    assert run["ok"] and "2 persons in 1 rooms" in run["error"]
     for i in range(20):
         dl.generate("lucca", "breakfast", DAY + timedelta(days=i + 1))
     kept = repo.daily_lists("lucca", "breakfast")
@@ -415,7 +415,7 @@ def test_cleaning_from_planboard():
     assert not any("Late arrival" in x["remark"] for x in rows)  # niet nodig voor de schoonmaakploeg (Lucca)
     assert _row(data, "12")["remark"] == ""  # standaard geen aantal personen
     assert _row(data, "24")["desc"] == "QUAD KAMER - 2e verdiep"  # omschrijving uit het planbord
-    assert data["source"].startswith("planbord van 08:00")
+    assert data["source"].startswith("planboard of 08:00")
     assert not any("babybed" in x["remark"] for x in rows)  # vrije opmerking van de groep: standaard niet (stond bij 16)
 
 
@@ -428,7 +428,7 @@ def test_breakfast_from_planboard():
     assert _row(data, "12")["count"] == 1  # wie de nacht ervoor sliep, niet wie op 7/11 aankomt
     assert _row(data, "11")["check"]  # label, maar aantal personen niet op het planbord
     s31 = _row(data, "31")  # geen label en reservatie niet gekend: nakijken
-    assert s31["check"] and s31["count"] is None and "nakijken" in s31["remark"]
+    assert s31["check"] and s31["count"] is None and "check breakfast in Lighthouse" in s31["remark"]
     assert _row(data, "33")["count"] is None and not _row(data, "33")["check"]  # komt pas aan
 
 
@@ -463,7 +463,7 @@ def test_robot_reads_planboard_for_requested_list(robot, monkeypatch):
     refresh_contacts.run("lucca")
     assert opened == ["lucca"] and asked == [(date(2026, 11, 7), day)]
     made = repo.get_daily_list("lucca", "cleaning", day.isoformat())
-    assert made["totals"] == {"leave": 13, "stay": 0, "checkin": 9} and made["source"].startswith("planbord van")
+    assert made["totals"] == {"leave": 13, "stay": 0, "checkin": 9} and made["source"].startswith("planboard of")
     assert dl.pending_reads("lucca") == []
 
 
@@ -480,15 +480,15 @@ def test_cleaning_twin_and_special_request():
     assert _row(data, "32")["remark"] == ""  # geen twin kamer: niets
     day = date(2026, 11, 9)
     _plan(day)
-    assert "Speciaal verzoek" not in _row(dl.build("lucca", "cleaning", day), "14")["remark"]  # Lucca: uit
+    assert "Special request" not in _row(dl.build("lucca", "cleaning", day), "14")["remark"]  # Lucca: uit
     stays = dl.planboard("lucca", day)["stays"]
     memo = lambda: _row(dl.build_cleaning("lucca", day, repo.list_reservations("lucca"), [], stays, [],
                                           ["DOUBLE OPMAKEN"], ["SPECIAAL VERZOEK"]), "14")
     s14 = memo()  # label SPECIAAL VERZOEK, memo nog niet gelezen
-    assert s14["check"] and "interne memo nakijken" in s14["remark"]
+    assert s14["check"] and "check the internal memo" in s14["remark"]
     _r("51299db6-b392-4f28-8728-2d66444f5c85", "14", day, 1, internal_memo="Bloemen en kaartje op de kamer")
     s14 = memo()
-    assert not s14["check"] and "Speciaal verzoek: Bloemen en kaartje op de kamer" in s14["remark"]
+    assert not s14["check"] and "Special request: Bloemen en kaartje op de kamer" in s14["remark"]
 
 
 def test_pdf_and_signed_link(monkeypatch):
@@ -498,7 +498,7 @@ def test_pdf_and_signed_link(monkeypatch):
        remarks="Graag 1pax glutenfree ontbijt 🥐")  # emoji: geen fout in de pdf
     data = dl.generate("lucca", "breakfast", DAY)
     content = lists.pdf(data, "Hotel Lucca")
-    assert content[:5] == b"%PDF-" and lists.pdf_name(data) == f"ontbijtlijst-{DAY.isoformat()}.pdf"
+    assert content[:5] == b"%PDF-" and lists.pdf_name(data) == f"breakfast-list-{DAY.isoformat()}.pdf"
     now = datetime(2026, 11, 5, 17, 45, tzinfo=TZ)
     path = dl.pdf_path("lucca", data, now)
     hotel, kind, day, expires, sig, name = path.split("/")
@@ -537,7 +537,7 @@ def test_whatsapp_list_with_pdf(monkeypatch):
     out = dl.send("lucca", data)
     to, sid, v = sent[0]
     assert out[0]["ok"] and to == "+32470123456" and sid == "HXbreakfast_list"
-    assert v["1"] == lists.day_text(DAY.isoformat()) and v["2"].startswith("2 personen in 1 kamers")
+    assert v["1"] == lists.day_text(DAY.isoformat()) and v["2"].startswith("2 persons in 1 rooms")
     assert "volgens" not in v["2"] and v["3"].startswith(f"lucca/breakfast/{DAY.isoformat()}/")
 
 

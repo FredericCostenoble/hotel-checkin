@@ -11,7 +11,7 @@ ontbijt heeft. Zelfde regel als het label ONTBIJT (processes/breakfast_labels.py
 de folio voor alle personen en nachten, of het label werd door de robot gezet. Ontbijt als extra in de folio: de robot
 leest per ontbijtregel de dagen en het aantal per dag (venster "Bewerken" achter de 3 puntjes), zodat ook één
 bijgeboekte dag juist op de lijst komt. Kon hij de dagen niet lezen en is het ontbijt maar voor een deel van het
-verblijf: de kamer komt in het geel, "nakijken". Meer kamers in één reservatie: de personen verdeeld over de kamers, met "samen met ...".
+verblijf: de kamer komt in het geel, "nakijken". Meer kamers in één reservatie: de personen verdeeld over de kamers, met "together with room ...". Alle teksten op de lijsten in het Engels.
 
 Schoonmaaklijst voor dag D, per kamer: Leave (vertrek op D), Stay (aankomst voor D, vertrek na D), Check in (aankomst op D).
 Opmerkingen: zinnen uit de opmerking van de reservatie of lijnen van de folio met een van de woorden uit de
@@ -59,7 +59,7 @@ PLANBOARD_STATE = "planboard:{day}"  # RobotState: wie verblijft in welke kamer 
 CLEANING_LABELS = ("BABY BED", "LATE ARRIVAL")  # standaard voor [kuislijst] labels
 TWIN_LABELS = ("DOUBLE OPMAKEN",)  # standaard voor [kuislijst] labels_twin: alleen op een twin kamer ([kamers.N] twin)
 MEMO_LABELS = ("SPECIAAL VERZOEK",)  # standaard voor [kuislijst] labels_memo: de interne memo komt bij de opmerkingen
-STAIRS_REMARK = "moeilijk ter been: lagere verdieping indien vrij"  # check-in-formulier (stairs_help)
+STAIRS_REMARK = "difficulty with stairs: lower floor if available"  # check-in-formulier (stairs_help)
 SEPARATOR = "-"  # in [kamers] lijst_volgorde: lege rij (nieuwe verdieping)
 
 
@@ -299,7 +299,7 @@ def _add(per_room: dict, room: str, count: int | None, remark: list[str], check:
 
 def _labeled(per_room: dict, room: str, persons: int | None) -> None:
     """Kamer met het label ONTBIJT: ontbijt voor wie in de kamer is."""
-    _add(per_room, room, persons, [] if persons else ["aantal personen niet gekend"], not persons)
+    _add(per_room, room, persons, [] if persons else ["number of persons unknown"], not persons)
 
 
 def _by_reservation(stays: list[dict]) -> dict[str, list[dict]]:
@@ -341,7 +341,7 @@ def build_breakfast(hotel_id: str, day: date, reservations: list[Reservation], w
                 _labeled(per_room, room, x.get("persons"))
                 _with(rid, room)
             else:
-                _add(per_room, room, None, ["reservatie nog niet gelezen door de robot: nakijken of er ontbijt is"], True)
+                _add(per_room, room, None, ["reservation not read yet: check breakfast in Lighthouse"], True)
     for r in reservations:
         if not _active(r):
             continue
@@ -408,18 +408,18 @@ def build_breakfast(hotel_id: str, day: date, reservations: list[Reservation], w
             check = False
             if partial:
                 errors = sorted({x["days_error"] for x in lines if x.get("days_error")})
-                remark.append(f"ontbijt bijgeboekt, {why[5:]}, maar de dagen werden "
-                              + (f"niet gelezen ({'; '.join(errors)})" if errors else "nog niet gelezen in Lighthouse")
-                              + f": nakijken ({r.booking_number or ''})")
+                remark.append("breakfast added, but the days could not be read"
+                              + (f" ({'; '.join(errors)})" if errors else "")
+                              + f": check in Lighthouse ({r.booking_number or ''})")
                 check = True
             elif unread:
-                remark.append(f"folio nog niet gelezen: nakijken of er ontbijt is ({r.booking_number or ''})")
+                remark.append(f"folio not read yet: check breakfast in Lighthouse ({r.booking_number or ''})")
                 check = True
             elif persons is None and not dated:
-                remark.append("aantal personen niet gekend")
+                remark.append("number of persons unknown")
                 check = True
             if room == "?":
-                remark.append(f"nog geen kamer toegewezen ({r.booking_number or ''})")
+                remark.append(f"no room assigned yet ({r.booking_number or ''})")
                 check = True
             if len(rooms) > 1 and i == 0 and not dated and not (room_persons and all(room_persons.values())) and persons:
                 remark.append(f"{persons} pers. in total")  # verdeling over de kamers is een schatting
@@ -482,13 +482,13 @@ def _cleaning_plan(day: date, reservations: list[Reservation], words: list[str],
             if any(lab.upper() in memo_labels for lab in x["labels"]):
                 memo = " ".join((r.internal_memo or "").split()) if r else ""
                 if memo:
-                    remark.append(f"Speciaal verzoek: {memo if len(memo) <= 200 else memo[:197] + '...'}")
+                    remark.append(f"Special request: {memo if len(memo) <= 200 else memo[:197] + '...'}")
                 else:  # memo (nog) niet gelezen: nakijken
-                    remark.append("Speciaal verzoek: interne memo nakijken in Lighthouse"
+                    remark.append("Special request: check the internal memo in Lighthouse"
                                   + (f" ({r.booking_number})" if r and r.booking_number else ""))
                     cur["check"] = True
             if room == "?":
-                remark.append("nog geen kamer toegewezen" + (f" ({r.booking_number})" if r and r.booking_number else ""))
+                remark.append("no room assigned yet" + (f" ({r.booking_number})" if r and r.booking_number else ""))
                 cur["check"] = True
             if r is not None and not found_done:  # wensen en opmerkingen van de reservatie: bij de eerste kamer
                 done = {x.lower() for x in remark}
@@ -541,7 +541,7 @@ def build_cleaning(hotel_id: str, day: date, reservations: list[Reservation], wo
             if checkin and r.guest_count and cfg["persons"]:
                 remark.append(f"{r.guest_count} pers.")
             if room == "?":
-                remark.append(f"nog geen kamer toegewezen ({r.booking_number or ''})")
+                remark.append(f"no room assigned yet ({r.booking_number or ''})")
                 cur["check"] = True
             if checkin and r.stairs_help and room == (r.rooms or ["?"])[0] and cfg["notes"]:
                 remark.append(STAIRS_REMARK)
@@ -567,7 +567,7 @@ def build(hotel_id: str, kind: str, day: date) -> dict:
                               cfg.get("labels_twin") or [], cfg.get("labels_memo") or [],
                               (plan or {}).get("out_of_order") or [])
         data["controle"], data["extra_rows"] = cfg["controle"], cfg["extra_rows"]
-    data["source"] = f"planbord van {plan['read_at'][11:16]}" if plan else "reservaties (planbord niet gelezen)"
+    data["source"] = f"planboard of {plan['read_at'][11:16]}" if plan else "reservations (planboard not read)"
     return data
 
 
@@ -601,15 +601,15 @@ def save_planboard(hotel_id: str, day: date, parsed: dict, read_at: datetime) ->
 
 def describe(data: dict, with_source: bool = True) -> str:
     """Inhoud in een paar woorden (robotlog, monitor; zonder bron in de WhatsApp aan het personeel)."""
-    source = f", volgens {data['source']}" if data.get("source") and with_source else ""
+    source = f", from the {data['source']}" if data.get("source") and with_source else ""
     if data["kind"] == "breakfast":
         rooms = sum(1 for r in data["rows"] if not r.get("sep") and (r.get("count") or r.get("check")))
         missing = (data.get("breakfast_lines") or {}).get("without_days", 0)
-        return (f"{data.get('total', 0)} personen in {rooms} kamers"
-                + (f", {data['check']} na te kijken" if data.get("check") else "")
-                + (f", van {missing} ontbijtregel(s) de dagen niet gelezen" if missing else "") + source)
+        return (f"{data.get('total', 0)} persons in {rooms} rooms"
+                + (f", {data['check']} to check" if data.get("check") else "")
+                + (f", days not read for {missing} breakfast line(s)" if missing else "") + source)
     t = data.get("totals", {})
-    return f"{t.get('leave', 0)} vertrek, {t.get('stay', 0)} blijvers, {t.get('checkin', 0)} check in" + source
+    return f"{t.get('leave', 0)} leave, {t.get('stay', 0)} stay, {t.get('checkin', 0)} check in" + source
 
 
 # ---------------------------------------------------------------- versturen
@@ -759,7 +759,7 @@ def generate(hotel_id: str, kind: str, day: date, by: str = "", send_now: bool =
         data["sent"], data["sent_at"] = sent, data["generated_at"]
     guests.save_daily_list(hotel_id, kind, day.isoformat(), data)
     prune(hotel_id, kind)
-    note = (f"lijst voor {lists.day_text(day.isoformat())} {'automatisch gemaakt' if auto else 'gemaakt door ' + (by or '?')}: "
+    note = (f"lijst voor {lists.day_text(day.isoformat(), "nl")} {'automatisch gemaakt' if auto else 'gemaakt door ' + (by or '?')}: "
             f"{describe(data)}" + (f" ({fresh})" if fresh else "")
             + (f". {_sent_text(sent)}" if send_now else ", niet verstuurd"))
     ok = all(s["ok"] or s.get("skipped") for s in sent)
@@ -786,7 +786,7 @@ def send_saved(hotel_id: str, kind: str, day: date, by: str = "", note: str = ""
     ok = bool(sent) and all(s["ok"] or s.get("skipped") for s in sent)
     text = _sent_text(sent)
     guests.log_robot_run(hotel_id, TASK[kind], started, ok, 1, 1 if ok else 0,
-                         f"lijst voor {lists.day_text(day.isoformat())} manueel verstuurd door {by or '?'}"
+                         f"lijst voor {lists.day_text(day.isoformat(), "nl")} manueel verstuurd door {by or '?'}"
                          + (f" met bericht \"{note.strip()[:80]}\"" if note.strip() else "") + f": {text}",
                          skipped=sum(1 for s in sent if not s["ok"]))
     return {"ok": ok, "sent": sent, "text": text}
@@ -998,7 +998,7 @@ def send_stored(hotel_id: str, kind: str, day: date, auto: bool = False) -> list
     guests.save_daily_list(hotel_id, kind, day.isoformat(), data)
     ok = all(s["ok"] or s.get("skipped") for s in sent)
     guests.log_robot_run(hotel_id, TASK[kind], started, ok, 1, 1 if sent and ok else 0,
-                         f"lijst voor {lists.day_text(day.isoformat())} verstuurd: {_sent_text(sent)}",
+                         f"lijst voor {lists.day_text(day.isoformat(), "nl")} verstuurd: {_sent_text(sent)}",
                          skipped=sum(1 for s in sent if not s["ok"]))
     return sent
 

@@ -1,6 +1,7 @@
 """Bouwblok: de ontbijtlijst en de schoonmaaklijst opmaken als Excel, als HTML (mail en monitor) en als korte tekst
 (WhatsApp of sms). Alleen opmaak: wat erop staat, beslist het proces (processes/daily_lists.py).
 
+Alle teksten op de lijsten in het Engels (de ploeg in de keuken en de schoonmaakploeg spreekt geen Nederlands).
 Zelfde opbouw als de lijsten die het hotel met de hand maakte: per kamer een rij, een lege rij tussen de
 verdiepingen, opmerkingen achteraan. Een lijst (dict):
 - soort "breakfast": rows = [{"room", "desc", "count", "remark", "check"}] (check = nakijken in Lighthouse), total;
@@ -15,23 +16,24 @@ import html
 import io
 from datetime import date
 
-TITLES = {"breakfast": "ONTBIJTLIJST", "cleaning": "CLEANINGLIST"}
-DAYS_NL = ("maandag", "dinsdag", "woensdag", "donderdag", "vrijdag", "zaterdag", "zondag")
+TITLES = {"breakfast": "BREAKFAST LIST", "cleaning": "CLEANING LIST"}
+NAMES = {"breakfast": "Breakfast list", "cleaning": "Cleaning list"}
+DAYS = {"en": ("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"),
+        "nl": ("maandag", "dinsdag", "woensdag", "donderdag", "vrijdag", "zaterdag", "zondag")}
 
 
-def day_text(day: str) -> str:
+def day_text(day: str, lang: str = "en") -> str:
+    """Dag zoals op de lijst (Engels); lang="nl" voor het robotlogboek."""
     d = date.fromisoformat(day)
-    return f"{DAYS_NL[d.weekday()]} {d:%d/%m/%Y}"
+    return f"{DAYS[lang][d.weekday()]} {d:%d/%m/%Y}"
 
 
 def file_name(data: dict, hotel_name: str) -> str:
-    what = "Ontbijtlijst" if data["kind"] == "breakfast" else "Schoonmaaklijst"
-    return f"{what} {hotel_name} {data['day']}.xlsx"
+    return f"{NAMES[data['kind']]} {hotel_name} {data['day']}.xlsx"
 
 
 def subject(data: dict, hotel_name: str) -> str:
-    what = "Ontbijtlijst" if data["kind"] == "breakfast" else "Schoonmaaklijst"
-    return f"{hotel_name}: {what.lower()} {day_text(data['day'])}"
+    return f"{hotel_name}: {NAMES[data['kind']].lower()} {day_text(data['day'])}"
 
 
 # ---------------------------------------------------------------- Excel
@@ -43,7 +45,7 @@ def xlsx(data: dict, hotel_name: str) -> bytes:
 
     wb = Workbook()
     ws = wb.active
-    ws.title = "Blad1"
+    ws.title = "Sheet1"
     bold, big = Font(bold=True), Font(bold=True, size=14)
     thin = Side(style="thin", color="999999")
     box = Border(left=thin, right=thin, top=thin, bottom=thin)
@@ -51,17 +53,17 @@ def xlsx(data: dict, hotel_name: str) -> bytes:
     todo = PatternFill("solid", fgColor="FFFF00")  # opmerking voor de schoonmaakploeg (zoals in de lijst van het hotel)
     ws["A1"], ws["B1"], ws["C1"] = TITLES[data["kind"]], "Date:", date.fromisoformat(data["day"])
     ws["A1"].font, ws["C1"].font = big, bold
-    ws["C1"].number_format = "[$-813]ddd dd/mm/yyyy"  # Nederlandse dagnaam (zo 08/11/2026), ook in een Engelse Excel
+    ws["C1"].number_format = "[$-809]ddd dd/mm/yyyy"  # Engelse dagnaam (Sun 08/11/2026), ook in een Nederlandse Excel
     ws.merge_cells("C1:D1")  # anders te smal voor de datum (#####)
     ws["G1" if data["kind"] == "cleaning" else "E1"] = hotel_name
     if data["kind"] == "breakfast":
-        head = ("KAMER", "TYPE", "AANTAL", "OPMERKINGEN")
+        head = ("ROOM", "TYPE", "PERSONS", "REMARKS")
         widths = (8, 24, 10, 60)
     else:
-        head = ("Kamer", "Type", "Leave", "Stay", "Check in", "REMARKS/OPMERKINGEN")
+        head = ("Room", "Type", "Leave", "Stay", "Check in", "REMARKS")
         widths = (8, 24, 8, 8, 10, 60)
         if data.get("controle"):
-            ws["E1"] = f"Controle: {data['controle']}"
+            ws["E1"] = f"Checked by: {data['controle']}"
     center = {3, 4, 5} if data["kind"] == "cleaning" else {3}  # x, check in en aantal: gecentreerd
     for col, (text, width) in enumerate(zip(head, widths, strict=True), 1):
         c = ws.cell(row=3, column=col, value=text)
@@ -94,7 +96,7 @@ def xlsx(data: dict, hotel_name: str) -> bytes:
         row += 1
     last = row - 1
     row += 1
-    ws.cell(row=row, column=1, value="TOTAAL").font = bold
+    ws.cell(row=row, column=1, value="TOTAL").font = bold
     if data["kind"] == "breakfast":
         c = ws.cell(row=row, column=3, value=f"=SUM(C{first}:C{last})")
         c.font, c.alignment = bold, Alignment(horizontal="center")
@@ -118,8 +120,7 @@ def xlsx(data: dict, hotel_name: str) -> bytes:
 
 def pdf_name(data: dict) -> str:
     """Bestandsnaam van de pdf (zo staat ze in WhatsApp), zonder spaties: ze komt ook in de link."""
-    what = "ontbijtlijst" if data["kind"] == "breakfast" else "schoonmaaklijst"
-    return f"{what}-{data['day']}.pdf"
+    return f"{data['kind']}-list-{data['day']}.pdf"
 
 
 def _latin(value) -> str:
@@ -142,14 +143,14 @@ def pdf(data: dict, hotel_name: str) -> bytes:
     doc.set_font("Helvetica", "", 11)
     doc.cell(0, 6, _latin(hotel_name), new_x="LMARGIN", new_y="NEXT")
     if not breakfast and data.get("controle"):
-        doc.cell(0, 6, _latin(f"Controle: {data['controle']}"), new_x="LMARGIN", new_y="NEXT")
+        doc.cell(0, 6, _latin(f"Checked by: {data['controle']}"), new_x="LMARGIN", new_y="NEXT")
     doc.ln(3)
     if breakfast:
-        head = ("Kamer", "Type", "Aantal", "Opmerkingen")
+        head = ("Room", "Type", "Persons", "Remarks")
         widths = (16, 52, 18, 104)
         mid = {2}
     else:
-        head = ("Kamer", "Type", "Leave", "Stay", "Check in", "Opmerkingen")
+        head = ("Room", "Type", "Leave", "Stay", "Check in", "Remarks")
         widths = (16, 46, 14, 14, 18, 82)
         mid = {2, 3, 4}
     check = FontFace(fill_color=(255, 242, 168))  # nakijken in Lighthouse
@@ -182,8 +183,8 @@ def pdf(data: dict, hotel_name: str) -> bytes:
                     style = bold
                 row.cell(_latin(v), style=style, align="C" if i in mid else "L")
         tot = data.get("totals", {})
-        foot = (["Totaal", "", str(data.get("total", 0)), ""] if breakfast
-                else ["Totaal", "", str(tot.get("leave", 0)), str(tot.get("stay", 0)), str(tot.get("checkin", 0)), ""])
+        foot = (["Total", "", str(data.get("total", 0)), ""] if breakfast
+                else ["Total", "", str(tot.get("leave", 0)), str(tot.get("stay", 0)), str(tot.get("checkin", 0)), ""])
         row = table.row()
         for i, v in enumerate(foot):
             row.cell(v, style=bold, align="C" if i in mid else "L")
@@ -207,9 +208,10 @@ def _e(value) -> str:
 def table_html(data: dict) -> str:
     """Alleen de tabel (ook voor de monitor)."""
     if data["kind"] == "breakfast":
-        head = ("Kamer", "Type", "Aantal", "Opmerkingen")
+        head = ("Room", "Type", "Persons", "Remarks")
     else:
-        head = ("Kamer", "Type", "Leave", "Stay", "Check in", "Opmerkingen")
+        head = ("Room", "Type", "Leave", "Stay", "Check in", "Remarks")
+    mid = {2, 3, 4} if data["kind"] == "cleaning" else {2}  # aantallen en x: gecentreerd, ook het totaal
     body = ""
     for r in data["rows"]:
         if r.get("sep"):
@@ -222,8 +224,6 @@ def table_html(data: dict) -> str:
         else:
             cells = [r["room"], r.get("desc"), "x" if r.get("leave") else "", "x" if r.get("stay") else "",
                      "check in" if r.get("checkin") else "", r.get("remark")]
-        mid = {2, 3, 4} if data["kind"] == "cleaning" else {2}
-
         def style(i, v, cells=cells, mid=mid, r=r):
             extra = "font-weight:bold;" if i == 0 else ""
             extra += "text-align:center;" if i in mid else ""
@@ -234,12 +234,13 @@ def table_html(data: dict) -> str:
         body += f'<tr style="background:{bg};">' + "".join(
             f'<td style="{_TD}{style(i, v)}">{_e(v)}</td>' for i, v in enumerate(cells)) + "</tr>"
     if data["kind"] == "breakfast":
-        foot = [("Totaal", "", data.get("total", 0), "")]
+        foot = [("Total", "", data.get("total", 0), "")]
     else:
         tot = data.get("totals", {})
-        foot = [("Totaal", "", tot.get("leave", 0), tot.get("stay", 0), tot.get("checkin", 0), "")]
-    body += "".join('<tr style="font-weight:bold;">' + "".join(f'<td style="{_TD}">{_e(v)}</td>' for v in f) + "</tr>"
-                    for f in foot)
+        foot = [("Total", "", tot.get("leave", 0), tot.get("stay", 0), tot.get("checkin", 0), "")]
+    body += "".join('<tr style="font-weight:bold;">' + "".join(
+        f'<td style="{_TD}{"text-align:center;" if i in mid else ""}">{_e(v)}</td>' for i, v in enumerate(f)) + "</tr>"
+        for f in foot)
     for extra in data.get("extra_rows") or []:
         body += f'<tr><td colspan="{len(head)}" style="{_TD}font-weight:bold;">{_e(extra)}</td></tr>'
     return ('<table style="border-collapse:collapse;font-family:Arial,sans-serif;font-size:14px;">'
@@ -248,14 +249,14 @@ def table_html(data: dict) -> str:
 
 def mail_html(data: dict, hotel_name: str, notes: list[str]) -> str:
     """Mail met de lijst als tabel (leesbaar op de gsm); de Excel zit als bijlage bij."""
-    title = f"{'Ontbijtlijst' if data['kind'] == 'breakfast' else 'Schoonmaaklijst'} {day_text(data['day'])}"
+    title = f"{NAMES[data['kind']]} {day_text(data['day'])}"
     parts = [f'<h2 style="font-family:Arial,sans-serif;font-size:18px;">{_e(hotel_name)}: {_e(title)}</h2>']
     if data["kind"] == "cleaning" and data.get("controle"):
-        parts.append(f'<p style="font-family:Arial,sans-serif;font-size:14px;">Controle: {_e(data["controle"])}</p>')
+        parts.append(f'<p style="font-family:Arial,sans-serif;font-size:14px;">Checked by: {_e(data["controle"])}</p>')
     parts += [f'<p style="font-family:Arial,sans-serif;font-size:14px;">{_e(n)}</p>' for n in notes]
     parts.append(table_html(data))
     parts.append('<p style="font-family:Arial,sans-serif;font-size:12px;color:#8A90A0;margin-top:16px;">'
-                 f"Gemaakt op {_e(data.get('generated_at', '')[:16].replace('T', ' '))}. De Excel staat in de bijlage.</p>")
+                 f"Made on {_e(data.get('generated_at', '')[:16].replace('T', ' '))}. The Excel file is attached.</p>")
     return "\n".join(parts)
 
 
@@ -268,19 +269,18 @@ def summary(data: dict) -> str:
     if data["kind"] == "breakfast":
         items = [f"{r['room']}: {r['count'] if r.get('count') is not None else '?'}"
                  + (f" ({r['remark']})" if r.get("remark") else "") for r in rows]
-        return f"{data.get('total', 0)} personen. " + ("; ".join(items) if items else "geen ontbijt")
+        return f"{data.get('total', 0)} persons. " + ("; ".join(items) if items else "no breakfast")
     parts = []
-    for key, label in (("leave", "vertrek"), ("stay", "blijvers"), ("checkin", "check in")):
+    for key, label in (("leave", "leave"), ("stay", "stay"), ("checkin", "check in")):
         rooms = [r["room"] for r in rows if r.get(key)]
         parts.append(f"{label} {len(rooms)}" + (f" ({', '.join(rooms)})" if rooms else ""))
     notes = [f"{r['room']}: {r['remark']}" for r in rows if r.get("remark")]
-    return ", ".join(parts) + (". Opmerkingen: " + "; ".join(notes) if notes else "")
+    return ", ".join(parts) + (". Remarks: " + "; ".join(notes) if notes else "")
 
 
 def text(data: dict, hotel_name: str) -> str:
     """Volledige lijst als tekst met een regel per kamer (sms)."""
-    what = "Ontbijtlijst" if data["kind"] == "breakfast" else "Schoonmaaklijst"
-    lines = [f"{hotel_name} {what.lower()} {day_text(data['day'])}"]
+    lines = [f"{hotel_name} {NAMES[data['kind']].lower()} {day_text(data['day'])}"]
     for r in data["rows"]:
         if r.get("sep"):
             continue
@@ -288,12 +288,12 @@ def text(data: dict, hotel_name: str) -> str:
             lines.append(f"{r['room']}: {r['count'] if r.get('count') is not None else '?'}"
                          + (f" {r['remark']}" if r.get("remark") else ""))
         else:
-            what = [w for k, w in (("leave", "vertrek"), ("stay", "blijft"), ("checkin", "check in")) if r.get(k)]
+            what = [w for k, w in (("leave", "leave"), ("stay", "stay"), ("checkin", "check in")) if r.get(k)]
             if what or r.get("remark"):
                 lines.append(f"{r['room']}: {', '.join(what)}" + (f" ({r['remark']})" if r.get("remark") else ""))
     if data["kind"] == "breakfast":
-        lines.append(f"Totaal: {data.get('total', 0)}")
+        lines.append(f"Total: {data.get('total', 0)}")
     else:
         tot = data.get("totals", {})
-        lines.append(f"Vertrek {tot.get('leave', 0)}, blijvers {tot.get('stay', 0)}, check in {tot.get('checkin', 0)}")
+        lines.append(f"Leave {tot.get('leave', 0)}, stay {tot.get('stay', 0)}, check in {tot.get('checkin', 0)}")
     return "\n".join(lines)
