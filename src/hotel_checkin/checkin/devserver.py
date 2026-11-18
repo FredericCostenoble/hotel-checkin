@@ -101,7 +101,9 @@ class Handler(BaseHTTPRequestHandler):
                 self._json(200, admin.settings_reset(parts[2]))
             else:
                 body = json.loads(self.rfile.read(int(self.headers.get("Content-Length", 0))) or b"{}")
-                ok, data = admin.settings_save(parts[2], body, "dev")
+                from urllib.parse import parse_qs, urlparse
+                only = [x for x in parse_qs(urlparse(self.path).query).get("only", [""])[0].split(",") if x] or None
+                ok, data = admin.settings_save(parts[2], body, "dev", only)
                 self._json(200 if ok else 400, data)
         elif len(parts) == 4 and parts[3] == "workflow":
             if method == "GET":

@@ -17,6 +17,8 @@ import re
 
 from hotel_checkin.core import hotels
 
+META_DOC = "hotel_settings_meta"  # per sectie: wie en wanneer gewijzigd in de monitor
+
 EXCLUDED = ("flows",)  # tabblad Workflow
 # Instellingen met een vaste keuzelijst
 CHOICES = {("workflow_parameters", "city_tax_unit"): ("person_night", "person_stay"),
@@ -162,6 +164,13 @@ def view(hotel_id: str) -> dict:
             } for k in keys],
         })
     doc = repository.get_config_doc(hotel_id, hotels.SETTINGS_DOC)
+    changed = (doc or {}).get("value") or {}
+    per = (repository.get_config_doc(hotel_id, META_DOC) or {}).get("value") or {}
+    for sec in sections:
+        # Wie deze sectie laatst wijzigde (monitor); niets = standaard uit het hotelbestand
+        m = per.get(sec["section"]) if sec["section"] in changed else None
+        sec["meta"] = {"updated_by": m["by"], "updated_at": m["at"]} if m else (
+            {"updated_by": doc["updated_by"], "updated_at": doc["updated_at"]} if doc and sec["section"] in changed else {})
     return {"sections": sections, "meta": {"source": "monitor" if doc else "file",
                                            "updated_by": doc["updated_by"] if doc else "",
                                            "updated_at": doc["updated_at"] if doc else ""}}
@@ -218,15 +227,38 @@ def validate(hotel_id: str, changes: dict) -> dict:
     return out
 
 
-def save(hotel_id: str, changes: dict, user: str) -> dict:
-    """Bewaar de wijzigingen (fout met uitleg als iets niet klopt)."""
+def save(hotel_id: str, changes: dict, user: str, only: list[str] | None = None) -> dict:
+    """Bewaar de wijzigingen (fout met uitleg als iets niet klopt). Met only: alleen die secties (knop Bewaren of
+    Terug naar standaard van één sectie); de andere secties blijven zoals ze bewaard waren."""
+    from datetime import UTC, datetime
+
     from hotel_checkin.guests import repository
 
-    clean = validate(hotel_id, changes)
-    if clean:
-        repository.set_config_doc(hotel_id, hotels.SETTINGS_DOC, clean, user)
+    doc = repository.get_config_doc(hotel_id, hotels.SETTINGS_DOC)
+    before = dict((doc or {}).get("value") or {})
+    if only:
+        clean = validate(hotel_id, {k: v for k, v in (changes or {}).items() if k in only})
+        merged = {k: v for k, v in before.items() if k not in only} | clean
+    else:
+        merged = validate(hotel_id, changes)
+    if merged:
+        repository.set_config_doc(hotel_id, hotels.SETTINGS_DOC, merged, user)
     else:
         repository.delete_config_doc(hotel_id, hotels.SETTINGS_DOC)
+    # Per sectie: wie wijzigde wat en wanneer (alleen secties waarvan de bewaarde waarde veranderde)
+    per = dict((repository.get_config_doc(hotel_id, META_DOC) or {}).get("value") or {})
+    now = datetime.now(UTC).isoformat(timespec="seconds")
+    for sec in set(before) | set(merged):
+        if before.get(sec) != merged.get(sec):
+            if sec in merged:
+                per[sec] = {"by": user or "", "at": now}
+            else:
+                per.pop(sec, None)
+    per = {k: v for k, v in per.items() if k in merged}
+    if per:
+        repository.set_config_doc(hotel_id, META_DOC, per, user)
+    else:
+        repository.delete_config_doc(hotel_id, META_DOC)
     hotels.forget_overrides(hotel_id)
     return view(hotel_id)
 
@@ -236,5 +268,6 @@ def reset(hotel_id: str) -> dict:
     from hotel_checkin.guests import repository
 
     repository.delete_config_doc(hotel_id, hotels.SETTINGS_DOC)
+    repository.delete_config_doc(hotel_id, META_DOC)
     hotels.forget_overrides(hotel_id)
     return view(hotel_id)

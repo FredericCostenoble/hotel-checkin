@@ -98,7 +98,8 @@ def reservations(hotel_id: str) -> list[dict]:
             "booking_number": r.booking_number or "",
             "lighthouse_url": lighthouse + r.reservation_id,  # het id is de GUID van Lighthouse
             # Detailpagina van de reservatie (monitor): pincodes, betaling en de gast-app van deze gast
-            "access_codes": [{"room": c.get("room", ""), "pin": c.get("pin", "")} for c in r.access_codes],
+            "access_codes": [{"room": c.get("room", ""), "pin": c.get("pin", ""), "created_at": c.get("created_at", "")} for c in r.access_codes],
+            "pms_codes_at": r.pms_codes_at.isoformat() if r.pms_codes_at else "",
             "access_valid_from": r.access_valid_from.isoformat() if r.access_valid_from else "",
             "access_valid_until": r.access_valid_until.isoformat() if r.access_valid_until else "",
             "codes_in_pms": bool(r.pms_codes_line),
@@ -348,11 +349,11 @@ def settings_view(hotel_id: str) -> dict:
     return hotel_settings.view(hotel_id)
 
 
-def settings_save(hotel_id: str, changes: dict, user: str) -> tuple[bool, dict]:
+def settings_save(hotel_id: str, changes: dict, user: str, only: list[str] | None = None) -> tuple[bool, dict]:
     from hotel_checkin.core import hotel_settings
 
     try:
-        return True, hotel_settings.save(hotel_id, changes, user)
+        return True, hotel_settings.save(hotel_id, changes, user, only)
     except ValueError as exc:
         return False, {"error": str(exc)}
 

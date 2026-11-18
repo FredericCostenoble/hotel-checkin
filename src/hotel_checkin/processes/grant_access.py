@@ -13,7 +13,7 @@ Check-in en check-out: [receptie] van en [checkout] tot in het hotelbestand.
 from __future__ import annotations
 
 import logging
-from datetime import datetime, time
+from datetime import UTC, datetime, time
 
 from hotel_checkin.access import salto
 from hotel_checkin.core import clock
@@ -136,7 +136,8 @@ def _grant_room(hotel_id: str, r: Reservation, room: str, valid_from: datetime, 
         _cleanup(hotel_id, user_id, group_id, front_group_id)
         raise
     return {"room": room, "pin": pin, "user_id": user_id, "group_id": group_id, "schedule_id": schedule_id,
-            "front_group_id": front_group_id, "front_schedule_id": front_schedule_id}
+            "front_group_id": front_group_id, "front_schedule_id": front_schedule_id,
+            "created_at": datetime.now(UTC).isoformat(timespec="seconds")}  # tijdstip voor de monitor
 
 
 def grant(hotel_id: str, r: Reservation) -> list[dict]:

@@ -34,6 +34,22 @@ def test_save_overrides_file_and_reset():
     assert hotels.load_hotel("lucca")["receptie"]["tot"] == "18:30"
 
 
+def test_save_one_section_keeps_others_and_tracks_who():
+    """Knop Bewaren per sectie: alleen die sectie verandert; wie en wanneer per sectie."""
+    hotel_settings.save("lucca", {"receptie": {"tot": "19:00"}}, "fred")
+    hotel_settings.save("lucca", {"robot": {"check_minutes": "30"}, "receptie": {"tot": "20:00"}}, "anna", only=["robot"])
+    assert hotels.load_hotel("lucca")["receptie"]["tot"] == "19:00"  # niet in only: blijft zoals bewaard
+    assert hotel_setting("lucca", "ROBOT_CHECK_MINUTES") == "30"
+    meta = {s["section"]: s["meta"] for s in hotel_settings.view("lucca")["sections"]}
+    assert meta["receptie"]["updated_by"] == "fred" and meta["robot"]["updated_by"] == "anna"
+    assert meta["hotel"] == {}  # nooit gewijzigd: standaard uit het bestand
+    # Terug naar standaard voor één sectie: de waarde uit het bestand, de andere sectie blijft
+    hotel_settings.save("lucca", {"receptie": {"tot": "18:30"}}, "anna", only=["receptie"])
+    assert hotels.load_hotel("lucca")["receptie"]["tot"] == "18:30"
+    assert hotel_setting("lucca", "ROBOT_CHECK_MINUTES") == "30"
+    assert {s["section"]: s["meta"] for s in hotel_settings.view("lucca")["sections"]}["receptie"] == {}
+
+
 def test_free_sections_and_validation():
     hotel_settings.save("lucca", {"salto.rooms": {"12": "lock-a", "14": ""}}, "x")
     assert hotels.load_hotel("lucca")["salto"]["rooms"] == {"12": "lock-a"}

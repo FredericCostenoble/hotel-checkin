@@ -219,7 +219,7 @@ Object.assign(T.nl, {
   d_open_lbl: "Openstaand", d_total: "Totaal", d_payreq: "Betaalverzoek bekijken", d_payreq_at: d => `Betaalverzoek gemaakt op ${d}.`,
   d_contact: "Contact", d_src: x => `bron: ${x}`, d_add: "Adres toevoegen", d_add_ph: "E-mailadres of gsm-nummer (+32...)", d_data: "Gegevens",
   d_k_chan: "Kanaal", d_k_flow: "Flow", d_k_rate: "Tarief", d_k_booked: "Geboekt op", d_k_added: "Toegevoegd", d_k_updated: "Bijgewerkt", d_nrf: "niet annuleerbaar", d_flex: "annuleerbaar",
-  d_door: "Voordeur", d_moves: "Kamerwissel",
+  d_door: "Voordeur", d_moves: "Kamerwissel", d_pins_when: d => `Gemaakt bij Salto op ${d}.`, d_pins_when_pms: (a, b) => `Gemaakt bij Salto op ${a} en in Lighthouse gezet op ${b}.`, d_pins_in_pms: "In Lighthouse gezet.",
   l_sub: "Ontbijt en schoonmaak", l_make_title: "Lijst maken", l_last: n => "Laatste lijsten", l_all: "Alle lijsten", l_c_list: "Lijst", l_c_made: "Gemaakt op", l_c_sent: "Verstuurd naar",
   l_preview: "Voorbeeld zoals geprint", l_title_breakfast: d => `Ontbijtlijst ${d}`, l_title_cleaning: d => `Schoonmaaklijst ${d}`, l_made_by: (w, b) => `gemaakt ${w} door ${b}`,
   l_sent: x => `Verstuurd: ${x}`, l_not_sent: "Niet verstuurd", l_none_sel: "Kies een lijst om te bekijken.", l_mail: n => `mail ${n}`, l_wa: n => `WhatsApp ${n}`, l_sms: n => `sms ${n}`, l_failed: "Mislukt",
@@ -285,7 +285,7 @@ Object.assign(T.en, {
   d_open_lbl: "Outstanding", d_total: "Total", d_payreq: "View payment request", d_payreq_at: d => `Payment request created on ${d}.`,
   d_contact: "Contact", d_src: x => `source: ${x}`, d_add: "Add address", d_add_ph: "E-mail address or mobile number (+32...)", d_data: "Details",
   d_k_chan: "Channel", d_k_flow: "Flow", d_k_rate: "Rate", d_k_booked: "Booked on", d_k_added: "Added", d_k_updated: "Updated", d_nrf: "non-refundable", d_flex: "refundable",
-  d_door: "Front door", d_moves: "Room change",
+  d_door: "Front door", d_moves: "Room change", d_pins_when: d => `Created at Salto on ${d}.`, d_pins_when_pms: (a, b) => `Created at Salto on ${a} and set in Lighthouse on ${b}.`, d_pins_in_pms: "Set in Lighthouse.",
   l_sub: "Breakfast and cleaning", l_make_title: "Make a list", l_last: n => "Latest lists", l_all: "All lists", l_c_list: "List", l_c_made: "Made on", l_c_sent: "Sent to",
   l_preview: "Preview as printed", l_title_breakfast: d => `Breakfast list ${d}`, l_title_cleaning: d => `Cleaning list ${d}`, l_made_by: (w, b) => `made ${w} by ${b}`,
   l_sent: x => `Sent: ${x}`, l_not_sent: "Not sent", l_none_sel: "Choose a list to view.", l_mail: n => `mail ${n}`, l_wa: n => `WhatsApp ${n}`, l_sms: n => `SMS ${n}`, l_failed: "Failed",
@@ -790,6 +790,12 @@ const P = {
 const chIcon = ch => IC(ch === "email" ? P.mail : ch === "whatsapp" ? P.wa : P.phone, 13);
 const eur = x => x == null ? "" : "EUR " + Number(x).toLocaleString("nl-BE", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 let detailId = "", detailFilter = "";
+// Onder de pincodes: wanneer gemaakt bij Salto en wanneer in Lighthouse gezet (als dat bewaard is)
+function pinsNote(r) {
+  const made = (r.access_codes || []).map(c => c.created_at).filter(Boolean).sort()[0];
+  if (made) return r.pms_codes_at ? t("d_pins_when_pms", dtime(made), dtime(r.pms_codes_at)) : r.codes_in_pms ? t("d_pins_when", dtime(made)) + " " + t("d_pins_in_pms") : t("d_pins_when", dtime(made));
+  return t(r.codes_in_pms ? "d_pins_pms" : "d_pins_salto");
+}
 
 function openDetail(id) {
   detailId = id;
@@ -863,6 +869,11 @@ function renderDetail() {
   ev(r.stairs_memo_at, t("ev_stairs"), false);
   ev(r.stairs_label_at, t("ev_stairs_lbl"), false);
   (r.room_moves || []).forEach(m => ev(m.at, t("ev_move", [].concat(m.to || []).join(" + "), [].concat(m.from || []).join(" + "))));
+  // Pincodes: per tijdstip (minuut) samen, met de kamers erbij
+  const byMin = {};
+  (r.access_codes || []).filter(c => c.created_at).forEach(c => { (byMin[c.created_at.slice(0, 16)] = byMin[c.created_at.slice(0, 16)] || { at: c.created_at, rooms: [] }).rooms.push(c.room); });
+  Object.values(byMin).forEach(x => ev(x.at, `${t("ev_codes")} (${x.rooms.join(", ")})`, false));
+  ev(r.pms_codes_at, t("ev_codes_lh"), false);
   items.sort((a, b) => String(b.at).localeCompare(String(a.at)));
   const shownItems = items.filter(x => !detailFilter || x.kind === detailFilter);
   const attempts = shownItems.map(x => `<tr><td class="mono small">${esc(dtime(x.at))}</td><td><b>${esc(x.what)}</b></td><td>${esc(x.detail)}</td>
@@ -871,7 +882,7 @@ function renderDetail() {
   const codes = r.access_codes || [];
   const pins = codes.length ? `<section class="card"><div class="ch"><h2 class="ct">${IC(P.key)} ${esc(t("d_pins"))}</h2><span class="badge b-ok">${IC(P.check, 14, 2.4)}${esc(t("d_made"))}</span></div><div class="cb">
     ${codes.map((c, i) => `<div class="li"><div class="lt"><b>${esc(/^\d+$/.test(c.room) ? t("r_room", c.room) : !c.room || /voordeur|front|door/i.test(c.room) ? t("d_door") : c.room)}</b>${i === 0 && r.access_valid_from ? `<div class="small muted">${esc(t("d_valid", dtime(r.access_valid_from), dtime(r.access_valid_until)))}</div>` : ""}</div><span class="code">${esc(c.pin)}<span class="enter">&#8629;</span></span></div>`).join("")}
-    <div class="small muted">${esc(t(r.codes_in_pms ? "d_pins_pms" : "d_pins_salto"))}</div></div></section>` : "";
+    <div class="small muted">${esc(pinsNote(r))}</div></div></section>` : "";
   const open = r.open_amount != null && r.open_amount > 0;
   const roomPay = r.payout_registered_at ? t("d_paid_payout", dshort(r.payout_registered_at)) : r.paid === true ? t("d_paid") : r.paid === false ? t("d_unpaid") : t("d_unknown");
   const pay = `<section class="card"><div class="ch"><h2 class="ct">${IC(P.euro)} ${esc(t("d_pay"))}</h2>${open ? `<span class="badge b-warn">${IC(P.warn, 14, 2.4)}${esc(t("d_open"))}</span>` : r.paid ? `<span class="badge b-ok">${IC(P.check, 14, 2.4)}${esc(t("d_paid"))}</span>` : ""}</div><div class="cb">
@@ -2465,7 +2476,9 @@ function renderSettings() {
   let i = 0;
   const shown = hsShown();
   $("#hs-nav").innerHTML = shown.map((sec, n) => `<a href="#hs-s${n}" data-jump="hs-s${n}" style="display:block;padding:6px 10px;border-radius:6px;text-decoration:none;font-weight:${n === 0 ? 700 : 500};${n === 0 ? "background:#E6E9EF;" : ""}color:#2B2F38">${esc(t("sec_" + sec.section.replace(".", "_")) || sec.section)}</a>`).join("");
-  const foot = `<div class="row" style="justify-content:space-between;border-top:1px solid #EEF0F3;padding-top:12px"><span class="who">${esc(who)}</span><div class="row"><button class="btn3 hs-reset-btn" type="button">${esc(t("wf_reset"))}</button><button class="btn hs-save-btn" type="button" ${hsDirty ? "" : "disabled"}>${esc(t("wf_save"))}</button></div></div>`;
+  // Per sectie: wie wijzigde ze laatst, en Bewaren alleen actief als er in deze sectie iets veranderde
+  const foot = sec => { const m = sec.meta || {}; const w = m.updated_at ? t("wf_changed", m.updated_by || "?", stamp(m.updated_at)) : t("wf_from_file");
+    return `<div class="row" style="justify-content:space-between;border-top:1px solid #EEF0F3;padding-top:12px"><span class="who">${esc(w)}</span><div class="row"><button class="btn3 hs-reset-btn" type="button">${esc(t("wf_reset"))}</button><button class="btn hs-save-btn" type="button" ${hsEdit[sec.section] ? "" : "disabled"}>${esc(t("wf_save"))}</button></div></div>`; };
   $("#hs-sections").innerHTML = shown.map((sec, n) => {
     const title = t("sec_" + sec.section.replace(".", "_")) || sec.section;
     const help = (HS_TEXT[lang] || HS_TEXT.en).sections[sec.section] || "";
@@ -2505,15 +2518,15 @@ function renderSettings() {
       if (env) body += `<div class="note">${LOCK.replace('width="13" height="13"', 'width="16" height="16"')}<span>${esc(t("hs_env_note"))}</span></div>`;
     }
     return `<section class="card" id="hs-s${n}" data-sec="${esc(sec.section)}"><div class="ch"><h2 class="ct">${esc(title)}</h2>${env ? `<span class="locked">${LOCK}${esc(t("hs_env_badge"))}</span>` : ""}</div>
-      <div class="cb"${sec.section === "schakelaars" ? ' style="gap:0"' : ""}>${help ? `<div class="help">${esc(help)}</div>` : ""}${body}${env && !sec.fields.some(f => !f.env) ? "" : foot}</div></section>`;
+      <div class="cb"${sec.section === "schakelaars" ? ' style="gap:0"' : ""}>${help ? `<div class="help">${esc(help)}</div>` : ""}${body}${env && !sec.fields.some(f => !f.env) ? "" : foot(sec)}</div></section>`;
   }).join("");
-  document.querySelectorAll("#hs-sections .hs-save-btn").forEach(b => b.onclick = saveSettings);
+  document.querySelectorAll("#hs-sections .hs-save-btn").forEach(b => b.onclick = () => saveSettings(b.closest("section").dataset.sec));
   document.querySelectorAll("#hs-sections .hs-reset-btn").forEach(b => b.onclick = () => {
     const sec = hs.sections.find(x => x.section === b.closest("section").dataset.sec);
     if (!sec || !confirm(t("hs_sec_reset_confirm", t("sec_" + sec.section.replace(".", "_")) || sec.section))) return;
-    if (sec.free) delete hsEdit[sec.section];
-    else hsEdit[sec.section] = Object.fromEntries(sec.fields.filter(f => !f.env).map(f => [f.key, f.default]));
-    saveSettings();
+    hsEdit[sec.section] = sec.free ? Object.fromEntries(sec.fields.map(f => [f.key, f.default]).filter(([, v]) => v != null))
+      : Object.fromEntries(sec.fields.filter(f => !f.env).map(f => [f.key, f.default]));
+    saveSettings(sec.section);
   });
   // Gsm (ontwerp m-Instellingen-hotel): groep en sectie kiezen, één sectie tegelijk
   if ($("#hs-mgroup")) {
@@ -2554,19 +2567,22 @@ function hsTouched() {
   renderSettings();
 }
 
-async function saveSettings() {
+async function saveSettings(only) {
   // Alles wat op het scherm staat (ook ongewijzigd): de server bewaart alleen wat verschilt van het bestand
   const body = {};
   hs.sections.forEach(sec => {
     if (sec.free) body[sec.section] = hsEdit[sec.section] || Object.fromEntries(sec.fields.map(f => [f.key, f.value]));
     else body[sec.section] = Object.fromEntries(sec.fields.map(f => [f.key, hsValue(sec, f)]));
   });
-  const r = await apiFetch(API + `/api/monitor/${$("#hotel").value}/settings`, {
+  const sections = typeof only === "string" ? only : "";
+  const r = await apiFetch(API + `/api/monitor/${$("#hotel").value}/settings${sections ? "?only=" + encodeURIComponent(sections) : ""}`, {
     method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
   });
   const d = await r.json().catch(() => ({}));
   if (!r.ok) { $("#hs-state").textContent = d.error || `${t("load_error")} ${r.status}`; $("#hs-state").className = "err"; return; }
-  hs = d; hsEdit = {}; hsDirty = false;
+  hs = d;
+  if (sections) { sections.split(",").forEach(k => delete hsEdit[k]); hsDirty = Object.keys(hsEdit).length > 0; }
+  else { hsEdit = {}; hsDirty = false; }
   $("#hs-state").className = "muted";
   $("#hs-state").textContent = t("wf_saved");
   renderSettings();

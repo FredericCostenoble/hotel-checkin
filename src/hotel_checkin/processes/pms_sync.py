@@ -13,6 +13,7 @@ Schrijven in Lighthouse alleen in PRD, of op reservaties van een testgast ([test
 from __future__ import annotations
 
 import logging
+from datetime import UTC, datetime
 
 from hotel_checkin.core import safety
 from hotel_checkin.core.models import Channel, Reservation, ReservationStatus, SendResult
@@ -45,6 +46,7 @@ def handle(hotel_id: str, r: Reservation, lh) -> str | None:
     if r.pms_codes_line != line:
         lighthouse.set_comments(hotel_id, r.reservation_id, lambda current: with_door_codes(current, line), lh)
         r.pms_codes_line = line
+        r.pms_codes_at = datetime.now(UTC)
         done.append("code in de opmerking")
     if any(s not in ("readyforcheckin", *_FURTHER) for s in r.room_statuses or ["none"]):
         detail = lighthouse.get_reservation(hotel_id, r.reservation_id, lh)  # huidige status per kamer

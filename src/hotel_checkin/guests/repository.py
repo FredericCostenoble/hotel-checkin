@@ -130,6 +130,7 @@ def _to_entity(r: Reservation) -> dict:
         "pay_link": r.pay_link or "",
         "room_statuses": json.dumps(r.room_statuses),
         "pms_codes_line": r.pms_codes_line or "",
+        "pms_codes_at": r.pms_codes_at.isoformat() if r.pms_codes_at else "",
         "status": r.status.value,
         "source": r.source or "",
         "paid": "" if r.paid is None else str(r.paid),
@@ -208,6 +209,7 @@ def _from_entity(e: dict) -> Reservation:
         pay_link=e.get("pay_link") or None,
         room_statuses=json.loads(e["room_statuses"]) if e.get("room_statuses") else [],
         pms_codes_line=e.get("pms_codes_line") or None,
+        pms_codes_at=datetime.fromisoformat(e["pms_codes_at"]) if e.get("pms_codes_at") else None,
         token=e["token"] or None,
         checkin_completed_at=(
             datetime.fromisoformat(e["checkin_completed_at"]) if e["checkin_completed_at"] else None
@@ -253,7 +255,7 @@ BREAKFAST_FIELDS = ("breakfast_labeled_at",)
 PMS_LABEL_FIELDS = ("pms_labels",)
 PAY_REQUEST_FIELDS = ("pay_requested_at",)
 PAY_LINK_FIELDS = ("pay_link",)
-PMS_SYNC_FIELDS = ("pms_codes_line", "room_statuses")
+PMS_SYNC_FIELDS = ("pms_codes_line", "pms_codes_at", "room_statuses")
 FORM_FIELDS = ("email", "phone", "language", "backup_email", "backup_phone", "relay_email", "channels", "phone_consent",
                "checkin_completed_at", "stairs_help")
 STAIRS_MEMO_FIELDS = ("stairs_memo_at", "stairs_label_at", "internal_memo")

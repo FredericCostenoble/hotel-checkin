@@ -78,6 +78,7 @@ class Reservation:
     payout_registered_at: datetime | None = None  # overschrijving van Booking.com in Lighthouse geregistreerd (processes/booking_payout.py)
     room_statuses: list[str] = field(default_factory=list)  # status per kamer in Lighthouse: none, readyforcheckin, checkin, checkout
     pms_codes_line: str | None = None  # regel "Deur Pin code: ..." zoals de robot ze in Lighthouse zette (processes/pms_sync.py)
+    pms_codes_at: datetime | None = None  # wanneer de robot die regel (en de status) in Lighthouse zette
     pay_link: str | None = None  # betaallink van Lighthouse (mail "Betaal uw openstaande saldo" in checkin@)
     token: str | None = None  # geheime sleutel in de link naar het check-in-formulier
     checkin_completed_at: datetime | None = None  # wanneer de gast het formulier invulde

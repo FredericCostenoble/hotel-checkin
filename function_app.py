@@ -256,7 +256,9 @@ def admin_api(req: func.HttpRequest) -> func.HttpResponse:
                 body = req.get_json()
             except ValueError:
                 return _json(400, {"error": "json"})
-            ok, data = admin.settings_save(hotel, body, _admin_user(req) or "")
+            # ?only=sectie,sectie: alleen die secties bewaren (knop per sectie in de monitor)
+            only = [x for x in req.params.get("only", "").split(",") if x] or None
+            ok, data = admin.settings_save(hotel, body, _admin_user(req) or "", only)
             return _json(200 if ok else 400, data)
     if what == "workflow":
         # Tabblad Workflow: lezen, wijzigen (met wie en wanneer) of terug naar de standaard
