@@ -222,8 +222,8 @@ Object.assign(T.nl, {
   m_card: "Te beslissen: mogelijk dezelfde gast", m_open: n => `${n} open`, m_and: "en", m_keep: "Samenvoegen", m_apart: "Apart houden",
   gp_since: d => `gastprofiel sinds ${d}`, gp_nomkt: "Geen marketing", gp_back: "Terugkerend", gp_resn: "reservaties", gp_stays: "verblijven", gp_canc: "geannuleerd", pick_filter: "Filter",
   gp_nights: "nachten gem.", gp_pers: "personen gem.", gp_first: "Eerste verblijf", gp_last: "Laatste verblijf", gp_chan: "Voorkeurskanaal", gp_rooms: "Kamers",
-  gp_contact: "Contact", gp_help: "Verblijf: berichten over het verblijf (bevestiging, code, ...) via dit kanaal; vinkje weg = nooit voor deze gast. Marketing: nieuwsbrieven en aanbiedingen naar dit adres.", gp_use: "gebruiken", gp_relay: "doorstuuradres van de boekingssite: wel voor berichten over het verblijf, niet voor marketing", gp_fake: "nepnummer van de boekingssite: nooit gebruikt",
-  gp_stayinfo: "Verblijf", gp_mkt: "Marketing", gp_mkt_guest: "de gast vroeg zelf geen marketing", gp_mkt_relay: "doorstuuradres: nooit marketing",
+  gp_contact: "Contact", gp_help: "Verblijf: berichten over het verblijf (bevestiging, code, ...) via dit kanaal; vinkje weg = nooit voor deze gast. Marketing: nieuwsbrieven en aanbiedingen naar dit adres.", gp_use: "gebruiken", gp_relay: "doorstuuradres van de boekingssite (nooit marketing)", gp_old: "niet gebruikt: vroeger adres", gp_fake: "nepnummer van de boekingssite: nooit gebruikt",
+  gp_stayinfo: "Verblijf", gp_mkt: "Marketing", gp_not_used: "niet gebruikt: er is een eigen e-mailadres", gp_no_consent: "geen toestemming in het check-in-formulier", gp_mkt_noform: "marketing volgt de keuze in het check-in-formulier (nog niet ingevuld met dit adres)", gp_mkt_guest: "de gast vroeg zelf geen marketing", gp_mkt_relay: "doorstuuradres: nooit marketing",
   gp_detach: "Ontkoppelen", gp_detach_q: n => `Reservatie #${n} hoort niet bij deze gast? Ze krijgt een eigen gastprofiel, of komt bij de gast waar ze zeker bij hoort. Ze komt nooit meer terug bij deze gast.`, gp_detached: "Ontkoppeld.",
   gp_form: "formulier", gp_booking: "reservatie", gp_res: "Reservaties", gp_all: n => `Alle ${n} reservaties`, gp_now: "Nu", gp_left: "Vertrokken", gp_coming: "Komt",
   d_back: "Reservaties", d_nights: n => `${n} nachten`, d_persons: n => `${n} personen`, d_rooms: x => `kamer ${x}`, d_and: "en",
@@ -307,8 +307,8 @@ Object.assign(T.en, {
   m_card: "To decide: possibly the same guest", m_open: n => `${n} open`, m_and: "and", m_keep: "Merge", m_apart: "Keep apart",
   gp_since: d => `guest profile since ${d}`, gp_nomkt: "No marketing", gp_back: "Returning", gp_resn: "reservations", gp_stays: "stays", gp_canc: "cancelled", pick_filter: "Filter",
   gp_nights: "nights avg.", gp_pers: "persons avg.", gp_first: "First stay", gp_last: "Last stay", gp_chan: "Preferred channel", gp_rooms: "Rooms",
-  gp_contact: "Contact", gp_help: "Stay info: messages about the stay (confirmation, code, ...) through this channel; untick = never for this guest. Marketing: newsletters and offers to this address.", gp_use: "use", gp_relay: "relay address of the booking site: used for messages about the stay, not for marketing", gp_fake: "fake number of the booking site: never used",
-  gp_stayinfo: "Stay info", gp_mkt: "Marketing", gp_mkt_guest: "the guest asked for no marketing", gp_mkt_relay: "relay address: never marketing",
+  gp_contact: "Contact", gp_help: "Stay info: messages about the stay (confirmation, code, ...) through this channel; untick = never for this guest. Marketing: newsletters and offers to this address.", gp_use: "use", gp_relay: "relay address of the booking site (never marketing)", gp_old: "not used: earlier address", gp_fake: "fake number of the booking site: never used",
+  gp_stayinfo: "Stay info", gp_mkt: "Marketing", gp_not_used: "not used: there is an own e-mail address", gp_no_consent: "no permission in the check-in form", gp_mkt_noform: "marketing follows the choice in the check-in form (not filled in with this address yet)", gp_mkt_guest: "the guest asked for no marketing", gp_mkt_relay: "relay address: never marketing",
   gp_detach: "Detach", gp_detach_q: n => `Reservation #${n} does not belong to this guest? It gets its own guest profile, or joins the guest it surely belongs to. It never comes back to this guest.`, gp_detached: "Detached.",
   gp_form: "form", gp_booking: "reservation", gp_res: "Reservations", gp_all: n => `All ${n} reservations`, gp_now: "Now", gp_left: "Departed", gp_coming: "Coming",
   d_back: "Reservations", d_nights: n => `${n} nights`, d_persons: n => `${n} persons`, d_rooms: x => `room ${x}`, d_and: "and",
@@ -1305,12 +1305,23 @@ function renderProfile() {
   const src = x => x === g.email && g.form ? t("gp_form") : t("gp_booking");
   const box = (label, attrs, on, title) => `<label class="row small" style="gap:6px;font-weight:600;white-space:nowrap"${title ? ` title="${esc(title)}"` : ""}><input type="checkbox" ${attrs} ${on ? "checked" : ""}>${esc(label)}</label>`;
   // mail: marketing = "own" (eigen adres), "relay" (nooit) of leeg (gsm: geen marketing-vinkje)
+  // Zoals de robot verstuurt (send_messages.recipients): eigen adressen; het doorstuuradres alleen zolang er geen eigen
+  // adres is; gsm alleen met toestemming in het formulier. Marketing volgt de keuze in het formulier.
+  const formMails = (g.form_emails || []), consent = (g.consent_phones || []);
   const line = (icon, value, sub, ch, disabled, mail) => {
-    const stay = box(t("gp_stayinfo"), disabled ? "disabled" : `data-mute="${esc(g.id)}" value="${ch}"`, !disabled && !muted.includes(ch));
-    const off = (g.marketing_off || []).includes(value.toLowerCase()), byGuest = (g.marketing_by_guest || []).includes(value.toLowerCase());
+    const lc = value.toLowerCase(), why = [];
+    let usable = !disabled;
+    if (usable && mail === "relay" && own.length) { usable = false; why.push(t("gp_not_used")); }
+    if (usable && mail === "own" && ![g.email, g.backup_email].filter(Boolean).map(x => x.toLowerCase()).includes(lc)) { usable = false; why.push(t("gp_old")); }
+    if (usable && !mail && ch && !consent.includes(value)) { usable = false; why.push(t("gp_no_consent")); }
+    const stay = box(t("gp_stayinfo"), usable ? `data-mute="${esc(g.id)}" value="${ch}"` : "disabled", usable && !muted.includes(ch));
+    const off = (g.marketing_off || []).includes(lc), byGuest = (g.marketing_by_guest || []).includes(lc), fromForm = formMails.includes(lc);
     const mkt = mail === "relay" ? box(t("gp_mkt"), "disabled", false, t("gp_mkt_relay"))
-      : mail === "own" ? box(t("gp_mkt"), byGuest ? "disabled" : `data-mkt="${esc(value)}"`, !off, byGuest ? t("gp_mkt_guest") : "") : "";
-    return `<div class="li">${icon}<div class="lt"><b>${esc(value)}</b><div class="small muted">${esc(sub)}${byGuest ? " · " + esc(t("gp_mkt_guest")) : ""}</div></div>
+      : mail === "own" ? (byGuest || !fromForm ? box(t("gp_mkt"), "disabled", false, byGuest ? t("gp_mkt_guest") : t("gp_mkt_noform"))
+        : box(t("gp_mkt"), `data-mkt="${esc(value)}"`, !off)) : "";
+    if (mail === "own" && byGuest) why.push(t("gp_mkt_guest"));
+    else if (mail === "own" && !fromForm) why.push(t("gp_mkt_noform"));
+    return `<div class="li">${icon}<div class="lt"><b>${esc(value)}</b><div class="small muted">${esc([sub, ...why].join(" · "))}</div></div>
       <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-start;flex:0 0 112px">${stay}${mkt}</div></div>`;
   };
   const contacts = [

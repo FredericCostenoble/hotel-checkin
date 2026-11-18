@@ -10,7 +10,7 @@ import threading
 from datetime import UTC, date, datetime, timedelta
 
 from hotel_checkin.core import clock
-from hotel_checkin.core.addresses import relay_platform
+from hotel_checkin.core.addresses import is_own_email, relay_platform
 from hotel_checkin.core.hotels import list_hotels, load_hotel
 from hotel_checkin.guests import repository as repo
 
@@ -193,6 +193,11 @@ def guests(hotel_id: str) -> dict:
                                     if relay_platform(r.guest.relay_email or r.guest.email)}),
             "language": g.language, "country": g.country or "", "form": g.from_checkin_form,
             "opt_out": bool(g.email and g.email.lower() in opted_out),
+            # Wat de robot echt gebruikt (zelfde regels als send_messages.recipients) en waarvoor de gast toestemming gaf:
+            # adressen uit het check-in-formulier (marketing volgt de keuze in het formulier), bevestigde gsm-nummers
+            "form_emails": sorted({e.lower() for x in res_by_guest.get(g.guest_id, []) if x.checkin_completed_at
+                                   for e in (x.guest.email, x.guest.backup_email) if e and is_own_email(e)}),
+            "consent_phones": sorted({p for x in res_by_guest.get(g.guest_id, []) for p in (x.guest.phone_consent or [])}),
             # Marketing per eigen adres: op de blokkeerlijst, en of de gast dat zelf vroeg (dan niet terug aan te zetten)
             "marketing_off": sorted({e.lower() for e in [g.email, g.backup_email, *g.known_emails]
                                      if e and e.lower() in opted_out}),
