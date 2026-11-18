@@ -1193,11 +1193,13 @@ async function loadGuests() {
 
 function guestById(id) { return guestData.guests.find(g => g.id === id); }
 
-// Van een reservatie naar de gast, en van een gast naar zijn reservaties: gewoon het zoekvak invullen
+// Van een reservatie naar de gast (zoekvak), en van een gast naar precies zijn reservaties (ook onder een andere
+// naam, bv. na samenvoegen; ook voorbije verblijven)
 function openGuest(id) { gSel = id; $("#g-search").value = guestById(id)?.name || ""; showTab("guests"); renderGuests(); }
 function openReservations(id) {
-  $("#search").value = guestById(id)?.name || "";
-  $("#from").value = ""; $("#to").value = "";  // ook voorbije verblijven
+  const g = guestById(id);
+  $("#search").value = "";
+  resPick = g ? { label: g.name, ids: new Set(g.reservations) } : null;
   showTab("res"); render();
 }
 
