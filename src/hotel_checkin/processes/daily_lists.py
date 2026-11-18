@@ -599,16 +599,29 @@ def save_planboard(hotel_id: str, day: date, parsed: dict, read_at: datetime) ->
     return len(keep)
 
 
-def describe(data: dict, with_source: bool = True) -> str:
-    """Inhoud in een paar woorden (robotlog, monitor; zonder bron in de WhatsApp aan het personeel)."""
-    source = f", from the {data['source']}" if data.get("source") and with_source else ""
+def describe(data: dict, with_source: bool = True, lang: str = "en") -> str:
+    """Inhoud in een paar woorden, zoals op de lijst (Engels; lang="nl" om te bekijken in de monitor). Zonder bron in
+    de WhatsApp aan het personeel."""
+    nl = lang == "nl"
+    source = ""
+    if data.get("source") and with_source:
+        m = re.search(r"(\d{2}:\d{2})", data["source"])  # ook lijsten van vroeger ("planbord van 15:27")
+        source = ((f", volgens planbord van {m.group(1)}" if nl else f", from the planboard of {m.group(1)}") if m
+                  else (", volgens de reservaties (planbord niet gelezen)" if nl
+                        else ", from the reservations (planboard not read)"))
     if data["kind"] == "breakfast":
         rooms = sum(1 for r in data["rows"] if not r.get("sep") and (r.get("count") or r.get("check")))
         missing = (data.get("breakfast_lines") or {}).get("without_days", 0)
+        if nl:
+            return (f"{data.get('total', 0)} personen in {rooms} kamers"
+                    + (f", {data['check']} na te kijken" if data.get("check") else "")
+                    + (f", van {missing} ontbijtregel(s) de dagen niet gelezen" if missing else "") + source)
         return (f"{data.get('total', 0)} persons in {rooms} rooms"
                 + (f", {data['check']} to check" if data.get("check") else "")
                 + (f", days not read for {missing} breakfast line(s)" if missing else "") + source)
     t = data.get("totals", {})
+    if nl:
+        return f"{t.get('leave', 0)} vertrek, {t.get('stay', 0)} blijvers, {t.get('checkin', 0)} check in" + source
     return f"{t.get('leave', 0)} leave, {t.get('stay', 0)} stay, {t.get('checkin', 0)} check in" + source
 
 
@@ -760,7 +773,7 @@ def generate(hotel_id: str, kind: str, day: date, by: str = "", send_now: bool =
     guests.save_daily_list(hotel_id, kind, day.isoformat(), data)
     prune(hotel_id, kind)
     note = (f"lijst voor {lists.day_text(day.isoformat(), "nl")} {'automatisch gemaakt' if auto else 'gemaakt door ' + (by or '?')}: "
-            f"{describe(data)}" + (f" ({fresh})" if fresh else "")
+            f"{describe(data, lang='nl')}" + (f" ({fresh})" if fresh else "")
             + (f". {_sent_text(sent)}" if send_now else ", niet verstuurd"))
     ok = all(s["ok"] or s.get("skipped") for s in sent)
     guests.log_robot_run(hotel_id, TASK[kind], started, ok, 1, 1 if send_now and sent and ok else 0, note,
@@ -816,7 +829,8 @@ def _phone_on(hotel_id: str) -> bool:
 def view(hotel_id: str, kind: str) -> dict:
     """Voor de monitor: de bewaarde lijsten (nieuwste eerst, met de tabel), en wanneer de volgende komt."""
     cfg = settings(hotel_id, kind)
-    records = [d | {"html": lists.table_html(d), "summary": describe(d)} for d in guests.daily_lists(hotel_id, kind)]
+    records = [d | {"html": lists.table_html(d), "summary": describe(d), "html_nl": lists.table_html(d, "nl"),
+                    "summary_nl": describe(d, lang="nl")} for d in guests.daily_lists(hotel_id, kind)]
     pending = sorted(({"day": k.split(":", 1)[1], "at": r.get("at", ""), "send": bool(r.get("send")),
                        "made": bool(_made_at(hotel_id, k, r))}
                       for k, r in requests(hotel_id).items() if k.startswith(kind + ":")), key=lambda x: x["day"])

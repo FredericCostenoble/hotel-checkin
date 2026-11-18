@@ -197,6 +197,12 @@ def pdf(data: dict, hotel_name: str) -> bytes:
 
 # ---------------------------------------------------------------- HTML (mail en monitor)
 
+# Kolommen en totaal per taal: verstuurd wordt altijd Engels; Nederlands alleen om te bekijken in de monitor
+HEAD = {"en": {"breakfast": ("Room", "Type", "Persons", "Remarks"),
+               "cleaning": ("Room", "Type", "Leave", "Stay", "Check in", "Remarks"), "total": "Total"},
+        "nl": {"breakfast": ("Kamer", "Type", "Aantal", "Opmerkingen"),
+               "cleaning": ("Kamer", "Type", "Vertrek", "Blijft", "Check in", "Opmerkingen"), "total": "Totaal"}}
+
 _TD = "padding:4px 8px;border:1px solid #ccc;vertical-align:top;"
 _TH = "padding:4px 8px;border:1px solid #ccc;text-align:left;background:#F4F5F8;"
 
@@ -205,12 +211,10 @@ def _e(value) -> str:
     return html.escape(str(value if value is not None else ""))
 
 
-def table_html(data: dict) -> str:
-    """Alleen de tabel (ook voor de monitor)."""
-    if data["kind"] == "breakfast":
-        head = ("Room", "Type", "Persons", "Remarks")
-    else:
-        head = ("Room", "Type", "Leave", "Stay", "Check in", "Remarks")
+def table_html(data: dict, lang: str = "en") -> str:
+    """Alleen de tabel (ook voor de monitor). lang = "nl" alleen om te bekijken; de opmerkingen blijven zoals ze zijn."""
+    words = HEAD.get(lang, HEAD["en"])
+    head = words[data["kind"]]
     mid = {2, 3, 4} if data["kind"] == "cleaning" else {2}  # aantallen en x: gecentreerd, ook het totaal
     body = ""
     for r in data["rows"]:
@@ -234,10 +238,10 @@ def table_html(data: dict) -> str:
         body += f'<tr style="background:{bg};">' + "".join(
             f'<td style="{_TD}{style(i, v)}">{_e(v)}</td>' for i, v in enumerate(cells)) + "</tr>"
     if data["kind"] == "breakfast":
-        foot = [("Total", "", data.get("total", 0), "")]
+        foot = [(words["total"], "", data.get("total", 0), "")]
     else:
         tot = data.get("totals", {})
-        foot = [("Total", "", tot.get("leave", 0), tot.get("stay", 0), tot.get("checkin", 0), "")]
+        foot = [(words["total"], "", tot.get("leave", 0), tot.get("stay", 0), tot.get("checkin", 0), "")]
     body += "".join('<tr style="font-weight:bold;">' + "".join(
         f'<td style="{_TD}{"text-align:center;" if i in mid else ""}">{_e(v)}</td>' for i, v in enumerate(f)) + "</tr>"
         for f in foot)

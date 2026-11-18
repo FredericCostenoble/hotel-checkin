@@ -2786,6 +2786,12 @@ async function resetSettings() {
 // Per dag één lijst (de laatste 15). Opnieuw maken (en versturen) voor een gekozen dag; bekijken en de Excel downloaden.
 const LIST_KINDS = ["breakfast", "cleaning"];
 const listData = {}, listDay = {}, listOpen = {}, listPoll = {};
+// Voorbeeld van een lijst: eigen taal (NL/EN), los van de taal van het scherm. Standaard EN: zo wordt ze verstuurd.
+const PAPER = {
+  en: { breakfast: "Breakfast list", cleaning: "Cleaning list", made: (w, b) => `made ${w} by ${b}`, auto: "automatic", loc: "en-GB" },
+  nl: { breakfast: "Ontbijtlijst", cleaning: "Schoonmaaklijst", made: (w, b) => `gemaakt ${w} door ${b}`, auto: "automatisch", loc: "nl-BE" },
+};
+let paperLang = (() => { try { return localStorage.getItem("paperLang") === "nl" ? "nl" : "en"; } catch (e) { return "en"; } })();
 const dayLong = iso => new Date(iso + "T00:00").toLocaleDateString(locale(), { weekday: "long", day: "2-digit", month: "2-digit", year: "numeric" });
 
 async function loadList(kind) {
@@ -2861,11 +2867,18 @@ function renderList(kind) {
       <a class="btn2 sm" href="${API}/api/monitor/${hotel}/list-pdf?kind=${sk}&day=${esc(sd)}">${DL}PDF</a>
       <button class="btn sm" type="button" id="list-send-saved">${IC('<path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4z"/>', 14)}${esc(t("ls_send"))}</button>
       <button class="btn3" type="button" id="list-del" title="${esc(t("del"))}">${BIN}</button></div></div>
+    <div class="row" style="justify-content:flex-end;margin-top:8px"><div class="seg v2" role="radiogroup" aria-label="Taal van de lijst">${["nl", "en"].map(l =>
+      `<label class="${l === paperLang ? "on" : ""}" data-plang="${l}"><input type="radio" name="plang" ${l === paperLang ? "checked" : ""}>${l.toUpperCase()}</label>`).join("")}</div></div>
     <div class="paper" id="list-paper"><div class="row" style="justify-content:space-between;align-items:flex-start"><div><div class="lbl">${esc(hotelNow().name || "")}</div>
-      <h2 style="font-size:20px;margin-top:2px">${esc(t("l_title_" + sk, dayLong(sd)))}</h2><div class="small muted">${esc(t("l_made_by", dtime(x.generated_at), x.generated_by === "automatisch" ? t("dl_auto") : x.generated_by))}</div></div>
-      <div style="text-align:right" class="small muted">${esc(x.summary || "")}</div></div><div class="tbox" style="margin-top:14px">${x.html}</div></div>`
+      <h2 style="font-size:20px;margin-top:2px">${esc(PAPER[paperLang][sk] + " " + new Date(sd + "T00:00").toLocaleDateString(PAPER[paperLang].loc, { weekday: "long", day: "2-digit", month: "2-digit", year: "numeric" }))}</h2><div class="small muted">${esc(PAPER[paperLang].made(dtime(x.generated_at), x.generated_by === "automatisch" ? PAPER[paperLang].auto : x.generated_by))}</div></div>
+      <div style="text-align:right" class="small muted">${esc((paperLang === "nl" ? x.summary_nl : x.summary) || x.summary || "")}</div></div><div class="tbox" style="margin-top:14px">${(paperLang === "nl" ? x.html_nl : x.html) || x.html}</div></div>`
     : `<div class="card"><div class="cb" style="padding-top:16px"><span class="muted">${esc(t("l_none_sel"))}</span></div></div>`;
   if (x) {
+    document.querySelectorAll("#list-preview [data-plang]").forEach(b => b.onclick = e => {
+      e.preventDefault(); paperLang = b.dataset.plang;
+      try { localStorage.setItem("paperLang", paperLang); } catch (err) { /* alleen een voorkeur */ }
+      renderList(listKind);
+    });
     $("#list-send-saved").onclick = () => sendSavedList(sk, sd, x);
     $("#list-del").onclick = async () => {
       if (!await ask(t("dl_del_confirm", dayLong(sd)), { ok: t("dlg_delete"), danger: true })) return;
