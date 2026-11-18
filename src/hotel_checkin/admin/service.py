@@ -201,6 +201,9 @@ def guests(hotel_id: str) -> dict:
             "rooms": [k for k, _ in rooms], "room_type": max(g.room_types, key=g.room_types.get) if g.room_types else "",
             "channels": [{"name": k, "count": v} for k, v in channels],
             "preferred_channel": channels[0][0] if channels else "",
+            # Nog geen meegeteld verblijf (toekomstige reservatie): kanaal en aankomst van de laatste reservatie
+            "booked_source": max(res_by_guest.get(g.guest_id, []), key=lambda r: r.arrival).source or "" if res_by_guest.get(g.guest_id) else "",
+            "booked_arrival": max(r.arrival for r in res_by_guest[g.guest_id]).isoformat() if res_by_guest.get(g.guest_id) else "",
             "muted": g.muted_channels,
             "reservations": g.reservation_ids,
             "updated_at": g.updated_at.isoformat() if g.updated_at else "",

@@ -41,8 +41,8 @@ def test_same_phone_links_booking_com_and_direct():
 
 def test_checkin_form_brings_two_profiles_together():
     a = gp.link(_res("r1", email="111-x@guest.booking.com"))
-    b = gp.link(_res("r2", email="jan@example.com"))
-    assert a.guest_id != b.guest_id  # alleen de naam: niet automatisch
+    b = gp.link(_res("r2", email="jan@example.com", days_ago=60))
+    assert a.guest_id != b.guest_id  # alleen de naam, andere nachten: niet automatisch
     r1 = repo.mark_checkin_completed("lucca", "r1", "jan@example.com", None, "nl")
     g = gp.link(r1)
     assert len(profiles.list_profiles("lucca")) == 1 and g.from_checkin_form
@@ -51,7 +51,7 @@ def test_checkin_form_brings_two_profiles_together():
 
 def test_possible_matches_and_different():
     a = gp.link(_res("r1", "Maria", "De Voorbeeld"))
-    b = gp.link(_res("r2", "DE VOORBEELD", "Maria"))
+    b = gp.link(_res("r2", "DE VOORBEELD", "Maria", days_ago=60))
     gp.link(_res("r3", "Maria", "De Voorbeeld", country="FR"))  # ander land: geen voorstel
     m = gp.possible_matches("lucca")
     assert [(x["reason"]) for x in m] == ["same_name"] and {m[0]["a"], m[0]["b"]} == {a.guest_id, b.guest_id}
@@ -89,7 +89,7 @@ def test_monitor_guests_view():
     from hotel_checkin.admin import service
 
     a = gp.link(_res("r1", "Maria", "De Voorbeeld", email="1-x@guest.booking.com"))
-    gp.link(_res("r2", "DE VOORBEELD", "Maria", email="maria@example.be"))
+    gp.link(_res("r2", "DE VOORBEELD", "Maria", email="maria@example.be", days_ago=60))
     repo.add_opt_out("lucca", "maria@example.be", "checkin_form")
     data = service.guests("lucca")
     by = {g["email"]: g for g in data["guests"]}
@@ -186,7 +186,9 @@ def test_relay_address_never_matches():
     from hotel_checkin.processes import guest_profiles
 
     a = guest_profiles.link(_rsv("b1", "Ann", "Dewit", email="ann.1@guest.booking.com"))
-    b = guest_profiles.link(_rsv("b2", "Ann", "Dewit", email="ann.1@guest.booking.com"))
+    r2 = _rsv("b2", "Ann", "Dewit", email="ann.1@guest.booking.com")
+    r2.arrival, r2.departure = r2.arrival + timedelta(days=30), r2.departure + timedelta(days=30)
+    b = guest_profiles.link(repo.save_reservation(r2))
     assert a.guest_id != b.guest_id  # alleen voorgesteld als zelfde naam, nooit automatisch
 
 
@@ -224,3 +226,35 @@ def test_placeholder_phone_of_expedia_never_matches():
     b = gp.link(_res("e2", "Eva", "Krikken", email="tlvudwu8y9@m.expediapartnercentral.com", phone="+11111111111111",
                      source="Expedia"))
     assert a.guest_id != b.guest_id and gp.possible_matches("lucca") == []
+
+
+def test_same_name_same_nights_is_same_guest():
+    """Opnieuw geboekt na annulering, of een groep met meer kamers: andere doorstuuradressen, zelfde naam en nachten."""
+    a = gp.link(_res("e1", "Sophia", "Sharp", email="x1@m.expediapartnercentral.com", status=ReservationStatus.CANCELLED))
+    b = gp.link(_res("e2", "Sophia", "Sharp", email="x2@m.expediapartnercentral.com"))
+    c = gp.link(_res("e3", "SHARP", "Sophia", email="x3@guest.booking.com", rooms=["14"]))
+    assert a.guest_id == b.guest_id == c.guest_id
+    assert len(profiles.list_profiles("lucca")) == 1 and gp.possible_matches("lucca") == []
+
+
+def test_maintenance_merges_existing_same_stay_profiles_but_not_marked_different():
+    ids = []
+    for rid in ("s1", "s2", "s3"):
+        r = _res(rid, "Sophia", "Sharp")
+        g = profiles.new_profile("lucca")
+        g.first_name, g.last_name, g.country, g.reservation_ids = "Sophia", "Sharp", "BE", [rid]
+        profiles.save_profile(g)
+        r.guest_id = g.guest_id
+        repo.save_reservation(r, fields=("guest_id",))
+        ids.append(g.guest_id)
+    later = _res("s4", "Sophia", "Sharp", days_ago=90)  # andere nachten: niet samen
+    g = profiles.new_profile("lucca")
+    g.first_name, g.last_name, g.reservation_ids = "Sophia", "Sharp", ["s4"]
+    profiles.save_profile(g)
+    later.guest_id = g.guest_id
+    repo.save_reservation(later, fields=("guest_id",))
+    profiles.mark_different("lucca", ids[0], ids[2])
+    assert gp.merge_same_stay("lucca") == 1  # s2 gaat bij s1 of bij s3; s1 en s3 komen nooit samen
+    left = {r.reservation_id: r.guest_id for r in repo.list_reservations("lucca")}
+    assert left["s2"] in (left["s1"], left["s3"]) and left["s1"] != left["s3"]
+    assert left["s4"] not in (left["s1"], left["s3"]) and len(profiles.list_profiles("lucca")) == 3

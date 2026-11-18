@@ -149,7 +149,65 @@ def _strong_match(r: Reservation, candidates: list[GuestProfile]) -> GuestProfil
     for g in candidates:
         if ((mine_e & own_emails(g)) or (mine_p & phones(g))) and names_fit(r.guest.first_name, r.guest.last_name, g):
             return g
+    return _same_stay(r, candidates)
+
+
+def _overlap(a: Reservation, b: Reservation) -> bool:
+    return a.arrival < b.departure and b.arrival < a.departure
+
+
+def _same_stay(r: Reservation, candidates: list[GuestProfile]) -> GuestProfile | None:
+    """Ook zeker dezelfde gast: exact dezelfde naam en een reservatie voor (deels) dezelfde nachten,
+    bv. opnieuw geboekt na een annulering, of een groep met meer kamers in aparte reservaties.
+    Booking.com en Expedia geven per reservatie een ander doorstuuradres, dus dat helpt hier niet."""
+    key = canonical_name(r.guest.first_name, r.guest.last_name)
+    if not key:
+        return None
+    for g in candidates:
+        if canonical_name(g.first_name, g.last_name) != key or (r.guest.country and g.country and r.guest.country != g.country):
+            continue
+        for rid in g.reservation_ids:
+            other = guests.get_reservation(r.hotel_id, rid) if rid != r.reservation_id else None
+            if other is not None and _overlap(r, other):
+                return g
     return None
+
+
+def merge_same_stay(hotel_id: str) -> int:
+    """Bestaande profielen met dezelfde naam en overlappende reservaties samenvoegen (dagelijks onderhoud).
+    Paren die met de hand als verschillend gemarkeerd zijn, blijven apart. Geeft het aantal samenvoegingen."""
+    different = profiles.different_pairs(hotel_id)
+    res_by_guest: dict[str, list[Reservation]] = {}
+    for r in guests.list_reservations(hotel_id):
+        if r.guest_id:
+            res_by_guest.setdefault(r.guest_id, []).append(r)
+    by_name: dict[str, list[GuestProfile]] = {}
+    for g in profiles.list_profiles(hotel_id):
+        key = canonical_name(g.first_name, g.last_name)
+        if key:
+            by_name.setdefault(key, []).append(g)
+    merged = 0
+    members = {g.guest_id: {g.guest_id} for gs in by_name.values() for g in gs}  # ook de al opgenomen profielen
+
+    def marked(a: GuestProfile, b: GuestProfile) -> bool:
+        return any(profiles.is_marked_different(different, x, y) for x in members[a.guest_id] for y in members[b.guest_id])
+
+    for group in by_name.values():
+        while len(group) > 1:
+            pair = next(((a, b) for i, a in enumerate(group) for b in group[i + 1:]
+                         if not marked(a, b)
+                         and not (a.country and b.country and a.country != b.country)
+                         and any(_overlap(x, y) for x in res_by_guest.get(a.guest_id, []) for y in res_by_guest.get(b.guest_id, []))),
+                        None)
+            if pair is None:
+                break
+            a, b = pair
+            kept = merge(hotel_id, a.guest_id, b.guest_id, keep=a, other=b)
+            res_by_guest[kept.guest_id] = res_by_guest.pop(a.guest_id, []) + res_by_guest.pop(b.guest_id, [])
+            members[kept.guest_id] = members.pop(a.guest_id) | members.pop(b.guest_id)
+            group = [kept] + [g for g in group if g.guest_id not in (a.guest_id, b.guest_id)]
+            merged += 1
+    return merged
 
 
 def _remember(g: GuestProfile, email: str | None, phone: str | None) -> None:

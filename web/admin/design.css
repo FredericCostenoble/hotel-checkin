@@ -360,3 +360,18 @@ main.legacy:not(:has(> section:not([hidden]))){display:none}
   .mtab.v2{position:fixed !important;left:0;right:0;bottom:0}
   body{padding-bottom:76px}
 }
+/* Eigen popup (vervangt confirm en alert van de browser), in de stijl van de kaarten */
+.dlg-back.v2{position:fixed;inset:0;z-index:100;background:rgba(20,22,28,.45);display:flex;align-items:flex-start;justify-content:center;padding:12vh 16px 16px;font-family:Inter,system-ui,sans-serif}
+html body .dlg-back.v2 .dlg{width:100%;max-width:440px;border:0;box-shadow:0 12px 40px rgba(20,22,28,.28);animation:dlg-in .12s ease-out}
+.dlg-back.v2 .dlg-b{padding:22px 22px 6px;display:flex;flex-direction:column;gap:10px}
+.dlg-back.v2 .dlg-b p{margin:0;font-size:15px;line-height:1.5;color:#23262E;white-space:pre-line}
+.dlg-back.v2 .dlg-f{display:flex;justify-content:flex-end;gap:8px;padding:16px 22px 20px}
+html body .dlg-back.v2 .btn.danger{background:#8B2E2E}
+.dlg-back.v2 .btn:focus-visible,.dlg-back.v2 .btn2:focus-visible{outline:2px solid #23262E;outline-offset:2px}
+@keyframes dlg-in{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+@media (max-width:760px){
+  .dlg-back.v2{align-items:flex-end;padding:0}
+  html body .dlg-back.v2 .dlg{max-width:none;border-radius:16px 16px 0 0}
+  .dlg-back.v2 .dlg-f{flex-direction:column-reverse;padding-bottom:calc(20px + env(safe-area-inset-bottom))}
+  .dlg-back.v2 .dlg-f .btn,.dlg-back.v2 .dlg-f .btn2{width:100%;min-height:46px}
+}

@@ -62,6 +62,8 @@ def run(hotel_id: str, today: date | None = None) -> dict:
                 done["counted"] += 1
             if guest_profiles.count_cancellation(r, today):
                 done["cancellations"] += 1
+        # Dezelfde naam en (deels) dezelfde nachten = dezelfde gast (opnieuw geboekt, groep met meer kamers)
+        done["merged"] = guest_profiles.merge_same_stay(hotel_id)
         # Toegang bij Salto opruimen: geannuleerd of vertrokken
         from hotel_checkin.processes import grant_access
 

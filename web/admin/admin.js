@@ -191,6 +191,7 @@ const T = {
 };
 // Teksten van het ontwerp (Claude Design, canvas Beheerapp Hotel Lucca)
 Object.assign(T.nl, {
+  m_arrives: d => `aankomst ${d}`, dlg_send: "Versturen", dlg_delete: "Verwijderen", dlg_reset: "Terugzetten", dlg_leave: "Niet bewaren en verder",
   nav_lists: "Lijsten", nav_messages: "Berichten", logout: "Afmelden", search_lbl: "Zoeken",
   tst_bar: "Testomgeving: berichten gaan alleen naar de testadressen", env_name_prd: "Productie", env_name_tst: "Testomgeving",
   c_stay: "Verblijf", c_res: "Reservatie", c_room_rate: "Kamer en tarief", c_channel: "Kanaal",
@@ -257,6 +258,7 @@ Object.assign(T.nl, {
   gp_nowsuffix: "(nu)", gp_wa: "WhatsApp", gp_sms: "Sms", gp_none: "Kies een gast in de lijst.", gp_stays_m: n => `${n} verblijven`,
 });
 Object.assign(T.en, {
+  m_arrives: d => `arriving ${d}`, dlg_send: "Send", dlg_delete: "Delete", dlg_reset: "Reset", dlg_leave: "Leave without saving",
   nav_lists: "Lists", nav_messages: "Messages", logout: "Sign out", search_lbl: "Search",
   tst_bar: "Test environment: messages only go to the test addresses", env_name_prd: "Production", env_name_tst: "Test environment",
   c_stay: "Stay", c_res: "Reservation", c_room_rate: "Room and rate", c_channel: "Channel",
@@ -327,6 +329,36 @@ const t = (k, ...a) => { const v = T[lang][k]; return typeof v === "function" ? 
 const locale = () => (lang === "en" ? "en-GB" : "nl-BE");
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+// Eigen popup in plaats van confirm() en alert() van de browser.
+// ask(tekst, { ok: "Samenvoegen", danger: true }) geeft een Promise<boolean>; notice(tekst) alleen een knop om te sluiten.
+function dialog(text, { ok, cancel = true, danger = false, title = "" } = {}) {
+  return new Promise(resolve => {
+    const en = lang === "en" ? 1 : 0;
+    const back = document.createElement("div");
+    back.className = "v2 dlg-back";
+    back.innerHTML = `<div class="card dlg" role="dialog" aria-modal="true" aria-labelledby="dlg-t">
+      <div class="dlg-b">${title ? `<h2 class="ct" id="dlg-t">${esc(title)}</h2>` : ""}<p ${title ? "" : 'id="dlg-t"'}>${esc(text)}</p></div>
+      <div class="dlg-f">${cancel ? `<button type="button" class="btn2" data-v="0">${esc(["Annuleren", "Cancel"][en])}</button>` : ""}
+      <button type="button" class="btn${danger ? " danger" : ""}" data-v="1">${esc(ok || (cancel ? ["Bevestigen", "Confirm"][en] : "OK"))}</button></div></div>`;
+    const prev = document.activeElement;
+    const done = v => { document.removeEventListener("keydown", key, true); back.remove(); if (prev && prev.focus) prev.focus(); resolve(v); };
+    const key = e => {
+      if (e.key === "Escape") { e.preventDefault(); done(!cancel); }
+      else if (e.key === "Tab") {  // focus binnen de popup houden
+        const b = [...back.querySelectorAll("button")], i = b.indexOf(document.activeElement);
+        e.preventDefault(); b[(i + (e.shiftKey ? b.length - 1 : 1)) % b.length].focus();
+      }
+    };
+    back.addEventListener("click", e => { if (e.target === back) done(!cancel); });
+    back.querySelectorAll("button").forEach(b => b.onclick = () => done(b.dataset.v === "1"));
+    document.addEventListener("keydown", key, true);
+    document.body.appendChild(back);
+    back.querySelector(danger && cancel ? 'button[data-v="0"]' : 'button[data-v="1"]').focus();
+  });
+}
+const ask = (text, opts = {}) => dialog(text, opts);
+const notice = (text, opts = {}) => dialog(text, { ...opts, cancel: false });
 const day = iso => iso ? new Date(iso + (iso.length === 10 ? "T00:00" : "")).toLocaleDateString(locale(), { day: "2-digit", month: "2-digit", year: "2-digit" }) : "";
 const stamp = iso => iso ? new Date(iso).toLocaleString(locale(), { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) : "";
 let rows = [], runsData = null, timer = null, waitTries = 0;
@@ -417,7 +449,7 @@ async function loadRepair() {
   box.hidden = false;
   const btn = $("#promote");
   if (btn) btn.onclick = async () => {
-    if (!confirm(`Versie v${s.version} naar PRD zetten? Doe dit alleen als alles op TST klopt.`)) return;
+    if (!await ask(`Versie v${s.version} naar PRD zetten? Doe dit alleen als alles op TST klopt.`, { ok: "Naar PRD zetten", danger: true })) return;
     btn.disabled = true;
     let r;
     try { r = await (await apiFetch(`${API}/api/monitor/${h}/repair`, { method: "POST" })).json(); }
@@ -499,9 +531,12 @@ async function init() {
 const PAGE = document.body.dataset.page || "main";
 const TABS = PAGE === "settings" ? ["hotel", "workflow", "robot"] : ["today", "res", "guests", "breakfast", "cleaning"];
 let current = TABS[0];
-function showTab(name, initial = false) {
-  if (((wfDirty && current === "workflow") || (hsDirty && current === "hotel")) && name !== current && !confirm(t("wf_leave"))) {
+function showTab(name, initial = false, leave = false) {
+  if (!leave && ((wfDirty && current === "workflow") || (hsDirty && current === "hotel")) && name !== current) {
     if (location.hash.slice(1) !== current) history.replaceState(null, "", "#" + current);
+    ask(t("wf_leave"), { ok: t("dlg_leave"), danger: true }).then(ok => {
+      if (ok) { history.replaceState(null, "", "#" + name); showTab(name, initial, true); }
+    });
     return;
   }
   current = name;
@@ -582,7 +617,7 @@ function showMessages(id) {
   $("#msgs-on").onchange = async () => {
     const on = $("#msgs-on").checked;
     const d = await get(`/api/monitor/${$("#hotel").value}/select?id=${encodeURIComponent(r.id)}&on=${on ? 1 : 0}`, { method: "POST" }).catch(e => ({ ok: false, error: String(e) }));
-    if (!d.ok) { alert(d.error || "?"); $("#msgs-on").checked = !on; return; }
+    if (!d.ok) { $("#msgs-on").checked = !on; notice(d.error || "?"); return; }
     rows = await get(`/api/monitor/${$("#hotel").value}/reservations`);
     render();
     showMessages(id);
@@ -648,12 +683,12 @@ function showMessages(id) {
     const ch = b.dataset.ch, step = stepShort(b.dataset.step), guestTo = b.dataset.to;
     const question = isPrd() ? t("rs_confirm", step, t(CH[ch]), guestTo)
       : testTo(ch) ? t("rs_confirm_test", step, t(CH[ch]), testTo(ch), guestTo) : t("rs_no_test");
-    if (!isPrd() && !testTo(ch)) { alert(question); return; }
-    if (!confirm(question)) return;
+    if (!isPrd() && !testTo(ch)) { notice(question); return; }
+    if (!await ask(question, { ok: t("dlg_send") })) return;
     b.disabled = true;
     const q = new URLSearchParams({ id: r.id, step: b.dataset.step, channel: b.dataset.ch, to: b.dataset.to });
     const d = await get(`/api/monitor/${$("#hotel").value}/resend?${q}`, { method: "POST" }).catch(e => ({ ok: false, error: String(e) }));
-    if (!d.ok) alert(d.error || t("load_error"));
+    if (!d.ok) notice(d.error || t("load_error"));
     await load();
     showMessages(r.id);
   });
@@ -923,7 +958,7 @@ function renderDetail() {
   $("#d-auto").onchange = async () => {
     const on = $("#d-auto").checked;
     const d = await get(`/api/monitor/${$("#hotel").value}/select?id=${encodeURIComponent(r.id)}&on=${on ? 1 : 0}`, { method: "POST" }).catch(e => ({ ok: false, error: String(e) }));
-    if (!d.ok) { alert(d.error || "?"); $("#d-auto").checked = !on; return; }
+    if (!d.ok) { $("#d-auto").checked = !on; notice(d.error || "?"); return; }
     rows = await get(`/api/monitor/${$("#hotel").value}/reservations`);
     render(); renderDetail();
   };
@@ -1020,12 +1055,12 @@ function sendBar(r, step, bar) {
     if (!valid) { to.focus(); return; }
     const question = isPrd() ? t("rs_confirm", stepShort(step), t(CH[ch.value]), address)
       : testTo(ch.value) ? t("rs_confirm_test", stepShort(step), t(CH[ch.value]), testTo(ch.value), address) : t("rs_no_test");
-    if (!isPrd() && !testTo(ch.value)) { alert(question); return; }
-    if (!confirm(question)) return;
+    if (!isPrd() && !testTo(ch.value)) { notice(question); return; }
+    if (!await ask(question, { ok: t("dlg_send") })) return;
     go.disabled = true;
     const q = new URLSearchParams({ id: r.id, step, channel: ch.value, to: address });
     const d = await get(`/api/monitor/${$("#hotel").value}/resend?${q}`, { method: "POST" }).catch(e => ({ ok: false, error: String(e) }));
-    if (!d.ok) alert(d.error || t("load_error"));
+    if (!d.ok) notice(d.error || t("load_error"));
     await load();
     if ($("#tab-detail") && !$("#tab-detail").hidden) renderDetail(); else showMessages(r.id);
   };
@@ -1250,11 +1285,15 @@ function renderMatches() {
   const m = guestData.matches.filter(x => guestById(x.a) && guestById(x.b));
   $("#matches-card").hidden = !m.length;
   $("#m-open").textContent = t("m_open", m.length);
-  const who = g => `<b>${esc(g.name)}</b> (${esc([g.preferred_channel, g.last_stay ? g.last_stay.slice(0, 4) : ""].filter(Boolean).join(", "))})`;
+  const who = g => {
+    const info = (g.preferred_channel || g.last_stay ? [g.preferred_channel, g.last_stay ? g.last_stay.slice(0, 4) : ""]
+      : [g.booked_source, g.booked_arrival ? t("m_arrives", dshort(g.booked_arrival) + " " + g.booked_arrival.slice(0, 4)) : ""]).filter(Boolean).join(", ");
+    return `<b>${esc(g.name)}</b>${info ? ` (${esc(info)})` : ""}`;
+  };
   $("#matches").innerHTML = m.map(x => `<div class="note warn" style="flex-wrap:wrap"><div style="flex:1 1 280px">${who(guestById(x.a))} ${esc(t("m_and"))} ${who(guestById(x.b))}: ${esc(t("m_" + x.reason))}${x.contact ? ` (${esc(x.contact)})` : ""}</div>
     <div class="row"><button class="btn sm" type="button" data-act="merge" data-a="${esc(x.a)}" data-b="${esc(x.b)}">${esc(t("m_keep"))}</button><button class="btn2 sm" type="button" data-act="different" data-a="${esc(x.a)}" data-b="${esc(x.b)}">${esc(t("m_apart"))}</button></div></div>`).join("");
   document.querySelectorAll("#matches button").forEach(b => b.onclick = async () => {
-    if (b.dataset.act === "merge" && !confirm(t("m_confirm"))) return;
+    if (b.dataset.act === "merge" && !await ask(t("m_confirm"), { ok: t("m_keep") })) return;
     await get(`/api/monitor/${$("#hotel").value}/guests?action=${b.dataset.act}&a=${encodeURIComponent(b.dataset.a)}&b=${encodeURIComponent(b.dataset.b)}`, { method: "POST" });
     loadGuests();
   });
@@ -1420,7 +1459,7 @@ function showSub(name) {
 // Vuilbakje in de kolomtitel: alles wat nu getoond wordt (alle taken, of de gekozen taak)
 async function deleteAllRuns() {
   const task = $("#task").value, n = runsData.runs.filter(x => !task || x.task === task).length;
-  if (!n || !confirm(t("del_all_confirm", n, task ? taskName(task) : ""))) return;
+  if (!n || !await ask(t("del_all_confirm", n, task ? taskName(task) : ""), { ok: t("dlg_delete"), danger: true })) return;
   const h = $("#hotel").value;
   await get(`/api/monitor/${h}/runs?all=1&task=${encodeURIComponent(task)}`, { method: "DELETE" });
   runsData.runs = runsData.runs.filter(x => task && x.task !== task);
@@ -1428,7 +1467,7 @@ async function deleteAllRuns() {
 }
 
 async function deleteRun(id) {
-  if (!confirm(t("del_confirm"))) return;
+  if (!await ask(t("del_confirm"), { ok: t("dlg_delete"), danger: true })) return;
   const h = $("#hotel").value;
   await get(`/api/monitor/${h}/runs?id=${encodeURIComponent(id)}`, { method: "DELETE" });
   runsData.runs = runsData.runs.filter(x => x.id !== id);
@@ -1766,7 +1805,7 @@ async function saveWorkflow() {
 }
 
 async function resetWorkflow() {
-  if (!confirm(t("wf_reset_confirm"))) return;
+  if (!await ask(t("wf_reset_confirm"), { ok: t("dlg_reset"), danger: true })) return;
   wf = await get(`/api/monitor/${$("#hotel").value}/workflow?action=reset`, { method: "POST" });
   wfDirty = false;
   $("#wf-state").textContent = "";
@@ -2521,9 +2560,9 @@ function renderSettings() {
       <div class="cb"${sec.section === "schakelaars" ? ' style="gap:0"' : ""}>${help ? `<div class="help">${esc(help)}</div>` : ""}${body}${env && !sec.fields.some(f => !f.env) ? "" : foot(sec)}</div></section>`;
   }).join("");
   document.querySelectorAll("#hs-sections .hs-save-btn").forEach(b => b.onclick = () => saveSettings(b.closest("section").dataset.sec));
-  document.querySelectorAll("#hs-sections .hs-reset-btn").forEach(b => b.onclick = () => {
+  document.querySelectorAll("#hs-sections .hs-reset-btn").forEach(b => b.onclick = async () => {
     const sec = hs.sections.find(x => x.section === b.closest("section").dataset.sec);
-    if (!sec || !confirm(t("hs_sec_reset_confirm", t("sec_" + sec.section.replace(".", "_")) || sec.section))) return;
+    if (!sec || !await ask(t("hs_sec_reset_confirm", t("sec_" + sec.section.replace(".", "_")) || sec.section), { ok: t("dlg_reset"), danger: true })) return;
     hsEdit[sec.section] = sec.free ? Object.fromEntries(sec.fields.map(f => [f.key, f.default]).filter(([, v]) => v != null))
       : Object.fromEntries(sec.fields.filter(f => !f.env).map(f => [f.key, f.default]));
     saveSettings(sec.section);
@@ -2590,7 +2629,7 @@ async function saveSettings(only) {
 }
 
 async function resetSettings() {
-  if (!confirm(t("hs_reset_confirm"))) return;
+  if (!await ask(t("hs_reset_confirm"), { ok: t("dlg_reset"), danger: true })) return;
   hs = await get(`/api/monitor/${$("#hotel").value}/settings?action=reset`, { method: "POST" });
   hsEdit = {}; hsDirty = false;
   $("#hs-state").textContent = "";
@@ -2683,7 +2722,7 @@ function renderList(kind) {
     : `<div class="card"><div class="cb" style="padding-top:16px"><span class="muted">${esc(t("l_none_sel"))}</span></div></div>`;
   if (x) {
     $("#list-del").onclick = async () => {
-      if (!confirm(t("dl_del_confirm", dayLong(sd)))) return;
+      if (!await ask(t("dl_del_confirm", dayLong(sd)), { ok: t("dlg_delete"), danger: true })) return;
       await get(`/api/monitor/${hotel}/lists?kind=${sk}&day=${encodeURIComponent(sd)}&action=delete`, { method: "POST" });
       listSel = ""; loadList(sk);
     };
@@ -2694,7 +2733,7 @@ async function makeList(kind, send) {
   const day = $("#list-day").value;
   if (!day) return;
   const d = listData[kind];
-  if (send && !confirm(t("dl_confirm", dayLong(day), (d && recipients(d)) || t("dl_no_to")))) return;
+  if (send && !await ask(t("dl_confirm", dayLong(day), (d && recipients(d)) || t("dl_no_to")), { ok: t("dlg_send") })) return;
   const state = $("#list-state"), buttons = [$("#list-make"), $("#list-send")];
   buttons.forEach(b => { b.disabled = true; });
   state.style.color = "";
@@ -2738,9 +2777,10 @@ function envSwitch() {
     link.hidden = false;
     if (link.id === "env-switch") link.textContent = t("env_to_" + target);
     link.href = `${location.protocol}//${other}${location.pathname}${location.hash}`;
-    link.onclick = e => {
+    link.onclick = async e => {
+      e.preventDefault();
       link.href = `${location.protocol}//${other}${location.pathname}${location.hash}`;  // zelfde tabblad als nu
-      if (!confirm(t("env_confirm_" + target))) e.preventDefault();
+      if (await ask(t("env_confirm_" + target), { ok: t("env_to_" + target) })) location.href = link.href;
     };
   });
 }
