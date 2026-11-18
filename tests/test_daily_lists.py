@@ -60,7 +60,9 @@ def test_breakfast_list():
     assert "PrePay" not in c["remark"]  # alleen zinnen met een van de woorden
     assert _row(data, "11")["count"] is None and _row(data, "12")["count"] is None
     assert [_row(data, x)["count"] for x in ("30", "31", "32")] == [2, 2, 1]
-    assert "samen met 31, 32 (5 pers.)" in _row(data, "30")["remark"]
+    assert _row(data, "30")["remark"].startswith("together with room 31 and 32; 5 pers. in total")
+    assert _row(data, "31")["remark"] == "together with room 30 and 32"  # bij elke kamer van de reservatie
+    assert _row(data, "32")["remark"] == "together with room 30 and 31"
     assert _row(data, "33")["count"] is None  # geannuleerd
     assert data["total"] == 2 + 1 + 5 and data["check"] == 1
     assert {"sep": True} in data["rows"] and not data["rows"][-1].get("sep")

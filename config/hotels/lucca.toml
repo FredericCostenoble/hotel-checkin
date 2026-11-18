@@ -83,6 +83,7 @@ dag = 1                       # voor welke dag: 1 = morgen, 0 = vandaag
 email = ["management@hotellucca.be"]   # mail met de Excel als bijlage; leeg = geen mail
 whatsapp = []                 # gsm-nummers (+32...): WhatsApp, of sms als er geen WhatsApp-sjabloon is
 woorden = ["gluten", "lactose", "vegan", "vegetar", "végé", "allerg", "noten", "nuts", "noix", "halal", "kosher", "diabet", "suikervrij", "sugar free", "sans sucre", "zuckerfrei", "dieet", "diet", "régime"]   # zinnen uit de opmerking of de folio met deze woorden komen bij de opmerkingen
+samen_tekst = "together with room {rooms}"   # één reservatie met meer kamers: bij elke kamer de andere; leeg = niet vermelden
 
 [kuislijst]
 # Dagelijkse schoonmaaklijst (hoofdschakelaar kuislijst, processes/daily_lists.py): per kamer Leave (vertrek), Stay

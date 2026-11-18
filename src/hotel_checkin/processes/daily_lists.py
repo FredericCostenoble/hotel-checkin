@@ -91,6 +91,9 @@ def settings(hotel_id: str, kind: str) -> dict:
             "notes": bool(cfg.get("opmerkingen", False)),
             # Hoe een label op de lijst staat (bv. DOUBLE OPMAKEN -> DOUBLE); anders de naam van het label
             "label_texts": {str(k).upper(): str(v) for k, v in dict(cfg.get("label_tekst") or {}).items()},
+            # Ontbijt: één reservatie met meer kamers op de lijst; {rooms} = de andere kamers. Leeg = niet vermelden
+            "together_text": str(cfg.get("samen_tekst", "together with room {rooms}") or ""),
+            "together_and": str(cfg.get("samen_en", " and ")),
             # Twin kamer ([kamers.<nummer>] twin = true) zonder label uit labels_twin: deze opmerking; leeg = geen
             "twin_text": str(cfg.get("twin_tekst", "TWIN") or ""),
             # Kamer die gisteren Out of order stond: Leave met deze opmerking (ze is al vrij)
@@ -265,6 +268,12 @@ def build_breakfast(hotel_id: str, day: date, reservations: list[Reservation], w
         [x for x in stays if x["arrival"] < day.isoformat() <= x["departure"]])
     known = {r.reservation_id.lower() for r in reservations}
     room_persons: dict[str, int | None] = {}
+    together: dict[str, list[str]] = {}  # reservatie -> kamers op de lijst (samen ontbijten)
+
+    def _with(rid: str, room: str) -> None:
+        if room != "?" and room not in together.setdefault(rid, []):
+            together[rid].append(room)
+
     for rid, st in (plan or {}).items():
         if rid in known:
             continue
@@ -273,6 +282,7 @@ def build_breakfast(hotel_id: str, day: date, reservations: list[Reservation], w
             room = x.get("room") or "?"
             if label in x["labels"]:
                 _labeled(per_room, room, x.get("persons"))
+                _with(rid, room)
             else:
                 _add(per_room, room, None, ["reservatie nog niet gelezen door de robot: nakijken of er ontbijt is"], True)
     for r in reservations:
@@ -286,6 +296,7 @@ def build_breakfast(hotel_id: str, day: date, reservations: list[Reservation], w
             for x in st:  # label ONTBIJT op deze kamer: ontbijt elke dag voor wie in de kamer is
                 if label in x["labels"]:
                     _labeled(per_room, x.get("room") or "?", _persons(x, r, st))
+                    _with(r.reservation_id.lower(), x.get("room") or "?")
             rest = [x for x in st if label not in x["labels"]]
             if not rest:
                 continue
@@ -353,12 +364,19 @@ def build_breakfast(hotel_id: str, day: date, reservations: list[Reservation], w
             if room == "?":
                 remark.append(f"nog geen kamer toegewezen ({r.booking_number or ''})")
                 check = True
-            if len(rooms) > 1 and i == 0 and not dated and not (room_persons and all(room_persons.values())):
-                remark.append(f"samen met {', '.join(room_name(hotel_id, x) for x in rooms[1:])}"
-                              + (f" ({persons} pers.)" if persons else ""))
+            if len(rooms) > 1 and i == 0 and not dated and not (room_persons and all(room_persons.values())) and persons:
+                remark.append(f"{persons} pers. in total")  # verdeling over de kamers is een schatting
             if i == 0:
                 remark += found
             _add(per_room, room, None if (partial or unread) else split[i], remark, check)
+            _with(r.reservation_id.lower(), room)
+    cfg = settings(hotel_id, "breakfast")
+    for rooms_ in together.values():  # één reservatie met meer kamers op de lijst: bij elke kamer de andere
+        for room in rooms_ if len(rooms_) > 1 and cfg["together_text"] else []:
+            others = [room_name(hotel_id, x) for x in rooms_ if x != room]
+            joined = ", ".join(others[:-1]) + cfg["together_and"] + others[-1] if len(others) > 1 else others[0]
+            cur = per_room[room]
+            cur["remark"] = "; ".join(x for x in (cfg["together_text"].format(rooms=joined), cur["remark"]) if x)
     rows = _rows(hotel_id, _layout(hotel_id, list(per_room)), per_room, {"count": None, "remark": "", "check": False},
                  room_catalog(hotel_id, reservations))
     total = sum(r.get("count") or 0 for r in rows if not r.get("sep"))
