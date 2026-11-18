@@ -409,3 +409,7 @@ html body .dlg-back.v2 .dlg:has(textarea, ul){max-width:540px}
 /* Laatste lijsten: badges mogen op twee regels, niets valt rechts weg */
 #tab-lists #list-rows .badge{white-space:normal}
 #tab-lists .tbox td,#tab-lists .tbox th{padding-left:8px;padding-right:8px}
+/* Detailkaart naast een lijst (Gasten, Lijsten, Berichten): blijft bovenaan in beeld, de lijst springt niet */
+@media (min-width:761px){
+  #list-preview,#tab-workflow .col-side{position:sticky;top:16px;align-self:flex-start;max-height:calc(100vh - 32px);overflow-y:auto}
+}

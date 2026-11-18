@@ -1287,7 +1287,7 @@ function renderGuests() {
     gSel = el.dataset.g;
     $("#tab-guests").classList.add("gdet");  // gsm: het profiel als eigen scherm
     renderGuests();
-    window.scrollTo(0, 0);
+    if (matchMedia("(max-width:760px)").matches) window.scrollTo(0, 0);  // alleen gsm: profiel is daar een eigen scherm
   });
   renderProfile();
   renderMatches();
