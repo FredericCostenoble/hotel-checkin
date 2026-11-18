@@ -270,7 +270,7 @@ body{margin:0;background:#F5F6F8}
 .side.v2{min-height:100vh;align-self:stretch}
 @media (min-width:761px){
   .shell{flex-wrap:nowrap}
-  .side.v2{position:sticky;top:0;height:100vh;min-height:0;align-self:flex-start;flex:0 0 232px;overflow-y:auto}
+  .side.v2{position:sticky;top:0;height:100vh;min-height:0;align-self:flex-start;flex:0 0 232px;overflow-y:auto;overflow-x:hidden}
 }
 main.legacy{margin:20px 24px 24px}
 main.legacy:not(:has(> section:not([hidden]))){display:none}
@@ -395,3 +395,8 @@ html body .content.v2{max-width:none}
 #tab-lists .col-side{flex:1.4 1 560px !important}
 #tab-lists .paper table{width:100%}
 #tab-lists .paper td,#tab-lists .paper th{white-space:normal}
+/* Berichten: brede tabellen schuiven binnen hun kaart, de pagina loopt niet buiten het scherm;
+   ruimte links en rechts zodat de rand van de gekozen stap niet wegvalt */
+#tab-workflow .card,#tab-workflow .cb,#tab-workflow .col-main{min-width:0;max-width:100%}
+.v2 .table-wrap{overflow-x:auto;max-width:100%}
+html body .v2 .flowline,html body .flowline.v2{padding:6px 4px 6px}

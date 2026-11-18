@@ -531,7 +531,7 @@ async function init() {
     $("#hs-reset").onclick = resetSettings;
     document.querySelectorAll("#hs-groups label").forEach(b => b.onclick = e => { e.preventDefault();
       hsGroup = b.dataset.group;
-      try { localStorage.setItem("hsGroup", hsGroup); } catch (e) { /* geen opslag: niet erg */ }
+
       renderSettings();
     });
     $("#wf-reset").onclick = resetWorkflow;
@@ -2524,7 +2524,7 @@ function hsInput(sec, f, i) {
 // Instellingen in twee groepen: Dagelijks (wat het hotel geregeld aanpast, in deze volgorde) en Technisch (de rest)
 const HS_FUNCTIONAL = ["schakelaars", "hotel", "receptie", "checkout", "doorschakelen", "nood", "ontbijtlijst", "kuislijst",
   "kamers", "ontbijt", "wifi", "parking", "reviews", "workflow_parameters"];
-let hsGroup = (() => { try { return localStorage.getItem("hsGroup") || "func"; } catch (e) { return "func"; } })();
+let hsGroup = "func";  // altijd eerst Dagelijks (met de hoofdschakelaars), niet de laatste keuze onthouden
 
 function hsShown() {
   // Een deelsectie (bv. kuislijst.label_tekst) hoort bij haar hoofdsectie
@@ -2690,7 +2690,7 @@ function renderSettings() {
   // Gsm (ontwerp m-Instellingen-hotel): groep en sectie kiezen, één sectie tegelijk
   if ($("#hs-mgroup")) {
     $("#hs-mgroup").value = hsGroup;
-    $("#hs-mgroup").onchange = () => { hsGroup = $("#hs-mgroup").value; try { localStorage.setItem("hsGroup", hsGroup); } catch (e) { /* geen opslag */ } hsMSec = 0; renderSettings(); };
+    $("#hs-mgroup").onchange = () => { hsGroup = $("#hs-mgroup").value; hsMSec = 0; renderSettings(); };
     $("#hs-msec").innerHTML = shown.map((sec, n) => `<option value="${n}" ${n === hsMSec ? "selected" : ""}>${esc(t("sec_" + sec.section.replace(".", "_")) || sec.section)}</option>`).join("");
     $("#hs-msec").onchange = () => { hsMSec = +$("#hs-msec").value; renderSettings(); };
     document.querySelectorAll("#hs-sections > section").forEach((el, n) => el.classList.toggle("msel", n === hsMSec));
