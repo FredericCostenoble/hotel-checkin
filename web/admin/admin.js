@@ -2873,12 +2873,17 @@ function renderList(kind) {
   if (!listSel && all.length) listSel = all[0].kind + ":" + all[0].day;
   $("#list-rows").innerHTML = all.map(x => {
     const key = x.kind + ":" + x.day, on = key === listSel;
-    return `<tr${on ? ' style="background:#EEF0F5"' : ""}><td>${LICON[x.kind]} ${esc(t("tab_" + x.kind))}</td><td><b>${esc(dday(x.day))}</b></td><td class="small mono">${esc(dtime(x.generated_at))}</td>
+    return `<tr data-row="${esc(key)}" style="cursor:pointer${on ? ";background:#EEF0F5" : ""}"><td>${LICON[x.kind]} ${esc(t("tab_" + x.kind))}</td><td><b>${esc(dday(x.day))}</b></td><td class="small mono">${esc(dtime(x.generated_at))}</td>
       <td class="small">${esc(x.generated_by === "automatisch" ? t("dl_auto") : x.generated_by)}</td><td>${sentBadge(x)}</td>
       <td><div class="row" style="gap:6px;flex-wrap:nowrap"><button class="btn3" type="button" data-view="${esc(key)}">${esc(t(on ? "dl_hide" : "dl_view"))}</button>${x.generated_by !== "automatisch"  // zelf gemaakt: mag weg; lijsten van de robot niet
         ? `<button class="btn3" type="button" data-del="${esc(key)}" title="${esc(t("del"))}" aria-label="${esc(t("del"))}">${BIN}</button>` : ""}</div></td></tr>`;
   }).join("") || `<tr><td colspan="6" class="muted">${esc(t("dl_none"))}</td></tr>`;
   document.querySelectorAll("#list-rows button[data-view]").forEach(b => b.onclick = () => { listSel = listSel === b.dataset.view ? "" : b.dataset.view; renderList(listKind); });
+  // Klik ergens op de rij: die lijst meteen tonen (nog eens klikken: verbergen)
+  document.querySelectorAll("#list-rows tr[data-row]").forEach(tr => tr.onclick = e => {
+    if (e.target.closest("button, a")) return;
+    listSel = listSel === tr.dataset.row ? "" : tr.dataset.row; renderList(listKind);
+  });
   document.querySelectorAll("#list-rows button[data-del]").forEach(b => b.onclick = async () => {
     const [k, d] = b.dataset.del.split(":");
     if (!await ask(t("dl_del_confirm", dayLong(d)), { ok: t("dlg_delete"), danger: true })) return;
