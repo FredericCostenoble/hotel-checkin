@@ -300,3 +300,20 @@ main.legacy:not(:has(> section:not([hidden]))){display:none}
 .v2 .legend{font-size:inherit;color:inherit;margin:0}
 .v2 .chip{border-radius:6px}
 .v2 .send-bar{margin:0}
+/* Robotlog in het ontwerp: taak als gewone tekst, kopregel van een run vet, grijze achtergrond van de open run */
+.v2 .task{background:none !important;color:inherit !important;padding:0;font-size:inherit}
+.v2 tr.run-head td{background:#fff;border-top:0;font-weight:700}
+.v2 tr.run-head.open td,.v2 tr.run-head:hover td{background:#EEF0F5}
+.v2 tr.run-step td:first-child{padding-left:22px}
+.v2 .timing{font-size:12px;color:#565B66}
+.v2 .not-robot{font-size:11px}
+/* Instellingen Berichten: de gekozen stap staat in een kaart van het ontwerp; de oude tijdlijnstijl valt weg */
+.v2 #wf-timeline .tl-when{display:none}
+.v2 #wf-timeline .tl-step .card{border:0;box-shadow:none;padding:0;margin:0;background:none}
+.v2 #wf-timeline .card-head strong{font-size:15px}
+.v2 #wf-side{border:0;padding:0;background:none}
+.v2 #wf-side h3{font-family:inherit;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#5C6478;margin:8px 0 4px}
+.v2 #wf-side input[type=text],.v2 #wf-timeline input[type=text],.v2 #wf-timeline input[type=number],.v2 #wf-timeline select,.v2 #wf-side select{min-height:34px;border:1.5px solid #B9BEC9;border-radius:8px;padding:0 8px;background:#fff}
+.v2 #wf-timeline .group-title{background:#F1F2F5;border-left:0;border-radius:6px;color:#2B2F38}
+.v2 .seg label{cursor:pointer}
+.v2.content > .seg,.v2 .content > .seg{align-self:flex-start}

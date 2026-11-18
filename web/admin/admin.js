@@ -223,6 +223,11 @@ Object.assign(T.nl, {
   l_sub: "Ontbijt en schoonmaak", l_make_title: "Lijst maken", l_last: n => "Laatste lijsten", l_all: "Alle lijsten", l_c_list: "Lijst", l_c_made: "Gemaakt op", l_c_sent: "Verstuurd naar",
   l_preview: "Voorbeeld zoals geprint", l_title_breakfast: d => `Ontbijtlijst ${d}`, l_title_cleaning: d => `Schoonmaaklijst ${d}`, l_made_by: (w, b) => `gemaakt ${w} door ${b}`,
   l_sent: x => `Verstuurd: ${x}`, l_not_sent: "Niet verstuurd", l_none_sel: "Kies een lijst om te bekijken.", l_mail: n => `mail ${n}`, l_wa: n => `WhatsApp ${n}`, l_sms: n => `sms ${n}`, l_failed: "Mislukt",
+  gc_uit: "Uit", gc_selectie: "Selectie", gc_aan: "Aan", gc_uit_help: "Er gaat niets naar gasten.", gc_selectie_help: "Alleen reservaties die je zelf aanzet. Om te testen.", gc_aan_help: "Alle reservaties, behalve wie je uitvinkt.",
+  hs_env_badge: "Vast per omgeving (Key Vault)", hs_env_note: "Deze waarden liggen vast per omgeving en zijn hier niet te wijzigen. Aanpassen gebeurt in Azure Key Vault.",
+  rb_sub: "Leest Lighthouse volgens het schema van het hotel", rb_state: "Toestand", rb_hours: "Uren terug", rb_help: "De knop is uit zolang de robot bezig is.", rb_log: "Logboek per run",
+  wfx_sub: "Welke berichten wanneer vertrekken, per flow", wfx_unsaved: "Niet bewaarde wijzigingen", wfx_in_flow: f => `in de flow ${f}`, wfx_line: "Tijdlijn van boeking tot na vertrek",
+  wfx_click: "Klik een stap om ze te wijzigen", wfx_step: s => `Stap: ${s}`, wfx_recog: "Herkennen van deze flow", wfx_booking: "Boeking",
   gp_nowsuffix: "(nu)", gp_wa: "WhatsApp", gp_sms: "Sms", gp_none: "Kies een gast in de lijst.", gp_stays_m: n => `${n} verblijven`,
 });
 Object.assign(T.en, {
@@ -258,6 +263,11 @@ Object.assign(T.en, {
   l_sub: "Breakfast and cleaning", l_make_title: "Make a list", l_last: n => "Latest lists", l_all: "All lists", l_c_list: "List", l_c_made: "Made on", l_c_sent: "Sent to",
   l_preview: "Preview as printed", l_title_breakfast: d => `Breakfast list ${d}`, l_title_cleaning: d => `Cleaning list ${d}`, l_made_by: (w, b) => `made ${w} by ${b}`,
   l_sent: x => `Sent: ${x}`, l_not_sent: "Not sent", l_none_sel: "Choose a list to view.", l_mail: n => `mail ${n}`, l_wa: n => `WhatsApp ${n}`, l_sms: n => `SMS ${n}`, l_failed: "Failed",
+  gc_uit: "Off", gc_selectie: "Selection", gc_aan: "On", gc_uit_help: "Nothing goes to guests.", gc_selectie_help: "Only reservations you switch on yourself. For testing.", gc_aan_help: "All reservations, except the ones you untick.",
+  hs_env_badge: "Fixed per environment (Key Vault)", hs_env_note: "These values are fixed per environment and cannot be changed here. They are changed in Azure Key Vault.",
+  rb_sub: "Reads Lighthouse on the hotel's schedule", rb_state: "State", rb_hours: "Hours back", rb_help: "The button is off while the robot is running.", rb_log: "Log per run",
+  wfx_sub: "Which messages go out when, per flow", wfx_unsaved: "Unsaved changes", wfx_in_flow: f => `in the flow ${f}`, wfx_line: "Timeline from booking to after departure",
+  wfx_click: "Click a step to change it", wfx_step: s => `Step: ${s}`, wfx_recog: "Recognising this flow", wfx_booking: "Booking",
   gp_nowsuffix: "(now)", gp_wa: "WhatsApp", gp_sms: "SMS", gp_none: "Choose a guest in the list.", gp_stays_m: n => `${n} stays`,
 });
 let lang = "nl";
@@ -411,12 +421,13 @@ async function init() {
     $("#wf-save").onclick = saveWorkflow;
     $("#hs-save").onclick = saveSettings;
     $("#hs-reset").onclick = resetSettings;
-    document.querySelectorAll("#hs-groups button").forEach(b => b.onclick = () => {
+    document.querySelectorAll("#hs-groups label").forEach(b => b.onclick = e => { e.preventDefault();
       hsGroup = b.dataset.group;
       try { localStorage.setItem("hsGroup", hsGroup); } catch (e) { /* geen opslag: niet erg */ }
       renderSettings();
     });
     $("#wf-reset").onclick = resetWorkflow;
+    $("#wf-cancel").onclick = () => location.reload();
     $("#pv-close").onclick = () => { $("#preview").hidden = true; };
     $("#preview").onclick = e => { if (e.target.id === "preview") $("#preview").hidden = true; };
     $("#task").onchange = () => {
@@ -1196,9 +1207,7 @@ let subTab = "log";
 function showSub(name) {
   subTab = name;
   document.querySelectorAll("#tab-robot .subtabs button").forEach(b => b.classList.toggle("active", b.dataset.sub === name));
-  $("#sub-log").hidden = name !== "log";
-  $("#task").disabled = name !== "log";  // filter op taak geldt alleen voor het logboek (blijft staan, niets verspringt)
-  $("#exec-wrap").hidden = name !== "azure";
+  // Ontwerp: logboek en runs volgens Azure altijd naast elkaar
 }
 
 // Vuilbakje in de kolomtitel: alles wat nu getoond wordt (alle taken, of de gekozen taak)
@@ -1225,7 +1234,7 @@ function renderRuns(d) {
   $("#run").disabled = busy || !d.can_run;
   // In de cloud bepaalt de robot zelf vanaf wanneer (sinds de vorige geslaagde run)
   $("#hours-wrap").hidden = !!d.cloud;
-  $("#robot-state").textContent = busy ? t("busy") : (d.can_run ? (d.cloud ? t("scheduled") : "") : t("not_installed"));
+  $("#robot-state").innerHTML = busy ? `<span class="badge b-info">${esc(t("busy"))}</span>` : `<span class="badge ${d.can_run ? "b-ok" : "b-wait"}">${esc(d.can_run ? (d.cloud ? t("scheduled") : "ok") : t("not_installed"))}</span>`;
   // Filter op taak: vaste keuzes, plus eventuele andere taken uit het logboek
   const sel = $("#task"), chosen = sel.value || taskFilter;
   const tasks = [...new Set([...TASKS, ...d.runs.map(x => x.task)])];
@@ -1268,7 +1277,7 @@ function renderRuns(d) {
     return `<tr class="${inRun ? "run-step" : ""}"><td>${inRun ? `<span class="rel">${rel(x.started_at, t0)}</span> <span class="muted">${hms(x.started_at)}</span>` : stamp(x.started_at)}</td>
       <td>${Math.round(secs)} s${inRun ? "" : startText(x, execStart)}${timingText(x.timings)}</td>
       <td><span class="task task-${esc(x.task)}">${esc(taskName(x.task))}</span>${inRun ? "" : ` <span class="not-robot" title="${esc(t("not_robot_tip"))}">${t("not_robot")}</span>`}</td>
-      <td class="${problem ? "err" : (partial ? "warn" : "ok")}">${problem ? t("fail") : (partial ? t("partial") : t("ok"))}</td>${counts(x)}
+      <td><span class="badge ${problem ? "b-err" : partial ? "b-warn" : "b-ok"}">${problem ? t("fail") : (partial ? t("partial") : t("ok"))}</span></td>${counts(x)}
       <td class="wrap ${problem ? "err" : (partial ? "warn" : "")}">${esc(x.error)}</td><td>${bin(x)}</td></tr>`;
   };
   const liveHtml = (q, t0) => `<tr class="run-step live"><td><span class="rel">${rel(q.task_started, t0)}</span> <span class="muted">${hms(q.task_started)}</span></td>
@@ -1314,12 +1323,11 @@ function renderRuns(d) {
   // Runs volgens Azure: apart subtabblad, alleen in de cloud
   $("#sub-azure").hidden = !d.executions;
   if (!d.executions && subTab === "azure") showSub("log");
-  $("#exec-wrap").hidden = !d.executions || subTab !== "azure";
+  $("#exec-wrap").hidden = false;
   $("#execs").innerHTML = (d.executions || []).map(e =>
     `<tr><td>${stamp(e.start)}</td><td>${stamp(e.end)}</td>
       <td>${e.start && e.end ? Math.round((new Date(e.end) - new Date(e.start)) / 1000) + " s" : ""}</td>
-      <td class="${e.status === "Succeeded" ? "ok" : (e.status === "Failed" ? "err" : "")}">${esc(e.status)}</td>
-      <td class="muted">${esc(e.name)}</td></tr>`).join("");
+      <td><span class="badge ${e.status === "Succeeded" ? "b-ok" : e.status === "Failed" ? "b-err" : "b-info"}" title="${esc(e.name)}">${esc(e.status)}</span></td></tr>`).join("");
 }
 
 async function runRobot() {
@@ -1346,7 +1354,8 @@ async function loadWorkflow() {
   renderWorkflow();
 }
 
-function setDirty() { wfDirty = true; $("#wf-save").disabled = false; $("#wf-state").textContent = t("wf_dirty"); }
+let wfStep = "";  // gekozen stap in de tijdlijn (Instellingen, Berichten)
+function setDirty() { wfDirty = true; $("#wf-save").disabled = false; $("#wf-state").textContent = t("wfx_in_flow", t("flow_" + wfFlow)); $("#wf-savebar").hidden = false; }
 
 function wfMeta() {
   if (!wf) return "";
@@ -1356,8 +1365,9 @@ function wfMeta() {
 function renderWorkflow() {
   if (!wf || !$("#wf-flows")) return;
   const c = wf.choices;
-  $("#wf-flows").innerHTML = c.flows.map(f => `<button type="button" data-flow="${f}" class="${f === wfFlow ? "active" : ""}">${esc(t("flow_" + f))}</button>`).join("");
-  document.querySelectorAll("#wf-flows button").forEach(b => b.onclick = () => { wfFlow = b.dataset.flow; renderWorkflow(); });
+  $("#wf-flows").innerHTML = c.flows.map(f => `<label data-flow="${f}" class="${f === wfFlow ? "on" : ""}"><input type="radio" name="fl" ${f === wfFlow ? "checked" : ""}>${esc(t("flow_" + f))}</label>`).join("");
+  document.querySelectorAll("#wf-flows label").forEach(b => b.onclick = e => { e.preventDefault(); wfFlow = b.dataset.flow; renderWorkflow(); });
+  $("#wf-savebar").hidden = !wfDirty;
   $("#wf-meta").textContent = wfMeta();
   $("#wf-save").disabled = !wfDirty;
   const flow = wf.flows[wfFlow];
@@ -1369,9 +1379,23 @@ function renderWorkflow() {
   const node = (cls, label) => `<div class="tl-node ${cls}"><span class="dot"></span><strong>${esc(label)}</strong></div>`;
   const cards = phase => order.filter(({ s }) => (s.when === "days_after_departure") === (phase === "after"))
     .map(({ s, i }) => stepCard(s, i, flow, c)).join("");
-  $("#wf-timeline").innerHTML = `<div class="tl-phase before">${node("start", t("wf_start"))}${cards("before")}</div>` +
-    `<div class="tl-phase stay">${node("arrival", t("wf_arrival"))}${node("departure", t("wf_departure"))}</div>` +
-    `<div class="tl-phase after">${cards("after")}</div>`;
+  // Ontwerp: tijdlijn van boeking tot na vertrek bovenaan, daaronder de gekozen stap
+  if (!order.some(({ s }) => s.step === wfStep)) wfStep = (order.find(({ s }) => s.enabled) || order[0])?.s.step || "";
+  const whenText = s => s.when === "after_booking" ? t("wf_right_after") : s.when === "days_after_departure" ? t("wf_days_after", s.days) : t("wf_days_before", s.days);
+  const chans = s => (s.channels || []).map(x => t(CH[x] || x) || x).join(" + ");
+  let markedArr = false, markedDep = false;
+  $("#wf-flowline").innerHTML = order.map(({ s }, n) => {
+    let mark = n === 0 ? t("wfx_booking") : "";
+    if (!markedArr && s.when === "days_before_arrival" && s.days <= 2) { mark = t("wf_arrival"); markedArr = true; }
+    if (!markedDep && s.when === "days_after_departure") { mark = t("wf_departure"); markedDep = true; }
+    const icon = s.enabled ? '<path d="M3 5h18v14H3z"/><path d="M3.5 6.5l8.5 6.5 8.5-6.5"/>' : '<path d="M6 6l12 12M18 6L6 18"/>';
+    return `<div class="fstep"><span class="fmark">${mark ? esc(mark) : "&nbsp;"}</span><span class="dot ${s.enabled ? "c-ok" : "c-off"}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${icon}</svg></span>${n < order.length - 1 ? '<span class="bar" style="top:32px"></span>' : ""}
+      <a href="#" class="card2 ${s.step === wfStep ? "sel" : ""} ${s.enabled ? "" : "off"}" data-step="${esc(s.step)}"><b>${esc(stepShort(s.step))}</b><span class="small muted">${esc(s.enabled ? whenText(s) : t("pl_off"))}</span><span class="small">${esc(s.enabled ? chans(s) : t("sw_st_off"))}</span></a></div>`;
+  }).join("");
+  document.querySelectorAll("#wf-flowline [data-step]").forEach(a => a.onclick = e => { e.preventDefault(); wfStep = a.dataset.step; renderWorkflow(); });
+  const cur = order.find(({ s }) => s.step === wfStep);
+  $("#wf-step-title").textContent = cur ? t("wfx_step", stepShort(cur.s.step)) : "";
+  $("#wf-timeline").innerHTML = cur ? stepCard(cur.s, cur.i, flow, c) : "";
   bindSteps(flow);
   renderSide(flow, c);
 }
@@ -2198,39 +2222,74 @@ function hsShown() {
     .map(([s]) => s);
 }
 
+const LOCK = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>';
+// Invoerveld in de stijl van het ontwerp (klasse input/select/switch), zelfde data-attributen als vroeger
+function hsField(sec, f, i) {
+  const v = hsValue(sec, f), id = `hs-${i}`, attrs = `id="${id}" data-sec="${esc(sec.section)}" data-key="${esc(f.key)}"${f.env ? " disabled" : ""}`;
+  if (f.type === "choice") return `<select class="select" ${attrs}>${f.choices.map(c => `<option value="${esc(c)}" ${c === v ? "selected" : ""}>${esc(t("unit_" + c) || c)}</option>`).join("")}</select>`;
+  if (f.type === "int" || f.type === "float") return `<input class="input" type="number" ${attrs} step="${f.type === "int" ? 1 : "any"}" value="${esc(v)}">`;
+  if (f.type === "color") return `<div class="row"><input type="color" ${attrs} value="${esc(v)}" style="width:48px;height:38px;border:0;padding:0;background:none"><code>${esc(v)}</code></div>`;
+  if (f.type === "list") return `<input class="input" type="text" ${attrs} value="${esc((v || []).join(", "))}" placeholder="${esc(t("hs_list"))}">`;
+  return `<input class="input" type="text" ${attrs} value="${esc(v ?? "")}">`;
+}
+
 function renderSettings() {
   if (!hs || !$("#hs-sections")) return;
-  document.querySelectorAll("#hs-groups button").forEach(b => b.classList.toggle("active", b.dataset.group === hsGroup));
-  $("#hs-meta").textContent = hs.meta.source === "monitor" ? t("wf_changed", hs.meta.updated_by || "?", stamp(hs.meta.updated_at)) : t("wf_from_file");
-  $("#hs-save").disabled = !hsDirty;
+  document.querySelectorAll("#hs-groups label").forEach(b => b.classList.toggle("on", b.dataset.group === hsGroup));
+  $("#hs-sub").textContent = `${hotelNow().name || ""} · ${($("#env")?.textContent || "").toUpperCase()}`;
+  const who = hs.meta.source === "monitor" ? t("wf_changed", hs.meta.updated_by || "?", stamp(hs.meta.updated_at)) : t("wf_from_file");
   let i = 0;
-  $("#hs-sections").innerHTML = hsShown().map(sec => {
+  const shown = hsShown();
+  $("#hs-nav").innerHTML = shown.map((sec, n) => `<a href="#hs-s${n}" data-jump="hs-s${n}" style="display:block;padding:6px 10px;border-radius:6px;text-decoration:none;font-weight:${n === 0 ? 700 : 500};${n === 0 ? "background:#E6E9EF;" : ""}color:#2B2F38">${esc(t("sec_" + sec.section.replace(".", "_")) || sec.section)}</a>`).join("");
+  const foot = `<div class="row" style="justify-content:space-between;border-top:1px solid #EEF0F3;padding-top:12px"><span class="who">${esc(who)}</span><div class="row"><button class="btn3 hs-reset-btn" type="button">${esc(t("wf_reset"))}</button><button class="btn hs-save-btn" type="button" ${hsDirty ? "" : "disabled"}>${esc(t("wf_save"))}</button></div></div>`;
+  $("#hs-sections").innerHTML = shown.map((sec, n) => {
     const title = t("sec_" + sec.section.replace(".", "_")) || sec.section;
-    let rows;
+    const help = (HS_TEXT[lang] || HS_TEXT.en).sections[sec.section] || "";
+    const env = sec.fields.some(f => f.env);
+    let body;
     if (sec.free) {
       const pairs = hsEdit[sec.section] ? Object.entries(hsEdit[sec.section]) : sec.fields.map(f => [f.key, f.value]);
-      rows = pairs.map(([k, v]) => `<div class="hs-row free"><input type="text" class="hs-k" data-free="${esc(sec.section)}" value="${esc(k)}" placeholder="${esc(t("hs_key"))}">
-          <input type="text" class="hs-v" data-free="${esc(sec.section)}" value="${esc(v)}" placeholder="${esc(t("hs_value"))}"></div>`).join("")
-        + `<button type="button" class="link" data-add="${esc(sec.section)}">+ ${esc(t("hs_add"))}</button>`;
-    } else {
-      rows = sec.fields.map(f => {
-        const id = i++;
-        const changed = JSON.stringify(hsValue(sec, f)) !== JSON.stringify(f.default);
-        // Hoofdschakelaars: vet = aan (zoals groen in de bovenbalk), ook als aan de standaard is; anders vet = gewijzigd
-        const strong = sec.section === "schakelaars" ? !!hsValue(sec, f) : changed;
-        return `<div class="hs-row ${strong ? "changed" : ""}">
-          <label for="hs-${id}">${esc(hsText(sec.section, f.key)[0])}</label>
-          <div>${hsInput(sec, f, id)}${f.env ? ` <span class="tag warn" title="${esc(t("hs_env"))}">Key Vault</span>` : ""}
-            ${changed ? `<span class="muted small">${esc(t("hs_default"))}: ${esc(Array.isArray(f.default) ? f.default.join(", ") : String(f.default ?? ""))}</span>` : ""}
-            ${hsText(sec.section, f.key)[1] ? `<div class="muted small">${esc(hsText(sec.section, f.key)[1])}</div>` : ""}</div></div>`;
+      body = `<div class="fgrid">${pairs.map(([k, v]) => `<div class="field"><input type="text" class="input hs-k" data-free="${esc(sec.section)}" value="${esc(k)}" placeholder="${esc(t("hs_key"))}"></div>
+        <div class="field"><input type="text" class="input hs-v" data-free="${esc(sec.section)}" value="${esc(v)}" placeholder="${esc(t("hs_value"))}"></div>`).join("")}</div>
+        <button type="button" class="btn3" data-add="${esc(sec.section)}" style="padding:0;align-self:flex-start">+ ${esc(t("hs_add"))}</button>`;
+    } else if (sec.section === "schakelaars") {
+      // Gastcommunicatie als drie keuzes (uit, selectie, aan), de andere schakelaars als knop
+      const gc = sec.fields.find(f => f.key === "berichten");
+      const cards = gc ? (() => {
+        const v = hsValue(sec, gc), id = i++;
+        const opt = (val, d, col, txt) => `<label style="flex:1 1 150px;display:flex;gap:10px;align-items:flex-start;padding:12px;border-radius:10px;border:${v === val ? `2.5px solid ${col}` : "1.5px solid #D5D9E0"};background:${v === val ? (val === "selectie" ? "#FDF3E7" : val === "aan" ? "#F1F8F3" : "#F6F7F9") : "#fff"};cursor:pointer">
+          <input type="radio" name="hs-gc" value="${val}" data-sec="schakelaars" data-key="berichten" ${v === val ? "checked" : ""} style="width:18px;height:18px;margin:2px 0 0;accent-color:${col}"><span><span class="row" style="gap:6px;font-weight:700"><span class="d d-${d}"></span>${esc(t("gc_" + val))}</span><span class="help" style="display:block">${esc(t("gc_" + val + "_help"))}</span></span></label>`;
+        return `<fieldset style="border:0;margin:0;padding:12px 0;border-top:1px solid #EEF0F3"><legend class="tn" style="font-weight:700;padding:0;margin-bottom:4px">${esc(hsText(sec.section, "berichten")[0])}</legend><div class="help" style="margin-bottom:8px">${esc(hsText(sec.section, "berichten")[1] || "")}</div>
+          <div class="row" style="gap:8px;align-items:stretch">${opt("uit", "off", "#8A8F99")}${opt("selectie", "sel", "#C0640F")}${opt("aan", "on", "#2E7D4F")}</div></fieldset>`;
+      })() : "";
+      body = cards + sec.fields.filter(f => f.key !== "berichten").map(f => {
+        const id = i++, v = hsValue(sec, f), [lbl, hlp] = hsText(sec.section, f.key);
+        const on = f.type === "bool" ? !!v : v && v !== "uit";
+        return `<div class="toggle"><div class="tx"><label class="tn" for="hs-${id}">${esc(lbl)}</label>${hlp ? `<div class="help">${esc(hlp)}</div>` : ""}</div>
+          <input id="hs-${id}" class="switch" type="checkbox" data-sec="schakelaars" data-key="${esc(f.key)}" data-sw="${f.type === "bool" ? "bool" : "aanuit"}" ${on ? "checked" : ""}></div>`;
       }).join("");
+    } else {
+      const bools = sec.fields.filter(f => f.type === "bool"), others = sec.fields.filter(f => f.type !== "bool");
+      body = (others.length ? `<div class="fgrid">${others.map(f => {
+        const id = i++, [lbl, hlp] = hsText(sec.section, f.key);
+        const changed = JSON.stringify(hsValue(sec, f)) !== JSON.stringify(f.default);
+        return `<div class="field"><label for="hs-${id}">${esc(lbl)}</label>${hsField(sec, f, id)}${hlp ? `<span class="help">${esc(hlp)}</span>` : ""}${changed && !f.env ? `<span class="help">${esc(t("hs_default"))}: ${esc(Array.isArray(f.default) ? f.default.join(", ") : String(f.default ?? ""))}</span>` : ""}</div>`;
+      }).join("")}</div>` : "") + bools.map(f => {
+        const id = i++, [lbl, hlp] = hsText(sec.section, f.key);
+        return `<div class="toggle"><div class="tx"><label class="tn" for="hs-${id}">${esc(lbl)}</label>${hlp ? `<div class="help">${esc(hlp)}</div>` : ""}</div><input id="hs-${id}" class="switch" type="checkbox" data-sec="${esc(sec.section)}" data-key="${esc(f.key)}" ${hsValue(sec, f) ? "checked" : ""}${f.env ? " disabled" : ""}></div>`;
+      }).join("");
+      if (env) body += `<div class="note">${LOCK.replace('width="13" height="13"', 'width="16" height="16"')}<span>${esc(t("hs_env_note"))}</span></div>`;
     }
-    const help = (HS_TEXT[lang] || HS_TEXT.en).sections[sec.section] || "";
-    return `<div class="hs-card"><h3>${esc(title)}</h3>${help ? `<p class="muted small">${esc(help)}</p>` : ""}${rows}</div>`;
+    return `<section class="card" id="hs-s${n}"><div class="ch"><h2 class="ct">${esc(title)}</h2>${env ? `<span class="locked">${LOCK}${esc(t("hs_env_badge"))}</span>` : ""}</div>
+      <div class="cb"${sec.section === "schakelaars" ? ' style="gap:0"' : ""}>${help ? `<div class="help">${esc(help)}</div>` : ""}${body}${env && !sec.fields.some(f => !f.env) ? "" : foot}</div></section>`;
   }).join("");
+  document.querySelectorAll("#hs-sections .hs-save-btn").forEach(b => b.onclick = saveSettings);
+  document.querySelectorAll("#hs-sections .hs-reset-btn").forEach(b => b.onclick = resetSettings);
+  document.querySelectorAll("#hs-nav [data-jump]").forEach(a => a.onclick = e => { e.preventDefault(); $("#" + a.dataset.jump).scrollIntoView({ behavior: "smooth", block: "start" }); });
   document.querySelectorAll("#hs-sections [data-key]").forEach(el => el.onchange = () => {
     const sec = hs.sections.find(x => x.section === el.dataset.sec), f = sec.fields.find(x => x.key === el.dataset.key);
     let v = el.type === "checkbox" ? el.checked : el.value;
+    if (el.dataset.sw === "aanuit") v = el.checked ? "aan" : "uit";
     if (f.type === "int" || f.type === "float") v = v === "" ? f.default : Number(v);
     if (f.type === "list") v = v.split(",").map(x => x.trim()).filter(Boolean);
     (hsEdit[sec.section] = hsEdit[sec.section] || {})[f.key] = v;
