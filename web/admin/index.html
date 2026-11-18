@@ -20,7 +20,6 @@
     <button data-tab="res" class=""><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 18V7"/><path d="M21 18v-5a3 3 0 0 0-3-3h-8v6"/><path d="M3 15h18"/><circle cx="6.5" cy="11" r="1.5"/></svg><span data-t="tab_res"></span></button>
     <button data-tab="guests" class=""><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14.5a6.5 6.5 0 0 1 3.5 5.5"/></svg><span data-t="tab_guests"></span></button>
     <button data-tab="breakfast" class="lbtn-lists"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1M8.5 10h7M8.5 14h7M8.5 18h4"/></svg><span data-t="nav_lists"></span></button>
-    <div class="sub"><button data-tab="breakfast"><span data-t="tab_breakfast"></span></button><button data-tab="cleaning"><span data-t="tab_cleaning"></span></button></div>
     <a id="settings" href="settings.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg><span data-t="settings"></span></a>
     <div class="sub"><a href="settings.html#hotel"><span data-t="tab_hotel"></span></a><a href="settings.html#workflow"><span data-t="nav_messages"></span></a><a href="settings.html#robot"><span data-t="tab_robot"></span></a></div>
   </nav>
@@ -70,40 +69,31 @@
       <div id="g-profile" class="col-side" style="flex-basis:400px"></div>
     </div>
   </section>
+  <section id="tab-lists" class="content v2" hidden>
+    <div class="ph"><div><h1 data-t="nav_lists"></h1><div class="sub" data-t="l_sub"></div></div></div>
+    <div class="cols">
+      <div class="col-main" style="flex-basis:520px">
+        <section class="card"><div class="ch"><h2 class="ct"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg> <span data-t="l_make_title"></span></h2></div><div class="cb">
+          <div class="seg" role="radiogroup"><label data-kind="breakfast"><input type="radio" name="lt"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9h13v5a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5z"/><path d="M17 10h1.5a2.5 2.5 0 0 1 0 5H17"/><path d="M8 3v3M12 3v3"/></svg><span data-t="tab_breakfast"></span></label><label data-kind="cleaning"><input type="radio" name="lt"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4l-4 8"/><path d="M6 12h8l2 8H4z"/><path d="M8 16v4M12 16v4"/></svg><span data-t="tab_cleaning"></span></label></div>
+          <div class="field" style="max-width:240px"><label for="list-day" data-t="dl_day"></label><input id="list-day" class="input" type="date"></div>
+          <div class="row"><button id="list-make" class="btn2" type="button" data-t="dl_make"></button><button id="list-send" class="btn" type="button"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 3L10 14"/><path d="M21 3l-7 18-4-7-7-4z"/></svg><span data-t="dl_send"></span></button></div>
+          <div id="list-state" class="small"></div>
+          <div id="list-info" class="help"></div>
+        </div></section>
+        <section class="card"><div class="ch"><h2 class="ct"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg> <span data-t="l_last"></span></h2><select id="list-filter" class="select" style="width:auto"><option value="" data-t="l_all"></option><option value="breakfast" data-t="tab_breakfast"></option><option value="cleaning" data-t="tab_cleaning"></option></select></div>
+          <div class="tbox"><table><thead><tr><th data-t="l_c_list"></th><th data-t="dl_c_day"></th><th data-t="l_c_made"></th><th data-t="dl_c_by"></th><th data-t="l_c_sent"></th><th data-t="dl_c_content"></th></tr></thead><tbody id="list-rows"></tbody></table></div></section>
+      </div>
+      <div id="list-preview" class="col-side" style="flex-basis:520px;gap:10px"></div>
+    </div>
+  </section>
 <main class="legacy">
 
 
 
 
-  <section id="tab-breakfast" hidden>
-    <div class="tools">
-      <label><span data-t="dl_day"></span> <input id="breakfast-day" type="date"></label>
-      <button id="breakfast-make" type="button" class="primary" data-t="dl_make"></button>
-      <button id="breakfast-send" type="button" class="primary" data-t="dl_send"></button>
-      <span id="breakfast-state" class="muted"></span>
-    </div>
-    <p id="breakfast-info" class="info"></p>
-    <div class="table-wrap"><table class="lists">
-      <colgroup><col class="c-day"><col class="c-made"><col class="c-by"><col><col class="c-sent"><col class="c-act"></colgroup>
-      <thead><tr><th data-t="dl_c_day"></th><th data-t="dl_c_made"></th><th data-t="dl_c_by"></th><th data-t="dl_c_content"></th><th data-t="dl_c_sent"></th><th></th></tr></thead>
-      <tbody id="breakfast-rows"></tbody>
-    </table></div>
-  </section>
 
-  <section id="tab-cleaning" hidden>
-    <div class="tools">
-      <label><span data-t="dl_day"></span> <input id="cleaning-day" type="date"></label>
-      <button id="cleaning-make" type="button" class="primary" data-t="dl_make"></button>
-      <button id="cleaning-send" type="button" class="primary" data-t="dl_send"></button>
-      <span id="cleaning-state" class="muted"></span>
-    </div>
-    <p id="cleaning-info" class="info"></p>
-    <div class="table-wrap"><table class="lists">
-      <colgroup><col class="c-day"><col class="c-made"><col class="c-by"><col><col class="c-sent"><col class="c-act"></colgroup>
-      <thead><tr><th data-t="dl_c_day"></th><th data-t="dl_c_made"></th><th data-t="dl_c_by"></th><th data-t="dl_c_content"></th><th data-t="dl_c_sent"></th><th></th></tr></thead>
-      <tbody id="cleaning-rows"></tbody>
-    </table></div>
-  </section>
+
+
 
 </main>
 

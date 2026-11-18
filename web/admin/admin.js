@@ -220,6 +220,9 @@ Object.assign(T.nl, {
   d_contact: "Contact", d_src: x => `bron: ${x}`, d_add: "Adres toevoegen", d_add_ph: "E-mailadres of gsm-nummer (+32...)", d_data: "Gegevens",
   d_k_chan: "Kanaal", d_k_flow: "Flow", d_k_rate: "Tarief", d_k_booked: "Geboekt op", d_k_added: "Toegevoegd", d_k_updated: "Bijgewerkt", d_nrf: "niet annuleerbaar", d_flex: "annuleerbaar",
   d_door: "Voordeur", d_moves: "Kamerwissel",
+  l_sub: "Ontbijt en schoonmaak", l_make_title: "Lijst maken", l_last: n => "Laatste lijsten", l_all: "Alle lijsten", l_c_list: "Lijst", l_c_made: "Gemaakt op", l_c_sent: "Verstuurd naar",
+  l_preview: "Voorbeeld zoals geprint", l_title_breakfast: d => `Ontbijtlijst ${d}`, l_title_cleaning: d => `Schoonmaaklijst ${d}`, l_made_by: (w, b) => `gemaakt ${w} door ${b}`,
+  l_sent: x => `Verstuurd: ${x}`, l_not_sent: "Niet verstuurd", l_none_sel: "Kies een lijst om te bekijken.", l_mail: n => `mail ${n}`, l_wa: n => `WhatsApp ${n}`, l_sms: n => `sms ${n}`, l_failed: "Mislukt",
   gp_nowsuffix: "(nu)", gp_wa: "WhatsApp", gp_sms: "Sms", gp_none: "Kies een gast in de lijst.", gp_stays_m: n => `${n} verblijven`,
 });
 Object.assign(T.en, {
@@ -252,6 +255,9 @@ Object.assign(T.en, {
   d_contact: "Contact", d_src: x => `source: ${x}`, d_add: "Add address", d_add_ph: "E-mail address or mobile number (+32...)", d_data: "Details",
   d_k_chan: "Channel", d_k_flow: "Flow", d_k_rate: "Rate", d_k_booked: "Booked on", d_k_added: "Added", d_k_updated: "Updated", d_nrf: "non-refundable", d_flex: "refundable",
   d_door: "Front door", d_moves: "Room change",
+  l_sub: "Breakfast and cleaning", l_make_title: "Make a list", l_last: n => "Latest lists", l_all: "All lists", l_c_list: "List", l_c_made: "Made on", l_c_sent: "Sent to",
+  l_preview: "Preview as printed", l_title_breakfast: d => `Breakfast list ${d}`, l_title_cleaning: d => `Cleaning list ${d}`, l_made_by: (w, b) => `made ${w} by ${b}`,
+  l_sent: x => `Sent: ${x}`, l_not_sent: "Not sent", l_none_sel: "Choose a list to view.", l_mail: n => `mail ${n}`, l_wa: n => `WhatsApp ${n}`, l_sms: n => `SMS ${n}`, l_failed: "Failed",
   gp_nowsuffix: "(now)", gp_wa: "WhatsApp", gp_sms: "SMS", gp_none: "Choose a guest in the list.", gp_stays_m: n => `${n} stays`,
 });
 let lang = "nl";
@@ -394,10 +400,10 @@ async function init() {
     $("#from").onchange = render;
     $("#to").onchange = render;
     $("#today").onclick = () => { $("#from").value = todayIso(); $("#to").value = ""; render(); };
-    LIST_KINDS.forEach(k => {
-      $(`#${k}-make`).onclick = () => makeList(k, false);
-      $(`#${k}-send`).onclick = () => makeList(k, true);
-    });
+    $("#list-make").onclick = () => makeList(listKind, false);
+    $("#list-send").onclick = () => makeList(listKind, true);
+    document.querySelectorAll("#tab-lists .seg label").forEach(l => l.onclick = e => { e.preventDefault(); showTab(l.dataset.kind); });
+    $("#list-filter").onchange = () => renderList(listKind);
   } else {
     document.querySelectorAll("#tab-robot .subtabs button").forEach(b => b.onclick = () => showSub(b.dataset.sub));
     $("#bin-all").innerHTML = BIN;
@@ -434,11 +440,12 @@ function showTab(name, initial = false) {
     return;
   }
   current = name;
-  document.querySelectorAll("nav button[data-tab]").forEach(x => { x.classList.toggle("active", x.dataset.tab === name); x.classList.toggle("on", x.dataset.tab === name && !x.classList.contains("lbtn-lists")); });
+  document.querySelectorAll("nav button[data-tab]").forEach(x => { x.classList.toggle("active", x.dataset.tab === name); x.classList.toggle("on", x.classList.contains("lbtn-lists") ? LIST_KINDS.includes(name) : x.dataset.tab === name); });
   const mt = PAGE === "settings" ? "settings" : LIST_KINDS.includes(name) ? "lists" : name;
   document.querySelectorAll("[data-mtab]").forEach(x => x.classList.toggle("on", x.dataset.mtab === mt));
   document.body.classList.remove("menu-open");
-  TABS.forEach(n => { $(`#tab-${n}`).hidden = n !== name; });
+  TABS.forEach(n => { if ($(`#tab-${n}`)) $(`#tab-${n}`).hidden = n !== name; });
+  if ($("#tab-lists")) { $("#tab-lists").hidden = !LIST_KINDS.includes(name); if (LIST_KINDS.includes(name)) { listKind = name; renderList(name); } }
   if ($("#tab-detail")) $("#tab-detail").hidden = true;
   if (LIST_KINDS.includes(name) && !initial) loadList(name);
   if (location.hash.slice(1) !== name) history[initial ? "replaceState" : "pushState"](null, "", "#" + name);
@@ -612,7 +619,8 @@ let detailId = "";
 
 function openDetail(id) {
   detailId = id;
-  TABS.forEach(n => { $(`#tab-${n}`).hidden = true; });
+  TABS.forEach(n => { if ($(`#tab-${n}`)) $(`#tab-${n}`).hidden = true; });
+  if ($("#tab-lists")) $("#tab-lists").hidden = true;
   $("#tab-detail").hidden = false;
   document.querySelectorAll("nav button[data-tab]").forEach(x => x.classList.toggle("on", x.dataset.tab === "res"));
   document.querySelectorAll("[data-mtab]").forEach(x => x.classList.toggle("on", x.dataset.mtab === "res"));
@@ -2287,7 +2295,7 @@ const dayLong = iso => new Date(iso + "T00:00").toLocaleDateString(locale(), { w
 async function loadList(kind) {
   try { listData[kind] = await get(`/api/monitor/${$("#hotel").value}/lists?kind=${kind}`); } catch (e) { return; }
   if (!listDay[kind]) listDay[kind] = listData[kind].next_day;
-  renderList(kind);
+  renderList(listKind);
 }
 
 function recipients(d) {
@@ -2300,77 +2308,104 @@ function sentCell(x) {
     `<span class="tag ${s.ok ? "" : "fail"}" title="${esc(s.error || "")}">${esc(s.channel === "email" ? t("ch_email") : s.channel === "sms" ? t("ch_sms") : t("ch_whatsapp"))}: ${esc(s.to)}</span>`).join(" ");
 }
 
+let listKind = "breakfast", listSel = "";  // gekozen soort en de lijst in het voorbeeld ("kind:dag")
+const LICON = { breakfast: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9h13v5a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5z"/><path d="M17 10h1.5a2.5 2.5 0 0 1 0 5H17"/><path d="M8 3v3M12 3v3"/></svg>',
+  cleaning: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4l-4 8"/><path d="M6 12h8l2 8H4z"/><path d="M8 16v4M12 16v4"/></svg>' };
+const DL = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M4 20h16"/></svg>';
+function sentBadge(x) {
+  if (!x.sent || !x.sent.length) return `<span class="badge b-wait">${esc(t("l_not_sent"))}</span>`;
+  const ok = x.sent.filter(s => s.ok), bad = x.sent.filter(s => !s.ok);
+  const cnt = ch => ok.filter(s => s.channel === ch).length;
+  const parts = [cnt("email") && t("l_mail", cnt("email")), cnt("whatsapp") && t("l_wa", cnt("whatsapp")), cnt("sms") && t("l_sms", cnt("sms"))].filter(Boolean).join(", ");
+  return `<span class="badge ${bad.length ? (ok.length ? "b-warn" : "b-err") : "b-ok"}" title="${esc(x.sent.map(s => `${s.channel}: ${s.to}${s.error ? " (" + s.error + ")" : ""}`).join("\n"))}">${esc(ok.length ? t("l_sent", parts) : t("l_failed"))}</span>`;
+}
+
 function renderList(kind) {
   const d = listData[kind];
-  if (!d || !$(`#${kind}-rows`)) return;
-  const dayInput = $(`#${kind}-day`);
-  if (!dayInput.value || dayInput.dataset.kind !== $("#hotel").value) { dayInput.value = listDay[kind] || d.next_day; dayInput.dataset.kind = $("#hotel").value; }
-  dayInput.onchange = () => { listDay[kind] = dayInput.value; };
-  $(`#${kind}-info`).textContent = t("dl_info", d.switch, d.time, d.days, recipients(d), d.keep);
-  // Gevraagd en nog niet klaar: zeggen wat er gebeurt. De knoppen staan alleen uit terwijl de robot echt draait;
-  // draait er geen robot, dan kan je opnieuw vragen (een nieuwe vraag vervangt de vorige en start de robot opnieuw)
-  const busy = (d.pending || []).length > 0;
-  [$(`#${kind}-make`), $(`#${kind}-send`)].forEach(b => { b.disabled = !!d.robot_busy; });
-  if (busy) {
-    $(`#${kind}-state`).className = d.robot_busy ? "muted" : "err";
-    $(`#${kind}-state`).textContent = d.pending.map(p => t(p.made ? "dl_sending" : d.robot_busy ? "dl_waiting" : "dl_no_robot", dayLong(p.day), stamp(p.at))).join(" ");
-    clearTimeout(listPoll[kind]);
-    listPoll[kind] = setTimeout(() => loadList(kind), 15000);  // tot de robot nalas en de lijst gemaakt is
-  } else if (listPoll[kind]) {
-    listPoll[kind] = null;
-    const last = d.records[0];
-    $(`#${kind}-state`).className = "ok";
-    $(`#${kind}-state`).textContent = last ? t("dl_ready", dayLong(last.day)) : "";
-    if (last) listOpen[kind] = last.day;
+  if (!$("#list-rows") || kind !== listKind) return;
+  document.querySelectorAll("#tab-lists .seg label").forEach(l => l.classList.toggle("on", l.dataset.kind === kind));
+  const dayInput = $("#list-day");
+  if (d && (dayInput.dataset.kind !== kind + $("#hotel").value)) { dayInput.value = listDay[kind] || d.next_day; dayInput.dataset.kind = kind + $("#hotel").value; }
+  dayInput.onchange = () => { listDay[listKind] = dayInput.value; };
+  $("#list-info").textContent = d ? t("dl_info", d.switch, d.time, d.days, recipients(d), d.keep) : "";
+  const state = $("#list-state");
+  if (d) {
+    const busy = (d.pending || []).length > 0;
+    [$("#list-make"), $("#list-send")].forEach(b => { b.disabled = !!d.robot_busy; });
+    if (busy) {
+      state.style.color = d.robot_busy ? "" : "#8B2E2E";
+      state.textContent = d.pending.map(p => t(p.made ? "dl_sending" : d.robot_busy ? "dl_waiting" : "dl_no_robot", dayLong(p.day), stamp(p.at))).join(" ");
+      clearTimeout(listPoll[kind]);
+      listPoll[kind] = setTimeout(() => loadList(kind), 15000);
+    } else if (listPoll[kind]) {
+      listPoll[kind] = null;
+      const last = d.records[0];
+      state.style.color = "#245A3A";
+      state.textContent = last ? t("dl_ready", dayLong(last.day)) : "";
+      if (last) listSel = kind + ":" + last.day;
+    }
   }
+  // Laatste lijsten van beide soorten samen, nieuwste eerst
+  const filter = $("#list-filter").value;
+  const all = LIST_KINDS.flatMap(k => (listData[k]?.records || []).map(x => ({ ...x, kind: k })))
+    .filter(x => !filter || x.kind === filter).sort((a, b) => String(b.generated_at).localeCompare(String(a.generated_at))).slice(0, 15);
+  if (!listSel && all.length) listSel = all[0].kind + ":" + all[0].day;
+  $("#list-rows").innerHTML = all.map(x => {
+    const key = x.kind + ":" + x.day, on = key === listSel;
+    return `<tr${on ? ' style="background:#EEF0F5"' : ""}><td>${LICON[x.kind]} ${esc(t("tab_" + x.kind))}</td><td><b>${esc(dday(x.day))}</b></td><td class="small mono">${esc(dtime(x.generated_at))}</td>
+      <td class="small">${esc(x.generated_by === "automatisch" ? t("dl_auto") : x.generated_by)}</td><td>${sentBadge(x)}</td>
+      <td><button class="btn3" type="button" data-view="${esc(key)}">${esc(t(on ? "dl_hide" : "dl_view"))}</button></td></tr>`;
+  }).join("") || `<tr><td colspan="6" class="muted">${esc(t("dl_none"))}</td></tr>`;
+  document.querySelectorAll("#list-rows button[data-view]").forEach(b => b.onclick = () => { listSel = listSel === b.dataset.view ? "" : b.dataset.view; renderList(listKind); });
+  // Voorbeeld zoals geprint
+  const [sk, sd] = listSel.split(":"), x = (listData[sk]?.records || []).find(r => r.day === sd);
   const hotel = encodeURIComponent($("#hotel").value);
-  $(`#${kind}-rows`).innerHTML = d.records.map(x => `
-    <tr>
-      <td><strong>${esc(dayLong(x.day))}</strong></td>
-      <td>${esc(stamp(x.generated_at))}</td>
-      <td>${x.generated_by === "automatisch" ? `<span class="tag">${esc(t("dl_auto"))}</span>` : esc(x.generated_by)}</td>
-      <td>${esc(x.summary)}</td>
-      <td class="wrap">${sentCell(x)}</td>
-      <td style="white-space:nowrap"><button type="button" class="link" data-view="${esc(x.day)}">${esc(t(listOpen[kind] === x.day ? "dl_hide" : "dl_view"))}</button>
-        <a class="jump" href="${API}/api/monitor/${hotel}/list-xlsx?kind=${kind}&day=${esc(x.day)}">Excel</a>
-        <button type="button" class="bin" data-del="${esc(x.day)}" title="${esc(t("del"))}" aria-label="${esc(t("del"))}">${BIN}</button></td>
-    </tr>${listOpen[kind] === x.day ? `<tr><td colspan="6"><div class="list-view">${x.html}</div></td></tr>` : ""}`).join("")
-    || `<tr><td colspan="6" class="muted">${esc(t("dl_none"))}</td></tr>`;
-  document.querySelectorAll(`#${kind}-rows button[data-del]`).forEach(b => b.onclick = async () => {
-    if (!confirm(t("dl_del_confirm", dayLong(b.dataset.del)))) return;
-    await get(`/api/monitor/${hotel}/lists?kind=${kind}&day=${encodeURIComponent(b.dataset.del)}&action=delete`, { method: "POST" });
-    if (listOpen[kind] === b.dataset.del) listOpen[kind] = "";
-    loadList(kind);
-  });
-  document.querySelectorAll(`#${kind}-rows button[data-view]`).forEach(b => b.onclick = () => {
-    listOpen[kind] = listOpen[kind] === b.dataset.view ? "" : b.dataset.view;
-    renderList(kind);
-  });
+  $("#list-preview").innerHTML = x ? `<div class="row" style="justify-content:space-between"><div class="lbl">${esc(t("l_preview"))}</div><div class="row">
+      <a class="btn2 sm" href="${API}/api/monitor/${hotel}/list-xlsx?kind=${sk}&day=${esc(sd)}">${DL}Excel</a>
+      <button class="btn2 sm" type="button" id="list-print">${DL}PDF</button>
+      <button class="btn3" type="button" id="list-del" title="${esc(t("del"))}">${BIN}</button></div></div>
+    <div class="paper" id="list-paper"><div class="row" style="justify-content:space-between;align-items:flex-start"><div><div class="lbl">${esc(hotelNow().name || "")}</div>
+      <h2 style="font-size:20px;margin-top:2px">${esc(t("l_title_" + sk, dayLong(sd)))}</h2><div class="small muted">${esc(t("l_made_by", dtime(x.generated_at), x.generated_by === "automatisch" ? t("dl_auto") : x.generated_by))}</div></div>
+      <div style="text-align:right" class="small muted">${esc(x.summary || "")}</div></div><div class="tbox" style="margin-top:14px">${x.html}</div></div>`
+    : `<div class="card"><div class="cb" style="padding-top:16px"><span class="muted">${esc(t("l_none_sel"))}</span></div></div>`;
+  if (x) {
+    $("#list-del").onclick = async () => {
+      if (!confirm(t("dl_del_confirm", dayLong(sd)))) return;
+      await get(`/api/monitor/${hotel}/lists?kind=${sk}&day=${encodeURIComponent(sd)}&action=delete`, { method: "POST" });
+      listSel = ""; loadList(sk);
+    };
+    // PDF: het voorbeeld afdrukken (in de afdrukdialoog: opslaan als PDF)
+    $("#list-print").onclick = () => {
+      const w = window.open("", "_blank");
+      w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${esc(t("l_title_" + sk, dayLong(sd)))}</title><link rel="stylesheet" href="design.css"></head><body class="v2" style="background:#fff;padding:24px">${$("#list-paper").outerHTML}</body></html>`);
+      w.document.close(); w.onload = () => w.print();
+    };
+  }
 }
 
 async function makeList(kind, send) {
-  const day = $(`#${kind}-day`).value;
+  const day = $("#list-day").value;
   if (!day) return;
   const d = listData[kind];
   if (send && !confirm(t("dl_confirm", dayLong(day), (d && recipients(d)) || t("dl_no_to")))) return;
-  const state = $(`#${kind}-state`), buttons = [$(`#${kind}-make`), $(`#${kind}-send`)];
+  const state = $("#list-state"), buttons = [$("#list-make"), $("#list-send")];
   buttons.forEach(b => { b.disabled = true; });
-  state.className = "muted";
+  state.style.color = "";
   state.textContent = t("dl_busy");
   try {
     const r = await get(`/api/monitor/${$("#hotel").value}/lists?kind=${kind}&day=${day}${send ? "&send=1" : ""}`, { method: "POST" });
     if (r.requested) {  // de robot leest eerst Lighthouse; de lijst volgt
       await loadList(kind);
-      if ((r.robot || "").startsWith("robot niet gestart")) { state.className = "err"; state.textContent = r.robot; }
+      if ((r.robot || "").startsWith("robot niet gestart")) { state.style.color = "#8B2E2E"; state.textContent = r.robot; }
       return;
     }
     const failed = (r.sent || []).filter(s => !s.ok).length;
-    state.className = failed ? "err" : "ok";
+    state.style.color = failed ? "#8B2E2E" : "#245A3A";
     state.textContent = failed ? t("dl_sent_fail", failed) : t(send ? "dl_sent_ok" : "dl_made", dayLong(day));
-    listOpen[kind] = day;
+    listSel = kind + ":" + day;
     await loadList(kind);
   } catch (e) {
-    state.className = "err";
+    state.style.color = "#8B2E2E";
     state.textContent = `${t("load_error")}: ${e.message}`;
   } finally {
     buttons.forEach(b => { b.disabled = !!listData[kind]?.robot_busy; });
