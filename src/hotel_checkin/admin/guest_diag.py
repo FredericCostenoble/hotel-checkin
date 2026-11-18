@@ -35,7 +35,6 @@ def main(hotel_id: str) -> None:
     print("reservaties met guest_id dat niet bestaat:", sum(1 for r in rs if r.guest_id and r.guest_id not in ids))
     m = gp.possible_matches(hotel_id, limit=500)
     print("voorstellen:", Counter(x["reason"] for x in m))
-    pmap = {p.guest_id: p for p in ps}
     groups: dict[str, list] = {}
     for p in ps:
         if p.first_name or p.last_name:
