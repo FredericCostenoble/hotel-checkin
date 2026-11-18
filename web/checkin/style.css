@@ -186,6 +186,9 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accd); }
 .backup[open] { display: flex; flex-direction: column; gap: 14px; }
 .privacy { font-size: 14px; }
 .privacy a { color: var(--accd); }
+/* Geen reclame: vlak onder de privacyzin, zelfde grootte en kleur */
+.check.fine { font-size: 14px; min-height: 0; gap: 10px; align-items: center; margin-top: -8px; }
+.check.fine input { width: 18px; height: 18px; margin: 0; }
 a.lnk { font-weight: 700; text-decoration: underline; text-underline-offset: 3px; color: var(--accd); }
 .thanks { font-size: 24px; font-weight: 700; line-height: 1.25; margin: 0; }
 .toast { background: #E2EFE6; color: #245A3A; font-weight: 700; padding: 12px 14px; border-radius: 12px; }
