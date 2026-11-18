@@ -86,15 +86,11 @@
             <option value="en">English</option><option value="de">Deutsch</option>
           </select>
         </div>
-        <fieldset class="field" id="stairs-box" hidden>
-          <legend id="stairs-q"></legend>
+        <div class="field" id="stairs-box" hidden>
           <p class="hint" id="stairs-text"></p>
-          <div class="choice">
-            <label><input type="radio" name="stairs" id="stairs_yes" value="yes"><span data-t="yes"></span></label>
-            <label><input type="radio" name="stairs" id="stairs_no" value="no"><span data-t="no"></span></label>
-          </div>
-        </fieldset>
-        <label class="check"><input id="no_marketing" type="checkbox"><span data-t="no_marketing"></span></label>
+          <label class="check box"><input id="stairs_help" type="checkbox"><span id="stairs-q"></span></label>
+        </div>
+        <label class="check fine"><input id="no_marketing" type="checkbox"><span data-t="no_marketing"></span></label>
         <p class="privacy"><span data-t="privacy_before"></span> <a id="privacy-link" href="#" target="_blank" rel="noopener" data-t="privacy_link"></a>.</p>
         <button type="submit" class="btn" id="submit" data-t="submit"></button>
         <p class="error" id="err-general" hidden></p>
