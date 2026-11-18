@@ -44,14 +44,25 @@ def may_write_pms(hotel_id: str, first_name: str | None, last_name: str | None) 
     return is_production() or is_test_guest(hotel_id, first_name, last_name)
 
 
-def test_address(kind: str, hotel_id: str | None = None) -> str | None:
-    """Testadres (kind "email") of testnummer ("phone") uit de instellingen van het hotel, of None."""
+def test_addresses(kind: str, hotel_id: str | None = None) -> list[str]:
+    """Testadressen (kind "email") of testnummers ("phone") uit de instellingen van het hotel ([test] email en
+    phone): een lijst, of één waarde (ook met komma's gescheiden)."""
     if not hotel_id:
-        return None
+        return []
     from hotel_checkin.core.hotels import load_hotel
 
-    value = str(load_hotel(hotel_id).get("test", {}).get("email" if kind == "email" else "phone") or "").strip()
-    return value or None
+    value = load_hotel(hotel_id).get("test", {}).get("email" if kind == "email" else "phone") or []
+    items = value if isinstance(value, list) else str(value).split(",")
+    return [str(x).strip() for x in items if str(x).strip()]
+
+
+def test_address(kind: str, hotel_id: str | None = None) -> str | None:
+    """Waar een testbericht naartoe gaat: alle testadressen voor mail (met komma's, de mailbouwsteen stuurt naar
+    elk), het eerste testnummer voor sms en WhatsApp (één bericht, één status bij Twilio). None = niets."""
+    items = test_addresses(kind, hotel_id)
+    if not items:
+        return None
+    return ", ".join(items) if kind == "email" else items[0]
 
 
 def route(kind: str, to: str, hotel_id: str | None = None) -> tuple[str | None, str]:

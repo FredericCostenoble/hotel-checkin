@@ -72,9 +72,13 @@ def due(hotel_id: str, today: date | None = None) -> list[Reservation]:
 
     if not switch(hotel_id, "berichten"):
         return []
+    from hotel_checkin.processes.send_messages import for_reservation, selected_ids
+
     today = today or clock.today(hotel_id)
     cfg = workflow.config(hotel_id)
-    return [r for r in guests.list_reservations(hotel_id) if candidate(r, today, cfg, unknown_open=True)]
+    chosen = selected_ids(hotel_id)
+    return [r for r in guests.list_reservations(hotel_id)
+            if for_reservation(hotel_id, r, chosen) and candidate(r, today, cfg, unknown_open=True)]
 
 
 def waiting_too_long(hotel_id: str) -> list[Reservation]:

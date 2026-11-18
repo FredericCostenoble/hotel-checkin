@@ -98,6 +98,7 @@ def arrivals(hotel_id: str, today: date) -> dict[str, list[dict]]:
     code_active = "access_code" in send_messages.ready_steps(hotel_id) and (
         send_messages.salto_ready(hotel_id) or send_messages.test_mode(hotel_id))
     on = send_messages.enabled(hotel_id)
+    chosen = send_messages.selected_ids(hotel_id)
     salto_live = send_messages.salto_ready(hotel_id)  # zonder Salto (TST): code-mail met XXXXXX, geen echte code
     out = {"today": [], "tomorrow": []}
     for r in guests.list_reservations(hotel_id):
@@ -105,7 +106,7 @@ def arrivals(hotel_id: str, today: date) -> dict[str, list[dict]]:
             continue
         for key, day in (("today", today), ("tomorrow", today + timedelta(days=1))):
             if r.arrival == day:
-                out[key].append(row(hotel_id, r, day, today, code_active, on, salto_live))
+                out[key].append(row(hotel_id, r, day, today, code_active, on and send_messages.for_reservation(hotel_id, r, chosen), salto_live))
     return out
 
 

@@ -96,3 +96,13 @@ def test_test_address_from_hotel_settings(monkeypatch):
     monkeypatch.setenv("APP_ENV", "prd")
     assert safety.route("email", "gast@example.com", "lucca")[0] == "gast@example.com"
     hotels.forget_overrides()
+
+
+def test_more_test_email_addresses(monkeypatch):
+    from hotel_checkin.core import hotels, safety
+
+    real = hotels.load_hotel
+    monkeypatch.setattr(hotels, "load_hotel", lambda h: {**real(h), "test": {"email": ["a@x.be", "b@y.be"], "phone": "+32470000001, +32470000002"}})
+    monkeypatch.setenv("APP_ENV", "tst")
+    assert safety.route("email", "gast@example.com", "lucca")[0] == "a@x.be, b@y.be"
+    assert safety.route("phone", "+32471111111", "lucca")[0] == "+32470000001"

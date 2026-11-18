@@ -9,6 +9,8 @@
 # HOOFDSCHAKELAARS, per omgeving apart in te stellen in de monitor (instellingen, tabblad Hotel). Standaard uit.
 # overschrijvingen: de robot registreert de betaling van Booking.com als overschrijving in Lighthouse (processes/booking_payout.py).
 # berichten: mails, sms en WhatsApp aan gasten, en de pincodes bij Salto (die gaan alleen mee met de code-mail).
+# uit, aan of selectie: alleen voor de reservaties die in de monitor aangevinkt zijn (berichtenvenster), om te testen.
+# Buiten PRD gaan berichten altijd naar de testadressen hieronder ([test]); in PRD naar de gast.
 # ontbijt_labels: de robot zet het label ONTBIJT op het planbord bij wie ontbijt heeft (tarief met ontbijt,
 # of ontbijt voor alle personen en nachten in de folio).
 # ontbijtlijst en kuislijst: elke dag de lijst maken en versturen (processes/daily_lists.py), zie [ontbijtlijst] en [kuislijst].
@@ -17,7 +19,7 @@
 # dan is de omgeving bevroren: de robot start niet meer en opent Lighthouse niet (bv. TST als PRD goed loopt).
 reservaties = true
 overschrijvingen = false
-berichten = false
+berichten = "uit"
 ontbijt_labels = false
 ontbijtlijst = false
 kuislijst = false
@@ -38,9 +40,9 @@ website_de = "https://hotellucca.be/de/hotel-bruegge-zentrum/"
 logo_url = "https://hotellucca.be/wp-content/uploads/2025/06/Logo-website-hotel-lucca.png"
 
 [test]
-# Buiten PRD (TST en codespace) gaat elk bericht naar dit adres en nummer, nooit naar de gast.
-# Leeg = niets versturen.
-email = "frederic@hotellucca.be"
+# Buiten PRD (TST en codespace) gaat elk bericht naar deze adressen en dit nummer, nooit naar de gast.
+# Meer e-mailadressen mag (elke testmail gaat naar allemaal); sms en WhatsApp naar het eerste nummer. Leeg = niets versturen.
+email = ["frederic@hotellucca.be"]
 phone = "+32476896274"
 # Reservaties van deze gasten (achternaam) zijn testreservaties: de robot mag er ook in TST in Lighthouse
 # schrijven (bv. de overschrijving van Booking.com registreren). Echte reservaties leest TST alleen.

@@ -83,11 +83,13 @@ class Handler(BaseHTTPRequestHandler):
         elif method == "POST" and len(parts) == 4 and parts[3] == "preview":
             body = json.loads(self.rfile.read(int(self.headers.get("Content-Length", 0))) or b"{}")
             self._json(200, admin.workflow_preview(parts[2], body))
-        elif method == "POST" and len(parts) == 4 and parts[3] in ("contact", "resend"):
+        elif method == "POST" and len(parts) == 4 and parts[3] in ("contact", "resend", "select"):
             from urllib.parse import parse_qs, urlparse
 
             q = {k: v[0] for k, v in parse_qs(urlparse(self.path).query).items()}
-            if parts[3] == "contact":
+            if parts[3] == "select":
+                self._json(200, admin.select_for_messages(parts[2], q.get("id", ""), q.get("on", "") == "1"))
+            elif parts[3] == "contact":
                 self._json(200, admin.add_contact(parts[2], q.get("id", ""), q.get("email", ""), q.get("phone", "")))
             else:
                 self._json(200, admin.resend(parts[2], q.get("id", ""), q.get("step", ""), q.get("channel", ""),

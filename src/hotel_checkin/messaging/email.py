@@ -60,7 +60,8 @@ def send_email(
     message: dict = {
         "subject": prefix + subject,
         "body": {"contentType": "HTML", "content": html_body},
-        "toRecipients": [{"emailAddress": {"address": real_to}}],
+        # buiten PRD kunnen dat meer testadressen zijn ("a@x.be, b@y.be")
+        "toRecipients": [{"emailAddress": {"address": a.strip()}} for a in real_to.split(",") if a.strip()],
     }
     if reply_to and reply_to.lower() != sender.lower():
         message["replyTo"] = [{"emailAddress": {"address": reply_to}}]

@@ -284,6 +284,7 @@ td .small { font-size: 12px; }
 .switches .sw { font-size: 11px; line-height: 16px; padding: 1px 7px; border-radius: 9px; border: 1px solid var(--line); white-space: nowrap; }
 .switches .sw.on { background: #E8F5EC; color: #1E6B3A; border-color: #9FD3AE; }
 .switches .sw.off { background: #F1F2F5; color: #6B7280; }
+.switches .sw.sel { background: #FFF1E0; color: #A85C12; border-color: #F0C48C; }  /* berichten op selectie */
 
 /* Live regel van de robot (bezig) */
 tr.live td { background: #F4F8FF; }
@@ -334,6 +335,9 @@ table.lists col.c-act { width: 150px; }
 table.lists td { white-space: normal; overflow-wrap: anywhere; }
 table.lists td:last-child { white-space: nowrap; }
 .tag.stairs { background: #FFF1E0; color: #A85C12; }  /* formulier: moeilijk ter been */
+.tag.msgs-on { background: #E8F5EC; color: #1E6B3A; }  /* berichten voor deze reservatie aangezet */
+.tag.msgs-off { background: #F6E3E3; color: #8B2E2E; }  /* berichten voor deze reservatie uitgezet */
+.msgs-pick { display: flex; gap: 8px; align-items: center; font-weight: bold; margin: 8px 0 2px; }
 
 /* Balk bovenaan: Lighthouse veranderd (rood) of testversie met een oplossing (blauw), met wat te doen */
 .repair-banner { margin: 12px 20px 0; padding: 10px 14px; border-left: 4px solid; border-radius: 4px; font-size: 14px; }

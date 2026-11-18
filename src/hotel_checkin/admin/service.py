@@ -32,7 +32,7 @@ def hotels() -> list[dict]:
              # hoofdschakelaars (per omgeving): bovenaan de monitor getoond
              "switches": {"reservaties": send_messages.switch(h, "reservaties"),
                           "overschrijvingen": send_messages.switch(h, "overschrijvingen"),
-                          "berichten": send_messages.switch(h, "berichten"),
+                          "berichten": send_messages.mode(h),  # uit, aan of selectie
                           "ontbijt_labels": send_messages.switch(h, "ontbijt_labels"),
                           "ontbijtlijst": send_messages.switch(h, "ontbijtlijst"),
                           "kuislijst": send_messages.switch(h, "kuislijst"),
@@ -71,6 +71,7 @@ def reservations(hotel_id: str) -> list[dict]:
     lighthouse = base_url(hotel_id) + "/Customer/Reservations/Detail/"
     cfg, ready = workflow.config(hotel_id), send_messages.ready_steps(hotel_id)
     begin, on, today = send_messages.start(hotel_id), send_messages.enabled(hotel_id), clock.today(hotel_id)
+    chosen = send_messages.selected_ids(hotel_id)
 
     def earlier_stays(r) -> int:
         """Verblijven van de gast buiten de periode van deze reservatie (terugkerende gast)."""
@@ -109,13 +110,15 @@ def reservations(hotel_id: str) -> list[dict]:
             "booked_at": r.booked_at.isoformat() if r.booked_at else "",
             "checkin_completed_at": r.checkin_completed_at.isoformat() if r.checkin_completed_at else "",
             "stairs": bool(r.stairs_help),  # formulier: moeilijk ter been
+            "messages_on": send_messages.for_reservation(hotel_id, r, chosen),  # krijgt automatische berichten
+            "messages_pick": "on" if r.reservation_id in chosen["on"] else "off" if r.reservation_id in chosen["off"] else "",
             "stairs_memo_at": r.stairs_memo_at.isoformat() if r.stairs_memo_at else "",
             "guest_id": r.guest_id or "",
             "guest_stays": earlier_stays(r) if r.guest_id else 0,
             "added_at": r.created_at.isoformat() if r.created_at else "",
             "updated_at": r.updated_at.isoformat() if r.updated_at else "",
             "plan": send_messages.plan(hotel_id, r, msgs, cfg, ready, today, begin, on, phone,
-                                       muted.get(r.guest_id or "", set()), own_email.get(r.guest_id or "")),
+                                       muted.get(r.guest_id or "", set()), own_email.get(r.guest_id or ""), chosen),
             "messages": [
                 {"type": m["message_type"], "channel": m["channel"], "ok": m["ok"], "at": m["sent_at"],
                  "to": m.get("recipient", ""), "delivered_to": m.get("delivered_to", ""), "status": m.get("status") or ("sent" if m["ok"] else "failed"),
@@ -180,6 +183,16 @@ def merge_guests(hotel_id: str, keep: str, other: str) -> bool:
     from hotel_checkin.processes import guest_profiles
 
     return hotel_id in list_hotels() and guest_profiles.merge(hotel_id, keep, other) is not None
+
+
+def select_for_messages(hotel_id: str, reservation_id: str, on: bool) -> dict:
+    """Automatische berichten voor één reservatie aan of uit (monitor), bovenop de hoofdschakelaar."""
+    from hotel_checkin.processes import send_messages
+
+    if hotel_id not in list_hotels() or repo.get_reservation(hotel_id, reservation_id) is None:
+        return {"ok": False, "error": "Reservatie niet gevonden"}
+    send_messages.set_selected(hotel_id, reservation_id, on)
+    return {"ok": True, "on": on, "mode": send_messages.mode(hotel_id)}
 
 
 def add_contact(hotel_id: str, reservation_id: str, email: str, phone: str) -> dict:

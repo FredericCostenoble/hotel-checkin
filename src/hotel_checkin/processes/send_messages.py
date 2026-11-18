@@ -58,14 +58,69 @@ def ready_steps(hotel_id: str) -> tuple[str, ...]:
     return READY_STEPS + (("access_code",) if salto_ready(hotel_id) else ())
 
 
+MODES = ("uit", "aan", "selectie")
+SELECTED_KEY = "messages_selected"  # RobotState: reservaties met berichten aan (nodig als de schakelaar op selectie staat)
+EXCLUDED_KEY = "messages_excluded"  # RobotState: reservaties met berichten uit (ook als de schakelaar aan staat)
+
+
+def mode(hotel_id: str) -> str:
+    """Hoofdschakelaar [schakelaars] berichten (per omgeving, standaard uit): uit, aan of selectie.
+    selectie = alleen voor de reservaties die in de monitor aangevinkt zijn (om te testen, ook in PRD).
+    Oude waarden true/false tellen als aan/uit."""
+    flag = str(hotel_setting(hotel_id, "SCHAKELAARS_BERICHTEN", default="uit", shared=False)).strip().lower()
+    if flag in ("selectie", "selection", "selected"):
+        return "selectie"
+    return "aan" if flag in ("true", "1", "ja", "aan", "on") else "uit"
+
+
 def enabled(hotel_id: str) -> bool:
-    """Hoofdschakelaar [schakelaars] berichten (per omgeving, standaard uit): mails, sms, WhatsApp en de
-    pincodes bij Salto. Uit = er gaat niets naar gasten en er wordt geen code gemaakt."""
-    return switch(hotel_id, "berichten")
+    """Gaat er (voor sommige reservaties) iets naar gasten? Mails, sms, WhatsApp en de pincodes bij Salto.
+    Uit = er gaat niets naar gasten en er wordt geen code gemaakt. Per reservatie: for_reservation."""
+    return mode(hotel_id) != "uit"
+
+
+def _ids(hotel_id: str, key: str) -> set[str]:
+    import json
+
+    try:
+        return set(json.loads(guests.get_state(hotel_id, key) or "[]"))
+    except ValueError:
+        return set()
+
+
+def selected_ids(hotel_id: str) -> dict[str, set[str]]:
+    """Keuze per reservatie (monitor): {"on": ids met berichten aan, "off": ids met berichten uit}."""
+    return {"on": _ids(hotel_id, SELECTED_KEY), "off": _ids(hotel_id, EXCLUDED_KEY)}
+
+
+def set_selected(hotel_id: str, reservation_id: str, on: bool) -> None:
+    """Berichten voor één reservatie aan of uit zetten (monitor). Geldt bovenop de hoofdschakelaar:
+    aan = deze reservatie krijgt ze ook als de schakelaar op selectie staat; uit = nooit, ook als hij aan staat."""
+    import json
+
+    picks = selected_ids(hotel_id)
+    picks["on"] = picks["on"] | {reservation_id} if on else picks["on"] - {reservation_id}
+    picks["off"] = picks["off"] - {reservation_id} if on else picks["off"] | {reservation_id}
+    guests.set_state(hotel_id, SELECTED_KEY, json.dumps(sorted(picks["on"])))
+    guests.set_state(hotel_id, EXCLUDED_KEY, json.dumps(sorted(picks["off"])))
+
+
+def for_reservation(hotel_id: str, r: Reservation, picks: dict | None = None) -> bool:
+    """Krijgt deze reservatie automatische berichten (en een pincode)? Schakelaar aan: ja, tenzij ze in de monitor
+    uitgezet is; selectie: alleen als ze in de monitor aangezet is; uit: nee."""
+    m = mode(hotel_id)
+    if m == "uit":
+        return False
+    picks = picks if picks is not None else selected_ids(hotel_id)
+    if r.reservation_id in picks["off"]:
+        return False
+    return m == "aan" or r.reservation_id in picks["on"]
 
 
 def switch(hotel_id: str, name: str) -> bool:
-    """Hoofdschakelaar van het hotel ([schakelaars] <naam>), standaard uit."""
+    """Hoofdschakelaar van het hotel ([schakelaars] <naam>), standaard uit. Berichten: aan of selectie."""
+    if name == "berichten":
+        return enabled(hotel_id)
     flag = hotel_setting(hotel_id, f"SCHAKELAARS_{name.upper()}", default="false", shared=False)
     return str(flag).strip().lower() in ("true", "1", "ja", "aan")
 
@@ -498,7 +553,7 @@ def muted_channels(hotel_id: str, r: Reservation) -> set[str]:
 
 def plan(hotel_id: str, r: Reservation, rows: list[dict], cfg: dict, ready: tuple[str, ...],
          today: date, begin: datetime | None, on: bool, phone: bool = False,
-         muted: set[str] | frozenset = frozenset(), own_email=_LOOKUP) -> list[dict]:
+         muted: set[str] | frozenset = frozenset(), own_email=_LOOKUP, selected: dict | None = None) -> list[dict]:
     """De tijdlijn van één reservatie voor de monitor: per stap van haar flow wat er gebeurde of
     nog gaat gebeuren. state: sent, failed, planned, due, skipped, off. reason bij skipped/off.
     channels: per kanaal wat er gebeurt (mail altijd; WhatsApp met gsm-nummer, sms als terugval).
@@ -533,6 +588,8 @@ def plan(hotel_id: str, r: Reservation, rows: list[dict], cfg: dict, ready: tupl
             item.update(state="off", reason="disabled")
         elif not on:
             item.update(state="off", reason="messaging_off")
+        elif not for_reservation(hotel_id, r, selected):
+            item.update(state="off", reason="not_selected")  # in de monitor uitgezet, of schakelaar op selectie en niet aangezet
         elif before_start(r, begin):
             item.update(state="off", reason="before_start")
         elif failed_now:
@@ -571,8 +628,9 @@ def run(hotel_id: str, today: date | None = None) -> int:
     cfg = workflow.config(hotel_id)
     ready = ready_steps(hotel_id)
     sent, failed = [], []
+    chosen = selected_ids(hotel_id)
     for r in guests.list_reservations(hotel_id):
-        if before_start(r, begin) or not (r.guest.email or r.guest.phone):
+        if before_start(r, begin) or not (r.guest.email or r.guest.phone) or not for_reservation(hotel_id, r, chosen):
             continue
         all_steps = [s for s in workflow.steps_for(hotel_id, r, cfg) if s.enabled]  # kanaal en tarief
         # Alleen stappen die nu echt verstuurd kunnen worden, vervangen een eerdere stap
@@ -595,6 +653,8 @@ def run(hotel_id: str, today: date | None = None) -> int:
                 label = f"{step.step} {channel} {r.booking_number or r.reservation_id[:8]}"
                 (sent if result.ok else failed).append(label + ("" if result.ok else f" ({result.error})"))
     for r in guests.list_reservations(hotel_id):  # kamerwissel na de code-mail: nieuwe kamer, zelfde code
+        if not for_reservation(hotel_id, r, chosen):
+            continue
         for channel, result, label in notify_room_change(hotel_id, r, cfg, today):
             (sent if result.ok else failed).append(label + ("" if result.ok else f" ({result.error})"))
     if sent or failed:

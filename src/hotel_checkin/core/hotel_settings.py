@@ -19,7 +19,18 @@ from hotel_checkin.core import hotels
 
 EXCLUDED = ("flows",)  # tabblad Workflow
 # Instellingen met een vaste keuzelijst
-CHOICES = {("workflow_parameters", "city_tax_unit"): ("person_night", "person_stay")}
+CHOICES = {("workflow_parameters", "city_tax_unit"): ("person_night", "person_stay"),
+           ("schakelaars", "berichten"): ("uit", "aan", "selectie")}
+# Oude waarden die in de monitor bewaard zijn, getoond als de nieuwe keuze
+LEGACY = {("schakelaars", "berichten"): {True: "aan", False: "uit", "true": "aan", "false": "uit"}}
+
+
+def _legacy(section: str, key: str, value):
+    m = LEGACY.get((section, key), {})
+    try:
+        return m.get(value, value)
+    except TypeError:
+        return value
 LIST_TIMES = (("ontbijtlijst", "uur"), ("kuislijst", "uur"))  # keuze uit de vaste uren van de robot
 
 
@@ -144,9 +155,9 @@ def view(hotel_id: str) -> dict:
             "section": name, "free": free, "help": section_help.get(name, ""),
             "fields": [{
                 "key": k, "type": "choice" if _choices(hotel_id, name, k) else _kind(values.get(k, now.get(k, ""))),
-                "choices": _with_current(_choices(hotel_id, name, k), now.get(k, values.get(k))),
+                "choices": _with_current(_choices(hotel_id, name, k), _legacy(name, k, now.get(k, values.get(k)))),
                 "default": values.get(k),
-                "value": now.get(k, values.get(k)), "help": field_help.get((name, k), ""),
+                "value": _legacy(name, k, now.get(k, values.get(k))), "help": field_help.get((name, k), ""),
                 "env": _env_override(hotel_id, name, k, names),
             } for k in keys],
         })

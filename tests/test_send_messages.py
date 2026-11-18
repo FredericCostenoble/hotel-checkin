@@ -357,3 +357,22 @@ def test_nfr_without_sections_gets_no_confirmation(setup):
     plan = send_messages.plan("lucca", repo.get_reservation("lucca", "n1"), [], send_messages.workflow.config("lucca"),
                               send_messages.ready_steps("lucca"), date.today(), send_messages.start("lucca"), True)
     assert next(p for p in plan if p["step"] == "confirmation")["reason"] == "rate_off_nfr"
+
+
+def test_message_modes_and_per_reservation_choice(monkeypatch):
+    """Berichten uit, aan of selectie, met een keuze per reservatie in de monitor."""
+    from hotel_checkin.core.models import Guest, Reservation
+    from hotel_checkin.processes import send_messages as sm
+
+    r1 = Reservation("lucca", "m1", Guest("A", "B"), date(2099, 1, 1), date(2099, 1, 2))
+    r2 = Reservation("lucca", "m2", Guest("C", "D"), date(2099, 1, 1), date(2099, 1, 2))
+    monkeypatch.setenv("LUCCA_SCHAKELAARS_BERICHTEN", "uit")
+    sm.set_selected("lucca", "m1", True)
+    assert sm.mode("lucca") == "uit" and not sm.for_reservation("lucca", r1)
+    monkeypatch.setenv("LUCCA_SCHAKELAARS_BERICHTEN", "selectie")
+    assert sm.enabled("lucca") and sm.for_reservation("lucca", r1) and not sm.for_reservation("lucca", r2)
+    monkeypatch.setenv("LUCCA_SCHAKELAARS_BERICHTEN", "aan")
+    sm.set_selected("lucca", "m2", False)
+    assert sm.for_reservation("lucca", r1) and not sm.for_reservation("lucca", r2)
+    monkeypatch.setenv("LUCCA_SCHAKELAARS_BERICHTEN", "true")  # oude waarde
+    assert sm.mode("lucca") == "aan"

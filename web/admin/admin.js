@@ -51,7 +51,7 @@ const T = {
     mg_plan: "Tijdlijn", mg_attempts: "Alle pogingen", mg_next: "volgt",
     pl_sent: "verstuurd op", pl_failed: "mislukt op", pl_planned: "gepland", pl_due: "wordt nu verstuurd", pl_will: "wordt verstuurd op", pl_wont: "wordt niet verstuurd", pl_was: "gepland", pl_skipped: "valt weg", pl_off: "niet actief", pl_missed: "niet verstuurd, te laat", lg_sent: "verstuurd", lg_failed: "mislukt", lg_planned: "komt nog", lg_missed: "te laat, niet verstuurd", lg_cond: "voorwaarde niet voldaan", lg_off: "niet actief", pl_cond: "niet verstuurd, voorwaarde", stairs_tag: "trappen", stairs_tip: "Formulier: een van de gasten kan moeilijk trappen lopen (lagere verdieping indien vrij).", stairs_in_lh: w => `In de interne memo in Lighthouse sinds ${w}.`, form_yes: "✓ formulier ingevuld", form_no: "formulier niet ingevuld", sb_open: "Versturen", sb_again: "Opnieuw versturen",
     rss_before_start: "voor de startdatum", rss_booked_late: "te laat geboekt", rss_stored_late: "boeking al lang achter de rug", rss_later_due: "zit in de latere mail",
-    rss_window_passed: "moment voorbij", rss_messaging_off: "berichten uit", rss_disabled: "stap uit", rss_not_ready: "nog niet gebouwd", sb_other: "Ander adres...", sb_bad_email: "Ongeldig e-mailadres", sb_bad_phone: "Ongeldig nummer (met landcode, bv. +32...)", src_test: "testadres", src_form: "check-in-formulier",
+    rss_window_passed: "moment voorbij", rss_messaging_off: "berichten uit", rss_not_selected: "niet voor deze reservatie", rs_not_selected: "automatische berichten staan uit voor deze reservatie (vinkje bovenaan)", mo_label: "Automatische berichten voor deze reservatie", mo_hint_aan: "De schakelaar Gastcommunicatie staat aan: alle reservaties krijgen berichten, behalve als je dit vinkje weghaalt.", mo_hint_selectie: "De schakelaar Gastcommunicatie staat op selectie: alleen reservaties met dit vinkje krijgen berichten.", mo_hint_uit: "De schakelaar Gastcommunicatie staat uit: er gaat niets naar gasten, ook niet met dit vinkje.", tag_msgs_on: "berichten aan", tag_msgs_off: "berichten uit", sw_selection: "selectie", rss_disabled: "stap uit", rss_not_ready: "nog niet gebouwd", sb_other: "Ander adres...", sb_bad_email: "Ongeldig e-mailadres", sb_bad_phone: "Ongeldig nummer (met landcode, bv. +32...)", src_test: "testadres", src_form: "check-in-formulier",
     src_form_extra: "extra, check-in-formulier", src_relay: "doorstuuradres", src_profile: "gastprofiel", src_used: "eerder gebruikt", src_earlier: "vroeger", sb_to: "naar", sb_go: "Versturen", sb_off: "(nog niet actief)", send_to: "Versturen naar...", send_to_ask: "Naar welk e-mailadres (of gsm-nummer met +32...) versturen? Het wordt bij de reservatie bewaard.", ct_add: "E-mailadres of gsm-nummer toevoegen", ct_email: "e-mailadres", ct_phone: "gsm-nummer met landcode (+32...)", env_to_prd: "Naar PRD", env_bar_tst: "TESTOMGEVING (TST): berichten gaan alleen naar het testadres, nooit naar gasten",
     env_bar_prd: "PRODUCTIE (PRD): berichten gaan naar echte gasten", env_to_tst: "Naar TST", sw_title: "Hoofdschakelaars (instellingen, tabblad Hotel)", sw_payout: "Overschrijvingen", sw_messages: "Gastcommunicatie", sw_breakfast: "Ontbijt labels", sw_unlock: "Deuren via app", sw_on: "AAN", sw_off: "UIT",
     env_confirm_prd: "Overschakelen naar PRODUCTIE? Daar gaan berichten naar echte gasten.", env_confirm_tst: "Overschakelen naar de testomgeving (TST)?", pl_not_sent: "niet verstuurd", relay_hint: "Doorstuuradres van het boekingsplatform, geen eigen adres van de gast.", relay_kept: "Doorstuuradres van het boekingsplatform. Bewaard, maar het eigen adres uit het check-in-formulier gaat voor.", mg_test_addr: "testadres", mg_for: "bedoeld voor", tab_hotel: "Hotel",
@@ -144,7 +144,7 @@ const T = {
     mg_plan: "Timeline", mg_attempts: "All attempts", mg_next: "next",
     pl_sent: "sent on", pl_failed: "failed on", pl_planned: "planned", pl_due: "being sent now", pl_will: "will be sent on", pl_wont: "will not be sent", pl_was: "planned", pl_skipped: "skipped", pl_off: "not active", pl_missed: "not sent, too late", lg_sent: "sent", lg_failed: "failed", lg_planned: "still to come", lg_missed: "too late, not sent", lg_cond: "condition not met", lg_off: "not active", pl_cond: "not sent, condition", stairs_tag: "stairs", stairs_tip: "Form: one of the guests has difficulty climbing stairs (lower floor if available).", stairs_in_lh: w => `In the internal memo in Lighthouse since ${w}.`, form_yes: "✓ form filled in", form_no: "form not filled in", sb_open: "Send", sb_again: "Send again",
     rss_before_start: "before start date", rss_booked_late: "booked too late", rss_stored_late: "booking long past", rss_later_due: "included in the later mail",
-    rss_window_passed: "moment passed", rss_messaging_off: "messages off", rss_disabled: "step off", rss_not_ready: "not built yet", sb_other: "Other address...", sb_bad_email: "Invalid e-mail address", sb_bad_phone: "Invalid number (with country code, e.g. +32...)", src_test: "test address", src_form: "check-in form",
+    rss_window_passed: "moment passed", rss_messaging_off: "messages off", rss_not_selected: "not for this reservation", rs_not_selected: "automatic messages are off for this reservation (tick box at the top)", mo_label: "Automatic messages for this reservation", mo_hint_aan: "Guest communication is on: all reservations get messages, unless you untick this box.", mo_hint_selectie: "Guest communication is on selection: only reservations with this box ticked get messages.", mo_hint_uit: "Guest communication is off: nothing goes to guests, not even with this box ticked.", tag_msgs_on: "messages on", tag_msgs_off: "messages off", sw_selection: "selection", rss_disabled: "step off", rss_not_ready: "not built yet", sb_other: "Other address...", sb_bad_email: "Invalid e-mail address", sb_bad_phone: "Invalid number (with country code, e.g. +32...)", src_test: "test address", src_form: "check-in form",
     src_form_extra: "extra, check-in form", src_relay: "relay address", src_profile: "guest profile", src_used: "used before", src_earlier: "earlier", sb_to: "to", sb_go: "Send", sb_off: "(not active yet)", send_to: "Send to...", send_to_ask: "Send to which e-mail address (or mobile number with +32...)? It is saved with the reservation.", ct_add: "Add e-mail address or mobile number", ct_email: "e-mail address", ct_phone: "mobile number with country code (+32...)", env_to_prd: "To PRD", env_bar_tst: "TEST ENVIRONMENT (TST): messages only go to the test address, never to guests",
     env_bar_prd: "PRODUCTION (PRD): messages go to real guests", env_to_tst: "To TST", sw_title: "Main switches (settings, Hotel tab)", sw_payout: "Bank transfers", sw_messages: "Guest communication", sw_breakfast: "Breakfast labels", sw_unlock: "Doors via app", sw_on: "ON", sw_off: "OFF",
     env_confirm_prd: "Switch to PRODUCTION? Messages there go to real guests.", env_confirm_tst: "Switch to the test environment (TST)?", pl_not_sent: "not sent", relay_hint: "Relay address of the booking platform, not the guest's own address.", relay_kept: "Relay address of the booking platform. Kept, but the guest's own address from the check-in form takes precedence.", mg_test_addr: "test address", mg_for: "meant for", tab_hotel: "Hotel",
@@ -249,7 +249,10 @@ function renderSwitches() {
   el.title = t("sw_title");
   el.innerHTML = [["reservaties", "sw_read"], ["overschrijvingen", "sw_payout"], ["berichten", "sw_messages"], ["ontbijt_labels", "sw_breakfast"], ["ontbijtlijst", "sw_blist"], ["kuislijst", "sw_clist"], ["ontgrendelen", "sw_unlock"]].map(([k, label]) =>
     // Groen = aan, grijs = uit (geen AAN/UIT in de tekst; staat wel in de tooltip)
-    `<span class="sw ${sw[k] ? "on" : "off"}${NOT_BUILT.includes(k) ? " todo" : ""}" title="${esc(t(label))}: ${t(sw[k] ? "sw_on" : "sw_off")}">${esc(t(label))}${NOT_BUILT.includes(k) ? ` (${t("sw_not_built")})` : ""}</span>`).join("");
+    // Berichten: uit, aan of selectie (oranje: alleen voor aangevinkte reservaties)
+    k === "berichten" && sw[k] === "selectie"
+      ? `<span class="sw sel" title="${esc(t(label))}: ${esc(t("sw_selection"))}">${esc(t(label))} (${esc(t("sw_selection"))})</span>`
+      : `<span class="sw ${sw[k] && sw[k] !== "uit" ? "on" : "off"}${NOT_BUILT.includes(k) ? " todo" : ""}" title="${esc(t(label))}: ${t(sw[k] && sw[k] !== "uit" ? "sw_on" : "sw_off")}">${esc(t(label))}${NOT_BUILT.includes(k) ? ` (${t("sw_not_built")})` : ""}</span>`).join("");
 }
 
 async function refreshSwitches() {
@@ -420,6 +423,17 @@ function showMessages(id) {
   const r = rows.find(x => x.id === id);
   if (!r) return;
   $("#msgs-title").textContent = t("mg_title", r.booking_number, r.guest);
+  const mode = (hotelNow().switches || {}).berichten || "uit";
+  $("#msgs-on").checked = !!r.messages_on || (mode === "uit" && r.messages_pick === "on");
+  $("#msgs-on-hint").textContent = t("mo_hint_" + mode);
+  $("#msgs-on").onchange = async () => {
+    const on = $("#msgs-on").checked;
+    const d = await get(`/api/monitor/${$("#hotel").value}/select?id=${encodeURIComponent(r.id)}&on=${on ? 1 : 0}`, { method: "POST" }).catch(e => ({ ok: false, error: String(e) }));
+    if (!d.ok) { alert(d.error || "?"); $("#msgs-on").checked = !on; return; }
+    rows = await get(`/api/monitor/${$("#hotel").value}/reservations`);
+    render();
+    showMessages(id);
+  };
   document.getElementById("msgs-nocontact")?.remove();
   $("#msgs-legend").innerHTML = ["sent", "failed", "planned", "missed", "cond", "off"]
     .map(k => `<span class="k-${k}"><span class="dot"></span>${esc(t("lg_" + k))}</span>`).join("");
@@ -787,7 +801,7 @@ function render() {
     <tr class="${r.status === "cancelled" ? "cancelled" : ""}">
       <td>${day(r.arrival)}</td><td>${day(r.departure)}</td>
       <td class="nowrap">${esc(r.booking_number)}${r.lighthouse_url ? ` <a class="lh" href="${esc(r.lighthouse_url)}" target="_blank" rel="noopener" title="${esc(t("open_lh"))}">${ICON_LH}</a>` : ""}</td><td>${r.guest_id && guestById(r.guest_id) ? `<a href="#" class="jump" data-guest="${esc(r.guest_id)}" title="${esc(t("show_guest"))}">${ICON_GUEST} ${esc(r.guest)}</a>` : esc(r.guest)}${r.guest_stays ? ` <span class="tag back">${esc(t("returning", r.guest_stays))}</span>` : ""}
-        <div>${r.checkin_completed_at ? `<span class="tag form-yes" title="${esc(stamp(r.checkin_completed_at))}">${esc(t("form_yes"))}</span>` : `<span class="tag form-no">${esc(t("form_no"))}</span>`}${r.stairs ? ` <span class="tag stairs" title="${esc(t("stairs_tip") + (r.stairs_memo_at ? " " + t("stairs_in_lh", stamp(r.stairs_memo_at)) : ""))}">${esc(t("stairs_tag"))}</span>` : ""}</div></td><td>${esc(r.guests ?? "")}</td>
+        <div>${r.checkin_completed_at ? `<span class="tag form-yes" title="${esc(stamp(r.checkin_completed_at))}">${esc(t("form_yes"))}</span>` : `<span class="tag form-no">${esc(t("form_no"))}</span>`}${r.messages_pick ? ` <span class="tag ${r.messages_pick === "on" ? "msgs-on" : "msgs-off"}">${esc(t(r.messages_pick === "on" ? "tag_msgs_on" : "tag_msgs_off"))}</span>` : ""}${r.stairs ? ` <span class="tag stairs" title="${esc(t("stairs_tip") + (r.stairs_memo_at ? " " + t("stairs_in_lh", stamp(r.stairs_memo_at)) : ""))}">${esc(t("stairs_tag"))}</span>` : ""}</div></td><td>${esc(r.guests ?? "")}</td>
       <td>${esc(r.rooms.join(", ") || r.room_type)}</td>
       <td>${r.non_refundable === true ? `<span class="tag nrf">${esc(t("rate_nrf"))}</span>` : r.non_refundable === false ? `<span class="tag flex">${esc(t("rate_flex"))}</span>` : ""}${r.rate_plan ? `<div class="muted small">${esc(r.rate_plan)}</div>` : ""}</td><td>${esc(r.source)}</td><td><span class="tag flow">${esc(t("flow_" + r.flow) || r.flow)}</span></td><td>${esc(r.pms_status)}</td>
       <td>${stamp(r.booked_at)}</td><td>${stamp(r.added_at)}</td><td>${stamp(r.updated_at)}</td>
@@ -1385,7 +1399,7 @@ const HS_TEXT = {
    "kamers.20.lijst": ["Naam op de lijsten", "Eigen naam in plaats van het nummer op de ontbijt- en schoonmaaklijst (bv. App). Leeg = het nummer."],
    "schakelaars.berichten": [
     "Gastcommunicatie",
-    "Mails, sms en WhatsApp aan gasten, en de pincodes bij Salto. Uit = niets naar gasten en geen codes. Geldt alleen voor deze omgeving; buiten PRD gaat alles naar het testadres."
+    "Mails, sms en WhatsApp aan gasten, en de pincodes bij Salto. Uit = niets naar gasten en geen codes. Aan = voor alle reservaties, behalve die waarvoor je de berichten uitzet (berichtenvenster van de reservatie). Selectie = alleen voor de reservaties waarvoor je ze aanzet, om te testen. Geldt alleen voor deze omgeving; buiten PRD gaat alles naar de testadressen."
    ],
    "messaging.start": [
     "Vanaf",
@@ -1700,7 +1714,7 @@ const HS_TEXT = {
    "kamers.20.lijst": ["Name on the lists", "Own name instead of the number on the breakfast and cleaning list (e.g. App). Empty = the number."],
    "schakelaars.berichten": [
     "Guest communication",
-    "Mails, SMS and WhatsApp to guests, and the Salto PIN codes. Off = nothing to guests and no codes. Applies to this environment only; outside PRD everything goes to the test address."
+    "Mails, SMS and WhatsApp to guests, and the Salto PIN codes. Off = nothing to guests and no codes. On = for all reservations, except those you switch off (messages window of the reservation). Selection = only for the reservations you switch on, for testing. Applies to this environment only; outside PRD everything goes to the test addresses."
    ],
    "messaging.start": [
     "From",
