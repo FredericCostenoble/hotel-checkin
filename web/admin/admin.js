@@ -775,7 +775,7 @@ function renderToday() {
     ${inHouse.length > 3 ? `<a class="btn3" href="#res" data-go="res" style="padding:0">${esc(t("td_more", inHouse.length - 3))}</a>` : ""}</div></section>`;
   // Rechts: robot, berichten, lijsten, openstaand
   const runs = (todayRuns && todayRuns.runs) || [], lastRun = runs.find(x => x.task === "nieuwe_reservaties") || runs[0];
-  const runOk = lastRun ? lastRun.ok !== false && !lastRun.error : true;
+  const runOk = lastRun ? lastRun.ok !== false : true;  // error bevat ook gewone opmerkingen van een gelukte run
   const robot = `<section class="card"><div class="ch"><h2 class="ct">${IC('<rect x="4" y="8" width="16" height="12" rx="2"/><path d="M12 4v4M9 13v1M15 13v1M9.5 17h5"/><circle cx="12" cy="3.5" r="1"/>')} ${esc(t("td_robot"))}</h2>${lastRun ? `<span class="badge ${runOk ? "b-ok" : "b-err"}">${IC(runOk ? P.check : P.warn, 14, 2.4)}${esc(t(runOk ? "td_robot_ok" : "td_robot_err"))}</span>` : ""}</div><div class="cb">
     ${lastRun ? `<dl class="kv"><dt>${esc(t("td_last"))}</dt><dd>${esc(dtime(lastRun.started_at))}${lastRun.finished_at ? `, ${Math.round((new Date(lastRun.finished_at) - new Date(lastRun.started_at)) / 1000)} s` : ""}</dd><dt>${esc(t("td_result"))}</dt><dd>${esc(lastRun.error || t("td_res_x", lastRun.new || 0, Math.max(0, (lastRun.found || 0) - (lastRun.new || 0))))}</dd></dl>` : ""}
     <div class="row"><button class="btn" type="button" id="td-run" ${todayRuns && todayRuns.can_run && !todayRuns.running ? "" : "disabled"}>${IC('<path d="M7 4.5v15l12-7.5z"/>', 14)}${esc(t("td_run"))}</button><a class="btn3" href="settings.html#robot">${esc(t("td_log"))}</a></div></div></section>`;
