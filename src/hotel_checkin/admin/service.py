@@ -175,6 +175,7 @@ def guests(hotel_id: str) -> dict:
     from hotel_checkin.processes import guest_profiles
 
     opted_out = {e for e in repo.opted_out_emails(hotel_id)}
+    opted_out_by_guest = {e for e in opted_out if repo.opt_out_source(hotel_id, e) not in (None, "monitor")}
     res_by_guest: dict[str, list] = {}
     for r in repo.list_reservations(hotel_id):
         if r.guest_id:
@@ -192,6 +193,11 @@ def guests(hotel_id: str) -> dict:
                                     if relay_platform(r.guest.relay_email or r.guest.email)}),
             "language": g.language, "country": g.country or "", "form": g.from_checkin_form,
             "opt_out": bool(g.email and g.email.lower() in opted_out),
+            # Marketing per eigen adres: op de blokkeerlijst, en of de gast dat zelf vroeg (dan niet terug aan te zetten)
+            "marketing_off": sorted({e.lower() for e in [g.email, g.backup_email, *g.known_emails]
+                                     if e and e.lower() in opted_out}),
+            "marketing_by_guest": sorted({e.lower() for e in [g.email, g.backup_email, *g.known_emails]
+                                          if e and e.lower() in opted_out_by_guest}),
             "first_stay": g.first_stay.isoformat() if g.first_stay else "",
             "last_stay": g.last_stay.isoformat() if g.last_stay else "",
             "stays": g.stays, "nights": g.nights, "cancellations": g.cancellations,
@@ -291,6 +297,21 @@ def detach_reservation(hotel_id: str, reservation_id: str) -> dict:
         return {"ok": False}
     g = guest_profiles.detach(hotel_id, reservation_id)
     return {"ok": g is not None, "guest": g.guest_id if g else ""}
+
+
+def set_marketing(hotel_id: str, email: str, on: bool) -> dict:
+    """Vinkje Marketing bij een e-mailadres (tabblad Gasten). Uit: op de blokkeerlijst. Aan: er weer af, maar alleen
+    als het hotel het zelf uitzette; vroeg de gast zelf geen marketing (formulier, uitschrijflink), dan blijft het uit."""
+    if hotel_id not in list_hotels() or "@" not in (email or ""):
+        return {"ok": False}
+    source = repo.opt_out_source(hotel_id, email)
+    if on:
+        if source not in (None, "monitor"):
+            return {"ok": False, "error": "De gast vroeg zelf geen marketing; dat kan het hotel niet terug aanzetten."}
+        repo.remove_opt_out(hotel_id, email)
+    elif source is None:
+        repo.add_opt_out(hotel_id, email, "monitor")
+    return {"ok": True}
 
 
 def mark_guests_different(hotel_id: str, a: str, b: str) -> bool:

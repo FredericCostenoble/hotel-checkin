@@ -758,6 +758,21 @@ def opted_out_emails(hotel_id: str) -> list[str]:
     return [e.get("email", "") for e in rows]
 
 
+def opt_out_source(hotel_id: str, email: str) -> str | None:
+    """Waarom staat dit adres op de blokkeerlijst (checkin_form, unsubscribe_link, monitor, ...)? None = niet."""
+    try:
+        return _table(T_OPTOUT).get_entity(_key(hotel_id), _key(email.strip().lower())).get("source", "") or ""
+    except Exception:  # noqa: BLE001 - niet gevonden
+        return None
+
+
+def remove_opt_out(hotel_id: str, email: str) -> None:
+    try:
+        _table(T_OPTOUT).delete_entity(_key(hotel_id), _key(email.strip().lower()))
+    except Exception:  # noqa: BLE001 - stond er niet op
+        pass
+
+
 def is_opted_out(hotel_id: str, email: str) -> bool:
     try:
         _table(T_OPTOUT).get_entity(_key(hotel_id), _key(email.strip().lower()))

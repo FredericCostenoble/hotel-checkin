@@ -316,3 +316,15 @@ def test_detach_gives_own_profile_or_the_right_one_and_never_back():
     assert profiles.get_profile("lucca", jan.guest_id).reservation_ids == ["a1"]
     assert profiles.get_profile("lucca", jan.guest_id).stays == 0
     assert gp.detach("lucca", "a1") is None  # enige reservatie van Jan: niets te ontkoppelen
+
+
+def test_marketing_per_address_hotel_cannot_override_the_guest():
+    """Vinkje Marketing: het hotel kan het uit- en weer aanzetten, maar niet aanzetten als de gast het zelf weigerde."""
+    from hotel_checkin.admin import service as admin
+
+    assert admin.set_marketing("lucca", "jan@example.com", False)["ok"]
+    assert repo.is_opted_out("lucca", "jan@example.com") and repo.opt_out_source("lucca", "jan@example.com") == "monitor"
+    assert admin.set_marketing("lucca", "jan@example.com", True)["ok"] and not repo.is_opted_out("lucca", "jan@example.com")
+    repo.add_opt_out("lucca", "piet@example.com", "checkin_form")
+    r = admin.set_marketing("lucca", "piet@example.com", True)
+    assert not r["ok"] and "gast" in r["error"] and repo.is_opted_out("lucca", "piet@example.com")

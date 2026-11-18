@@ -222,7 +222,8 @@ Object.assign(T.nl, {
   m_card: "Te beslissen: mogelijk dezelfde gast", m_open: n => `${n} open`, m_and: "en", m_keep: "Samenvoegen", m_apart: "Apart houden",
   gp_since: d => `gastprofiel sinds ${d}`, gp_nomkt: "Geen marketing", gp_back: "Terugkerend", gp_resn: "reservaties", gp_stays: "verblijven", gp_canc: "geannuleerd", pick_filter: "Filter",
   gp_nights: "nachten gem.", gp_pers: "personen gem.", gp_first: "Eerste verblijf", gp_last: "Laatste verblijf", gp_chan: "Voorkeurskanaal", gp_rooms: "Kamers",
-  gp_contact: "Contact", gp_help: "Gebruiken: berichten over het verblijf mogen via dit kanaal. Vinkje weg: dit kanaal nooit gebruiken voor deze gast.", gp_use: "gebruiken", gp_relay: "doorstuuradres van de boekingssite: wel voor berichten over het verblijf, niet voor marketing", gp_fake: "nepnummer van de boekingssite: nooit gebruikt",
+  gp_contact: "Contact", gp_help: "Verblijf: berichten over het verblijf (bevestiging, code, ...) via dit kanaal; vinkje weg = nooit voor deze gast. Marketing: nieuwsbrieven en aanbiedingen naar dit adres.", gp_use: "gebruiken", gp_relay: "doorstuuradres van de boekingssite: wel voor berichten over het verblijf, niet voor marketing", gp_fake: "nepnummer van de boekingssite: nooit gebruikt",
+  gp_stayinfo: "Verblijf", gp_mkt: "Marketing", gp_mkt_guest: "de gast vroeg zelf geen marketing", gp_mkt_relay: "doorstuuradres: nooit marketing",
   gp_detach: "Ontkoppelen", gp_detach_q: n => `Reservatie #${n} hoort niet bij deze gast? Ze krijgt een eigen gastprofiel, of komt bij de gast waar ze zeker bij hoort. Ze komt nooit meer terug bij deze gast.`, gp_detached: "Ontkoppeld.",
   gp_form: "formulier", gp_booking: "reservatie", gp_res: "Reservaties", gp_all: n => `Alle ${n} reservaties`, gp_now: "Nu", gp_left: "Vertrokken", gp_coming: "Komt",
   d_back: "Reservaties", d_nights: n => `${n} nachten`, d_persons: n => `${n} personen`, d_rooms: x => `kamer ${x}`, d_and: "en",
@@ -306,7 +307,8 @@ Object.assign(T.en, {
   m_card: "To decide: possibly the same guest", m_open: n => `${n} open`, m_and: "and", m_keep: "Merge", m_apart: "Keep apart",
   gp_since: d => `guest profile since ${d}`, gp_nomkt: "No marketing", gp_back: "Returning", gp_resn: "reservations", gp_stays: "stays", gp_canc: "cancelled", pick_filter: "Filter",
   gp_nights: "nights avg.", gp_pers: "persons avg.", gp_first: "First stay", gp_last: "Last stay", gp_chan: "Preferred channel", gp_rooms: "Rooms",
-  gp_contact: "Contact", gp_help: "Use: messages about the stay may go through this channel. Untick: never use this channel for this guest.", gp_use: "use", gp_relay: "relay address of the booking site: used for messages about the stay, not for marketing", gp_fake: "fake number of the booking site: never used",
+  gp_contact: "Contact", gp_help: "Stay info: messages about the stay (confirmation, code, ...) through this channel; untick = never for this guest. Marketing: newsletters and offers to this address.", gp_use: "use", gp_relay: "relay address of the booking site: used for messages about the stay, not for marketing", gp_fake: "fake number of the booking site: never used",
+  gp_stayinfo: "Stay info", gp_mkt: "Marketing", gp_mkt_guest: "the guest asked for no marketing", gp_mkt_relay: "relay address: never marketing",
   gp_detach: "Detach", gp_detach_q: n => `Reservation #${n} does not belong to this guest? It gets its own guest profile, or joins the guest it surely belongs to. It never comes back to this guest.`, gp_detached: "Detached.",
   gp_form: "form", gp_booking: "reservation", gp_res: "Reservations", gp_all: n => `All ${n} reservations`, gp_now: "Now", gp_left: "Departed", gp_coming: "Coming",
   d_back: "Reservations", d_nights: n => `${n} nights`, d_persons: n => `${n} persons`, d_rooms: x => `room ${x}`, d_and: "and",
@@ -1301,12 +1303,20 @@ function renderProfile() {
   const own = [...new Set([g.email, g.backup_email, ...(g.known_emails || [])].filter(Boolean))].filter(x => !(g.relay_emails || []).includes(x));
   const phones = [...new Set([g.phone, g.backup_phone, ...(g.known_phones || [])].filter(Boolean))];
   const src = x => x === g.email && g.form ? t("gp_form") : t("gp_booking");
-  const line = (icon, value, sub, ch, disabled) => `<div class="li">${icon}<div class="lt"><b>${esc(value)}</b><div class="small muted">${esc(sub)}</div></div>
-    <label class="row small" style="gap:6px;font-weight:600"><input type="checkbox" ${disabled ? "disabled" : `data-mute="${esc(g.id)}" value="${ch}"`} ${!disabled && !muted.includes(ch) ? "checked" : ""} style="width:18px;height:18px;margin:0">${esc(t("gp_use"))}</label></div>`;
+  const box = (label, attrs, on, title) => `<label class="row small" style="gap:6px;font-weight:600;white-space:nowrap"${title ? ` title="${esc(title)}"` : ""}><input type="checkbox" ${attrs} ${on ? "checked" : ""}>${esc(label)}</label>`;
+  // mail: marketing = "own" (eigen adres), "relay" (nooit) of leeg (gsm: geen marketing-vinkje)
+  const line = (icon, value, sub, ch, disabled, mail) => {
+    const stay = box(t("gp_stayinfo"), disabled ? "disabled" : `data-mute="${esc(g.id)}" value="${ch}"`, !disabled && !muted.includes(ch));
+    const off = (g.marketing_off || []).includes(value.toLowerCase()), byGuest = (g.marketing_by_guest || []).includes(value.toLowerCase());
+    const mkt = mail === "relay" ? box(t("gp_mkt"), "disabled", false, t("gp_mkt_relay"))
+      : mail === "own" ? box(t("gp_mkt"), byGuest ? "disabled" : `data-mkt="${esc(value)}"`, !off, byGuest ? t("gp_mkt_guest") : "") : "";
+    return `<div class="li">${icon}<div class="lt"><b>${esc(value)}</b><div class="small muted">${esc(sub)}${byGuest ? " · " + esc(t("gp_mkt_guest")) : ""}</div></div>
+      <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-start;flex:0 0 112px">${stay}${mkt}</div></div>`;
+  };
   const contacts = [
-    ...own.map(x => line(ICG.mail, x, src(x), "email")),
-    // Doorstuuradres van Booking.com/Expedia: berichten over het verblijf gaan er wel naartoe (zelfde vinkje e-mail)
-    ...(g.relay_emails || []).map(x => line(ICG.mail, x, t("gp_relay"), "email")),
+    ...own.map(x => line(ICG.mail, x, src(x), "email", false, "own")),
+    // Doorstuuradres van Booking.com/Expedia: berichten over het verblijf gaan er wel naartoe, nooit marketing
+    ...(g.relay_emails || []).map(x => line(ICG.mail, x, t("gp_relay"), "email", false, "relay")),
     // Nepnummer van de boekingssite (+11111111111): nooit gebruikt, dus geen vinkje
     ...phones.flatMap(x => fakePhone(x) ? [line(ICG.phone, x, t("gp_fake"), "", true)]
       : [line(ICG.wa, x, `${t("gp_wa")}, ${src(x)}`, "whatsapp"), line(ICG.phone, x, `${t("gp_sms")}, ${src(x)}`, "sms")]),
@@ -1340,6 +1350,12 @@ function renderProfile() {
     if (d.guest) { gSel = d.guest; renderGuests(); }  // meteen de gast waar ze nu bij hoort
   });
   if ($("#gp-back")) $("#gp-back").onclick = e => { e.preventDefault(); $("#tab-guests").classList.remove("gdet"); window.scrollTo(0, 0); };
+  el.querySelectorAll("input[data-mkt]").forEach(b => b.onchange = async () => {
+    const r = await get(`/api/monitor/${encodeURIComponent($("#hotel").value)}/guests?action=marketing&email=${encodeURIComponent(b.dataset.mkt)}&on=${b.checked ? 1 : 0}`, { method: "POST" });
+    if (!r.ok) { b.checked = !b.checked; if (r.error) await ask(r.error, { ok: "OK" }); return; }
+    const k = b.dataset.mkt.toLowerCase();
+    g.marketing_off = b.checked ? (g.marketing_off || []).filter(x => x !== k) : [...(g.marketing_off || []), k];
+  });
   el.querySelectorAll("input[data-mute]").forEach(box => box.onchange = async () => {
     const id = box.dataset.mute;
     // Per kanaal: alle regels van hetzelfde kanaal mee aan- of uitvinken
