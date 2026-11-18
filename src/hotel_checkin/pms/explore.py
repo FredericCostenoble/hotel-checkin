@@ -404,8 +404,13 @@ def explore_planboard(lh: LighthouseSession, day: str) -> str:
     P().feed(body)
     out = [f"# Planbord {day}: kamernummers bij de units (opgevraagd, niets gewijzigd)", f"HTTP {resp.status}",
            f"Units in de blokken: {unit_ids}", "", "## Elementen met een unit-nummer (geen blokken, geen labels)",
-           *[f"- {x}" for x in found], "", "## HTML rond de eerste unit (zonder scripts)"]
+           *[f"- {x}" for x in found]]
     clean = _re.sub(r"<script.*?</script>", "", body, flags=_re.DOTALL)
+    blocks = list(_re.finditer(r"out of order|buiten gebruik|hors service|au(?:ß|ss)er betrieb", clean, _re.IGNORECASE))
+    out += ["", f"## Out of order ({len(blocks)} keer gevonden): HTML rond de eerste 3"]
+    for mm in blocks[:3]:
+        out += ["```html", clean[max(0, mm.start() - 1500): mm.start() + 400], "```"]
+    out += ["", "## HTML rond de eerste unit (zonder scripts)"]
     for uid in unit_ids[:3]:
         for mm in list(_re.finditer(uid, clean))[:3]:
             out += ["```html", clean[max(0, mm.start() - 600): mm.start() + 300], "```"]
