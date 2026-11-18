@@ -317,3 +317,4 @@ main.legacy:not(:has(> section:not([hidden]))){display:none}
 .v2 #wf-timeline .group-title{background:#F1F2F5;border-left:0;border-radius:6px;color:#2B2F38}
 .v2 .seg label{cursor:pointer}
 .v2.content > .seg,.v2 .content > .seg{align-self:flex-start}
+.v2 .mcard > .ch,.v2 .mcard > .cb{padding-left:0;padding-right:0}.v2 .mcard > .ch{padding-top:0}.v2 .mcard > .cb{padding-bottom:0}

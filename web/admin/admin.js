@@ -228,6 +228,24 @@ Object.assign(T.nl, {
   rb_sub: "Leest Lighthouse volgens het schema van het hotel", rb_state: "Toestand", rb_hours: "Uren terug", rb_help: "De knop is uit zolang de robot bezig is.", rb_log: "Logboek per run",
   wfx_sub: "Welke berichten wanneer vertrekken, per flow", wfx_unsaved: "Niet bewaarde wijzigingen", wfx_in_flow: f => `in de flow ${f}`, wfx_line: "Tijdlijn van boeking tot na vertrek",
   wfx_click: "Klik een stap om ze te wijzigen", wfx_step: s => `Stap: ${s}`, wfx_recog: "Herkennen van deze flow", wfx_booking: "Boeking",
+  nav_today: "Vandaag", td_update: (d, u) => `${d}, laatste update ${u}`, td_arr: "aankomsten vandaag", td_arr_tom: "aankomsten morgen", td_dep: "vertrekken vandaag",
+  td_inhouse: (r) => `gasten in huis (${r} kamers)`, td_failed: "bericht mislukt", td_attn: "Vraagt aandacht", td_points: n => `${n} punten`,
+  td_a_failed: (s, g, x) => `<b>${s} mislukt</b> voor ${g}${x ? ` (${x})` : ""}.`, td_a_resend: "Opnieuw versturen",
+  td_a_unpaid: (g, a) => `<b>${g} komt vandaag</b> en heeft nog niet betaald${a ? ` (${a})` : ""}. Zonder betaling geen pincode.`, td_a_open: "Reservatie openen",
+  td_a_form: x => `<b>Formulier niet ingevuld:</b> ${x}.`, td_a_view: "Bekijken", td_today_s: "vandaag", td_tomorrow_s: "morgen",
+  td_a_blist: t => `<b>Ontbijtlijst voor morgen</b> nog niet gemaakt (automatisch om ${t}).`, td_a_make: "Nu maken",
+  td_arr_today: d => `Aankomsten vandaag, ${d}`, td_arr_tomorrow: d => `Aankomsten morgen, ${d}`, td_all_res: "Alle reservaties",
+  td_c_guest: "Gast", td_c_room: "Kamer", td_c_form: "Formulier", td_c_paid: "Betaald", td_c_code: "Code", td_c_mail: "Code-mail", td_c_labels: "Labels",
+  td_filled: "Ingevuld", td_notfilled: "Niet ingevuld", td_paid: "Betaald", td_open: "Open", td_made: "Gemaakt", td_waitpay: "Wacht op betaling", td_sent: "Verstuurd",
+  td_notsent: "Niet verstuurd", td_wait: "wacht", td_coming: "komt nog", td_none: "geen", td_deps: "Vertrekken vandaag", td_checkout: t => `Check-out tot ${t}`,
+  td_left: "Vertrokken", td_openst: "Openstaand", td_openst_x: a => `Openstaand ${a}`, td_now: "Nu in huis", td_nowcount: (r, g) => `${r} kamers, ${g} gasten`, td_until: d => `tot ${d}`,
+  td_more: n => `en nog ${n}`, td_robot: "Robot", td_last: "Laatste run", td_result: "Resultaat", td_next: "Volgende", td_res_x: (n, u) => `${n} nieuwe, ${u} bijgewerkt`,
+  td_run: "Robot nu draaien", td_log: "Logboek", td_msgs: "Berichten", td_msgs_failed: (n, x) => `<b>${n} mislukt</b>: ${x}`, td_msgs_today: n => `Vertrekt vandaag nog (${n})`,
+  td_lists: "Lijsten", td_cl_today: "Schoonmaaklijst", td_bl: "Ontbijtlijst", td_l_today: "vandaag", td_l_tomorrow: "morgen", td_l_made: (w, x) => `Gemaakt ${w}${x}`,
+  td_l_auto: t => `Automatisch om ${t}`, td_l_notyet: "Nog niet", td_l_sent: "Verstuurd", td_l_made_b: "Gemaakt", td_open_soon: "Openstaand, komt binnenkort",
+  td_room: n => `kamer ${n}`, td_tax: "toeristenbelasting", td_none_attn: "Niets dat aandacht vraagt.", td_no_arr: "Geen aankomsten.", td_ok: "In orde",
+  td_miss_form: "Mist formulier", td_miss_pay: "Mist betaling", td_miss_code: "Mist code-mail", td_tomorrow_n: n => `${n} aankomsten`, td_tomorrow_open: (f, p) => `${f} formulier en ${p} betaling open`,
+  td_arrivals_m: "aankomsten", td_deps_m: "vertrekken", td_inhouse_m: "in huis", td_robot_ok: "Gelukt", td_robot_err: "Fout", td_robot_last_m: (w, n, u) => `Laatste run ${w}, ${n} nieuw, ${u} bijgewerkt`,
   gp_nowsuffix: "(nu)", gp_wa: "WhatsApp", gp_sms: "Sms", gp_none: "Kies een gast in de lijst.", gp_stays_m: n => `${n} verblijven`,
 });
 Object.assign(T.en, {
@@ -268,6 +286,24 @@ Object.assign(T.en, {
   rb_sub: "Reads Lighthouse on the hotel's schedule", rb_state: "State", rb_hours: "Hours back", rb_help: "The button is off while the robot is running.", rb_log: "Log per run",
   wfx_sub: "Which messages go out when, per flow", wfx_unsaved: "Unsaved changes", wfx_in_flow: f => `in the flow ${f}`, wfx_line: "Timeline from booking to after departure",
   wfx_click: "Click a step to change it", wfx_step: s => `Step: ${s}`, wfx_recog: "Recognising this flow", wfx_booking: "Booking",
+  nav_today: "Today", td_update: (d, u) => `${d}, last update ${u}`, td_arr: "arrivals today", td_arr_tom: "arrivals tomorrow", td_dep: "departures today",
+  td_inhouse: (r) => `guests in house (${r} rooms)`, td_failed: "message failed", td_attn: "Needs attention", td_points: n => `${n} items`,
+  td_a_failed: (s, g, x) => `<b>${s} failed</b> for ${g}${x ? ` (${x})` : ""}.`, td_a_resend: "Send again",
+  td_a_unpaid: (g, a) => `<b>${g} arrives today</b> and has not paid yet${a ? ` (${a})` : ""}. No PIN code without payment.`, td_a_open: "Open reservation",
+  td_a_form: x => `<b>Form not filled in:</b> ${x}.`, td_a_view: "View", td_today_s: "today", td_tomorrow_s: "tomorrow",
+  td_a_blist: t => `<b>Breakfast list for tomorrow</b> not made yet (automatically at ${t}).`, td_a_make: "Make now",
+  td_arr_today: d => `Arrivals today, ${d}`, td_arr_tomorrow: d => `Arrivals tomorrow, ${d}`, td_all_res: "All reservations",
+  td_c_guest: "Guest", td_c_room: "Room", td_c_form: "Form", td_c_paid: "Paid", td_c_code: "Code", td_c_mail: "Code mail", td_c_labels: "Labels",
+  td_filled: "Filled in", td_notfilled: "Not filled in", td_paid: "Paid", td_open: "Open", td_made: "Created", td_waitpay: "Waiting for payment", td_sent: "Sent",
+  td_notsent: "Not sent", td_wait: "waiting", td_coming: "still to come", td_none: "none", td_deps: "Departures today", td_checkout: t => `Check-out until ${t}`,
+  td_left: "Departed", td_openst: "Outstanding", td_openst_x: a => `Outstanding ${a}`, td_now: "In house now", td_nowcount: (r, g) => `${r} rooms, ${g} guests`, td_until: d => `until ${d}`,
+  td_more: n => `and ${n} more`, td_robot: "Robot", td_last: "Last run", td_result: "Result", td_next: "Next", td_res_x: (n, u) => `${n} new, ${u} updated`,
+  td_run: "Run robot now", td_log: "Log", td_msgs: "Messages", td_msgs_failed: (n, x) => `<b>${n} failed</b>: ${x}`, td_msgs_today: n => `Still going out today (${n})`,
+  td_lists: "Lists", td_cl_today: "Cleaning list", td_bl: "Breakfast list", td_l_today: "today", td_l_tomorrow: "tomorrow", td_l_made: (w, x) => `Made ${w}${x}`,
+  td_l_auto: t => `Automatically at ${t}`, td_l_notyet: "Not yet", td_l_sent: "Sent", td_l_made_b: "Made", td_open_soon: "Outstanding, arriving soon",
+  td_room: n => `room ${n}`, td_tax: "tourist tax", td_none_attn: "Nothing needs attention.", td_no_arr: "No arrivals.", td_ok: "OK",
+  td_miss_form: "Missing form", td_miss_pay: "Missing payment", td_miss_code: "Missing code mail", td_tomorrow_n: n => `${n} arrivals`, td_tomorrow_open: (f, p) => `${f} form and ${p} payment open`,
+  td_arrivals_m: "arrivals", td_deps_m: "departures", td_inhouse_m: "in house", td_robot_ok: "Succeeded", td_robot_err: "Error", td_robot_last_m: (w, n, u) => `Last run ${w}, ${n} new, ${u} updated`,
   gp_nowsuffix: "(now)", gp_wa: "WhatsApp", gp_sms: "SMS", gp_none: "Choose a guest in the list.", gp_stays_m: n => `${n} stays`,
 });
 let lang = "nl";
@@ -443,7 +479,7 @@ async function init() {
 }
 
 const PAGE = document.body.dataset.page || "main";
-const TABS = PAGE === "settings" ? ["hotel", "workflow", "robot"] : ["res", "guests", "breakfast", "cleaning"];
+const TABS = PAGE === "settings" ? ["hotel", "workflow", "robot"] : ["today", "res", "guests", "breakfast", "cleaning"];
 let current = TABS[0];
 function showTab(name, initial = false) {
   if (((wfDirty && current === "workflow") || (hsDirty && current === "hotel")) && name !== current && !confirm(t("wf_leave"))) {
@@ -459,6 +495,7 @@ function showTab(name, initial = false) {
   if ($("#tab-lists")) { $("#tab-lists").hidden = !LIST_KINDS.includes(name); if (LIST_KINDS.includes(name)) { listKind = name; renderList(name); } }
   if ($("#tab-detail")) $("#tab-detail").hidden = true;
   if (LIST_KINDS.includes(name) && !initial) loadList(name);
+  if (name === "today") loadTodayRuns();
   if (location.hash.slice(1) !== name) history[initial ? "replaceState" : "pushState"](null, "", "#" + name);
 }
 
@@ -609,6 +646,112 @@ function showMessages(id) {
 }
 
 
+// ---------------------------------------------------------------- Vandaag (ontwerp: Vandaag, desktop en gsm)
+let todayRuns = null;
+async function loadTodayRuns() {
+  try { todayRuns = await get(`/api/monitor/${$("#hotel").value}/runs`); } catch (e) { todayRuns = null; }
+  renderToday();
+}
+const addDays = (iso, n) => { const [y, m, d] = iso.split("-").map(Number); return new Date(Date.UTC(y, m - 1, d + n)).toISOString().slice(0, 10); };
+const yn = (cls, ic, txt) => `<span class="yn ${cls}">${IC(ic, 14, cls === "na" ? 2 : 2.4)}${esc(txt)}</span>`;
+
+function renderToday() {
+  const el = $("#tab-today");
+  if (!el || !rows) return;
+  const today = todayIso(), tomorrow = addDays(today, 1);
+  const live = rows.filter(r => r.status !== "cancelled");
+  const arrT = live.filter(r => r.arrival === today), arrM = live.filter(r => r.arrival === tomorrow);
+  const deps = live.filter(r => r.departure === today), inHouse = live.filter(r => r.arrival <= today && r.departure > today);
+  const codeSent = r => r.messages.some(m => m.type === "access_code" && m.ok);
+  const codeFailed = r => r.messages.some(m => m.type === "access_code" && !m.ok) && !codeSent(r);
+  const unpaid = r => r.paid === false;
+  const failedRows = live.filter(r => { const l = msgLast(r); return l && l.failed && r.departure >= today; });
+  const labels = r => [(r.pms_labels || []).some(l => /ontbijt|breakfast/i.test(l)) ? `<span class="tag t-bf">Ontbijt</span>` : "", r.stairs ? `<span class="tag t-st">${esc(t("r_stairs"))}</span>` : ""].filter(Boolean).join(" ") || `<span class="muted small">${esc(t("td_none"))}</span>`;
+  const gLink = r => `<a class="nm" href="#" data-open="${esc(r.id)}">${esc(r.guest)}</a><div class="small muted">#${esc(r.booking_number)}</div>`;
+  const room = r => esc(r.rooms.join(" + ") || r.room_type);
+  // Vraagt aandacht
+  const att = [];
+  failedRows.forEach(r => { const last = [...r.messages].filter(m => !m.ok).pop(); att.push(["err", P.warn, t("td_a_failed", esc(stepShort(last.type)), esc(r.guest), esc([t(CH[last.channel] || last.channel), last.to, last.error].filter(Boolean).join(", "))), `<a class="btn sm" href="#" data-open="${esc(r.id)}">${esc(t("td_a_resend"))}</a>`]); });
+  arrT.filter(unpaid).forEach(r => att.push(["warn", P.euro, t("td_a_unpaid", esc(r.guest), r.open_amount ? esc(eur(r.open_amount)) : ""), `<a class="btn2 sm" href="#" data-open="${esc(r.id)}">${esc(t("td_a_open"))}</a>`]));
+  const noForm = [...arrT.map(r => [r, "td_today_s"]), ...arrM.map(r => [r, "td_tomorrow_s"])].filter(([r]) => !r.checkin_completed_at);
+  if (noForm.length) att.push(["warn", P.mail, t("td_a_form", noForm.map(([r, w]) => `${esc(r.guest)} (${esc(t(w))})`).join(", ")), `<a class="btn2 sm" href="#res" data-go="res">${esc(t("td_a_view"))}</a>`]);
+  const bl = listData.breakfast;
+  if (bl && bl.switch && !(bl.records || []).some(x => x.day === tomorrow)) att.push(["warn", P.coffee || P.clock, t("td_a_blist", esc(bl.time || "")), `<a class="btn2 sm" href="#breakfast" data-go="breakfast">${esc(t("td_a_make"))}</a>`]);
+  if ($("#today-cnt")) { $("#today-cnt").hidden = !failedRows.length; $("#today-cnt").textContent = failedRows.length; }
+  const attHtml = att.map(([k, ic, txt, btn]) => `<div class="att ${k}">${IC(ic, 18)}<div class="lt">${txt}</div>${btn}</div>`).join("");
+  // Tabellen met aankomsten
+  const arrTable = (title, list, isToday) => `<section class="card"><div class="ch"><h2 class="ct">${IC(P.bed)} ${esc(title)}</h2>${isToday ? `<a class="btn3" href="#res" data-go="res">${esc(t("td_all_res"))}</a>` : ""}</div><div class="tbox"><table>
+    <thead><tr><th>${esc(t("td_c_guest"))}</th><th>${esc(t("td_c_room"))}</th><th>${esc(t("td_c_form"))}</th><th>${esc(t("td_c_paid"))}</th><th>${esc(t("td_c_code"))}</th><th>${esc(t("td_c_mail"))}</th><th>${esc(t("td_c_labels"))}</th></tr></thead><tbody>
+    ${list.map(r => {
+      const form = r.checkin_completed_at ? yn("y", P.check, t("td_filled")) : yn("n", P.warn, t("td_notfilled"));
+      const paid = r.paid === false ? yn("n", P.warn, t("td_open")) : r.paid ? yn("y", P.check, t("td_paid")) : yn("na", P.clock, "?");
+      const code = (r.access_codes || []).length ? yn("y", P.check, t("td_made")) : r.paid === false ? yn("n", P.warn, t("td_waitpay")) : yn("na", P.clock, r.access_valid_from ? dday(r.access_valid_from) : t("td_coming"));
+      const mail = codeSent(r) ? yn("y", P.check, t("td_sent")) : codeFailed(r) ? yn("n", P.warn, t("td_notsent")) : r.paid === false ? `<span class="yn na">${esc(t("td_wait"))}</span>` : `<span class="yn na">${esc(t("td_coming"))}</span>`;
+      const warn = !r.checkin_completed_at || r.paid === false || codeFailed(r);
+      return `<tr class="${warn ? "warnrow" : ""}"><td>${gLink(r)}</td><td>${room(r)}</td><td>${form}</td><td>${paid}</td><td>${code}</td><td>${mail}</td><td>${labels(r)}</td></tr>`;
+    }).join("") || `<tr><td colspan="7" class="muted">${esc(t("td_no_arr"))}</td></tr>`}</tbody></table></div></section>`;
+  const depCard = `<section class="card"><div class="ch"><h2 class="ct">${IC('<path d="M5 21V4a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v17"/><path d="M3 21h18"/><circle cx="15" cy="12" r="1"/>')} ${esc(t("td_deps"))}</h2></div><div class="cb">
+    ${deps.map(r => `<div class="li"><div class="lt"><a class="nm" href="#" data-open="${esc(r.id)}">${esc(r.guest)}</a> <span class="muted">${esc(t("td_room", r.rooms.join(", ")))}</span>${r.open_amount > 0 ? `<div class="small muted">${esc(t("td_openst_x", eur(r.open_amount)))}</div>` : ""}</div>
+      ${r.open_amount > 0 ? `<span class="badge b-warn">${IC(P.warn, 14, 2.4)}${esc(t("td_openst"))}</span>` : (r.room_statuses || []).includes("checkout") ? `<span class="badge b-ok">${IC(P.check, 14, 2.4)}${esc(t("td_left"))}</span>` : ""}</div>`).join("") || `<span class="muted small">${esc(t("td_none"))}</span>`}</div></section>`;
+  const guestsIn = inHouse.reduce((n, r) => n + (r.guests || 0), 0), roomsIn = inHouse.reduce((n, r) => n + Math.max(1, r.rooms.length), 0);
+  const nowCard = `<section class="card"><div class="ch"><h2 class="ct">${IC(P.users)} ${esc(t("td_now"))}</h2><span class="small muted">${esc(t("td_nowcount", roomsIn, guestsIn))}</span></div><div class="cb">
+    ${inHouse.slice(0, 3).map(r => `<div class="li"><div class="lt"><a class="nm" href="#" data-open="${esc(r.id)}">${esc(r.guest)}</a> <span class="muted">${esc(t("td_room", r.rooms.join(", ")))}${r.guests != null ? ", " + esc(t("r_p", r.guests)) : ""}</span></div><span class="small muted">${esc(t("td_until", dday(r.departure)))}</span></div>`).join("")}
+    ${inHouse.length > 3 ? `<a class="btn3" href="#res" data-go="res" style="padding:0">${esc(t("td_more", inHouse.length - 3))}</a>` : ""}</div></section>`;
+  // Rechts: robot, berichten, lijsten, openstaand
+  const runs = (todayRuns && todayRuns.runs) || [], lastRun = runs.find(x => x.task === "nieuwe_reservaties") || runs[0];
+  const runOk = lastRun ? lastRun.ok !== false && !lastRun.error : true;
+  const robot = `<section class="card"><div class="ch"><h2 class="ct">${IC('<rect x="4" y="8" width="16" height="12" rx="2"/><path d="M12 4v4M9 13v1M15 13v1M9.5 17h5"/><circle cx="12" cy="3.5" r="1"/>')} ${esc(t("td_robot"))}</h2>${lastRun ? `<span class="badge ${runOk ? "b-ok" : "b-err"}">${IC(runOk ? P.check : P.warn, 14, 2.4)}${esc(t(runOk ? "td_robot_ok" : "td_robot_err"))}</span>` : ""}</div><div class="cb">
+    ${lastRun ? `<dl class="kv"><dt>${esc(t("td_last"))}</dt><dd>${esc(dtime(lastRun.started_at))}${lastRun.finished_at ? `, ${Math.round((new Date(lastRun.finished_at) - new Date(lastRun.started_at)) / 1000)} s` : ""}</dd><dt>${esc(t("td_result"))}</dt><dd>${esc(lastRun.error || t("td_res_x", lastRun.new || 0, Math.max(0, (lastRun.found || 0) - (lastRun.new || 0))))}</dd></dl>` : ""}
+    <div class="row"><button class="btn" type="button" id="td-run" ${todayRuns && todayRuns.can_run && !todayRuns.running ? "" : "disabled"}>${IC('<path d="M7 4.5v15l12-7.5z"/>', 14)}${esc(t("td_run"))}</button><a class="btn3" href="settings.html#robot">${esc(t("td_log"))}</a></div></div></section>`;
+  const dueToday = live.flatMap(r => (r.plan || []).filter(p => (p.state === "planned" || p.state === "due") && p.due && p.due.slice(0, 10) === today).map(p => ({ r, p }))).sort((a, b) => a.p.due.localeCompare(b.p.due));
+  const msgs = `<section class="card"><div class="ch"><h2 class="ct">${IC(P.mail)} ${esc(t("td_msgs"))}</h2></div><div class="cb">
+    ${failedRows.length ? `<div class="att err" style="padding:8px 10px">${IC(P.warn, 16)}<div class="lt">${t("td_msgs_failed", failedRows.length, failedRows.slice(0, 2).map(r => esc(stepShort(msgLast(r) && [...r.messages].filter(m => !m.ok).pop().type) + " " + r.guest)).join(", "))}</div></div>` : ""}
+    <div class="lbl" style="margin-top:4px">${esc(t("td_msgs_today", dueToday.length))}</div>
+    ${dueToday.slice(0, 4).map(({ r, p }) => `<div class="li"><div class="lt small"><b>${esc(stepShort(p.step))}</b> ${esc(r.guest)}</div><span class="small muted mono">${esc(p.due.length > 10 ? new Date(p.due).toLocaleTimeString(locale(), { hour: "2-digit", minute: "2-digit" }) : "")}</span></div>`).join("")}
+    ${dueToday.length > 4 ? `<a class="btn3" href="#res" data-go="res" style="padding:0">${esc(t("td_more", dueToday.length - 4))}</a>` : ""}</div></section>`;
+  const lrow = (kind, day, when) => {
+    const d = listData[kind], x = d && (d.records || []).find(r => r.day === day);
+    const name = t(kind === "breakfast" ? "td_bl" : "td_cl_today");
+    if (x) return `<div class="li"><div class="lt"><b>${esc(name)}</b> ${esc(t(when))}<div class="small muted">${esc(t("td_l_made", dtime(x.generated_at), x.sent && x.sent.length ? ", " + t("td_l_sent").toLowerCase() : ""))}</div></div>${x.sent && x.sent.length ? `<span class="badge b-ok">${IC(P.check, 14, 2.4)}${esc(t("td_l_sent"))}</span>` : `<span class="badge b-info">${esc(t("td_l_made_b"))}</span>`}</div>`;
+    return `<div class="li"><div class="lt"><b>${esc(name)}</b> ${esc(t(when))}<div class="small muted">${esc(d ? t("td_l_auto", d.time) : "")}</div></div><span class="badge b-wait">${IC(P.clock, 14, 2.4)}${esc(t("td_l_notyet"))}</span></div>`;
+  };
+  const lists = `<section class="card"><div class="ch"><h2 class="ct">${IC('<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1M8.5 10h7M8.5 14h7M8.5 18h4"/>')} ${esc(t("td_lists"))}</h2></div><div class="cb">
+    ${lrow("cleaning", today, "td_l_today")}${lrow("breakfast", today, "td_l_today")}${lrow("breakfast", tomorrow, "td_l_tomorrow")}
+    <div class="row"><a class="btn2 sm" href="#breakfast" data-go="breakfast">${IC(P.eye, 15)}${esc(t("td_a_view"))}</a></div></div></section>`;
+  const soon = live.filter(r => r.open_amount > 0 && r.arrival >= today && r.arrival <= addDays(today, 7)).sort((a, b) => a.arrival.localeCompare(b.arrival));
+  const openCard = `<section class="card"><div class="ch"><h2 class="ct">${IC(P.euro)} ${esc(t("td_open_soon"))}</h2></div><div class="cb">
+    ${soon.slice(0, 5).map(r => `<div class="li"><div class="lt"><a class="nm" href="#" data-open="${esc(r.id)}">${esc(r.guest)}</a><div class="small muted">${esc(r.arrival === today ? t("td_today_s") : r.arrival === tomorrow ? t("td_tomorrow_s") : dday(r.arrival))}, ${esc(r.paid === false ? t("td_room", r.rooms.join(", ")) : t("td_tax"))}</div></div><b class="mono">${esc(eur(r.open_amount))}</b></div>`).join("") || `<span class="muted small">${esc(t("td_none"))}</span>`}</div></section>`;
+  const now = new Date();
+  const dateLong = now.toLocaleDateString(locale(), { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+  const upd = lastLoad ? new Date(lastLoad).toLocaleTimeString(locale(), { hour: "2-digit", minute: "2-digit" }) : "";
+  const kpi = (n, l, cls = "") => `<div class="stat ${cls}"><span class="n"${cls === "err" ? ' style="color:#8B2E2E"' : ""}>${n}</span><span class="l">${esc(l)}</span></div>`;
+  const mStatus = r => !r.checkin_completed_at ? `<span class="badge b-warn">${IC(P.warn, 14, 2.4)}${esc(t("td_miss_form"))}</span>` : r.paid === false ? `<span class="badge b-warn">${IC(P.warn, 14, 2.4)}${esc(t("td_miss_pay"))}</span>` : codeFailed(r) ? `<span class="badge b-warn">${IC(P.warn, 14, 2.4)}${esc(t("td_miss_code"))}</span>` : `<span class="badge b-ok">${IC(P.check, 14, 2.4)}${esc(t("td_ok"))}</span>`;
+  el.innerHTML = `
+    <div class="d-only" style="display:contents">
+    <div class="ph"><div><h1>${esc(t("nav_today"))}</h1><div class="sub">${esc(t("td_update", dateLong, upd))}</div></div></div>
+    <div class="statgrid">${kpi(arrT.length, t("td_arr"))}${kpi(arrM.length, t("td_arr_tom"))}${kpi(deps.length, t("td_dep"))}${kpi(guestsIn, t("td_inhouse", roomsIn))}${kpi(failedRows.length, t("td_failed"), failedRows.length ? "err" : "")}</div>
+    <section class="card"><div class="ch"><h2 class="ct">${IC('<path d="M5 21V4M5 4h11l-2 4 2 4H5"/>')} ${esc(t("td_attn"))}</h2><span class="small muted">${esc(t("td_points", att.length))}</span></div><div class="cb" style="gap:8px">${attHtml || `<span class="muted small">${esc(t("td_none_attn"))}</span>`}</div></section>
+    <div class="cols"><div class="col-main">${arrTable(t("td_arr_today", dday(today)), arrT, true)}${arrTable(t("td_arr_tomorrow", dday(tomorrow)), arrM, false)}<div class="grid2">${depCard}${nowCard}</div></div>
+      <div class="col-side">${robot}${msgs}${lists}${openCard}</div></div>
+    </div>
+    <div class="m-only" style="display:flex;flex-direction:column;gap:14px">
+      <div><div class="mh1">${esc(t("nav_today"))}</div><div class="small muted">${esc(dday(today))} ${today.slice(0, 4)}, update ${esc(upd)}</div></div>
+      ${att.slice(0, 2).map(([k, ic, txt, btn]) => `<div class="att ${k}" style="flex-wrap:wrap">${IC(ic, 18)}<div class="lt">${txt}</div>${btn.replace('class="btn sm"', 'class="btn sm" style="width:100%"')}</div>`).join("")}
+      <div class="statgrid" style="grid-template-columns:repeat(3,minmax(0,1fr));gap:8px">${kpi(arrT.length, t("td_arrivals_m"))}${kpi(deps.length, t("td_deps_m"))}${kpi(guestsIn, t("td_inhouse_m"))}</div>
+      <section class="mcard"><div class="ct">${esc(t("td_arr_today", "").replace(/,\s*$/, ""))}</div>${arrT.map(r => `<a href="#" class="li" data-open="${esc(r.id)}" style="text-decoration:none;color:#2B2F38"><div class="lt"><b>${esc(r.guest)}</b> <span class="muted">${esc(t("td_room", r.rooms.join(" + ")))}</span><div class="row" style="gap:4px;margin-top:4px">${mStatus(r)} ${labels(r)}</div></div>${ICO.chev}</a>`).join("") || `<span class="muted small">${esc(t("td_no_arr"))}</span>`}</section>
+      <section class="mcard"><div class="ct">${esc(t("td_arr_tomorrow", dday(tomorrow)))}</div><a href="#res" data-go="res" class="li" style="text-decoration:none;color:#2B2F38"><div class="lt"><b>${esc(t("td_tomorrow_n", arrM.length))}</b><div class="small muted">${esc(t("td_tomorrow_open", arrM.filter(r => !r.checkin_completed_at).length, arrM.filter(unpaid).length))}</div></div>${ICO.chev}</a></section>
+      ${robot.replace('class="card"', 'class="mcard"')}
+      ${lists.replace('class="card"', 'class="mcard"')}
+    </div>`;
+  el.querySelectorAll("[data-open]").forEach(a => a.onclick = e => { e.preventDefault(); openDetail(a.dataset.open); });
+  el.querySelectorAll("[data-go]").forEach(a => a.onclick = e => { e.preventDefault(); showTab(a.dataset.go); });
+  el.querySelectorAll("#td-run").forEach(b => b.onclick = async () => {
+    b.disabled = true;
+    await apiFetch(`${API}/api/monitor/${$("#hotel").value}/run`, { method: "POST" }).catch(() => null);
+    setTimeout(loadTodayRuns, 5000);
+  });
+}
+
 // ---------------------------------------------------------------- detail van een reservatie (ontwerp: Reservatie detail)
 const IC = (d, n = 15, w = 2) => `<svg width="${n}" height="${n}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
 const P = {
@@ -623,6 +766,7 @@ const P = {
   key: '<circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M17 6l3 3M14 9l2 2"/>', euro: '<path d="M17 6.5A7 7 0 1 0 17 17.5"/><path d="M4 10h9M4 14h9"/>',
   card: '<rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18M7 15h4"/>', plus: '<path d="M12 5v14M5 12h14"/>',
   bed: '<path d="M3 18V7"/><path d="M21 18v-5a3 3 0 0 0-3-3h-8v6"/><path d="M3 15h18"/><circle cx="6.5" cy="11" r="1.5"/>',
+  coffee: '<path d="M4 9h13v5a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5z"/><path d="M17 10h1.5a2.5 2.5 0 0 1 0 5H17"/><path d="M8 3v3M12 3v3"/>',
 };
 const chIcon = ch => IC(ch === "email" ? P.mail : ch === "whatsapp" ? P.wa : P.phone, 13);
 const eur = x => x == null ? "" : "EUR " + Number(x).toLocaleString("nl-BE", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -1154,6 +1298,7 @@ function render() {
   // Popup altijd met verse gegevens (bv. net ingevuld formulier, nieuw bericht)
   document.querySelectorAll("#res [data-msgs], #mres [data-msgs]").forEach(a => a.onclick = e => { e.preventDefault(); openDetail(a.dataset.msgs); });
   renderDetail();
+  renderToday();
 }
 
 async function loadRuns() {
