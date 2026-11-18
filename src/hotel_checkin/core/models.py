@@ -29,6 +29,7 @@ class Channel(str, Enum):
     WHATSAPP = "whatsapp"
     SALTO = "salto"  # pincode maken (logboek van de code-mail)
     FORM = "form"  # de gast vulde het check-in-formulier in (logboek)
+    APP = "app"  # de gast deed iets in de gast-app, bv. een deur openen (logboek)
     PMS = "lighthouse"  # iets in Lighthouse geschreven (logboek), bv. de overschrijving van Booking.com
 
 

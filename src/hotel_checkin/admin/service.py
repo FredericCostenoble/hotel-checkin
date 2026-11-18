@@ -35,7 +35,8 @@ def hotels() -> list[dict]:
                           "berichten": send_messages.switch(h, "berichten"),
                           "ontbijt_labels": send_messages.switch(h, "ontbijt_labels"),
                           "ontbijtlijst": send_messages.switch(h, "ontbijtlijst"),
-                          "kuislijst": send_messages.switch(h, "kuislijst")}}
+                          "kuislijst": send_messages.switch(h, "kuislijst"),
+                          "ontgrendelen": send_messages.switch(h, "ontgrendelen")}}
             for h in list_hotels()]
 
 

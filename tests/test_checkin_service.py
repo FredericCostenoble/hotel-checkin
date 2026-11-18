@@ -133,18 +133,78 @@ def test_form_submission_kept_and_reapplied():
     assert service.reapply_forms("lucca") == 0
 
 
-def test_pay_button_on_form():
-    """Betaalknop op het formulier alleen met een betaallink van Lighthouse en iets dat openstaat."""
+def test_pay_info_in_app():
+    """Openstaand bedrag volgens de folio, met de betaallink van Lighthouse als die er is."""
     _save()
-    assert service.form_data("tok")["pay"] is None
+    assert service.form_data("tok")["pay"] is None  # folio nog niet gelezen
     r = repo.get_reservation("lucca", "R1")
-    r.pay_link, r.open_amount = "https://pay.example/abc", 16.8
+    r.open_amount, r.guest_count = 16.8, 2
+    r.folio = [{"label": "Kamer", "qty": None, "amount": 300.0}, {"label": "Citytax", "qty": 4, "amount": 16.8}]
     repo.save_reservation(r)
-    assert service.form_data("tok")["pay"] == {"amount": "€ 16,80", "url": "https://pay.example/abc"}
+    pay = service.form_data("tok")["pay"]
+    assert pay["amount"] == "€\u00a016,80" and pay["url"] is None and not pay["paid"] and pay["kind"] == "city_tax"
+    assert pay["tax"] == {"persons": 2, "nights": 2, "rate": "€\u00a04,20"}
+    r.pay_link = "https://pay.example/abc"
+    repo.save_reservation(r)
+    assert service.form_data("tok")["pay"]["url"] == "https://pay.example/abc"
     r.open_amount = 0
     repo.save_reservation(r)
-    assert service.form_data("tok")["pay"] is None
+    assert service.form_data("tok")["pay"]["paid"] and service.form_data("tok")["pay"]["url"] is None
     assert service.form_data("voorbeeld-lucca")["pay"]["url"]  # voorbeeld in de monitor
+
+
+def _at(day, hour):
+    from datetime import datetime
+    from zoneinfo import ZoneInfo
+
+    return datetime(day.year, day.month, day.day, hour, tzinfo=ZoneInfo("Europe/Brussels"))
+
+
+def test_phases_and_code_only_after_checkin_and_payment():
+    _save()
+    r = repo.get_reservation("lucca", "R1")
+    r.rooms, r.paid = ["16"], True
+    r.access_codes = [{"room": "16", "pin": "2242", "user_id": "u", "group_id": "g"}]
+    r.access_valid_from = _at(date(2099, 1, 1), 14)
+    repo.save_reservation(r)
+    d = service.form_data("tok", now=_at(date(2098, 12, 30), 10))
+    assert d["phase"] == "code" and d["access"]["codes"] == []  # gegevens nog niet ingevuld: geen code
+    assert d["access"]["code_date"] == "2098-12-30"
+    ok, _ = service.submit("tok", {"email": "anna@example.com", "language": "nl"})
+    assert ok
+    d = service.form_data("tok", now=_at(date(2098, 12, 30), 10))
+    assert d["completed"] and d["access"]["codes"] == [{"room": "16", "pin": "2242"}]
+    assert d["access"]["unlock"] is None  # schakelaar ontgrendelen staat uit
+    assert service.form_data("tok", now=_at(date(2099, 1, 1), 15))["phase"] == "stay"
+    after = service.form_data("tok", now=_at(date(2099, 1, 3), 12))
+    assert after["phase"] == "after" and after["state"] == "open" and after["access"]["codes"] == []
+    assert service.form_data("tok", now=_at(date(2099, 1, 30), 12))["state"] == "closed"
+    # kamer niet betaald: geen code
+    r = repo.get_reservation("lucca", "R1")
+    r.paid, r.open_amount = None, 300.0
+    repo.save_reservation(r)
+    assert service.form_data("tok", now=_at(date(2098, 12, 30), 10))["access"]["codes"] == []
+
+
+def test_submit_refused_after_checkout():
+    _save()
+    from hotel_checkin.checkin import service as s
+
+    real = s._now
+    try:
+        s._now = lambda hotel_id: _at(date(2099, 1, 4), 9)
+        assert s.submit("tok", {"email": "a@b.be"}) == (False, {"state": "closed"})
+    finally:
+        s._now = real
+
+
+def test_demo_variants():
+    for v in service.DEMO_VARIANTS:
+        assert service.form_data(f"voorbeeld-lucca.{v}")["demo"]
+    assert service.form_data("voorbeeld-lucca.onbekend") is None
+    assert service.form_data("voorbeeld-lucca.stay")["access"]["codes"]
+    assert service.unlock("voorbeeld-lucca.stay", "front") == (True, "opened")
+    assert not service.pay_started("voorbeeld-lucca")
 
 
 def test_checkin_suffix(monkeypatch):

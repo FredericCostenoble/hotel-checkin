@@ -16,7 +16,7 @@ de bouwblokken na elkaar op. Elk bouwblok doet één ding.
 | `access/salto.py` | Code reserveren voor gast, kamer en periode | Salto KS Connect API |
 | `voice/ivr.py` | Nachtelijke oproepen automatisch afhandelen | Twilio Voice |
 | `guests/repository.py` | Reservaties, berichtenlog, marketing-blokkeerlijst | Azure Table Storage |
-| `checkin/service.py` + `web/checkin/` | Online check-in-formulier (checkin.hotellucca.be) | Pagina's: Azure Static Web Apps (gratis), API: Function App |
+| `checkin/service.py` + `web/checkin/` | Gast-app (checkin.hotellucca.be): online check-in, betalen, pincode, deuren openen | Pagina's: Azure Static Web Apps (gratis), API: Function App |
 | `messaging/templates.py` | Berichten in NL/FR/EN/DE, mailopmaak | Teksten in `messaging/texts/`, instellingen per hotel in `config/hotels/<hotel_id>.toml` |
 | `processes/` | Processen die de bouwblokken combineren | |
 
@@ -74,6 +74,17 @@ python -m hotel_checkin.checkin.devserver
 ```
 
 Open de link die verschijnt (`?r=demo`). Opslag in het geheugen met voorbeeldreservaties.
+De gast-app per fase bekijken (ook in TST en PRD, niets wordt bewaard en geen deur gaat open):
+`?r=voorbeeld-lucca` (nog niet ingecheckt), `.done` (ingecheckt), `.unpaid` (kamer niet betaald), `.code`
+(code klaar), `.stay` (tijdens het verblijf, met schuifknoppen), `.rooms` (twee kamers), `.after` (na vertrek).
+
+### Gast-app
+
+Eén link per reservatie (`?r=<token>`, willekeurig geheim van 192 bits). De gast vult eerst zijn gegevens in;
+daarna toont de app wat er te betalen is (folio in Lighthouse), zijn pincode (alleen als de kamer betaald is en
+de code bij Salto gemaakt is) en tijdens het verblijf een schuifknop per deur (`processes/guest_unlock.py`,
+hoofdschakelaar `ontgrendelen`, standaard uit). Klikt de gast op Betalen, dan leest de robot de reservatie meteen
+opnieuw (`processes/guest_payment.py`). De pincode blijft altijd in de code-mail staan als vangnet.
 Met `--azure` gebruikt de server de echte opslag (`STORAGE_TABLE_ENDPOINT`).
 
 In Azure staan de pagina's (`web/checkin`) in Static Web Apps en draait de API in de Function App

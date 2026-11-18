@@ -196,6 +196,20 @@ class Handler(BaseHTTPRequestHandler):
             return None
         if not path.startswith("/api/checkin/"):
             return self._send(404, b"Not found", "text/plain")
+        parts = path[len("/api/checkin/"):].split("/")
+        if len(parts) == 2 and parts[1] in ("unlock", "pay"):
+            try:
+                payload = json.loads(self.rfile.read(int(self.headers.get("Content-Length", 0))) or b"{}")
+            except ValueError:
+                payload = {}
+            if parts[1] == "pay":
+                service.pay_started(parts[0])
+                return self._json(200, {"ok": True})
+            import time
+
+            time.sleep(1.5)  # zoals Salto: een paar seconden
+            ok, reason = service.unlock(parts[0], str((payload or {}).get("door") or ""))
+            return self._json(200 if ok else 403, {"ok": ok, "reason": reason})
         try:
             payload = json.loads(self.rfile.read(int(self.headers.get("Content-Length", 0))) or b"{}")
         except ValueError:
@@ -211,6 +225,7 @@ if __name__ == "__main__":
         repo.use_memory_store()
         seed()
     print(f"Check-in-formulier: http://localhost:{PORT}/?r=demo")
+    print(f"Gast-app per fase: http://localhost:{PORT}/?r=voorbeeld-lucca.stay (ook .before .done .unpaid .code .after .rooms)")
     print(f"Gast zonder gekende contactgegevens: http://localhost:{PORT}/?r=nieuw")
     print(f"Geannuleerde reservatie: http://localhost:{PORT}/?r=annule")
     print(f"Ongeldige link: http://localhost:{PORT}/?r=fout")

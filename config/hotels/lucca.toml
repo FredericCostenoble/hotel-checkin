@@ -12,6 +12,7 @@
 # ontbijt_labels: de robot zet het label ONTBIJT op het planbord bij wie ontbijt heeft (tarief met ontbijt,
 # of ontbijt voor alle personen en nachten in de folio).
 # ontbijtlijst en kuislijst: elke dag de lijst maken en versturen (processes/daily_lists.py), zie [ontbijtlijst] en [kuislijst].
+# ontgrendelen: gasten openen tijdens hun verblijf de voordeur en hun kamer met de gast-app (Salto, op afstand openen).
 # reservaties: de robot leest nieuwe en gewijzigde reservaties in Lighthouse (standaard aan). Staan alle schakelaars uit,
 # dan is de omgeving bevroren: de robot start niet meer en opent Lighthouse niet (bv. TST als PRD goed loopt).
 reservaties = true
@@ -20,6 +21,7 @@ berichten = false
 ontbijt_labels = false
 ontbijtlijst = false
 kuislijst = false
+ontgrendelen = false
 
 [hotel]
 naam = "Hotel Lucca"

@@ -46,14 +46,14 @@ const T = {
     wf_params: "Parameters (alle flows)", wf_params_moved: "Toeristenbelasting en munt staan bij Instellingen > Hotel.",
     wf_seen: "Waarden van Via (Lighthouse) die nu bij deze flow horen:", wf_seen_none: "Nog geen reservaties in deze flow.", p_city_tax: "Toeristenbelasting", p_unit: "Per", unit_person_night: "persoon per nacht",
     unit_person_stay: "persoon per verblijf", p_currency: "Munt", wf_not_ready: "nog niet gebouwd (Salto)", wf_off: "uit",
-    returning: n => `terugkerend (${n}×)`, mg_message: "Bericht", mg_time: "Tijdstip", short_confirmation: "Bevestiging", short_checkin_form: "Formulier ingevuld", ch_lighthouse: "Lighthouse", short_booking_payout: "Overschrijving Booking.com", short_pay_request: "Betaalverzoek in Lighthouse", short_pms_sync: "Code en status in Lighthouse", short_room_change: "Kamerwissel", short_incoming: "Antwoord van de gast", ch_form: "formulier", short_reminder: "Herinnering", short_access_code: "Code-mail", mg_channel: "Kanaal", mg_to: "Naar",
+    returning: n => `terugkerend (${n}×)`, mg_message: "Bericht", mg_time: "Tijdstip", short_confirmation: "Bevestiging", short_checkin_form: "Formulier ingevuld", ch_lighthouse: "Lighthouse", short_booking_payout: "Overschrijving Booking.com", short_pay_request: "Betaalverzoek in Lighthouse", short_pms_sync: "Code en status in Lighthouse", short_room_change: "Kamerwissel", short_incoming: "Antwoord van de gast", ch_form: "formulier", ch_app: "gast-app", short_app_unlock: "Deur geopend (gast-app)", short_app_pay: "Betaalknop (gast-app)", short_reminder: "Herinnering", short_access_code: "Code-mail", mg_channel: "Kanaal", mg_to: "Naar",
     mg_title: (num, guest) => `Berichten voor ${guest} (${num})`, mg_click: "Klik voor alle details",
     mg_plan: "Tijdlijn", mg_attempts: "Alle pogingen", mg_next: "volgt",
     pl_sent: "verstuurd op", pl_failed: "mislukt op", pl_planned: "gepland", pl_due: "wordt nu verstuurd", pl_will: "wordt verstuurd op", pl_wont: "wordt niet verstuurd", pl_was: "gepland", pl_skipped: "valt weg", pl_off: "niet actief", pl_missed: "niet verstuurd, te laat", lg_sent: "verstuurd", lg_failed: "mislukt", lg_planned: "komt nog", lg_missed: "te laat, niet verstuurd", lg_cond: "voorwaarde niet voldaan", lg_off: "niet actief", pl_cond: "niet verstuurd, voorwaarde", stairs_tag: "trappen", stairs_tip: "Formulier: een van de gasten kan moeilijk trappen lopen (lagere verdieping indien vrij).", stairs_in_lh: w => `In de interne memo in Lighthouse sinds ${w}.`, form_yes: "✓ formulier ingevuld", form_no: "formulier niet ingevuld", sb_open: "Versturen", sb_again: "Opnieuw versturen",
     rss_before_start: "voor de startdatum", rss_booked_late: "te laat geboekt", rss_stored_late: "boeking al lang achter de rug", rss_later_due: "zit in de latere mail",
     rss_window_passed: "moment voorbij", rss_messaging_off: "berichten uit", rss_disabled: "stap uit", rss_not_ready: "nog niet gebouwd", sb_other: "Ander adres...", sb_bad_email: "Ongeldig e-mailadres", sb_bad_phone: "Ongeldig nummer (met landcode, bv. +32...)", src_test: "testadres", src_form: "check-in-formulier",
     src_form_extra: "extra, check-in-formulier", src_relay: "doorstuuradres", src_profile: "gastprofiel", src_used: "eerder gebruikt", src_earlier: "vroeger", sb_to: "naar", sb_go: "Versturen", sb_off: "(nog niet actief)", send_to: "Versturen naar...", send_to_ask: "Naar welk e-mailadres (of gsm-nummer met +32...) versturen? Het wordt bij de reservatie bewaard.", ct_add: "E-mailadres of gsm-nummer toevoegen", ct_email: "e-mailadres", ct_phone: "gsm-nummer met landcode (+32...)", env_to_prd: "Naar PRD", env_bar_tst: "TESTOMGEVING (TST): berichten gaan alleen naar het testadres, nooit naar gasten",
-    env_bar_prd: "PRODUCTIE (PRD): berichten gaan naar echte gasten", env_to_tst: "Naar TST", sw_title: "Hoofdschakelaars (instellingen, tabblad Hotel)", sw_payout: "Overschrijvingen", sw_messages: "Gastcommunicatie", sw_breakfast: "Ontbijt labels", sw_on: "AAN", sw_off: "UIT",
+    env_bar_prd: "PRODUCTIE (PRD): berichten gaan naar echte gasten", env_to_tst: "Naar TST", sw_title: "Hoofdschakelaars (instellingen, tabblad Hotel)", sw_payout: "Overschrijvingen", sw_messages: "Gastcommunicatie", sw_breakfast: "Ontbijt labels", sw_unlock: "Deuren via app", sw_on: "AAN", sw_off: "UIT",
     env_confirm_prd: "Overschakelen naar PRODUCTIE? Daar gaan berichten naar echte gasten.", env_confirm_tst: "Overschakelen naar de testomgeving (TST)?", pl_not_sent: "niet verstuurd", relay_hint: "Doorstuuradres van het boekingsplatform, geen eigen adres van de gast.", relay_kept: "Doorstuuradres van het boekingsplatform. Bewaard, maar het eigen adres uit het check-in-formulier gaat voor.", mg_test_addr: "testadres", mg_for: "bedoeld voor", tab_hotel: "Hotel",
     hs_func: "Dagelijks", hs_tech: "Technisch",
     hs_intro: "Gegevens en instellingen van het hotel. Standaard uit het hotelbestand; wat u hier wijzigt, gaat voor (alleen in deze omgeving).",
@@ -139,14 +139,14 @@ const T = {
     wf_params: "Parameters (all flows)", wf_params_moved: "City tax and currency are under Settings > Hotel.",
     wf_seen: "Values of Via (Lighthouse) that now fall in this flow:", wf_seen_none: "No reservations in this flow yet.", p_city_tax: "City tax", p_unit: "Per", unit_person_night: "person per night",
     unit_person_stay: "person per stay", p_currency: "Currency", wf_not_ready: "not built yet (Salto)", wf_off: "off",
-    returning: n => `returning (${n}×)`, mg_message: "Message", mg_time: "Time", short_confirmation: "Confirmation", short_checkin_form: "Form filled in", ch_lighthouse: "Lighthouse", short_booking_payout: "Booking.com bank transfer", short_pay_request: "Payment request in Lighthouse", short_pms_sync: "Code and status in Lighthouse", short_room_change: "Room change", short_incoming: "Reply from the guest", ch_form: "form", short_reminder: "Reminder", short_access_code: "Code mail", mg_channel: "Channel", mg_to: "To",
+    returning: n => `returning (${n}×)`, mg_message: "Message", mg_time: "Time", short_confirmation: "Confirmation", short_checkin_form: "Form filled in", ch_lighthouse: "Lighthouse", short_booking_payout: "Booking.com bank transfer", short_pay_request: "Payment request in Lighthouse", short_pms_sync: "Code and status in Lighthouse", short_room_change: "Room change", short_incoming: "Reply from the guest", ch_form: "form", ch_app: "guest app", short_app_unlock: "Door opened (guest app)", short_app_pay: "Pay button (guest app)", short_reminder: "Reminder", short_access_code: "Code mail", mg_channel: "Channel", mg_to: "To",
     mg_title: (num, guest) => `Messages for ${guest} (${num})`, mg_click: "Click for all details",
     mg_plan: "Timeline", mg_attempts: "All attempts", mg_next: "next",
     pl_sent: "sent on", pl_failed: "failed on", pl_planned: "planned", pl_due: "being sent now", pl_will: "will be sent on", pl_wont: "will not be sent", pl_was: "planned", pl_skipped: "skipped", pl_off: "not active", pl_missed: "not sent, too late", lg_sent: "sent", lg_failed: "failed", lg_planned: "still to come", lg_missed: "too late, not sent", lg_cond: "condition not met", lg_off: "not active", pl_cond: "not sent, condition", stairs_tag: "stairs", stairs_tip: "Form: one of the guests has difficulty climbing stairs (lower floor if available).", stairs_in_lh: w => `In the internal memo in Lighthouse since ${w}.`, form_yes: "✓ form filled in", form_no: "form not filled in", sb_open: "Send", sb_again: "Send again",
     rss_before_start: "before start date", rss_booked_late: "booked too late", rss_stored_late: "booking long past", rss_later_due: "included in the later mail",
     rss_window_passed: "moment passed", rss_messaging_off: "messages off", rss_disabled: "step off", rss_not_ready: "not built yet", sb_other: "Other address...", sb_bad_email: "Invalid e-mail address", sb_bad_phone: "Invalid number (with country code, e.g. +32...)", src_test: "test address", src_form: "check-in form",
     src_form_extra: "extra, check-in form", src_relay: "relay address", src_profile: "guest profile", src_used: "used before", src_earlier: "earlier", sb_to: "to", sb_go: "Send", sb_off: "(not active yet)", send_to: "Send to...", send_to_ask: "Send to which e-mail address (or mobile number with +32...)? It is saved with the reservation.", ct_add: "Add e-mail address or mobile number", ct_email: "e-mail address", ct_phone: "mobile number with country code (+32...)", env_to_prd: "To PRD", env_bar_tst: "TEST ENVIRONMENT (TST): messages only go to the test address, never to guests",
-    env_bar_prd: "PRODUCTION (PRD): messages go to real guests", env_to_tst: "To TST", sw_title: "Main switches (settings, Hotel tab)", sw_payout: "Bank transfers", sw_messages: "Guest communication", sw_breakfast: "Breakfast labels", sw_on: "ON", sw_off: "OFF",
+    env_bar_prd: "PRODUCTION (PRD): messages go to real guests", env_to_tst: "To TST", sw_title: "Main switches (settings, Hotel tab)", sw_payout: "Bank transfers", sw_messages: "Guest communication", sw_breakfast: "Breakfast labels", sw_unlock: "Doors via app", sw_on: "ON", sw_off: "OFF",
     env_confirm_prd: "Switch to PRODUCTION? Messages there go to real guests.", env_confirm_tst: "Switch to the test environment (TST)?", pl_not_sent: "not sent", relay_hint: "Relay address of the booking platform, not the guest's own address.", relay_kept: "Relay address of the booking platform. Kept, but the guest's own address from the check-in form takes precedence.", mg_test_addr: "test address", mg_for: "meant for", tab_hotel: "Hotel",
     hs_func: "Everyday", hs_tech: "Technical",
     hs_intro: "Hotel details and settings. Default from the hotel file; what you change here takes precedence (in this environment only).",
@@ -247,7 +247,7 @@ function renderSwitches() {
   el.hidden = !sw;
   if (!sw) return;
   el.title = t("sw_title");
-  el.innerHTML = [["reservaties", "sw_read"], ["overschrijvingen", "sw_payout"], ["berichten", "sw_messages"], ["ontbijt_labels", "sw_breakfast"], ["ontbijtlijst", "sw_blist"], ["kuislijst", "sw_clist"]].map(([k, label]) =>
+  el.innerHTML = [["reservaties", "sw_read"], ["overschrijvingen", "sw_payout"], ["berichten", "sw_messages"], ["ontbijt_labels", "sw_breakfast"], ["ontbijtlijst", "sw_blist"], ["kuislijst", "sw_clist"], ["ontgrendelen", "sw_unlock"]].map(([k, label]) =>
     // Groen = aan, grijs = uit (geen AAN/UIT in de tekst; staat wel in de tooltip)
     `<span class="sw ${sw[k] ? "on" : "off"}${NOT_BUILT.includes(k) ? " todo" : ""}" title="${esc(t(label))}: ${t(sw[k] ? "sw_on" : "sw_off")}">${esc(t(label))}${NOT_BUILT.includes(k) ? ` (${t("sw_not_built")})` : ""}</span>`).join("");
 }
@@ -397,7 +397,7 @@ async function load() {
 // ---------------------------------------------------------------- berichten per reservatie
 // In de lijst kort: per bericht één label (groen als het per alle kanalen lukte, rood als iets
 // mislukte). Klik: alle pogingen met kanaal, ontvanger, status en fout.
-const CH = { email: "ch_email", whatsapp: "ch_whatsapp", sms: "ch_sms", form: "ch_form", lighthouse: "ch_lighthouse" };
+const CH = { email: "ch_email", whatsapp: "ch_whatsapp", sms: "ch_sms", form: "ch_form", lighthouse: "ch_lighthouse", app: "ch_app" };
 function msgSummary(r) {
   if (!r.messages.length) {
     const next = (r.plan || []).find(p => p.state === "planned" || p.state === "due");
@@ -504,7 +504,7 @@ const isPrd = () => hotelNow().production === true;
 // Testadres of -nummer van deze omgeving voor een kanaal (leeg = niets versturen)
 const testTo = ch => ch === "email" ? hotelNow().test_email : hotelNow().test_phone;
 function toCell(m) {
-  if (m.channel === "form") return esc(m.to);  // ingevuld door de gast, niets verstuurd
+  if (m.channel === "form" || m.channel === "app") return esc(m.to);  // ingevuld door de gast, niets verstuurd
   if (isPrd() && (!m.delivered_to || m.delivered_to === m.to)) return esc(m.to);
   const test = m.delivered_to && m.delivered_to !== m.to ? m.delivered_to : (testTo(m.channel) || t("mg_test_addr"));
   return `<span class="tag warn">TEST</span> ${esc(test)}<div class="muted small">${esc(t("mg_for"))} ${esc(m.to)}</div>`;
@@ -1355,6 +1355,7 @@ const HS_TEXT = {
     "Ontbijt labels plaatsen",
     "De robot zet het label ONTBIJT op het planbord bij wie ontbijt heeft (tarief met ontbijt, of ontbijt voor alle personen en nachten in de folio). Geldt alleen voor deze omgeving."
    ],
+   "schakelaars.ontgrendelen": ["Deuren openen met de gast-app", "Gasten kunnen tijdens hun verblijf de voordeur en hun kamer openen met een schuifknop in de gast-app (Salto, op afstand openen). Alleen met een code, binnen de periode van de code. De pincode blijft altijd werken. Geldt alleen voor deze omgeving; buiten PRD alleen voor testgasten."],
    "schakelaars.reservaties": ["Reservaties lezen (robot)", "De robot leest nieuwe en gewijzigde reservaties in Lighthouse. Staan alle hoofdschakelaars uit, dan is deze omgeving bevroren: de robot start niet meer en opent Lighthouse niet. Geldt alleen voor deze omgeving."],
    "schakelaars.ontbijtlijst": ["Ontbijtlijst maken en versturen", "Elke dag de ontbijtlijst maken en versturen (instellingen Ontbijtlijst). In de monitor (tabblad Ontbijt) kan een lijst ook met de schakelaar uit gemaakt worden. Geldt alleen voor deze omgeving."],
    "schakelaars.kuislijst": ["Schoonmaaklijst maken en versturen", "Elke dag de schoonmaaklijst maken en versturen (instellingen Schoonmaaklijst). In de monitor (tabblad Schoonmaak) kan een lijst ook met de schakelaar uit gemaakt worden. Geldt alleen voor deze omgeving."],
@@ -1671,6 +1672,7 @@ const HS_TEXT = {
    ],
    "schakelaars.reservaties": ["Read reservations (robot)", "The robot reads new and changed reservations in Lighthouse. With all main switches off, this environment is frozen: the robot no longer starts and does not open Lighthouse. Applies to this environment only."],
    "schakelaars.ontbijtlijst": ["Make and send the breakfast list", "Make and send the breakfast list every day (settings Breakfast list). In the monitor (Breakfast tab) a list can also be made with the switch off. Applies to this environment only."],
+   "schakelaars.ontgrendelen": ["Open doors with the guest app", "During their stay, guests can open the front door and their room with a slider in the guest app (Salto remote opening). Only with a code, within the period of the code. The PIN code always keeps working. Applies to this environment only; outside PRD only for test guests."],
    "schakelaars.kuislijst": ["Make and send the cleaning list", "Make and send the cleaning list every day (settings Cleaning list). In the monitor (Cleaning tab) a list can also be made with the switch off. Applies to this environment only."],
    "ontbijtlijst.uur": ["Time", "Make and send every day at this time. You choose from the fixed times of the robot (setting Robot: every how many minutes): the list uses the robot run of that time, so no extra run. Ready after a few minutes."],
    "ontbijtlijst.dag": ["For which day", "1 = tomorrow, 0 = today."],

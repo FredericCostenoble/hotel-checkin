@@ -19,6 +19,7 @@ Functions gereserveerd, daarom /monitor/.
 from __future__ import annotations
 
 import json
+import logging
 import mimetypes
 import os
 from pathlib import Path
@@ -61,6 +62,34 @@ def post_checkin(req: func.HttpRequest) -> func.HttpResponse:
         return _json(400, {"ok": False, "errors": {"body": "invalid"}})
     ok, errors = checkin.submit(req.route_params.get("token", ""), p)
     return _json(200 if ok else 400, {"ok": ok, "errors": errors})
+
+
+def _token_post(req: func.HttpRequest) -> tuple[str, dict]:
+    try:
+        p = req.get_json()
+    except ValueError:
+        p = {}
+    return req.route_params.get("token", ""), p if isinstance(p, dict) else {}
+
+
+@app.route(route="api/checkin/{token}/unlock", methods=["POST"], auth_level=func.AuthLevel.ANONYMOUS)
+def post_unlock(req: func.HttpRequest) -> func.HttpResponse:
+    """Gast-app: deur openen (voordeur of eigen kamer). De server beslist of het mag (processes/guest_unlock.py)."""
+    token, p = _token_post(req)
+    ok, reason = checkin.unlock(token, str(p.get("door") or ""))
+    status = 200 if ok else 404 if reason == "not_found" else 429 if reason == "too_many" else 502 if reason == "failed" else 403
+    return _json(status, {"ok": ok, "reason": reason})
+
+
+@app.route(route="api/checkin/{token}/pay", methods=["POST"], auth_level=func.AuthLevel.ANONYMOUS)
+def post_pay(req: func.HttpRequest) -> func.HttpResponse:
+    """Gast-app: de gast klikte op Betalen; Lighthouse meteen opnieuw laten lezen (processes/guest_payment.py)."""
+    token, _ = _token_post(req)
+    try:
+        checkin.pay_started(token)
+    except Exception:  # noqa: BLE001 - de gast betaalt toch; de volgende robotrun leest het
+        logging.exception("nalezing na Betalen niet gevraagd")
+    return _json(200, {"ok": True})
 
 
 @app.route(route="api/twilio/status", methods=["POST"], auth_level=func.AuthLevel.ANONYMOUS)

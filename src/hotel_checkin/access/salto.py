@@ -201,6 +201,17 @@ def list_locks(hotel_id: str, client: httpx.Client | None = None) -> list[dict]:
     return (data or {}).get("items", data if isinstance(data, list) else [])
 
 
+def open_lock(hotel_id: str, lock_id: str, client: httpx.Client | None = None) -> None:
+    """Deur op afstand openen (slot online via een IQ). Het slot gaat binnen enkele seconden open en sluit
+    vanzelf weer. De opener is de systeemgebruiker: wie welke deur mag openen, beslist het proces."""
+    _call(hotel_id, "PATCH", f"/v1.2/sites/{{site}}/locks/{lock_id}/locking", {"locked_state": "unlocked"}, client)
+
+
+def common_lock_ids(hotel_id: str) -> list[str]:
+    """Gemeenschappelijke deuren (voordeur en dergelijke), [salto] common_lock_ids."""
+    return list(load_hotel(hotel_id).get("salto", {}).get("common_lock_ids", []))
+
+
 def lock_ids_for(hotel_id: str, rooms: list[str], common: bool = True) -> list[str]:
     """Deuren voor deze kamers: gemeenschappelijke deuren ([salto] common_lock_ids, niet als
     common=False) plus per kamer ([salto.rooms] "12" = "lock-id"). Fout als een kamer niet gekoppeld is."""
