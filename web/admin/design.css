@@ -400,3 +400,12 @@ html body .content.v2{max-width:none}
 #tab-workflow .card,#tab-workflow .cb,#tab-workflow .col-main{min-width:0;max-width:100%}
 .v2 .table-wrap{overflow-x:auto;max-width:100%}
 html body .v2 .flowline,html body .flowline.v2{padding:6px 4px 6px}
+/* Popup met eigen inhoud (bv. lijst versturen): wat breder, ontvangers als lijst */
+html body .dlg-back.v2 .dlg:has(textarea, ul){max-width:540px}
+.dlg-back.v2 .dlg-to{margin:2px 0 0;padding-left:18px;font-size:14px;line-height:1.6}
+.dlg-back.v2 .dlg-b .note{margin:0;font-size:14px}
+.dlg-back.v2 .dlg-b textarea.input{min-height:72px;padding-top:9px;resize:vertical;font-family:inherit;width:100%;box-sizing:border-box}
+.dlg-back.v2 .dlg-b .field{display:flex;flex-direction:column;gap:6px;margin-top:4px}
+/* Laatste lijsten: badges mogen op twee regels, niets valt rechts weg */
+#tab-lists #list-rows .badge{white-space:normal}
+#tab-lists .tbox td,#tab-lists .tbox th{padding-left:8px;padding-right:8px}

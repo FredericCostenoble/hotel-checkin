@@ -337,6 +337,12 @@ def admin_api(req: func.HttpRequest) -> func.HttpResponse:
             if req.params.get("action") == "delete":  # vuilbak in de monitor: de bewaarde lijst van die dag wissen
                 daily_lists.delete(hotel, kind, day)
                 return _json(200, {"ok": True})
+            if req.params.get("action") == "send":  # knop Versturen: de bewaarde lijst manueel versturen, met bericht
+                try:
+                    note = str((req.get_json() or {}).get("note") or "")
+                except ValueError:
+                    note = ""
+                return _json(200, daily_lists.send_saved(hotel, kind, day, by=_admin_user(req) or "", note=note))
             # Eerst leest de robot de reservaties van die dag in Lighthouse; daarna maakt de timer de lijst
             result = daily_lists.request(hotel, kind, day, by=_admin_user(req) or "", send_now=req.params.get("send") == "1")
             return _json(200, {"ok": True} | result)

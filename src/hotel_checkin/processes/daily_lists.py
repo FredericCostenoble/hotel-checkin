@@ -566,7 +566,7 @@ def pdf_for_link(hotel_id: str, kind: str, day: str, expires: str, sig: str,
     return lists.pdf_name(data), lists.pdf(data, name)
 
 
-def _send_phone(hotel_id: str, data: dict, to: str, hotel_name: str) -> dict:
+def _send_phone(hotel_id: str, data: dict, to: str, hotel_name: str, note: str = "") -> dict:
     """WhatsApp met het goedgekeurde sjabloon ([whatsapp] template_breakfast_list_nl / template_cleaning_list_nl):
     de pdf als document bovenaan, {{1}} de dag, {{2}} kort wat erop staat, {{3}} pad van de pdf. Anders, of als dat
     mislukt, per sms met de hele lijst."""
@@ -583,16 +583,19 @@ def _send_phone(hotel_id: str, data: dict, to: str, hotel_name: str) -> dict:
     template = send_messages.whatsapp_template(hotel_id, f"{data['kind']}_list", "nl")
     if template:
         res = whatsapp.send_whatsapp_template(hotel_id, number, template, {
-            "1": lists.day_text(data["day"]), "2": describe(data, with_source=False), "3": pdf_path(hotel_id, data)})
+            "1": lists.day_text(data["day"]), "2": (f"{note} " if note else "") + describe(data, with_source=False),
+            "3": pdf_path(hotel_id, data)})
         if res.ok:
             return {"channel": "whatsapp", "to": to, "ok": True}
         logging.warning("%s: %s per WhatsApp naar %s mislukt (%s), nu per sms", hotel_id, data["kind"], to, res.error)
-    res = sms.send_sms(hotel_id, number, lists.text(data, hotel_name))
+    res = sms.send_sms(hotel_id, number, (f"{note}\n" if note else "") + lists.text(data, hotel_name))
     return {"channel": "sms", "to": to, "ok": res.ok, "error": res.error or ""}
 
 
-def send(hotel_id: str, data: dict) -> list[dict]:
-    """Naar alle ontvangers uit de instellingen. Geeft per ontvanger het resultaat."""
+def send(hotel_id: str, data: dict, note: str = "") -> list[dict]:
+    """Naar alle ontvangers uit de instellingen. Geeft per ontvanger het resultaat.
+    note: vrije tekst bij manueel versturen (bovenaan de mail, voor de WhatsApp of de sms)."""
+    note = " ".join((note or "").split())[:500]
     from hotel_checkin.messaging import email
 
     cfg = settings(hotel_id, data["kind"])
@@ -602,7 +605,7 @@ def send(hotel_id: str, data: dict) -> list[dict]:
     now = datetime.now(UTC).isoformat()
     out: list[dict] = []
     if cfg["email"]:
-        body = lists.mail_html(data, name, [describe(data)[:1].upper() + describe(data)[1:] + "."])
+        body = lists.mail_html(data, name, ([note] if note else []) + [describe(data)[:1].upper() + describe(data)[1:] + "."])
         attachment = (lists.file_name(data, name), lists.xlsx(data, name))
         for to in cfg["email"]:
             res = email.send_email(to=to, subject=lists.subject(data, name), html_body=body, attachments=[attachment],
@@ -610,7 +613,7 @@ def send(hotel_id: str, data: dict) -> list[dict]:
             out.append({"channel": "email", "to": to, "ok": res.ok, "error": res.error or "", "at": now})
     for to in cfg["whatsapp"]:
         try:
-            out.append(_send_phone(hotel_id, data, to, name) | {"at": now})
+            out.append(_send_phone(hotel_id, data, to, name, note) | {"at": now})
         except Exception as exc:  # noqa: BLE001 - de andere ontvangers gaan gewoon door
             out.append({"channel": "whatsapp", "to": to, "ok": False, "error": f"{type(exc).__name__}: {exc}", "at": now})
     return out
@@ -664,6 +667,30 @@ def generate(hotel_id: str, kind: str, day: date, by: str = "", send_now: bool =
     return data
 
 
+def send_saved(hotel_id: str, kind: str, day: date, by: str = "", note: str = "") -> dict:
+    """Een bewaarde lijst (opnieuw) manueel versturen, zonder ze opnieuw te maken (knop Versturen in de monitor).
+    Naar de ontvangers uit de instellingen, met een vrij bericht erbij. Komt bij de lijst en in het robotlog."""
+    if kind not in KINDS:
+        raise ValueError(kind)
+    data = guests.get_daily_list(hotel_id, kind, day.isoformat())
+    if not data:
+        return {"ok": False, "error": "Deze lijst bestaat niet (meer)."}
+    started = datetime.now(UTC)
+    sent = send(hotel_id, data, note)
+    for x in sent:
+        x |= {"by": by or "?", "manual": True}
+    data["sent"] = sent + [x for x in data.get("sent", []) if x.get("manual")][:20]
+    data["sent_at"] = datetime.now(clock.tz(hotel_id)).isoformat(timespec="minutes")
+    guests.save_daily_list(hotel_id, kind, day.isoformat(), data)
+    ok = bool(sent) and all(s["ok"] or s.get("skipped") for s in sent)
+    text = _sent_text(sent)
+    guests.log_robot_run(hotel_id, TASK[kind], started, ok, 1, 1 if ok else 0,
+                         f"lijst voor {lists.day_text(day.isoformat())} manueel verstuurd door {by or '?'}"
+                         + (f" met bericht \"{note.strip()[:80]}\"" if note.strip() else "") + f": {text}",
+                         skipped=sum(1 for s in sent if not s["ok"]))
+    return {"ok": ok, "sent": sent, "text": text}
+
+
 def _robot_busy(hotel_id: str) -> bool:
     """Draait de robot nu echt (of is hij net gestart)? Alleen dan staan de knoppen in de monitor even uit."""
     from hotel_checkin.admin import cloud_robot
@@ -676,6 +703,15 @@ def _robot_busy(hotel_id: str) -> bool:
         return False
 
 
+def _phone_on(hotel_id: str) -> bool:
+    from hotel_checkin.processes import send_messages
+
+    try:
+        return bool(send_messages.phone_enabled(hotel_id))
+    except Exception:  # noqa: BLE001 - niet te weten: niet als uit tonen
+        return True
+
+
 def view(hotel_id: str, kind: str) -> dict:
     """Voor de monitor: de bewaarde lijsten (nieuwste eerst, met de tabel), en wanneer de volgende komt."""
     cfg = settings(hotel_id, kind)
@@ -686,6 +722,7 @@ def view(hotel_id: str, kind: str) -> dict:
     return {"kind": kind, "switch": switch(hotel_id, kind), "next_day": next_day(hotel_id, kind).isoformat(),
             "pending": pending, "robot_busy": bool(pending) and _robot_busy(hotel_id),
             "time": cfg["time"], "days": cfg["days"], "email": cfg["email"], "whatsapp": cfg["whatsapp"],
+            "phone_on": _phone_on(hotel_id),
             "keep": KEEP, "records": records}
 
 

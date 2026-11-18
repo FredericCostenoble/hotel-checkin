@@ -527,3 +527,17 @@ def test_whatsapp_list_with_pdf(monkeypatch):
     assert out[0]["ok"] and to == "+32470123456" and sid == "HXbreakfast_list"
     assert v["1"] == lists.day_text(DAY.isoformat()) and v["2"].startswith("2 personen in 1 kamers")
     assert "volgens" not in v["2"] and v["3"].startswith(f"lucca/breakfast/{DAY.isoformat()}/")
+
+
+def test_send_saved_list_manually_with_note(setup):
+    """Knop Versturen: een bewaarde lijst opnieuw versturen, met een vrij bericht bovenaan de mail."""
+    _r("a", "20", DAY - timedelta(days=1), 2, rate="STANDARD RATE BREAKFAST INCL")
+    dl.generate("lucca", "breakfast", DAY)
+    res = dl.send_saved("lucca", "breakfast", DAY, by="fred", note="Let op: groep komt vroeger")
+    assert res["ok"] and "mail naar management@hotellucca.be gelukt" in res["text"]
+    body = setup[-1][2]
+    assert "Let op: groep komt vroeger" in body and body.index("Let op") < body.index("<table")
+    saved = repo.get_daily_list("lucca", "breakfast", DAY.isoformat())
+    assert saved["sent"][0]["manual"] and saved["sent"][0]["by"] == "fred" and saved["sent_at"]
+    assert any("manueel verstuurd door fred" in x["error"] for x in repo.robot_runs("lucca", task="ontbijtlijst"))
+    assert dl.send_saved("lucca", "breakfast", DAY + timedelta(days=9))["ok"] is False

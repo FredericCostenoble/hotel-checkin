@@ -146,6 +146,10 @@ class Handler(BaseHTTPRequestHandler):
                     self._json(404, {"error": "not_found"})
             elif method == "GET":
                 self._json(200, daily_lists.view(parts[2], kind))
+            elif q.get("action") == "send":
+                body = json.loads(self.rfile.read(int(self.headers.get("Content-Length", 0))) or b"{}")
+                self._json(200, daily_lists.send_saved(parts[2], kind, date.fromisoformat(q.get("day", "")), by="dev",
+                                                       note=str(body.get("note") or "")))
             else:
                 self._json(200, {"ok": True} | daily_lists.request(parts[2], kind, date.fromisoformat(q.get("day", "")),
                                                                     by="dev", send_now=q.get("send") == "1"))

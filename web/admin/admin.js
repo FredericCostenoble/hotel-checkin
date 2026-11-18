@@ -192,6 +192,10 @@ const T = {
 // Teksten van het ontwerp (Claude Design, canvas Beheerapp Hotel Lucca)
 Object.assign(T.nl, {
   m_arrives: d => `aankomst ${d}`, dlg_send: "Versturen",
+  ls_send: "Versturen", ls_title: "Lijst manueel versturen", ls_q: l => `Ben je zeker dat je de ${l} manueel wil versturen?`, ls_to: "Wordt verstuurd naar",
+  ls_by_mail: "Mail", ls_by_wa: "WhatsApp (sms als WhatsApp niet lukt)", ls_wa_off: "WhatsApp en sms staan uit, wordt niet verstuurd", ls_no_to: "Er zijn geen ontvangers ingesteld voor deze lijst (instellingen, Hotel).",
+  ls_past: d => `Let op: dit is geen lijst voor vandaag! Het is de lijst van ${d}.`, ls_already: (w, to) => `Deze lijst is al verstuurd op ${w} naar ${to}.`,
+  ls_note: "Bericht (niet verplicht)", ls_note_ph: "Komt bovenaan de mail en in de WhatsApp of sms", ls_done: x => `Verstuurd: ${x}.`, ls_fail: x => `Niet (helemaal) gelukt: ${x}`,
   rx_title: "Uitzonderingen per kamer", rx_help: "Kamers die afwijken van de rest: eigen naam, eigen ingang, geen verdieping, twin. Alle andere kamers volgen de regels hierboven.",
   rx_add: "Uitzondering toevoegen", rx_edit: "Aanpassen", rx_close: "Klaar", rx_del: "Verwijderen", rx_room: "Kamernummer", rx_none: "Nog geen uitzonderingen.",
   rx_new: "nieuwe uitzondering", rx_del_confirm: r => `De uitzondering voor kamer ${r} verwijderen? Ze verdwijnt pas als je bewaart.`,
@@ -270,6 +274,10 @@ Object.assign(T.nl, {
 });
 Object.assign(T.en, {
   m_arrives: d => `arriving ${d}`, dlg_send: "Send",
+  ls_send: "Send", ls_title: "Send list manually", ls_q: l => `Are you sure you want to send the ${l} manually?`, ls_to: "Will be sent to",
+  ls_by_mail: "Mail", ls_by_wa: "WhatsApp (SMS if WhatsApp fails)", ls_wa_off: "WhatsApp and SMS are off, will not be sent", ls_no_to: "No recipients are set for this list (settings, Hotel).",
+  ls_past: d => `Watch out: this is not a list for today! It is the list of ${d}.`, ls_already: (w, to) => `This list was already sent on ${w} to ${to}.`,
+  ls_note: "Message (optional)", ls_note_ph: "Goes at the top of the mail and in the WhatsApp or SMS", ls_done: x => `Sent: ${x}.`, ls_fail: x => `Not (fully) sent: ${x}`,
   rx_title: "Room exceptions", rx_help: "Rooms that differ from the rest: own name, own entrance, no floor, twin. All other rooms follow the rules above.",
   rx_add: "Add exception", rx_edit: "Edit", rx_close: "Done", rx_del: "Delete", rx_room: "Room number", rx_none: "No exceptions yet.",
   rx_new: "new exception", rx_del_confirm: r => `Delete the exception for room ${r}? It is only gone after you save.`,
@@ -354,21 +362,27 @@ const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "
 
 // Eigen popup in plaats van confirm() en alert() van de browser.
 // ask(tekst, { ok: "Samenvoegen", danger: true }) geeft een Promise<boolean>; notice(tekst) alleen een knop om te sluiten.
-function dialog(text, { ok, cancel = true, danger = false, title = "" } = {}) {
+// html: eigen inhoud (al veilig gemaakt) onder de tekst; input: { label, placeholder } = vrij tekstveld, dan geeft
+// de popup de tekst terug (of null bij annuleren) in plaats van true/false.
+function dialog(text, { ok, cancel = true, danger = false, title = "", html = "", input = null } = {}) {
   return new Promise(resolve => {
     const en = lang === "en" ? 1 : 0;
     const back = document.createElement("div");
     back.className = "v2 dlg-back";
     back.innerHTML = `<div class="card dlg" role="dialog" aria-modal="true" aria-labelledby="dlg-t">
-      <div class="dlg-b">${title ? `<h2 class="ct" id="dlg-t">${esc(title)}</h2>` : ""}<p ${title ? "" : 'id="dlg-t"'}>${esc(text)}</p></div>
+      <div class="dlg-b">${title ? `<h2 class="ct" id="dlg-t">${esc(title)}</h2>` : ""}<p ${title ? "" : 'id="dlg-t"'}>${esc(text)}</p>${html}
+        ${input ? `<div class="field"><label for="dlg-in">${esc(input.label || "")}</label><textarea class="input" id="dlg-in" rows="3" maxlength="500" placeholder="${esc(input.placeholder || "")}"></textarea></div>` : ""}</div>
       <div class="dlg-f">${cancel ? `<button type="button" class="btn2" data-v="0">${esc(["Annuleren", "Cancel"][en])}</button>` : ""}
       <button type="button" class="btn${danger ? " danger" : ""}" data-v="1">${esc(ok || (cancel ? ["Bevestigen", "Confirm"][en] : "OK"))}</button></div></div>`;
     const prev = document.activeElement;
-    const done = v => { document.removeEventListener("keydown", key, true); back.remove(); if (prev && prev.focus) prev.focus(); resolve(v); };
+    const done = v => {
+      const val = input ? (v ? back.querySelector("#dlg-in").value.trim() : null) : v;
+      document.removeEventListener("keydown", key, true); back.remove(); if (prev && prev.focus) prev.focus(); resolve(val);
+    };
     const key = e => {
       if (e.key === "Escape") { e.preventDefault(); done(!cancel); }
       else if (e.key === "Tab") {  // focus binnen de popup houden
-        const b = [...back.querySelectorAll("button")], i = b.indexOf(document.activeElement);
+        const b = [...back.querySelectorAll("button, textarea")], i = b.indexOf(document.activeElement);
         e.preventDefault(); b[(i + (e.shiftKey ? b.length - 1 : 1)) % b.length].focus();
       }
     };
@@ -376,7 +390,7 @@ function dialog(text, { ok, cancel = true, danger = false, title = "" } = {}) {
     back.querySelectorAll("button").forEach(b => b.onclick = () => done(b.dataset.v === "1"));
     document.addEventListener("keydown", key, true);
     document.body.appendChild(back);
-    back.querySelector(danger && cancel ? 'button[data-v="0"]' : 'button[data-v="1"]').focus();
+    back.querySelector(input ? "#dlg-in" : danger && cancel ? 'button[data-v="0"]' : 'button[data-v="1"]').focus();
   });
 }
 const ask = (text, opts = {}) => dialog(text, opts);
@@ -2840,18 +2854,48 @@ function renderList(kind) {
   $("#list-preview").innerHTML = x ? `<div class="row" style="justify-content:space-between"><div class="lbl">${esc(t("l_preview"))}</div><div class="row">
       <a class="btn2 sm" href="${API}/api/monitor/${hotel}/list-xlsx?kind=${sk}&day=${esc(sd)}">${DL}Excel</a>
       <a class="btn2 sm" href="${API}/api/monitor/${hotel}/list-pdf?kind=${sk}&day=${esc(sd)}">${DL}PDF</a>
+      <button class="btn sm" type="button" id="list-send-saved">${IC('<path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4z"/>', 14)}${esc(t("ls_send"))}</button>
       <button class="btn3" type="button" id="list-del" title="${esc(t("del"))}">${BIN}</button></div></div>
     <div class="paper" id="list-paper"><div class="row" style="justify-content:space-between;align-items:flex-start"><div><div class="lbl">${esc(hotelNow().name || "")}</div>
       <h2 style="font-size:20px;margin-top:2px">${esc(t("l_title_" + sk, dayLong(sd)))}</h2><div class="small muted">${esc(t("l_made_by", dtime(x.generated_at), x.generated_by === "automatisch" ? t("dl_auto") : x.generated_by))}</div></div>
       <div style="text-align:right" class="small muted">${esc(x.summary || "")}</div></div><div class="tbox" style="margin-top:14px">${x.html}</div></div>`
     : `<div class="card"><div class="cb" style="padding-top:16px"><span class="muted">${esc(t("l_none_sel"))}</span></div></div>`;
   if (x) {
+    $("#list-send-saved").onclick = () => sendSavedList(sk, sd, x);
     $("#list-del").onclick = async () => {
       if (!await ask(t("dl_del_confirm", dayLong(sd)), { ok: t("dlg_delete"), danger: true })) return;
       await get(`/api/monitor/${hotel}/lists?kind=${sk}&day=${encodeURIComponent(sd)}&action=delete`, { method: "POST" });
       listSel = ""; loadList(sk);
     };
   }
+}
+
+// Knop Versturen: de bewaarde lijst manueel versturen. Popup met ontvangers, al verstuurd, voorbije dag en een bericht.
+async function sendSavedList(kind, day, x) {
+  const d = listData[kind] || { email: [], whatsapp: [] };
+  const now = new Date(), today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+  const to = [...d.email.map(a => `<li>${esc(t("ls_by_mail"))}: <b>${esc(a)}</b></li>`), ...d.whatsapp.map(a => `<li>${esc(t("ls_by_wa"))}: <b>${esc(a)}</b>${d.phone_on === false ? ` <span class="muted">(${esc(t("ls_wa_off"))})</span>` : ""}</li>`)];
+  if (!to.length) { notice(t("ls_no_to")); return; }
+  const warn = [];
+  if (day < today) warn.push(`<div class="note err"><b>${esc(t("ls_past", dayLong(day)))}</b></div>`);
+  const okSent = (x.sent || []).filter(s => s.ok);
+  if (okSent.length) warn.push(`<div class="note warn">${esc(t("ls_already", stamp(x.sent_at), okSent.map(s => s.to).join(", ")))}</div>`);
+  const what = t("l_title_" + kind, dayLong(day));
+  const note = await dialog(t("ls_q", what[0].toLowerCase() + what.slice(1)), {
+    title: t("ls_title"), ok: t("ls_send"),
+    html: `${warn.join("")}<div class="lbl" style="margin-top:4px">${esc(t("ls_to"))}</div><ul class="dlg-to">${to.join("")}</ul>`,
+    input: { label: t("ls_note"), placeholder: t("ls_note_ph") },
+  });
+  if (note === null) return;
+  const state = $("#list-state");
+  state.style.color = ""; state.textContent = t("dl_busy");
+  const r = await apiFetch(`${API}/api/monitor/${encodeURIComponent($("#hotel").value)}/lists?kind=${kind}&day=${encodeURIComponent(day)}&action=send`, {
+    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ note }),
+  }).then(x => x.json()).catch(e => ({ ok: false, error: String(e) }));
+  state.textContent = "";
+  await loadList(kind);
+  if (r.ok) notice(t("ls_done", r.text || ""));
+  else notice(t("ls_fail", r.error || r.text || "?"));
 }
 
 async function makeList(kind, send) {
