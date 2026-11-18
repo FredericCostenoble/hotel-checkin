@@ -144,7 +144,10 @@ class GuestProfile:
     reservation_ids: list[str] = field(default_factory=list)  # gekoppelde reservaties (ook toekomstige)
     from_checkin_form: bool = False  # contactgegevens bevestigd door de gast zelf
     message_channels: list[str] = field(default_factory=list)  # gekozen kanalen voor berichten (check-in-formulier)
-    muted_channels: list[str] = field(default_factory=list)  # door het hotel uitgezet: email, whatsapp, sms
+    muted_channels: list[str] = field(default_factory=list)  # door het hotel uitgezet: email, whatsapp, sms (oud, per kanaal)
+    # Vinkje Verblijf per adres, zoals het hotel het zette in de monitor: "email:adres", "whatsapp:+32...", "sms:+32..."
+    # -> True (wel gebruiken) of False (nooit). Niet gezet: de gewone regels (send_messages.recipients).
+    contact_prefs: dict[str, bool] = field(default_factory=dict)
     known_emails: list[str] = field(default_factory=list)  # alle eigen adressen ooit gezien (om te herkennen)
     known_phones: list[str] = field(default_factory=list)  # alle nummers ooit gezien (om te herkennen)
     backup_email: str | None = None  # extra adres uit het check-in-formulier

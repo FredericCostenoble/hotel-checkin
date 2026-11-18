@@ -328,3 +328,32 @@ def test_marketing_per_address_hotel_cannot_override_the_guest():
     repo.add_opt_out("lucca", "piet@example.com", "checkin_form")
     r = admin.set_marketing("lucca", "piet@example.com", True)
     assert not r["ok"] and "gast" in r["error"] and repo.is_opted_out("lucca", "piet@example.com")
+
+
+def test_robot_follows_the_ticks_per_address_and_merge_keeps_them():
+    """De robot volgt de vinkjes Verblijf: het hotel kan het doorstuuradres in plaats van het eigen adres laten gebruiken,
+    of een gsm-nummer uitzetten. Bij samenvoegen blijven de vinkjes van beide gasten (uit gaat voor)."""
+    from hotel_checkin.admin import service as admin
+    from hotel_checkin.processes import send_messages as sm
+
+    r = _res("x1", "Jan", "Voorbeeld", email="jan@example.com", phone="+32470000009", source="Expedia")
+    r.guest.relay_email = "abc@m.expediapartnercentral.com"
+    r.guest.phone_consent = ["+32470000009"]
+    repo.save_reservation(r)
+    g = gp.link(repo.get_reservation("lucca", "x1"))
+    r = repo.get_reservation("lucca", "x1")
+    assert sm.recipients(r, "email") == ["jan@example.com"]
+    assert admin.set_contact_pref("lucca", g.guest_id, "email", "jan@example.com", False)
+    assert admin.set_contact_pref("lucca", g.guest_id, "email", "abc@m.expediapartnercentral.com", True)
+    assert sm.recipients(r, "email") == ["abc@m.expediapartnercentral.com"]  # omgewisseld
+    assert admin.set_contact_pref("lucca", g.guest_id, "whatsapp", "+32470000009", False)
+    assert sm.recipients(r, "phone") == ["+32470000009"]  # sms staat nog aan
+    prefs, muted, _e, _p = sm.contact_prefs(r)
+    assert not sm.use_channel(prefs, muted, "whatsapp", "+32470000009") and sm.use_channel(prefs, muted, "sms", "+32470000009")
+    assert not admin.set_contact_pref("lucca", g.guest_id, "sms", "+11111111111", True)  # nepnummer: nooit
+    other = gp.link(_res("x2", "Jan", "Voorbeeld", email="jan2@example.com", days_ago=60))
+    other.contact_prefs = {"email:jan@example.com": True, "email:jan2@example.com": False}
+    profiles.save_profile(other)
+    kept = gp.merge("lucca", g.guest_id, other.guest_id)
+    assert kept.contact_prefs["email:jan@example.com"] is False  # bij de ene uit: uit
+    assert kept.contact_prefs["email:jan2@example.com"] is False and kept.contact_prefs["email:abc@m.expediapartnercentral.com"]

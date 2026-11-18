@@ -222,7 +222,7 @@ Object.assign(T.nl, {
   m_card: "Te beslissen: mogelijk dezelfde gast", m_open: n => `${n} open`, m_and: "en", m_keep: "Samenvoegen", m_apart: "Apart houden",
   gp_since: d => `gastprofiel sinds ${d}`, gp_nomkt: "Geen marketing", gp_back: "Terugkerend", gp_resn: "reservaties", gp_stays: "verblijven", gp_canc: "geannuleerd", pick_filter: "Filter",
   gp_nights: "nachten gem.", gp_pers: "personen gem.", gp_first: "Eerste verblijf", gp_last: "Laatste verblijf", gp_chan: "Voorkeurskanaal", gp_rooms: "Kamers",
-  gp_contact: "Contact", gp_help: "Verblijf: berichten over het verblijf (bevestiging, code, ...) via dit kanaal; vinkje weg = nooit voor deze gast. Marketing: nieuwsbrieven en aanbiedingen naar dit adres.", gp_use: "gebruiken", gp_relay: "doorstuuradres van de boekingssite (nooit marketing)", gp_old: "niet gebruikt: vroeger adres", gp_fake: "nepnummer van de boekingssite: nooit gebruikt",
+  gp_contact: "Contact", gp_help: "Verblijf: berichten over het verblijf (bevestiging, code, ...) naar dit adres. De robot volgt deze vinkjes; je kan ze omwisselen. Marketing: nieuwsbrieven en aanbiedingen naar dit adres.", gp_use: "gebruiken", gp_relay: "doorstuuradres van de boekingssite (nooit marketing)", gp_old: "niet gebruikt: vroeger adres", gp_fake: "nepnummer van de boekingssite: nooit gebruikt",
   gp_stayinfo: "Verblijf", gp_mkt: "Marketing", gp_not_used: "niet gebruikt: er is een eigen e-mailadres", gp_no_consent: "geen toestemming in het check-in-formulier", gp_mkt_noform: "marketing volgt de keuze in het check-in-formulier (nog niet ingevuld met dit adres)", gp_mkt_guest: "de gast vroeg zelf geen marketing", gp_mkt_relay: "doorstuuradres: nooit marketing",
   gp_detach: "Ontkoppelen", gp_detach_q: n => `Reservatie #${n} hoort niet bij deze gast? Ze krijgt een eigen gastprofiel, of komt bij de gast waar ze zeker bij hoort. Ze komt nooit meer terug bij deze gast.`, gp_detached: "Ontkoppeld.",
   gp_form: "formulier", gp_booking: "reservatie", gp_res: "Reservaties", gp_all: n => `Alle ${n} reservaties`, gp_now: "Nu", gp_left: "Vertrokken", gp_coming: "Komt",
@@ -307,7 +307,7 @@ Object.assign(T.en, {
   m_card: "To decide: possibly the same guest", m_open: n => `${n} open`, m_and: "and", m_keep: "Merge", m_apart: "Keep apart",
   gp_since: d => `guest profile since ${d}`, gp_nomkt: "No marketing", gp_back: "Returning", gp_resn: "reservations", gp_stays: "stays", gp_canc: "cancelled", pick_filter: "Filter",
   gp_nights: "nights avg.", gp_pers: "persons avg.", gp_first: "First stay", gp_last: "Last stay", gp_chan: "Preferred channel", gp_rooms: "Rooms",
-  gp_contact: "Contact", gp_help: "Stay info: messages about the stay (confirmation, code, ...) through this channel; untick = never for this guest. Marketing: newsletters and offers to this address.", gp_use: "use", gp_relay: "relay address of the booking site (never marketing)", gp_old: "not used: earlier address", gp_fake: "fake number of the booking site: never used",
+  gp_contact: "Contact", gp_help: "Stay info: messages about the stay (confirmation, code, ...) to this address. The robot follows these ticks; you can swap them. Marketing: newsletters and offers to this address.", gp_use: "use", gp_relay: "relay address of the booking site (never marketing)", gp_old: "not used: earlier address", gp_fake: "fake number of the booking site: never used",
   gp_stayinfo: "Stay info", gp_mkt: "Marketing", gp_not_used: "not used: there is an own e-mail address", gp_no_consent: "no permission in the check-in form", gp_mkt_noform: "marketing follows the choice in the check-in form (not filled in with this address yet)", gp_mkt_guest: "the guest asked for no marketing", gp_mkt_relay: "relay address: never marketing",
   gp_detach: "Detach", gp_detach_q: n => `Reservation #${n} does not belong to this guest? It gets its own guest profile, or joins the guest it surely belongs to. It never comes back to this guest.`, gp_detached: "Detached.",
   gp_form: "form", gp_booking: "reservation", gp_res: "Reservations", gp_all: n => `All ${n} reservations`, gp_now: "Now", gp_left: "Departed", gp_coming: "Coming",
@@ -1310,11 +1310,14 @@ function renderProfile() {
   const formMails = (g.form_emails || []), consent = (g.consent_phones || []);
   const line = (icon, value, sub, ch, disabled, mail) => {
     const lc = value.toLowerCase(), why = [];
-    let usable = !disabled;
-    if (usable && mail === "relay" && own.length) { usable = false; why.push(t("gp_not_used")); }
-    if (usable && mail === "own" && ![g.email, g.backup_email].filter(Boolean).map(x => x.toLowerCase()).includes(lc)) { usable = false; why.push(t("gp_old")); }
-    if (usable && !mail && ch && !consent.includes(value)) { usable = false; why.push(t("gp_no_consent")); }
-    const stay = box(t("gp_stayinfo"), usable ? `data-mute="${esc(g.id)}" value="${ch}"` : "disabled", usable && !muted.includes(ch));
+    // Standaard (zoals de robot zonder vinkje beslist); een vinkje van het hotel gaat voor en mag dat omwisselen
+    let def = !muted.includes(ch);
+    if (def && mail === "relay" && own.length) { def = false; why.push(t("gp_not_used")); }
+    if (def && mail === "own" && ![g.email, g.backup_email].filter(Boolean).map(x => x.toLowerCase()).includes(lc)) { def = false; why.push(t("gp_old")); }
+    if (def && !mail && ch && !consent.includes(value)) { def = false; why.push(t("gp_no_consent")); }
+    const set = (g.prefs || {})[`${ch}:${lc}`];
+    if (set !== undefined) why.length = 0;
+    const stay = box(t("gp_stayinfo"), disabled ? "disabled" : `data-pref="${esc(ch)}" data-addr="${esc(value)}"`, !disabled && (set !== undefined ? set : def));
     const off = (g.marketing_off || []).includes(lc), byGuest = (g.marketing_by_guest || []).includes(lc), fromForm = formMails.includes(lc);
     const mkt = mail === "relay" ? box(t("gp_mkt"), "disabled", false, t("gp_mkt_relay"))
       : mail === "own" ? (byGuest || !fromForm ? box(t("gp_mkt"), "disabled", false, byGuest ? t("gp_mkt_guest") : t("gp_mkt_noform"))
@@ -1366,6 +1369,13 @@ function renderProfile() {
     if (!r.ok) { b.checked = !b.checked; if (r.error) await ask(r.error, { ok: "OK" }); return; }
     const k = b.dataset.mkt.toLowerCase();
     g.marketing_off = b.checked ? (g.marketing_off || []).filter(x => x !== k) : [...(g.marketing_off || []), k];
+  });
+  el.querySelectorAll("input[data-pref]").forEach(b => b.onchange = async () => {
+    const r = await get(`/api/monitor/${encodeURIComponent($("#hotel").value)}/guests?action=pref&a=${encodeURIComponent(g.id)}&channel=${b.dataset.pref}&address=${encodeURIComponent(b.dataset.addr)}&on=${b.checked ? 1 : 0}`, { method: "POST" });
+    if (!r.ok) { b.checked = !b.checked; return; }
+    g.prefs = { ...(g.prefs || {}), [`${b.dataset.pref}:${b.dataset.addr.toLowerCase()}`]: b.checked };
+    g.muted = (g.muted || []).filter(c => c !== b.dataset.pref);
+    renderProfile();
   });
   el.querySelectorAll("input[data-mute]").forEach(box => box.onchange = async () => {
     const id = box.dataset.mute;

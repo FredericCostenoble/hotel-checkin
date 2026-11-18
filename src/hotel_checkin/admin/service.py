@@ -195,6 +195,7 @@ def guests(hotel_id: str) -> dict:
             "opt_out": bool(g.email and g.email.lower() in opted_out),
             # Wat de robot echt gebruikt (zelfde regels als send_messages.recipients) en waarvoor de gast toestemming gaf:
             # adressen uit het check-in-formulier (marketing volgt de keuze in het formulier), bevestigde gsm-nummers
+            "prefs": g.contact_prefs,
             "form_emails": sorted({e.lower() for x in res_by_guest.get(g.guest_id, []) if x.checkin_completed_at
                                    for e in (x.guest.email, x.guest.backup_email) if e and is_own_email(e)}),
             "consent_phones": sorted({p for x in res_by_guest.get(g.guest_id, []) for p in (x.guest.phone_consent or [])}),
@@ -302,6 +303,25 @@ def detach_reservation(hotel_id: str, reservation_id: str) -> dict:
         return {"ok": False}
     g = guest_profiles.detach(hotel_id, reservation_id)
     return {"ok": g is not None, "guest": g.guest_id if g else ""}
+
+
+def set_contact_pref(hotel_id: str, guest_id: str, channel: str, address: str, on: bool) -> bool:
+    """Vinkje Verblijf bij één adres van een gast (tabblad Gasten): de robot gebruikt dit adres wel of nooit voor
+    berichten over het verblijf (send_messages.recipients)."""
+    from hotel_checkin.checkin.service import placeholder_phone
+    from hotel_checkin.guests import profiles
+    from hotel_checkin.processes import send_messages
+
+    g = profiles.get_profile(hotel_id, guest_id) if hotel_id in list_hotels() else None
+    if g is None or channel not in ("email", "whatsapp", "sms") or not address:
+        return False
+    if channel != "email" and placeholder_phone(address):
+        return False  # nepnummer van een boekingssite: nooit
+    g.contact_prefs[send_messages.pref_key(channel, address)] = bool(on)
+    g.muted_channels = [c for c in g.muted_channels if c != channel]  # vanaf nu per adres
+    profiles.save_profile(g)
+    send_messages._PREFS.pop((hotel_id, guest_id), None)
+    return True
 
 
 def set_marketing(hotel_id: str, email: str, on: bool) -> dict:

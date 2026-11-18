@@ -361,6 +361,11 @@ def admin_api(req: func.HttpRequest) -> func.HttpResponse:
             return _json(200, {"ok": admin.merge_guests(hotel, a, b)})
         if req.params.get("action") == "different":
             return _json(200, {"ok": admin.mark_guests_different(hotel, a, b)})
+        if req.params.get("action") == "pref":
+            # vinkje Verblijf bij één adres: ?action=pref&a=<guest_id>&channel=email&address=<adres>&on=1
+            p = req.params
+            return _json(200, {"ok": admin.set_contact_pref(hotel, a, p.get("channel", ""), p.get("address", ""),
+                                                            p.get("on", "") == "1")})
         if req.params.get("action") == "marketing":
             # marketing voor één adres: ?action=marketing&email=<adres>&on=1 (aan) of on=0 (uit)
             return _json(200, admin.set_marketing(hotel, req.params.get("email", ""), req.params.get("on", "") == "1"))

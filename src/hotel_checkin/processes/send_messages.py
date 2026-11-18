@@ -377,6 +377,40 @@ def profile_email(r: Reservation) -> str | None:
     return g.email if g and g.email_own and is_own_email(g.email) else None
 
 
+_PREFS: dict[tuple[str, str], tuple[float, dict, set]] = {}
+
+
+def contact_prefs(r: Reservation) -> tuple[dict, set, list[str], list[str]]:
+    """Wat het hotel in het gastprofiel aanvinkte: (vinkjes per adres, uitgezette kanalen, eigen e-mailadressen en
+    gsm-nummers van het profiel). Kort onthouden: de monitor vraagt dit voor elke reservatie."""
+    import time
+
+    from hotel_checkin.guests import profiles
+
+    if not r.guest_id:
+        return {}, set(), [], []
+    key, now = (r.hotel_id, r.guest_id), time.monotonic()
+    hit = _PREFS.get(key)
+    if hit is None or now - hit[0] > 30:
+        g = profiles.get_profile(r.hotel_id, r.guest_id)
+        hit = (now, {"prefs": dict(g.contact_prefs), "muted": set(g.muted_channels),
+                     "emails": [e for e in (g.email, g.backup_email, *g.known_emails) if e],
+                     "phones": [p for p in (g.phone, g.backup_phone, *g.known_phones) if p]} if g else {}, set())
+        _PREFS[key] = hit
+    d = hit[1]
+    return d.get("prefs", {}), d.get("muted", set()), d.get("emails", []), d.get("phones", [])
+
+
+def pref_key(channel: str, to: str) -> str:
+    return f"{channel}:{(to or '').strip().lower()}"
+
+
+def use_channel(prefs: dict, muted: set, channel: str, to: str) -> bool:
+    """Mag dit kanaal naar dit adres? Het vinkje van het hotel gaat voor; anders niet als het kanaal uit staat."""
+    p = prefs.get(pref_key(channel, to))
+    return p if p is not None else channel not in muted
+
+
 def recipients(r: Reservation, kind: str, own_from_profile=_LOOKUP) -> list[str]:
     """Adressen van de gast. kind: "email" of "phone". Dubbels vallen weg.
 
@@ -384,6 +418,10 @@ def recipients(r: Reservation, kind: str, own_from_profile=_LOOKUP) -> list[str]
     gaat voor). Is er geen eigen adres, dan het eigen adres uit het gastprofiel (terugkerende gast).
     Pas als er nergens een eigen adres is: het doorstuuradres van Booking.com, Expedia, ... Dat is per
     reservatie verschillend en wordt dus nooit bij een andere reservatie gebruikt.
+
+    Daarna de vinkjes Verblijf uit het gastprofiel (het hotel kan ze omwisselen): een adres dat uitgevinkt is, valt
+    weg; een adres van de gast dat aangevinkt is, komt erbij (bv. het doorstuuradres in plaats van het eigen adres).
+    Nooit een nepnummer van een boekingssite.
     """
     if kind == "phone":
         from hotel_checkin.checkin.service import placeholder_phone
@@ -397,6 +435,19 @@ def recipients(r: Reservation, kind: str, own_from_profile=_LOOKUP) -> list[str]
         if not values:
             own = profile_email(r) if own_from_profile is _LOOKUP else own_from_profile
             values = [own] if own else [v for v in (r.guest.email, r.guest.relay_email) if v]
+    from hotel_checkin.checkin.service import placeholder_phone
+
+    prefs, _muted, p_emails, p_phones = contact_prefs(r)
+    if prefs:
+        if kind == "phone":
+            pool = [p for p in (r.guest.phone, r.guest.backup_phone, *p_phones) if p and not placeholder_phone(p)]
+            on = lambda p: any(prefs.get(pref_key(c, p)) for c in ("whatsapp", "sms"))
+            off = lambda p: all(prefs.get(pref_key(c, p)) is False for c in ("whatsapp", "sms"))
+        else:
+            pool = [e for e in (r.guest.email, r.guest.backup_email, r.guest.relay_email, *p_emails) if e]
+            on = lambda e: prefs.get(pref_key("email", e)) is True
+            off = lambda e: prefs.get(pref_key("email", e)) is False
+        values = [v for v in values if v and not off(v)] + [v for v in pool if on(v)]
     out: list[str] = []
     for v in values:
         if v and v.strip().lower() not in [o.lower() for o in out]:
@@ -428,7 +479,7 @@ def deliver(hotel_id: str, step: workflow.Step, r: Reservation, cfg: dict,
     code: 2242 ↵"), elk apart gevolgd in het berichtenlog (veld room).
     """
     rows = [m for m in guests.messages_for(hotel_id, r.reservation_id) if m["message_type"] == step.step]
-    muted = muted_channels(hotel_id, r)
+    prefs, muted, _e, _p = contact_prefs(r)
 
     def mine(m: dict, channel: str, to: str, room: str) -> bool:
         return m["channel"] == channel and _same(m.get("recipient", ""), to) and (m.get("room") or "") == room
@@ -442,7 +493,7 @@ def deliver(hotel_id: str, step: workflow.Step, r: Reservation, cfg: dict,
     def wanted(channel: str, to: str, room: str = "") -> bool:
         if only:
             return only[0] == channel and _same(only[1], to)
-        return channel not in muted and not done(channel, to, room) and tries(channel, to, room) < MAX_ATTEMPTS
+        return use_channel(prefs, muted, channel, to) and not done(channel, to, room) and tries(channel, to, room) < MAX_ATTEMPTS
 
     out: list[tuple[str, SendResult]] = []
     # Met de hand (monitor): precies dat kanaal en adres, ook een adres dat niet bij de reservatie hoort
@@ -470,7 +521,7 @@ def deliver(hotel_id: str, step: workflow.Step, r: Reservation, cfg: dict,
                 continue
             wa_ok = False
             if template and ((only and wanted("whatsapp", to)) or
-                             (not only and "whatsapp" not in muted and tries("whatsapp", to, room) == 0)):
+                             (not only and use_channel(prefs, muted, "whatsapp", to) and tries("whatsapp", to, room) == 0)):
                 mid = guests.new_message_id()
                 result = whatsapp.send_whatsapp_template(hotel_id, to, template, variables,
                                                          status_callback=status_url(hotel_id, r.reservation_id, mid))

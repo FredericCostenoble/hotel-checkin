@@ -520,6 +520,11 @@ def merge(hotel_id: str, keep_id: str, other_id: str, keep: GuestProfile | None 
     keep.backup_email = keep.backup_email or other.backup_email
     keep.backup_phone = keep.backup_phone or other.backup_phone
     keep.muted_channels = sorted(set(keep.muted_channels) | set(other.muted_channels))
+    # Vinkjes per adres van beide gasten blijven; zette het hotel hetzelfde adres bij de ene aan en de andere uit: uit
+    prefs = dict(other.contact_prefs)
+    for k, v in keep.contact_prefs.items():
+        prefs[k] = v and prefs.get(k, True)
+    keep.contact_prefs = prefs
     for e in [other.email, *other.known_emails]:
         _remember(keep, e, None)
     for ph in [other.phone, *other.known_phones]:
