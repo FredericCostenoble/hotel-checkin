@@ -22,7 +22,7 @@
     <a href="./#guests" class=""><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14.5a6.5 6.5 0 0 1 3.5 5.5"/></svg><span data-t="tab_guests"></span></a>
     <a href="./#breakfast"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1M8.5 10h7M8.5 14h7M8.5 18h4"/></svg><span data-t="nav_lists"></span></a>
     <a id="settings" class="on" href="settings.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg><span data-t="settings"></span></a>
-    <div class="sub"><button data-tab="hotel"><span data-t="tab_hotel"></span></button><button data-tab="workflow"><span data-t="nav_messages"></span></button><button data-tab="robot"><span data-t="tab_robot"></span></button></div>
+    <div class="sub"><button data-tab="hotel"><span data-t="tab_hotel"></span></button><button data-tab="tech"><span data-t="hs_tech"></span></button><button data-tab="workflow"><span data-t="nav_messages"></span></button><button data-tab="robot"><span data-t="tab_robot"></span></button></div>
   </nav>
   <div class="sidefoot">
     <div class="langsw" role="group" aria-label="Taal"><button data-lang="nl">NL</button><button data-lang="en">EN</button></div>
@@ -36,10 +36,10 @@
 <div id="repair-banner" class="repair-banner" hidden></div>
 
   <section id="tab-hotel" class="content v2">
-    <div class="ph"><div><h1><span data-t="settings"></span>: <span data-t="tab_hotel"></span></h1><div id="hs-sub" class="sub"></div></div></div>
+    <div class="ph"><div><h1><span data-t="settings"></span>: <span id="hs-title" data-t="tab_hotel"></span></h1><div id="hs-sub" class="sub"></div></div></div>
     <div class="m-only" style="display:flex;flex-direction:column;gap:14px">
       <div class="mh1" data-t="settings"></div>
-      <div class="seg" style="display:flex"><label class="on" style="flex:1;justify-content:center"><input type="radio" name="ms" checked><span data-t="tab_hotel"></span></label><label style="flex:1;justify-content:center" onclick="location.hash='workflow'"><input type="radio" name="ms"><span data-t="nav_messages"></span></label><label style="flex:1;justify-content:center" onclick="location.hash='robot'"><input type="radio" name="ms"><span data-t="tab_robot"></span></label></div>
+      <div class="seg" style="display:flex"><label class="on" data-ms="hotel" style="flex:1;justify-content:center" onclick="location.hash='hotel'"><input type="radio" name="ms" checked><span data-t="tab_hotel"></span></label><label data-ms="tech" style="flex:1;justify-content:center" onclick="location.hash='tech'"><input type="radio" name="ms"><span data-t="hs_tech"></span></label><label style="flex:1;justify-content:center" onclick="location.hash='workflow'"><input type="radio" name="ms"><span data-t="nav_messages"></span></label><label style="flex:1;justify-content:center" onclick="location.hash='robot'"><input type="radio" name="ms"><span data-t="tab_robot"></span></label></div>
       <div class="row" style="flex-wrap:nowrap"><select id="hs-msec" class="select" style="min-height:44px" aria-label="Sectie"></select></div>
     </div>
     <div id="hs-state" class="small muted"></div>

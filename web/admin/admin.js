@@ -560,10 +560,10 @@ async function init() {
 }
 
 const PAGE = document.body.dataset.page || "main";
-const TABS = PAGE === "settings" ? ["hotel", "workflow", "robot"] : ["today", "res", "guests", "breakfast", "cleaning"];
+const TABS = PAGE === "settings" ? ["hotel", "tech", "workflow", "robot"] : ["today", "res", "guests", "breakfast", "cleaning"];
 let current = TABS[0];
 function showTab(name, initial = false, leave = false) {
-  if (!leave && ((wfDirty && current === "workflow") || (hsDirty && current === "hotel")) && name !== current) {
+  if (!leave && ((wfDirty && current === "workflow") || (hsDirty && HS_TABS.includes(current))) && name !== current) {
     if (location.hash.slice(1) !== current) history.replaceState(null, "", "#" + current);
     ask(t("wf_leave"), { ok: t("dlg_leave"), danger: true }).then(ok => {
       if (ok) { history.replaceState(null, "", "#" + name); showTab(name, initial, true); }
@@ -576,6 +576,12 @@ function showTab(name, initial = false, leave = false) {
   document.querySelectorAll("[data-mtab]").forEach(x => x.classList.toggle("on", x.dataset.mtab === mt));
   document.body.classList.remove("menu-open");
   TABS.forEach(n => { if ($(`#tab-${n}`)) $(`#tab-${n}`).hidden = n !== name; });
+  if (HS_TABS.includes(name) && $("#tab-hotel")) {  // Hotel en Technisch: zelfde pagina, elk hun eigen secties
+    $("#tab-hotel").hidden = false;
+    hsGroup = name === "tech" ? "tech" : "func";
+    hsMSec = 0;
+    renderSettings();
+  }
   if ($("#tab-lists")) { $("#tab-lists").hidden = !LIST_KINDS.includes(name); if (LIST_KINDS.includes(name)) { listKind = name; renderList(name); } }
   if ($("#tab-detail")) $("#tab-detail").hidden = true;
   if (LIST_KINDS.includes(name) && !initial) loadList(name);
@@ -2532,11 +2538,12 @@ function hsInput(sec, f, i) {
   return `<input type="text" ${attrs} value="${esc(v ?? "")}">`;
 }
 
-// Instellingen in twee blokken in het menu links: Dagelijks (wat het hotel geregeld aanpast, in deze volgorde) en
-// Technisch (de rest). Alle secties op één pagina, geen keuzeknop.
+// Instellingen op twee pagina's (menu Instellingen): Hotel (wat het hotel geregeld aanpast, in deze volgorde) en
+// Technisch (de rest)
 const HS_FUNCTIONAL = ["schakelaars", "hotel", "receptie", "checkout", "doorschakelen", "nood", "ontbijtlijst", "kuislijst",
   "kamers", "ontbijt", "wifi", "parking", "reviews", "workflow_parameters"];
-const hsGroupOf = sec => HS_FUNCTIONAL.includes(sec.section.split(".")[0]) ? "func" : "tech";
+const HS_TABS = ["hotel", "tech"];
+let hsGroup = "func";  // pagina Hotel (func) of Technisch (tech)
 
 function hsShown() {
   // Een deelsectie (bv. kuislijst.label_tekst) hoort bij haar hoofdsectie
@@ -2544,7 +2551,7 @@ function hsShown() {
   const order = s => { const i = HS_FUNCTIONAL.indexOf(root(s)); return i < 0 ? 999 : i; };  // Technisch achteraan
   return hs.sections
     .map((s, n) => [s, n])
-    .filter(([s]) => !s.rooms && !(root(s) === "test" && isPrd()))
+    .filter(([s]) => !s.rooms && !(root(s) === "test" && isPrd()) && (hsGroup === "func") === HS_FUNCTIONAL.includes(root(s)))
     .sort(([a, i], [b, j]) => order(a) - order(b) || i - j)
     .map(([s]) => s);
 }
@@ -2639,9 +2646,9 @@ function renderSettings() {
   let i = 0;
   const shown = hsShown();
   const secName = sec => t("sec_" + sec.section.replace(".", "_")) || sec.section;
-  const head = (sec, n) => n === 0 || hsGroupOf(shown[n - 1]) !== hsGroupOf(sec)
-    ? `<div class="hs-navh"${n ? ' style="margin-top:10px"' : ""}>${esc(t(hsGroupOf(sec) === "func" ? "hs_func" : "hs_tech"))}</div>` : "";
-  $("#hs-nav").innerHTML = shown.map((sec, n) => head(sec, n) + `<a href="#hs-s${n}" data-jump="hs-s${n}" style="display:block;padding:6px 10px;border-radius:6px;text-decoration:none;font-weight:${n === 0 ? 700 : 500};${n === 0 ? "background:#E6E9EF;" : ""}color:#2B2F38">${esc(t("sec_" + sec.section.replace(".", "_")) || sec.section)}</a>`).join("");
+  $("#hs-title").textContent = t(hsGroup === "tech" ? "hs_tech" : "tab_hotel");
+  document.querySelectorAll("[data-ms]").forEach(x => x.classList.toggle("on", x.dataset.ms === (hsGroup === "tech" ? "tech" : "hotel")));
+  $("#hs-nav").innerHTML = shown.map((sec, n) => `<a href="#hs-s${n}" data-jump="hs-s${n}" style="display:block;padding:6px 10px;border-radius:6px;text-decoration:none;font-weight:${n === 0 ? 700 : 500};${n === 0 ? "background:#E6E9EF;" : ""}color:#2B2F38">${esc(t("sec_" + sec.section.replace(".", "_")) || sec.section)}</a>`).join("");
   // Per sectie: wie wijzigde ze laatst, en Bewaren alleen actief als er in deze sectie iets veranderde
   const foot = sec => { const rx = sec.section === "kamers" && rxSec() ? rxSec() : null;
     const m = rx && (rx.meta || {}).updated_at > ((sec.meta || {}).updated_at || "") ? rx.meta : sec.meta || {}; const w = m.updated_at ? t("wf_changed", m.updated_by || "?", stamp(m.updated_at)) : t("wf_from_file");
@@ -2703,9 +2710,7 @@ function renderSettings() {
   });
   // Gsm (ontwerp m-Instellingen-hotel): groep en sectie kiezen, één sectie tegelijk
   if ($("#hs-msec")) {
-    const opt = (sec, n) => `<option value="${n}" ${n === hsMSec ? "selected" : ""}>${esc(secName(sec))}</option>`;
-    $("#hs-msec").innerHTML = ["func", "tech"].map(g => `<optgroup label="${esc(t(g === "func" ? "hs_func" : "hs_tech"))}">${
-      shown.map((sec, n) => hsGroupOf(sec) === g ? opt(sec, n) : "").join("")}</optgroup>`).join("");
+    $("#hs-msec").innerHTML = shown.map((sec, n) => `<option value="${n}" ${n === hsMSec ? "selected" : ""}>${esc(secName(sec))}</option>`).join("");
     $("#hs-msec").onchange = () => { hsMSec = +$("#hs-msec").value; renderSettings(); };
     document.querySelectorAll("#hs-sections > section").forEach((el, n) => el.classList.toggle("msel", n === hsMSec));
   }
