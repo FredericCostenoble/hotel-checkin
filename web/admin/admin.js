@@ -75,7 +75,7 @@ const T = {
     g_msgs: "Berichten", g_mute_hint: "Vinkje weg: dit kanaal nooit gebruiken voor deze gast",
     st_sent: "verstuurd", st_failed: "mislukt", st_delivered: "afgeleverd", st_read: "gelezen", st_undelivered: "niet afgeleverd", show_guest: "Gastgegevens tonen", show_res: "Reservaties van deze gast tonen",
     g_update: "Synchroniseren", g_busy: "Bezig...", g_done: d => `${d.linked} gekoppeld, ${d.counted} verblijven en ${d.cancellations} annuleringen meegeteld, ${d.reservations_deleted} oude reservaties en ${d.guests_deleted} gasten verwijderd`,
-    g_search: "Zoek op naam, e-mail, telefoon", g_count: n => `${n} gasten`, g_country: "Land", g_stays: "Verblijven", g_cancelled: "Geannuleerd",
+    g_search: "Zoek op naam, e-mail, telefoon", g_count: n => `${n} gasten`, g_country: "Land", g_res: "Reservaties", g_stays: "Verblijven", g_cancelled: "Geannuleerd",
     g_avg_nights: "Gem. nachten", g_avg_persons: "Gem. pers.", g_first: "Eerste verblijf", g_last: "Laatste verblijf",
     g_channel: "Kanaal", g_rooms: "Kamers", g_relay: "doorstuuradres, niet voor marketing", g_form: "formulier",
     g_optout: "geen marketing", no_guests: "Nog geen gasten (klik op Synchroniseren)",
@@ -168,7 +168,7 @@ const T = {
     g_msgs: "Messages", g_mute_hint: "Unchecked: never use this channel for this guest",
     st_sent: "sent", st_failed: "failed", st_delivered: "delivered", st_read: "read", st_undelivered: "not delivered", show_guest: "Show guest data", show_res: "Show this guest's reservations",
     g_update: "Synchronize", g_busy: "Working...", g_done: d => `${d.linked} linked, ${d.counted} stays and ${d.cancellations} cancellations counted, ${d.reservations_deleted} old reservations and ${d.guests_deleted} guests deleted`,
-    g_search: "Search name, e-mail, phone", g_count: n => `${n} guests`, g_country: "Country", g_stays: "Stays", g_cancelled: "Cancelled",
+    g_search: "Search name, e-mail, phone", g_count: n => `${n} guests`, g_country: "Country", g_res: "Reservations", g_stays: "Stays", g_cancelled: "Cancelled",
     g_avg_nights: "Avg nights", g_avg_persons: "Avg pers.", g_first: "First stay", g_last: "Last stay",
     g_channel: "Channel", g_rooms: "Rooms", g_relay: "relay address, not for marketing", g_form: "form",
     g_optout: "no marketing", no_guests: "No guests yet (click Synchronize)",
@@ -220,7 +220,7 @@ Object.assign(T.nl, {
   sw_robot: "Robot", sw_go: "Naar de instellingen", sw_st_on: "aan", sw_st_off: "uit", sw_st_sel: "selectie",
   g_sub: "Gastprofielen los van de reservaties, ook na het verblijf bewaard.", g_name: "Naam", g_profiles: n => `${n} gastprofielen`,
   m_card: "Te beslissen: mogelijk dezelfde gast", m_open: n => `${n} open`, m_and: "en", m_keep: "Samenvoegen", m_apart: "Apart houden",
-  gp_since: d => `gastprofiel sinds ${d}`, gp_nomkt: "Geen marketing", gp_back: "Terugkerend", gp_stays: "verblijven", gp_canc: "geannuleerd",
+  gp_since: d => `gastprofiel sinds ${d}`, gp_nomkt: "Geen marketing", gp_back: "Terugkerend", gp_resn: "reservaties", gp_stays: "verblijven", gp_canc: "geannuleerd", pick_filter: "Filter",
   gp_nights: "nachten gem.", gp_pers: "personen gem.", gp_first: "Eerste verblijf", gp_last: "Laatste verblijf", gp_chan: "Voorkeurskanaal", gp_rooms: "Kamers",
   gp_contact: "Contact", gp_help: "Vinkje weg: dit kanaal nooit gebruiken voor deze gast.", gp_use: "gebruiken", gp_relay: "doorstuuradres, niet voor marketing",
   gp_form: "formulier", gp_booking: "reservatie", gp_res: "Reservaties", gp_all: n => `Alle ${n} reservaties`, gp_now: "Nu", gp_left: "Vertrokken", gp_coming: "Komt",
@@ -303,7 +303,7 @@ Object.assign(T.en, {
   sw_robot: "Robot", sw_go: "To the settings", sw_st_on: "on", sw_st_off: "off", sw_st_sel: "selection",
   g_sub: "Guest profiles separate from the reservations, kept after the stay.", g_name: "Name", g_profiles: n => `${n} guest profiles`,
   m_card: "To decide: possibly the same guest", m_open: n => `${n} open`, m_and: "and", m_keep: "Merge", m_apart: "Keep apart",
-  gp_since: d => `guest profile since ${d}`, gp_nomkt: "No marketing", gp_back: "Returning", gp_stays: "stays", gp_canc: "cancelled",
+  gp_since: d => `guest profile since ${d}`, gp_nomkt: "No marketing", gp_back: "Returning", gp_resn: "reservations", gp_stays: "stays", gp_canc: "cancelled", pick_filter: "Filter",
   gp_nights: "nights avg.", gp_pers: "persons avg.", gp_first: "First stay", gp_last: "Last stay", gp_chan: "Preferred channel", gp_rooms: "Rooms",
   gp_contact: "Contact", gp_help: "Untick: never use this channel for this guest.", gp_use: "use", gp_relay: "relay address, not for marketing",
   gp_form: "form", gp_booking: "reservation", gp_res: "Reservations", gp_all: n => `All ${n} reservations`, gp_now: "Now", gp_left: "Departed", gp_coming: "Coming",
@@ -531,9 +531,9 @@ async function init() {
     document.querySelectorAll("#g-head th[data-gsort]").forEach(th => th.onclick = () => gSortBy(th.dataset.gsort));
     $("#search").oninput = render;
     document.querySelectorAll("#res-head th[data-sort]").forEach(th => th.onclick = () => sortBy(th.dataset.sort));
-    $("#from").onchange = render;
+    $("#from").onchange = () => { resPick = null; render(); };
     if ($("#status")) $("#status").onchange = render;
-    $("#to").onchange = render;
+    $("#to").onchange = () => { resPick = null; render(); };
     $("#today").onclick = () => { $("#from").value = todayIso(); $("#to").value = ""; resPick = null; render(); };
     $("#list-make").onclick = () => makeList(listKind, false);
     $("#list-send").onclick = () => makeList(listKind, true);
@@ -846,6 +846,7 @@ function renderToday() {
     e.preventDefault();
     // "en nog 7", "Bekijken": precies de reservaties waarover het gaat, niet de hele lijst
     resPick = a.dataset.pick && todayPicks[a.dataset.pick] ? { ...todayPicks[a.dataset.pick], ids: new Set(todayPicks[a.dataset.pick].ids) } : null;
+    if (resPick) clearResFilters();
     showTab(a.dataset.go);
     if (a.dataset.go === "res") render();
   });
@@ -1200,6 +1201,7 @@ function openReservations(id) {
   const g = guestById(id);
   $("#search").value = "";
   resPick = g ? { label: g.name, ids: new Set(g.reservations) } : null;
+  clearResFilters();
   showTab("res"); render();
 }
 
@@ -1270,11 +1272,11 @@ function renderGuests() {
   $("#guests").innerHTML = list.map(g => `
     <tr data-g="${esc(g.id)}" style="cursor:pointer${g.id === gSel ? ";background:#EEF0F5" : ""}">
       <td><a class="nm" href="#" data-g="${esc(g.id)}">${esc(g.name)}</a>${nomkt(g)}</td><td>${esc(g.country)}</td>
-      <td class="mono">${g.stays}</td><td class="small">${esc(dlong(g.last_stay))}</td><td class="small">${esc(g.preferred_channel)}</td>
-    </tr>`).join("") || `<tr><td colspan="5" class="muted">${t("no_guests")}</td></tr>`;
+      <td class="mono">${g.reservations.length}</td><td class="mono">${g.stays}</td><td class="small">${esc(dlong(g.last_stay))}</td><td class="small">${esc(g.preferred_channel)}</td>
+    </tr>`).join("") || `<tr><td colspan="6" class="muted">${t("no_guests")}</td></tr>`;
   $("#mguests").innerHTML = list.map(g => `<a href="#" class="mcard" data-g="${esc(g.id)}" style="text-decoration:none;color:#2B2F38">
       <div class="mrow"><b style="font-size:16px">${esc(g.name)}</b>${ICO.chev}</div>
-      <div class="small muted">${esc([g.country, t("gp_stays_m", g.stays), g.last_stay ? dlong(g.last_stay) : "", g.preferred_channel].filter(Boolean).join(" · "))}</div>
+      <div class="small muted">${esc([g.country, `${g.reservations.length} ${t("gp_resn")}`, t("gp_stays_m", g.stays), g.last_stay ? dlong(g.last_stay) : "", g.preferred_channel].filter(Boolean).join(" · "))}</div>
       ${g.opt_out ? `<div class="row" style="gap:4px"><span class="tag t-off">${esc(t("gp_nomkt"))}</span></div>` : ""}</a>`).join("") || `<div class="muted">${t("no_guests")}</div>`;
   document.querySelectorAll("#guests [data-g], #mguests [data-g]").forEach(el => el.onclick = e => {
     e.preventDefault();
@@ -1311,7 +1313,8 @@ function renderProfile() {
   const inHouse = res.some(r => r.status !== "cancelled" && r.arrival <= today && r.departure > today);
   el.innerHTML = `<a class="btn3 m-only" href="#guests" id="gp-back" style="padding:0;align-self:flex-start">${IC(P.back, 16)}${esc(t("g_back"))}</a><section class="card"><div class="ch"><div><h2 style="font-size:20px">${esc(g.name)}</h2><div class="small muted">${esc([countryName(g.country), g.first_stay ? t("gp_since", dmonth(g.first_stay)) : ""].filter(Boolean).join(" · "))}</div></div>
     <div class="row">${g.opt_out ? `<span class="tag t-off">${esc(t("gp_nomkt"))}</span>` : ""}${g.stays > 1 ? `<span class="tag t-on">${esc(t("gp_back"))}</span>` : ""}</div></div>
-    <div class="cb"><div class="statgrid" style="grid-template-columns:repeat(auto-fit,minmax(110px,1fr))">
+    <div class="cb"><div class="statgrid" style="grid-template-columns:repeat(3,minmax(0,1fr))">
+      <div class="stat"><span class="n">${g.reservations.length}</span><span class="l">${esc(t("gp_resn"))}</span></div>
       <div class="stat"><span class="n">${g.stays}</span><span class="l">${esc(t("gp_stays"))}</span></div>
       <div class="stat"><span class="n">${g.cancellations || 0}</span><span class="l">${esc(t("gp_canc"))}</span></div>
       <div class="stat"><span class="n">${esc(num1(g.avg_nights))}</span><span class="l">${esc(t("gp_nights"))}</span></div>
@@ -1403,6 +1406,12 @@ function msgNext(r) {
   return r.messages_on === false ? t("r_none_off") : t("r_none");
 }
 
+// Bij een link naar precies bepaalde reservaties: de andere filters leeg, zodat wat op het scherm staat ook is wat
+// gebruikt wordt (de reservaties zelf staan als filter boven de lijst, met Toon alle)
+function clearResFilters() {
+  $("#search").value = ""; $("#from").value = ""; $("#to").value = "";
+  if ($("#status")) $("#status").value = "";
+}
 let resPick = null;  // {label, ids}: alleen deze reservaties (link vanuit Vandaag), tot "Toon alle"
 const todayPicks = {};
 function render() {
@@ -1422,7 +1431,7 @@ function render() {
     th.classList.toggle("sorted", th.dataset.sort === sortKey);
     th.dataset.dir = th.dataset.sort === sortKey ? (sortDir > 0 ? "asc" : "desc") : "";
   });
-  $("#count").innerHTML = t("res_count", list.length) + (resPick ? ` <span class="badge b-info" style="margin-left:8px">${esc(resPick.label)}</span> <a href="#" class="btn3" id="pick-clear" style="padding:0">${esc(t("pick_clear"))}</a>` : "");
+  $("#count").innerHTML = t("res_count", list.length) + (resPick ? ` <span class="badge b-info" style="margin-left:8px">${esc(t("pick_filter"))}: ${esc(resPick.label)} (${resPick.ids.size})</span> <a href="#" class="btn3" id="pick-clear" style="padding:0">${esc(t("pick_clear"))}</a>` : "");
   if ($("#pick-clear")) $("#pick-clear").onclick = e => { e.preventDefault(); resPick = null; render(); };
   const contactCount = r => [[r.email, r.backup_email], [r.phone, r.backup_phone]].map(x => x.filter(Boolean).length);
   $("#res").innerHTML = list.map(r => {
