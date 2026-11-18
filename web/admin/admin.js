@@ -222,7 +222,8 @@ Object.assign(T.nl, {
   m_card: "Te beslissen: mogelijk dezelfde gast", m_open: n => `${n} open`, m_and: "en", m_keep: "Samenvoegen", m_apart: "Apart houden",
   gp_since: d => `gastprofiel sinds ${d}`, gp_nomkt: "Geen marketing", gp_back: "Terugkerend", gp_resn: "reservaties", gp_stays: "verblijven", gp_canc: "geannuleerd", pick_filter: "Filter",
   gp_nights: "nachten gem.", gp_pers: "personen gem.", gp_first: "Eerste verblijf", gp_last: "Laatste verblijf", gp_chan: "Voorkeurskanaal", gp_rooms: "Kamers",
-  gp_contact: "Contact", gp_help: "Vinkje weg: dit kanaal nooit gebruiken voor deze gast.", gp_use: "gebruiken", gp_relay: "doorstuuradres, niet voor marketing",
+  gp_contact: "Contact", gp_help: "Gebruiken: berichten over het verblijf mogen via dit kanaal. Vinkje weg: dit kanaal nooit gebruiken voor deze gast.", gp_use: "gebruiken", gp_relay: "doorstuuradres van de boekingssite: wel voor berichten over het verblijf, niet voor marketing", gp_fake: "nepnummer van de boekingssite: nooit gebruikt",
+  gp_detach: "Ontkoppelen", gp_detach_q: n => `Reservatie #${n} hoort niet bij deze gast? Ze krijgt een eigen gastprofiel, of komt bij de gast waar ze zeker bij hoort. Ze komt nooit meer terug bij deze gast.`, gp_detached: "Ontkoppeld.",
   gp_form: "formulier", gp_booking: "reservatie", gp_res: "Reservaties", gp_all: n => `Alle ${n} reservaties`, gp_now: "Nu", gp_left: "Vertrokken", gp_coming: "Komt",
   d_back: "Reservaties", d_nights: n => `${n} nachten`, d_persons: n => `${n} personen`, d_rooms: x => `kamer ${x}`, d_and: "en",
   d_open_lh: "Open in Lighthouse", d_app: "Gast-app bekijken", d_profile: "Gastprofiel", d_auto: "Automatische berichten voor deze reservatie",
@@ -305,7 +306,8 @@ Object.assign(T.en, {
   m_card: "To decide: possibly the same guest", m_open: n => `${n} open`, m_and: "and", m_keep: "Merge", m_apart: "Keep apart",
   gp_since: d => `guest profile since ${d}`, gp_nomkt: "No marketing", gp_back: "Returning", gp_resn: "reservations", gp_stays: "stays", gp_canc: "cancelled", pick_filter: "Filter",
   gp_nights: "nights avg.", gp_pers: "persons avg.", gp_first: "First stay", gp_last: "Last stay", gp_chan: "Preferred channel", gp_rooms: "Rooms",
-  gp_contact: "Contact", gp_help: "Untick: never use this channel for this guest.", gp_use: "use", gp_relay: "relay address, not for marketing",
+  gp_contact: "Contact", gp_help: "Use: messages about the stay may go through this channel. Untick: never use this channel for this guest.", gp_use: "use", gp_relay: "relay address of the booking site: used for messages about the stay, not for marketing", gp_fake: "fake number of the booking site: never used",
+  gp_detach: "Detach", gp_detach_q: n => `Reservation #${n} does not belong to this guest? It gets its own guest profile, or joins the guest it surely belongs to. It never comes back to this guest.`, gp_detached: "Detached.",
   gp_form: "form", gp_booking: "reservation", gp_res: "Reservations", gp_all: n => `All ${n} reservations`, gp_now: "Now", gp_left: "Departed", gp_coming: "Coming",
   d_back: "Reservations", d_nights: n => `${n} nights`, d_persons: n => `${n} persons`, d_rooms: x => `room ${x}`, d_and: "and",
   d_open_lh: "Open in Lighthouse", d_app: "View guest app", d_profile: "Guest profile", d_auto: "Automatic messages for this reservation",
@@ -1289,6 +1291,8 @@ function renderGuests() {
   renderMatches();
 }
 
+// Nepnummer van een boekingssite (zelfde regel als checkin/service.py placeholder_phone)
+const fakePhone = p => { const d = String(p || "").replace(/\D/g, ""); return d.length >= 8 && (new Set(d).size === 1 || new Set(d.slice(3)).size === 1); };
 // Profiel van de gekozen gast, zoals in het ontwerp (rechts)
 function renderProfile() {
   const g = guestById(gSel), el = $("#g-profile");
@@ -1301,15 +1305,18 @@ function renderProfile() {
     <label class="row small" style="gap:6px;font-weight:600"><input type="checkbox" ${disabled ? "disabled" : `data-mute="${esc(g.id)}" value="${ch}"`} ${!disabled && !muted.includes(ch) ? "checked" : ""} style="width:18px;height:18px;margin:0">${esc(t("gp_use"))}</label></div>`;
   const contacts = [
     ...own.map(x => line(ICG.mail, x, src(x), "email")),
-    ...(g.relay_emails || []).map(x => line(ICG.mail, x, t("gp_relay"), "", true)),
-    ...phones.flatMap(x => [line(ICG.wa, x, `${t("gp_wa")}, ${src(x)}`, "whatsapp"), line(ICG.phone, x, `${t("gp_sms")}, ${src(x)}`, "sms")]),
+    // Doorstuuradres van Booking.com/Expedia: berichten over het verblijf gaan er wel naartoe (zelfde vinkje e-mail)
+    ...(g.relay_emails || []).map(x => line(ICG.mail, x, t("gp_relay"), "email")),
+    // Nepnummer van de boekingssite (+11111111111): nooit gebruikt, dus geen vinkje
+    ...phones.flatMap(x => fakePhone(x) ? [line(ICG.phone, x, t("gp_fake"), "", true)]
+      : [line(ICG.wa, x, `${t("gp_wa")}, ${src(x)}`, "whatsapp"), line(ICG.phone, x, `${t("gp_sms")}, ${src(x)}`, "sms")]),
   ].join("");
   const today = todayIso();
   const res = g.reservations.map(id => rows.find(r => r.id === id)).filter(Boolean).sort((a, b) => b.arrival.localeCompare(a.arrival));
   const badge = r => r.status === "cancelled" ? `<span class="badge b-err">${esc(t("r_cancelled"))}</span>`
     : r.departure < today ? `<span class="badge b-ok">${esc(t("gp_left"))}</span>`
     : r.arrival <= today ? `<span class="badge b-info">${esc(t("gp_now"))}</span>` : `<span class="badge b-wait">${esc(t("gp_coming"))}</span>`;
-  const resLines = res.slice(0, 3).map(r => `<div class="li"><div class="lt"><a href="#" class="nm" data-open-res="${esc(g.id)}">#${esc(r.booking_number)}</a> ${esc(`${dshort(r.arrival)} ${t("stay_to")} ${dlong(r.departure)}${r.rooms.length ? ", " + t("r_room", r.rooms.join(", ")).toLowerCase() : ""}`)}</div>${badge(r)}</div>`).join("");
+  const resLines = res.slice(0, 3).map(r => `<div class="li"><div class="lt"><a href="#" class="nm" data-open-res="${esc(g.id)}">#${esc(r.booking_number)}</a> ${esc(`${dshort(r.arrival)} ${t("stay_to")} ${dlong(r.departure)}${r.rooms.length ? ", " + t("r_room", r.rooms.join(", ")).toLowerCase() : ""}`)}${res.length > 1 ? `<div><a href="#" class="small" data-detach="${esc(r.id)}" data-bn="${esc(r.booking_number)}">${esc(t("gp_detach"))}</a></div>` : ""}</div>${badge(r)}</div>`).join("");
   const inHouse = res.some(r => r.status !== "cancelled" && r.arrival <= today && r.departure > today);
   el.innerHTML = `<a class="btn3 m-only" href="#guests" id="gp-back" style="padding:0;align-self:flex-start">${IC(P.back, 16)}${esc(t("g_back"))}</a><section class="card"><div class="ch"><div><h2 style="font-size:20px">${esc(g.name)}</h2><div class="small muted">${esc([countryName(g.country), g.first_stay ? t("gp_since", dmonth(g.first_stay)) : ""].filter(Boolean).join(" · "))}</div></div>
     <div class="row">${g.opt_out ? `<span class="tag t-off">${esc(t("gp_nomkt"))}</span>` : ""}${g.stays > 1 ? `<span class="tag t-on">${esc(t("gp_back"))}</span>` : ""}</div></div>
@@ -1325,6 +1332,13 @@ function renderProfile() {
     <div class="lbl" style="margin-top:6px">${esc(t("gp_res"))}</div>${resLines}
     ${g.reservations.length ? `<a class="btn3" href="#" data-open-res="${esc(g.id)}" style="padding:0">${esc(t("gp_all", g.reservations.length))}</a>` : ""}</div></section>`;
   el.querySelectorAll("[data-open-res]").forEach(a => a.onclick = e => { e.preventDefault(); openReservations(a.dataset.openRes); });
+  el.querySelectorAll("[data-detach]").forEach(a => a.onclick = async e => {
+    e.preventDefault();
+    if (!await ask(t("gp_detach_q", a.dataset.bn), { ok: t("gp_detach"), danger: true })) return;
+    const d = await get(`/api/monitor/${encodeURIComponent($("#hotel").value)}/guests?action=detach&reservation=${encodeURIComponent(a.dataset.detach)}`, { method: "POST" });
+    await refreshNow();
+    if (d.guest) { gSel = d.guest; renderGuests(); }  // meteen de gast waar ze nu bij hoort
+  });
   if ($("#gp-back")) $("#gp-back").onclick = e => { e.preventDefault(); $("#tab-guests").classList.remove("gdet"); window.scrollTo(0, 0); };
   el.querySelectorAll("input[data-mute]").forEach(box => box.onchange = async () => {
     const id = box.dataset.mute;

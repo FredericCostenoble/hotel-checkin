@@ -297,3 +297,22 @@ def test_split_wrong_link_from_before_the_placeholder_fix():
     assert g.reservation_ids == ["l1"] and g.stays == 0 and g.rooms == {} and g.stay_periods == []
     other = profiles.get_profile("lucca", repo.get_reservation("lucca", "m1").guest_id)
     assert other.guest_id != g.guest_id and other.last_name == "Mitchell" and other.stays == 1
+
+
+def test_detach_gives_own_profile_or_the_right_one_and_never_back():
+    """Ontkoppelen: eigen profiel, of het profiel dat zeker dezelfde gast is; nooit terug bij het oude."""
+    gp.link(_res("a1", "Jan", "Voorbeeld", email="jan@example.com"))
+    piet = gp.link(_res("p1", "Piet", "Anders", email="piet@example.com", days_ago=40))
+    wrong = _res("p2", "Piet", "Anders", email="piet@example.com", days_ago=5)
+    g = profiles.list_profiles("lucca")
+    jan = next(x for x in g if x.last_name == "Voorbeeld")
+    wrong.guest_id = jan.guest_id
+    repo.save_reservation(wrong)
+    jan.reservation_ids.append("p2")
+    profiles.save_profile(jan)
+    gp.count_stay(repo.get_reservation("lucca", "p2"))
+    new = gp.detach("lucca", "p2")
+    assert new.guest_id == piet.guest_id and sorted(new.reservation_ids) == ["p1", "p2"] and new.stays == 1
+    assert profiles.get_profile("lucca", jan.guest_id).reservation_ids == ["a1"]
+    assert profiles.get_profile("lucca", jan.guest_id).stays == 0
+    assert gp.detach("lucca", "a1") is None  # enige reservatie van Jan: niets te ontkoppelen

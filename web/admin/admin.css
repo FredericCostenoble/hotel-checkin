@@ -436,3 +436,16 @@ table.lists td:last-child { white-space: nowrap; }
   ul.plan .pl-head { flex-wrap: wrap; }
   ul.plan .pl-head .reason { white-space: normal; }
 }
+
+/* Vinkjes in de stijl van de monitor (niet het blauw van de browser); de schakelaars (.switch) hebben hun eigen stijl */
+input[type="checkbox"]:not(.switch){appearance:none;-webkit-appearance:none;width:18px;height:18px;margin:0;flex:none;
+  border:1.5px solid #8A8F99;border-radius:4px;background:#fff;display:inline-grid;place-content:center;cursor:pointer}
+input[type="checkbox"]:not(.switch)::after{content:"";width:9px;height:5px;border:2px solid #fff;border-top:0;border-right:0;
+  transform:rotate(-45deg) translate(1px,-1px);opacity:0}
+input[type="checkbox"]:not(.switch):checked{background:#23262E;border-color:#23262E}
+input[type="checkbox"]:not(.switch):checked::after{opacity:1}
+input[type="checkbox"]:not(.switch):disabled{background:#F1F2F5;border-color:#D5D9E0;cursor:default}
+input[type="checkbox"]:not(.switch):focus-visible{outline:2px solid #5C6478;outline-offset:2px}
+
+/* Gasten: gastkaart breder, lijst smaller (alleen op een groot scherm) */
+@media (min-width:761px){ #g-profile{flex:0 0 560px !important;max-width:560px} }

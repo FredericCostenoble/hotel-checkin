@@ -283,6 +283,16 @@ def set_muted_channels(hotel_id: str, guest_id: str, muted: list[str]) -> bool:
     return True
 
 
+def detach_reservation(hotel_id: str, reservation_id: str) -> dict:
+    """Knop Ontkoppelen in het gastprofiel (processes/guest_profiles.py, detach)."""
+    from hotel_checkin.processes import guest_profiles
+
+    if hotel_id not in list_hotels() or not reservation_id:
+        return {"ok": False}
+    g = guest_profiles.detach(hotel_id, reservation_id)
+    return {"ok": g is not None, "guest": g.guest_id if g else ""}
+
+
 def mark_guests_different(hotel_id: str, a: str, b: str) -> bool:
     from hotel_checkin.guests import profiles
 

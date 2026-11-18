@@ -271,6 +271,35 @@ def split_wrong_links(hotel_id: str) -> int:
     return split
 
 
+def detach(hotel_id: str, reservation_id: str) -> GuestProfile | None:
+    """Knop Ontkoppelen (monitor): een reservatie die bij de verkeerde gast staat, uit dat profiel halen.
+    Wat ze meetelde, gaat eraf. Ze krijgt een eigen profiel, of komt bij een ander profiel dat zeker dezelfde gast is
+    (zelfde eigen e-mailadres of gsm-nummer en de naam past); nooit terug bij het oude: dat paar wordt onthouden als
+    verschillend, zodat ook het dagelijks onderhoud ze niet opnieuw samenvoegt. Twijfelgevallen komen bij Mogelijk
+    dezelfde gast. Geeft het nieuwe profiel, of None (geen reservatie, of ze is de enige in het profiel)."""
+    r = guests.get_reservation(hotel_id, reservation_id)
+    g = profiles.get_profile(hotel_id, r.guest_id) if r and r.guest_id else None
+    if r is None or g is None:
+        return None
+    others = [o for o in (guests.get_reservation(hotel_id, x) for x in g.reservation_ids if x != reservation_id) if o]
+    if not others:
+        return None
+    _uncount(g, r, others)
+    g.reservation_ids = [x for x in g.reservation_ids if x != reservation_id]
+    profiles.save_profile(g)
+    r.guest_id = None
+    guests.save_reservation(r, fields=("guest_id", "stay_counted_at", "cancel_counted_at"))
+    pool = [p for p in profiles.list_profiles(hotel_id) if p.guest_id != g.guest_id]
+    new = link(r, pool)
+    if new is None:
+        return None
+    profiles.mark_different(hotel_id, g.guest_id, new.guest_id)
+    r = guests.get_reservation(hotel_id, reservation_id) or r
+    count_stay(r)
+    count_cancellation(r)
+    return profiles.get_profile(hotel_id, new.guest_id) or new
+
+
 def merge_same_stay(hotel_id: str) -> int:
     """Bestaande profielen met dezelfde naam en overlappende reservaties samenvoegen (dagelijks onderhoud).
     Paren die met de hand als verschillend gemarkeerd zijn, blijven apart. Geeft het aantal samenvoegingen."""
