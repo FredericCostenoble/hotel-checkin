@@ -258,3 +258,15 @@ def test_maintenance_merges_existing_same_stay_profiles_but_not_marked_different
     left = {r.reservation_id: r.guest_id for r in repo.list_reservations("lucca")}
     assert left["s2"] in (left["s1"], left["s3"]) and left["s1"] != left["s3"]
     assert left["s4"] not in (left["s1"], left["s3"]) and len(profiles.list_profiles("lucca")) == 3
+
+
+def test_merge_once_only_once():
+    for rid in ("o1", "o2"):
+        r = _res(rid, "Sophia", "Sharp")
+        g = profiles.new_profile("lucca")
+        g.first_name, g.last_name, g.reservation_ids = "Sophia", "Sharp", [rid]
+        profiles.save_profile(g)
+        r.guest_id = g.guest_id
+        repo.save_reservation(r, fields=("guest_id",))
+    assert maintenance.merge_once("lucca") == 1
+    assert maintenance.merge_once("lucca") is None and len(profiles.list_profiles("lucca")) == 1

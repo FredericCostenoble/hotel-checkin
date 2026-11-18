@@ -107,3 +107,19 @@ def run(hotel_id: str, today: date | None = None) -> dict:
     guests.log_robot_run(hotel_id, TASK, started, True, done["counted"], done["linked"], note)
     guests.set_state(hotel_id, STATE_KEY, today.isoformat())
     return done
+
+
+MERGE_ONCE_KEY = "merge_same_stay_v1"
+
+
+def merge_once(hotel_id: str) -> int | None:
+    """Eenmalig (bij de volgende run van de robot): bestaande dubbele profielen met dezelfde naam en
+    dezelfde nachten samenvoegen, zonder te wachten op het dagelijks onderhoud. None = al gebeurd."""
+    if guests.get_state(hotel_id, MERGE_ONCE_KEY):
+        return None
+    started = datetime.now(UTC)
+    n = guest_profiles.merge_same_stay(hotel_id)
+    guests.set_state(hotel_id, MERGE_ONCE_KEY, started.isoformat(timespec="seconds"))
+    guests.log_robot_run(hotel_id, TASK, started, True, n, 0,
+                         f"eenmalig: {n} dubbele gastprofielen samengevoegd (zelfde naam, zelfde nachten)")
+    return n

@@ -261,6 +261,7 @@ def main() -> int:
             if maintenance.due(hotel_id):
                 progress.step(hotel_id, maintenance.TASK, "gasten synchroniseren en oude gegevens opruimen")
                 maintenance.run(hotel_id)
+            maintenance.merge_once(hotel_id)
             if _refresh_due(hotel_id):
                 found = refresh_contacts.run(hotel_id)
                 logging.info("%s: %s e-mailadressen gevonden bij nalezen", hotel_id, found)
