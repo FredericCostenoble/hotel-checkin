@@ -38,6 +38,8 @@ website_fr = "https://hotellucca.be/fr/hotel-bruges-centre/"
 website_en = "https://hotellucca.be/en/hotel-bruges-city-centre/"
 website_de = "https://hotellucca.be/de/hotel-bruegge-zentrum/"
 logo_url = "https://hotellucca.be/wp-content/uploads/2025/06/Logo-website-hotel-lucca.png"
+# Icoon van de gast-app (tabblad en beginscherm van de gsm), zoals op de website. Leeg = standaardicoon.
+favicon_url = "https://hotellucca.be/wp-content/uploads/2025/06/cropped-favicon-192x192.png"
 
 [test]
 # Buiten PRD (TST en codespace) gaat elk bericht naar deze adressen en dit nummer, nooit naar de gast.

@@ -548,6 +548,11 @@ const API = window.CHECKIN_API || "";
     root.setProperty("--text", h.colors.tekst);
     root.setProperty("--bg", h.colors.achtergrond);
     $("logo").src = h.logo_url;
+    if (h.favicon_url) {  // icoon van het hotel, zoals op zijn website
+      $("favicon").removeAttribute("type");
+      $("favicon").href = h.favicon_url;
+      $("touch-icon").href = h.favicon_url;
+    }
     $("logo").alt = h.name;
     $("logo-link").href = h.website;
     $("f-name").textContent = h.name;

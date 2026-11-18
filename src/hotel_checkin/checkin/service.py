@@ -51,6 +51,7 @@ def hotel_info(hotel_id: str, language: str) -> dict:
         "email": c["hotel"]["email"],
         "website": c["hotel"]["website"],
         "logo_url": c["hotel"]["logo_url"],
+        "favicon_url": c["hotel"].get("favicon_url", ""),
         "privacy_url": c["privacy"][f"url_{lang}"],
         "privacy_urls": {k[4:]: v for k, v in c["privacy"].items() if k.startswith("url_")},
         "colors": c["kleuren"],

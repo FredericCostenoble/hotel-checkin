@@ -1965,6 +1965,10 @@ const HS_TEXT = {
     "Logo",
     "Adres van de afbeelding bovenaan de mails en het formulier."
    ],
+   "hotel.favicon_url": [
+    "Icoon van de gast-app",
+    "Vierkante afbeelding (bv. 192 x 192) voor het tabblad en het beginscherm van de gsm, liefst dezelfde als op de website. Leeg = standaardicoon."
+   ],
    "verzending.mail_afzender": [
     "Afzender",
     "Mailbox waarmee de mails technisch verstuurd worden. Gasten antwoorden naar het contactadres van het hotel."
@@ -2290,6 +2294,10 @@ const HS_TEXT = {
    "hotel.logo_url": [
     "Logo",
     "Address of the image at the top of the mails and the form."
+   ],
+   "hotel.favicon_url": [
+    "Guest app icon",
+    "Square image (e.g. 192 x 192) for the browser tab and the phone home screen, preferably the same as on the website. Empty = default icon."
    ],
    "verzending.mail_afzender": [
     "Sender",
