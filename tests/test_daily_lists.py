@@ -142,7 +142,7 @@ def test_generate_sends_mail_with_excel_and_keeps_15(setup):
     assert name.endswith(".xlsx") and content[:2] == b"PK"
     assert data["sent"][0]["ok"] and repo.get_daily_list("lucca", "breakfast", DAY.isoformat())["generated_by"]
     run = repo.robot_runs("lucca", task="ontbijtlijst")[0]
-    assert run["ok"] and "2 persons in 1 rooms" in run["error"]
+    assert run["ok"] and "2 personen in 1 kamers" in run["error"]  # robotlogboek: Nederlands
     for i in range(20):
         dl.generate("lucca", "breakfast", DAY + timedelta(days=i + 1))
     kept = repo.daily_lists("lucca", "breakfast")
