@@ -447,5 +447,16 @@ input[type="checkbox"]:not(.switch):checked::after{opacity:1}
 input[type="checkbox"]:not(.switch):disabled{background:#F1F2F5;border-color:#D5D9E0;cursor:default}
 input[type="checkbox"]:not(.switch):focus-visible{outline:2px solid #5C6478;outline-offset:2px}
 
-/* Gasten: gastkaart breder, lijst smaller (alleen op een groot scherm) */
-@media (min-width:761px){ #g-profile{flex:0 0 560px !important;max-width:560px} }
+/* Gasten (groot scherm): lijst en gastkaart altijd naast elkaar, ook ingezoomd. De kaart is breed maar schaalt mee
+   (340 tot 560 px), blijft zichtbaar bij het scrollen; de lijst krijgt de rest en scrolt opzij als het te smal wordt. */
+@media (min-width:761px){
+  #tab-guests .cols{flex-wrap:nowrap}
+  #tab-guests .col-main{flex:1 1 0 !important;min-width:0}
+  #tab-guests .col-main .tbox{overflow-x:auto}
+  #g-profile{flex:0 0 clamp(340px,38%,560px) !important;max-width:560px;position:sticky;top:12px;
+    max-height:calc(100vh - 24px);overflow-y:auto}
+}
+/* Smal (ingezoomd): het land valt weg in de gastenlijst, zodat naam, reservaties, verblijven en datum passen */
+@media (min-width:761px) and (max-width:1500px){
+  #tab-guests .col-main table th:nth-child(2),#tab-guests .col-main table td:nth-child(2){display:none}
+}
