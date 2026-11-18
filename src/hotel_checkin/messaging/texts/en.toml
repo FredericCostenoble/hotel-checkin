@@ -18,14 +18,14 @@ voettekst = "You are receiving this email because you have a reservation at {hot
 
 [confirmation]
 onderwerp = "Your stay at {hotel_naam}, {aankomst} to {vertrek}"
-voorvertoning = "Thank you for your reservation. Please complete your check-in details."
+voorvertoning = "Thank you for your reservation. Do your online check-in on your stay page."
 aanhef = "Dear {voornaam},"
 afsluiting = "See you soon,"
-sms = "{hotel_naam}: dear {voornaam}, thank you for your reservation. Complete your check-in details and receive your personal PIN code before arrival: {checkin_link}"
+sms = "{hotel_naam}: dear {voornaam}, thank you for your reservation. Do your online check-in on your stay page, where you will later also find your PIN code: {checkin_link}"
 
 [[confirmation.blokken]]
 type = "text"
-alineas = ["Thank you for booking with {hotel_naam}. We look forward to welcoming you in the heart of Bruges."]
+alineas = ["Thank you for your reservation at {hotel_naam}. We look forward to welcoming you in the heart of Bruges."]
 
 [[confirmation.blokken]]
 module = "reservation"
@@ -36,34 +36,29 @@ rijen = [["Arrival", "{aankomst}"], ["Departure", "{vertrek}"], ["Room", "{kamer
 [[confirmation.blokken]]
 module = "checkin_form"
 type = "text"
-titel = "Easy check-in"
-alineas = ["To make your arrival as smooth as possible, we kindly ask you to complete a few details. We have already filled in part of them for you. It only takes a few minutes."]
+titel = "Your stay page"
+alineas = ["Everything for your stay is on one personal page. Start there with your online check-in, it only takes a few minutes. After that you will find what is still to be paid, your PIN code for the front door and your room, and during your stay you open the doors there."]
 
 [[confirmation.blokken]]
 module = "checkin_form"
 type = "button"
-tekst = "Complete check-in details"
+tekst = "Go to your stay page"
 link = "{checkin_link}"
 
 [[confirmation.blokken]]
-module = "checkin_form"
 type = "text"
-alineas = ["Using these details, we will send you all practical information before your arrival, including a personal PIN code for the front door and your room door during your stay. This way you can come in at any time, even outside reception hours."]
-
-[[confirmation.blokken]]
-type = "text"
-alineas = ["Our reception is open every day from {receptie_van} to {receptie_tot}. You are always welcome to drop by with questions or for tips about Bruges."]
+alineas = ["Our reception is open every day from {receptie_van} to {receptie_tot}."]
 
 [reminder]
 onderwerp = "One week until your stay at {hotel_naam}"
-voorvertoning = "Complete your check-in details and receive your personal PIN code."
+voorvertoning = "Do your online check-in and receive your personal PIN code."
 aanhef = "Dear {voornaam},"
 afsluiting = "See you next week,"
-sms = "{hotel_naam}: dear {voornaam}, in one week you will be our guest. Check or complete your check-in details and receive your personal PIN code: {checkin_link}"
+sms = "{hotel_naam}: dear {voornaam}, in one week you will be our guest. Do your online check-in now on your stay page: {checkin_link}"
 
 [[reminder.blokken]]
 type = "text"
-alineas = ["In one week we look forward to welcoming you at {hotel_naam}. We noticed that your check-in details are not complete yet."]
+alineas = ["In one week you will be welcome at {hotel_naam}. Your online check-in has not been done yet."]
 
 [[reminder.blokken]]
 module = "reservation"
@@ -74,17 +69,13 @@ rijen = [["Arrival", "{aankomst}"], ["Departure", "{vertrek}"], ["Reservation nu
 [[reminder.blokken]]
 module = "checkin_form"
 type = "text"
-alineas = ["Complete them now and you will receive all practical information and your personal PIN code for the front door and your room door before you arrive. It only takes a few minutes."]
+alineas = ["Do it now on your stay page, it only takes a few minutes. After that you will receive your personal PIN code before your arrival."]
 
 [[reminder.blokken]]
 module = "checkin_form"
 type = "button"
-tekst = "Complete check-in details"
+tekst = "Do online check-in"
 link = "{checkin_link}"
-
-[[reminder.blokken]]
-type = "text"
-alineas = ["Our reception is open every day from {receptie_van} to {receptie_tot}."]
 
 [access_code]
 onderwerp = "Your PIN code and practical information for {hotel_naam}"
@@ -97,7 +88,7 @@ sms_kamer = "Your stay @ {hotel_naam}, room {kamer_kort}, code: {pincode} ↵"
 
 [[access_code.blokken]]
 type = "text"
-alineas = ["Your stay is coming up. Below you will find everything you need for your stay."]
+alineas = ["Your stay is coming up. Below you will find your personal PIN code."]
 
 [[access_code.blokken]]
 module = "code"
@@ -115,23 +106,18 @@ items = [
   "Check-in is possible from {receptie_van}. Reception is open until {receptie_tot}. If you arrive later, use your PIN code to go straight to your room.",
   "Enter your PIN code on the keypad of the front door, then press the arrow key ↵. Do the same at your room door.",
   "Our hotel has no lift. If you need help with your luggage, please ask at reception.",
-]
-
-[[access_code.blokken]]
-module = "practical_info"
-type = "list"
-titel = "During your stay"
-items = [
-  "Breakfast: every day from {ontbijt_van} to {ontbijt_tot} in our 14th-century vaulted cellar.",
-  "{wifi_regel}",
   "Parking: the hotel has no car park of its own. {parking_naam} car park is a {parking_minuten}-minute walk away.",
 ]
 
 [[access_code.blokken]]
 module = "practical_info"
 type = "text"
-titel = "Departure"
-alineas = ["Check-out is until {checkout_tot}. You are welcome to leave your luggage with us free of charge. Your code still opens the front door until {checkout_voordeur_tot} that day, for example to collect your luggage."]
+alineas = ["Breakfast, Wi-Fi, departure and everything about your stay are on your stay page. During your stay you also open the front door and your room there."]
+
+[[access_code.blokken]]
+type = "button"
+tekst = "View your stay"
+link = "{checkin_link}"
 
 [[access_code.blokken]]
 type = "text"
@@ -253,26 +239,22 @@ rijen = [[
 
 [[modules.checkin_form]]
 type = "text"
-titel = "Easy check-in"
-alineas = ["To make your arrival as smooth as possible, we kindly ask you to complete a few details. We have already filled in part of them for you. It only takes a few minutes."]
+titel = "Your stay page"
+alineas = ["Everything for your stay is on one personal page. Start there with your online check-in, it only takes a few minutes. After that you will find what is still to be paid, your PIN code for the front door and your room, and during your stay you open the doors there."]
 
 [[modules.checkin_form]]
 type = "button"
-tekst = "Complete check-in details"
+tekst = "Go to your stay page"
 link = "{checkin_link}"
 
-[[modules.checkin_form]]
+[[modules.checkin_form_done]]   # formulier al ingevuld: knop naar de verblijfspagina
 type = "text"
-alineas = ["Using these details, we will send you all practical information before your arrival, including a personal PIN code for the front door and your room door during your stay. This way you can come in at any time, even outside reception hours."]
-
-[[modules.checkin_form_done]]   # formulier al ingevuld: alleen een link om aan te passen
-type = "text"
-titel = "Check-in"
-alineas = ["Thank you, we have received your check-in details. Has anything changed? You can always update them."]
+titel = "Online check-in"
+alineas = ["Your online check-in is done. Everything about your stay is on your stay page."]
 
 [[modules.checkin_form_done]]
 type = "button"
-tekst = "Update my details"
+tekst = "View your stay"
 link = "{checkin_link}"
 
 [[modules.code]]
@@ -292,21 +274,12 @@ items = [
   "Check-in is possible from {receptie_van}. Reception is open until {receptie_tot}. If you arrive later, use your PIN code to go straight to your room.",
   "Enter your PIN code on the keypad of the front door, then press the arrow key ↵. Do the same at your room door.",
   "Our hotel has no lift. If you need help with your luggage, please ask at reception.",
-]
-
-[[modules.practical_info]]
-type = "list"
-titel = "During your stay"
-items = [
-  "Breakfast: every day from {ontbijt_van} to {ontbijt_tot} in our 14th-century vaulted cellar.",
-  "{wifi_regel}",
   "Parking: the hotel has no car park of its own. {parking_naam} car park is a {parking_minuten}-minute walk away.",
 ]
 
 [[modules.practical_info]]
 type = "text"
-titel = "Departure"
-alineas = ["Check-out is until {checkout_tot}. You are welcome to leave your luggage with us free of charge. Your code still opens the front door until {checkout_voordeur_tot} that day, for example to collect your luggage."]
+alineas = ["Breakfast, Wi-Fi, departure and everything about your stay are on your stay page. During your stay you also open the front door and your room there."]
 
 [[modules.pay_open_amount]]
 type = "text"

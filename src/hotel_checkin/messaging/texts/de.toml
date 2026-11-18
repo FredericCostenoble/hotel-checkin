@@ -18,10 +18,10 @@ voettekst = "Sie erhalten diese E-Mail, weil Sie eine Reservierung im {hotel_naa
 
 [confirmation]
 onderwerp = "Ihr Aufenthalt im {hotel_naam}, {aankomst} bis {vertrek}"
-voorvertoning = "Vielen Dank für Ihre Reservierung. Bitte ergänzen Sie Ihre Check-in-Daten."
+voorvertoning = "Vielen Dank für Ihre Reservierung. Erledigen Sie Ihren Online-Check-in auf Ihrer Aufenthaltsseite."
 aanhef = "Guten Tag {voornaam} {achternaam},"
 afsluiting = "Bis bald,"
-sms = "{hotel_naam}: Vielen Dank für Ihre Reservierung, {voornaam}. Ergänzen Sie Ihre Check-in-Daten und erhalten Sie vor der Anreise Ihren persönlichen PIN-Code: {checkin_link}"
+sms = "{hotel_naam}: Vielen Dank für Ihre Reservierung, {voornaam}. Erledigen Sie Ihren Online-Check-in auf Ihrer Aufenthaltsseite, dort finden Sie später auch Ihren PIN-Code: {checkin_link}"
 
 [[confirmation.blokken]]
 type = "text"
@@ -36,34 +36,29 @@ rijen = [["Anreise", "{aankomst}"], ["Abreise", "{vertrek}"], ["Zimmer", "{kamer
 [[confirmation.blokken]]
 module = "checkin_form"
 type = "text"
-titel = "Einfacher Check-in"
-alineas = ["Damit Ihre Anreise so reibungslos wie möglich verläuft, bitten wir Sie, einige Angaben zu ergänzen. Einen Teil haben wir bereits für Sie ausgefüllt. Es dauert nur wenige Minuten."]
+titel = "Ihre Aufenthaltsseite"
+alineas = ["Alles für Ihren Aufenthalt steht auf einer persönlichen Seite. Beginnen Sie dort mit Ihrem Online-Check-in, das dauert nur wenige Minuten. Danach finden Sie dort, was noch zu bezahlen ist, Ihren PIN-Code für die Haustür und Ihr Zimmer, und während Ihres Aufenthalts öffnen Sie dort die Türen."]
 
 [[confirmation.blokken]]
 module = "checkin_form"
 type = "button"
-tekst = "Check-in-Daten ergänzen"
+tekst = "Zu Ihrer Aufenthaltsseite"
 link = "{checkin_link}"
 
 [[confirmation.blokken]]
-module = "checkin_form"
 type = "text"
-alineas = ["Mit diesen Angaben senden wir Ihnen vor Ihrer Anreise alle praktischen Informationen, darunter einen persönlichen PIN-Code für die Haustür und Ihre Zimmertür während Ihres Aufenthalts. So kommen Sie jederzeit herein, auch außerhalb der Öffnungszeiten der Rezeption."]
-
-[[confirmation.blokken]]
-type = "text"
-alineas = ["Unsere Rezeption ist täglich von {receptie_van} bis {receptie_tot} Uhr geöffnet. Sie sind dort jederzeit willkommen, mit Fragen oder für Tipps zu Brügge."]
+alineas = ["Unsere Rezeption ist täglich von {receptie_van} bis {receptie_tot} Uhr geöffnet."]
 
 [reminder]
 onderwerp = "Noch eine Woche bis zu Ihrem Aufenthalt im {hotel_naam}"
-voorvertoning = "Ergänzen Sie Ihre Check-in-Daten und erhalten Sie Ihren persönlichen PIN-Code."
+voorvertoning = "Erledigen Sie Ihren Online-Check-in und erhalten Sie Ihren persönlichen PIN-Code."
 aanhef = "Guten Tag {voornaam} {achternaam},"
 afsluiting = "Bis nächste Woche,"
-sms = "{hotel_naam}: {voornaam}, in einer Woche sind Sie unser Gast. Prüfen oder ergänzen Sie Ihre Check-in-Daten und erhalten Sie Ihren persönlichen PIN-Code: {checkin_link}"
+sms = "{hotel_naam}: {voornaam}, in einer Woche sind Sie unser Gast. Erledigen Sie jetzt Ihren Online-Check-in auf Ihrer Aufenthaltsseite: {checkin_link}"
 
 [[reminder.blokken]]
 type = "text"
-alineas = ["In einer Woche dürfen wir Sie im {hotel_naam} begrüßen. Uns ist aufgefallen, dass Ihre Check-in-Daten noch nicht vollständig sind."]
+alineas = ["In einer Woche sind Sie im {hotel_naam} willkommen. Ihr Online-Check-in ist noch nicht erledigt."]
 
 [[reminder.blokken]]
 module = "reservation"
@@ -74,17 +69,13 @@ rijen = [["Anreise", "{aankomst}"], ["Abreise", "{vertrek}"], ["Reservierungsnum
 [[reminder.blokken]]
 module = "checkin_form"
 type = "text"
-alineas = ["Ergänzen Sie diese jetzt, dann erhalten Sie vor Ihrer Anreise alle praktischen Informationen und Ihren persönlichen PIN-Code für die Haustür und Ihre Zimmertür. Es dauert nur wenige Minuten."]
+alineas = ["Erledigen Sie ihn jetzt auf Ihrer Aufenthaltsseite, das dauert nur wenige Minuten. Danach erhalten Sie vor Ihrer Anreise Ihren persönlichen PIN-Code."]
 
 [[reminder.blokken]]
 module = "checkin_form"
 type = "button"
-tekst = "Check-in-Daten ergänzen"
+tekst = "Online-Check-in erledigen"
 link = "{checkin_link}"
-
-[[reminder.blokken]]
-type = "text"
-alineas = ["Unsere Rezeption ist täglich von {receptie_van} bis {receptie_tot} Uhr geöffnet."]
 
 [access_code]
 onderwerp = "Ihr PIN-Code und praktische Informationen für das {hotel_naam}"
@@ -97,7 +88,7 @@ sms_kamer = "Ihr Aufenthalt @ {hotel_naam}, Zimmer {kamer_kort}, Code: {pincode}
 
 [[access_code.blokken]]
 type = "text"
-alineas = ["Ihr Aufenthalt steht bevor. Unten finden Sie alles, was Sie für Ihren Aufenthalt brauchen."]
+alineas = ["Ihr Aufenthalt steht bevor. Unten finden Sie Ihren persönlichen PIN-Code."]
 
 [[access_code.blokken]]
 module = "code"
@@ -115,23 +106,18 @@ items = [
   "Der Check-in ist ab {receptie_van} Uhr möglich. Die Rezeption ist bis {receptie_tot} Uhr geöffnet. Wenn Sie später ankommen, gehen Sie mit Ihrem PIN-Code direkt zu Ihrem Zimmer.",
   "Geben Sie Ihren PIN-Code am Tastenfeld der Haustür ein und drücken Sie danach die Pfeiltaste ↵. Machen Sie es an Ihrer Zimmertür genauso.",
   "Unser Hotel hat keinen Aufzug. Wenn Sie Hilfe mit Ihrem Gepäck brauchen, wenden Sie sich bitte an die Rezeption.",
-]
-
-[[access_code.blokken]]
-module = "practical_info"
-type = "list"
-titel = "Während Ihres Aufenthalts"
-items = [
-  "Frühstück: täglich von {ontbijt_van} bis {ontbijt_tot} Uhr in unserem Gewölbekeller aus dem 14. Jahrhundert.",
-  "{wifi_regel}",
   "Parken: Das Hotel hat keinen eigenen Parkplatz. Das Parkhaus {parking_naam} liegt {parking_minuten} Gehminuten entfernt.",
 ]
 
 [[access_code.blokken]]
 module = "practical_info"
 type = "text"
-titel = "Abreise"
-alineas = ["Der Check-out ist bis {checkout_tot} Uhr möglich. Ihr Gepäck können Sie kostenlos bei uns lassen. Ihr Code öffnet die Haustür an diesem Tag noch bis {checkout_voordeur_tot} Uhr, zum Beispiel um Ihr Gepäck abzuholen."]
+alineas = ["Frühstück, WLAN, Abreise und alles zu Ihrem Aufenthalt finden Sie auf Ihrer Aufenthaltsseite. Während Ihres Aufenthalts öffnen Sie dort auch die Haustür und Ihr Zimmer."]
+
+[[access_code.blokken]]
+type = "button"
+tekst = "Ihren Aufenthalt ansehen"
+link = "{checkin_link}"
 
 [[access_code.blokken]]
 type = "text"
@@ -253,26 +239,22 @@ rijen = [[
 
 [[modules.checkin_form]]
 type = "text"
-titel = "Einfacher Check-in"
-alineas = ["Damit Ihre Anreise so reibungslos wie möglich verläuft, bitten wir Sie, einige Angaben zu ergänzen. Einen Teil haben wir bereits für Sie ausgefüllt. Es dauert nur wenige Minuten."]
+titel = "Ihre Aufenthaltsseite"
+alineas = ["Alles für Ihren Aufenthalt steht auf einer persönlichen Seite. Beginnen Sie dort mit Ihrem Online-Check-in, das dauert nur wenige Minuten. Danach finden Sie dort, was noch zu bezahlen ist, Ihren PIN-Code für die Haustür und Ihr Zimmer, und während Ihres Aufenthalts öffnen Sie dort die Türen."]
 
 [[modules.checkin_form]]
 type = "button"
-tekst = "Check-in-Daten ergänzen"
+tekst = "Zu Ihrer Aufenthaltsseite"
 link = "{checkin_link}"
 
-[[modules.checkin_form]]
+[[modules.checkin_form_done]]   # formulier al ingevuld: knop naar de verblijfspagina
 type = "text"
-alineas = ["Mit diesen Angaben senden wir Ihnen vor Ihrer Anreise alle praktischen Informationen, darunter einen persönlichen PIN-Code für die Haustür und Ihre Zimmertür während Ihres Aufenthalts. So kommen Sie jederzeit herein, auch außerhalb der Öffnungszeiten der Rezeption."]
-
-[[modules.checkin_form_done]]   # formulier al ingevuld: alleen een link om aan te passen
-type = "text"
-titel = "Check-in"
-alineas = ["Vielen Dank, wir haben Ihre Check-in-Daten erhalten. Hat sich etwas geändert? Sie können sie jederzeit anpassen."]
+titel = "Online-Check-in"
+alineas = ["Ihr Online-Check-in ist erledigt. Alles zu Ihrem Aufenthalt finden Sie auf Ihrer Aufenthaltsseite."]
 
 [[modules.checkin_form_done]]
 type = "button"
-tekst = "Meine Daten ändern"
+tekst = "Ihren Aufenthalt ansehen"
 link = "{checkin_link}"
 
 [[modules.code]]
@@ -292,21 +274,12 @@ items = [
   "Der Check-in ist ab {receptie_van} Uhr möglich. Die Rezeption ist bis {receptie_tot} Uhr geöffnet. Wenn Sie später ankommen, gehen Sie mit Ihrem PIN-Code direkt zu Ihrem Zimmer.",
   "Geben Sie Ihren PIN-Code am Tastenfeld der Haustür ein und drücken Sie danach die Pfeiltaste ↵. Machen Sie es an Ihrer Zimmertür genauso.",
   "Unser Hotel hat keinen Aufzug. Wenn Sie Hilfe mit Ihrem Gepäck brauchen, wenden Sie sich bitte an die Rezeption.",
-]
-
-[[modules.practical_info]]
-type = "list"
-titel = "Während Ihres Aufenthalts"
-items = [
-  "Frühstück: täglich von {ontbijt_van} bis {ontbijt_tot} Uhr in unserem Gewölbekeller aus dem 14. Jahrhundert.",
-  "{wifi_regel}",
   "Parken: Das Hotel hat keinen eigenen Parkplatz. Das Parkhaus {parking_naam} liegt {parking_minuten} Gehminuten entfernt.",
 ]
 
 [[modules.practical_info]]
 type = "text"
-titel = "Abreise"
-alineas = ["Der Check-out ist bis {checkout_tot} Uhr möglich. Ihr Gepäck können Sie kostenlos bei uns lassen. Ihr Code öffnet die Haustür an diesem Tag noch bis {checkout_voordeur_tot} Uhr, zum Beispiel um Ihr Gepäck abzuholen."]
+alineas = ["Frühstück, WLAN, Abreise und alles zu Ihrem Aufenthalt finden Sie auf Ihrer Aufenthaltsseite. Während Ihres Aufenthalts öffnen Sie dort auch die Haustür und Ihr Zimmer."]
 
 [[modules.pay_open_amount]]
 type = "text"

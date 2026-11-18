@@ -18,14 +18,14 @@ voettekst = "Vous recevez cet e-mail parce que vous avez une réservation à l'{
 
 [confirmation]
 onderwerp = "Votre séjour à l'{hotel_naam}, du {aankomst} au {vertrek}"
-voorvertoning = "Merci pour votre réservation. Veuillez compléter vos données d'enregistrement."
+voorvertoning = "Merci pour votre réservation. Faites votre enregistrement en ligne sur votre page de séjour."
 aanhef = "Bonjour {voornaam},"
 afsluiting = "À bientôt,"
-sms = "{hotel_naam} : {voornaam}, merci pour votre réservation. Complétez vos données d'enregistrement et recevez votre code PIN personnel avant votre arrivée : {checkin_link}"
+sms = "{hotel_naam} : {voornaam}, merci pour votre réservation. Faites votre enregistrement en ligne sur votre page de séjour, vous y trouverez plus tard aussi votre code PIN : {checkin_link}"
 
 [[confirmation.blokken]]
 type = "text"
-alineas = ["Nous vous remercions pour votre réservation à l'{hotel_naam}. Nous nous réjouissons de vous accueillir au cœur de Bruges."]
+alineas = ["Merci pour votre réservation à l'{hotel_naam}. Nous nous réjouissons de vous accueillir au cœur de Bruges."]
 
 [[confirmation.blokken]]
 module = "reservation"
@@ -36,34 +36,29 @@ rijen = [["Arrivée", "{aankomst}"], ["Départ", "{vertrek}"], ["Chambre", "{kam
 [[confirmation.blokken]]
 module = "checkin_form"
 type = "text"
-titel = "Un enregistrement facile"
-alineas = ["Pour que votre arrivée se passe le mieux possible, nous vous demandons de compléter quelques données. Nous en avons déjà rempli une partie pour vous. Cela ne prend que quelques minutes."]
+titel = "Votre page de séjour"
+alineas = ["Tout pour votre séjour se trouve sur une page personnelle. Commencez-y par votre enregistrement en ligne, cela ne prend que quelques minutes. Vous y trouverez ensuite ce qu'il reste à payer, votre code PIN pour la porte d'entrée et votre chambre et, pendant votre séjour, vous y ouvrirez les portes."]
 
 [[confirmation.blokken]]
 module = "checkin_form"
 type = "button"
-tekst = "Compléter mes données"
+tekst = "Vers votre page de séjour"
 link = "{checkin_link}"
 
 [[confirmation.blokken]]
-module = "checkin_form"
 type = "text"
-alineas = ["Grâce à ces données, nous vous enverrons avant votre arrivée toutes les informations pratiques, dont un code PIN personnel pour la porte d'entrée et la porte de votre chambre pendant votre séjour. Vous pourrez ainsi entrer à tout moment, même en dehors des heures d'ouverture de la réception."]
-
-[[confirmation.blokken]]
-type = "text"
-alineas = ["Notre réception est ouverte tous les jours de {receptie_van} à {receptie_tot}. Vous y êtes toujours le bienvenu pour vos questions ou des conseils sur Bruges."]
+alineas = ["Notre réception est ouverte tous les jours de {receptie_van} à {receptie_tot}."]
 
 [reminder]
 onderwerp = "Plus qu'une semaine avant votre séjour à l'{hotel_naam}"
-voorvertoning = "Complétez vos données d'enregistrement et recevez votre code PIN personnel."
+voorvertoning = "Faites votre enregistrement en ligne et recevez votre code PIN personnel."
 aanhef = "Bonjour {voornaam},"
 afsluiting = "À la semaine prochaine,"
-sms = "{hotel_naam} : {voornaam}, dans une semaine vous serez notre hôte. Vérifiez ou complétez vos données d'enregistrement et recevez votre code PIN personnel : {checkin_link}"
+sms = "{hotel_naam} : {voornaam}, dans une semaine vous serez notre hôte. Faites maintenant votre enregistrement en ligne sur votre page de séjour : {checkin_link}"
 
 [[reminder.blokken]]
 type = "text"
-alineas = ["Dans une semaine, nous aurons le plaisir de vous accueillir à l'{hotel_naam}. Nous avons remarqué que vos données d'enregistrement ne sont pas encore complètes."]
+alineas = ["Dans une semaine, vous serez le bienvenu à l'{hotel_naam}. Votre enregistrement en ligne n'est pas encore fait."]
 
 [[reminder.blokken]]
 module = "reservation"
@@ -74,17 +69,13 @@ rijen = [["Arrivée", "{aankomst}"], ["Départ", "{vertrek}"], ["Numéro de rés
 [[reminder.blokken]]
 module = "checkin_form"
 type = "text"
-alineas = ["Complétez-les maintenant et vous recevrez avant votre arrivée toutes les informations pratiques ainsi que votre code PIN personnel pour la porte d'entrée et la porte de votre chambre. Cela ne prend que quelques minutes."]
+alineas = ["Faites-le maintenant sur votre page de séjour, cela ne prend que quelques minutes. Vous recevrez ensuite votre code PIN personnel avant votre arrivée."]
 
 [[reminder.blokken]]
 module = "checkin_form"
 type = "button"
-tekst = "Compléter mes données"
+tekst = "Faire l'enregistrement en ligne"
 link = "{checkin_link}"
-
-[[reminder.blokken]]
-type = "text"
-alineas = ["Notre réception est ouverte tous les jours de {receptie_van} à {receptie_tot}."]
 
 [access_code]
 onderwerp = "Votre code PIN et les informations pratiques pour l'{hotel_naam}"
@@ -97,7 +88,7 @@ sms_kamer = "Votre séjour @ {hotel_naam}, chambre {kamer_kort}, code : {pincode
 
 [[access_code.blokken]]
 type = "text"
-alineas = ["Votre séjour approche. Vous trouverez ci-dessous tout ce dont vous avez besoin pour votre séjour."]
+alineas = ["Votre séjour approche. Vous trouverez ci-dessous votre code PIN personnel."]
 
 [[access_code.blokken]]
 module = "code"
@@ -115,23 +106,18 @@ items = [
   "L'enregistrement est possible à partir de {receptie_van}. La réception est ouverte jusqu'à {receptie_tot}. Si vous arrivez plus tard, rendez-vous directement dans votre chambre grâce à votre code PIN.",
   "Saisissez votre code PIN sur le clavier de la porte d'entrée, puis appuyez sur la touche flèche ↵. Faites de même à la porte de votre chambre.",
   "Notre hôtel ne dispose pas d'ascenseur. Si vous avez besoin d'aide pour vos bagages, adressez-vous à la réception.",
-]
-
-[[access_code.blokken]]
-module = "practical_info"
-type = "list"
-titel = "Pendant votre séjour"
-items = [
-  "Petit-déjeuner : tous les jours de {ontbijt_van} à {ontbijt_tot} dans notre cave voûtée du XIVe siècle.",
-  "{wifi_regel}",
   "Stationnement : l'hôtel ne dispose pas de parking privé. Le parking {parking_naam} se trouve à {parking_minuten} minutes à pied.",
 ]
 
 [[access_code.blokken]]
 module = "practical_info"
 type = "text"
-titel = "Départ"
-alineas = ["Le départ se fait jusqu'à {checkout_tot}. Vous pouvez laisser vos bagages chez nous gratuitement. Votre code ouvre encore la porte d'entrée jusqu'à {checkout_voordeur_tot} ce jour-là, par exemple pour récupérer vos bagages."]
+alineas = ["Petit-déjeuner, Wi-Fi, départ et tout sur votre séjour se trouvent sur votre page de séjour. Pendant votre séjour, vous y ouvrez aussi la porte d'entrée et votre chambre."]
+
+[[access_code.blokken]]
+type = "button"
+tekst = "Voir votre séjour"
+link = "{checkin_link}"
 
 [[access_code.blokken]]
 type = "text"
@@ -253,26 +239,22 @@ rijen = [[
 
 [[modules.checkin_form]]
 type = "text"
-titel = "Un enregistrement facile"
-alineas = ["Pour que votre arrivée se passe le mieux possible, nous vous demandons de compléter quelques données. Nous en avons déjà rempli une partie pour vous. Cela ne prend que quelques minutes."]
+titel = "Votre page de séjour"
+alineas = ["Tout pour votre séjour se trouve sur une page personnelle. Commencez-y par votre enregistrement en ligne, cela ne prend que quelques minutes. Vous y trouverez ensuite ce qu'il reste à payer, votre code PIN pour la porte d'entrée et votre chambre et, pendant votre séjour, vous y ouvrirez les portes."]
 
 [[modules.checkin_form]]
 type = "button"
-tekst = "Compléter mes données"
+tekst = "Vers votre page de séjour"
 link = "{checkin_link}"
 
-[[modules.checkin_form]]
+[[modules.checkin_form_done]]   # formulier al ingevuld: knop naar de verblijfspagina
 type = "text"
-alineas = ["Grâce à ces données, nous vous enverrons avant votre arrivée toutes les informations pratiques, dont un code PIN personnel pour la porte d'entrée et la porte de votre chambre pendant votre séjour. Vous pourrez ainsi entrer à tout moment, même en dehors des heures d'ouverture de la réception."]
-
-[[modules.checkin_form_done]]   # formulier al ingevuld: alleen een link om aan te passen
-type = "text"
-titel = "Enregistrement"
-alineas = ["Merci, nous avons bien reçu vos données d'enregistrement. Quelque chose a changé ? Vous pouvez toujours les modifier."]
+titel = "Enregistrement en ligne"
+alineas = ["Votre enregistrement en ligne est fait. Tout sur votre séjour se trouve sur votre page de séjour."]
 
 [[modules.checkin_form_done]]
 type = "button"
-tekst = "Modifier mes données"
+tekst = "Voir votre séjour"
 link = "{checkin_link}"
 
 [[modules.code]]
@@ -292,21 +274,12 @@ items = [
   "L'enregistrement est possible à partir de {receptie_van}. La réception est ouverte jusqu'à {receptie_tot}. Si vous arrivez plus tard, rendez-vous directement dans votre chambre grâce à votre code PIN.",
   "Saisissez votre code PIN sur le clavier de la porte d'entrée, puis appuyez sur la touche flèche ↵. Faites de même à la porte de votre chambre.",
   "Notre hôtel ne dispose pas d'ascenseur. Si vous avez besoin d'aide pour vos bagages, adressez-vous à la réception.",
-]
-
-[[modules.practical_info]]
-type = "list"
-titel = "Pendant votre séjour"
-items = [
-  "Petit-déjeuner : tous les jours de {ontbijt_van} à {ontbijt_tot} dans notre cave voûtée du XIVe siècle.",
-  "{wifi_regel}",
   "Stationnement : l'hôtel ne dispose pas de parking privé. Le parking {parking_naam} se trouve à {parking_minuten} minutes à pied.",
 ]
 
 [[modules.practical_info]]
 type = "text"
-titel = "Départ"
-alineas = ["Le départ se fait jusqu'à {checkout_tot}. Vous pouvez laisser vos bagages chez nous gratuitement. Votre code ouvre encore la porte d'entrée jusqu'à {checkout_voordeur_tot} ce jour-là, par exemple pour récupérer vos bagages."]
+alineas = ["Petit-déjeuner, Wi-Fi, départ et tout sur votre séjour se trouvent sur votre page de séjour. Pendant votre séjour, vous y ouvrez aussi la porte d'entrée et votre chambre."]
 
 [[modules.pay_open_amount]]
 type = "text"

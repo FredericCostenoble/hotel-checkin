@@ -20,10 +20,10 @@ voettekst = "U ontvangt deze mail omdat u een reservatie hebt bij {hotel_naam}."
 
 [confirmation]
 onderwerp = "Uw verblijf in {hotel_naam}, {aankomst} tot {vertrek}"
-voorvertoning = "Bedankt voor uw reservatie. Vul uw check-in-gegevens aan."
+voorvertoning = "Bedankt voor uw reservatie. Doe uw online check-in op uw verblijfspagina."
 aanhef = "Beste {voornaam},"
 afsluiting = "Tot binnenkort,"
-sms = "{hotel_naam}: beste {voornaam}, bedankt voor uw reservatie. Vul uw check-in-gegevens aan en ontvang voor aankomst uw persoonlijke pincode: {checkin_link}"
+sms = "{hotel_naam}: beste {voornaam}, bedankt voor uw reservatie. Doe uw online check-in op uw verblijfspagina, daar vindt u later ook uw pincode: {checkin_link}"
 
 [[confirmation.blokken]]
 type = "text"
@@ -38,34 +38,29 @@ rijen = [["Aankomst", "{aankomst}"], ["Vertrek", "{vertrek}"], ["Kamer", "{kamer
 [[confirmation.blokken]]
 module = "checkin_form"
 type = "text"
-titel = "Vlot inchecken"
-alineas = ["Om uw aankomst zo vlot mogelijk te laten verlopen, vragen we u enkele gegevens aan te vullen. Een deel hebben we al voor u ingevuld. Het duurt maar een paar minuten."]
+titel = "Uw verblijfspagina"
+alineas = ["Alles voor uw verblijf staat op één persoonlijke pagina. Begin daar met uw online check-in, het duurt maar een paar minuten. Daarna vindt u er wat er nog te betalen is, uw pincode voor de voordeur en uw kamer, en tijdens uw verblijf opent u er de deuren."]
 
 [[confirmation.blokken]]
 module = "checkin_form"
 type = "button"
-tekst = "Check-in gegevens aanvullen"
+tekst = "Naar uw verblijfspagina"
 link = "{checkin_link}"
 
 [[confirmation.blokken]]
-module = "checkin_form"
 type = "text"
-alineas = ["Via deze gegevens sturen we u voor uw aankomst alle praktische informatie, waaronder een persoonlijke pincode voor de voordeur en uw kamerdeur tijdens uw verblijf. Zo kunt u op elk moment binnen, ook buiten de openingsuren van de receptie."]
-
-[[confirmation.blokken]]
-type = "text"
-alineas = ["Onze receptie is elke dag open van {receptie_van} tot {receptie_tot}. U bent er altijd welkom voor vragen of tips over Brugge."]
+alineas = ["Onze receptie is elke dag open van {receptie_van} tot {receptie_tot}."]
 
 [reminder]
 onderwerp = "Nog een week tot uw verblijf in {hotel_naam}"
-voorvertoning = "Vul uw check-in-gegevens aan en ontvang uw persoonlijke pincode."
+voorvertoning = "Doe uw online check-in en ontvang uw persoonlijke pincode."
 aanhef = "Beste {voornaam},"
 afsluiting = "Tot volgende week,"
-sms = "{hotel_naam}: beste {voornaam}, over een week bent u onze gast. Kijk uw check-in-gegevens na of vul ze aan, dan ontvangt u uw persoonlijke pincode: {checkin_link}"
+sms = "{hotel_naam}: beste {voornaam}, over een week bent u onze gast. Doe nu uw online check-in op uw verblijfspagina: {checkin_link}"
 
 [[reminder.blokken]]
 type = "text"
-alineas = ["Over een week bent u welkom in {hotel_naam}. We merkten dat uw check-in-gegevens nog niet volledig zijn."]
+alineas = ["Over een week bent u welkom in {hotel_naam}. Uw online check-in is nog niet gedaan."]
 
 [[reminder.blokken]]
 module = "reservation"
@@ -76,17 +71,13 @@ rijen = [["Aankomst", "{aankomst}"], ["Vertrek", "{vertrek}"], ["Reservatienumme
 [[reminder.blokken]]
 module = "checkin_form"
 type = "text"
-alineas = ["Vul ze nu in, dan krijgt u voor uw aankomst alle praktische informatie en uw persoonlijke pincode voor de voordeur en uw kamerdeur. Het duurt maar een paar minuten."]
+alineas = ["Doe hem nu op uw verblijfspagina, het duurt maar een paar minuten. Daarna ontvangt u voor uw aankomst uw persoonlijke pincode."]
 
 [[reminder.blokken]]
 module = "checkin_form"
 type = "button"
-tekst = "Check-in gegevens aanvullen"
+tekst = "Online check-in doen"
 link = "{checkin_link}"
-
-[[reminder.blokken]]
-type = "text"
-alineas = ["Onze receptie is elke dag open van {receptie_van} tot {receptie_tot}."]
 
 [access_code]
 onderwerp = "Uw pincode en praktische info voor {hotel_naam}"
@@ -99,7 +90,7 @@ sms_kamer = "Uw verblijf @ {hotel_naam}, kamer {kamer_kort}, code: {pincode} ↵
 
 [[access_code.blokken]]
 type = "text"
-alineas = ["Uw verblijf komt eraan. Hieronder vindt u alles wat u nodig hebt voor uw verblijf."]
+alineas = ["Uw verblijf komt eraan. Hieronder vindt u uw persoonlijke pincode."]
 
 [[access_code.blokken]]
 module = "code"
@@ -117,23 +108,18 @@ items = [
   "Inchecken kan vanaf {receptie_van}. De receptie is open tot {receptie_tot}. Komt u later aan, dan gaat u met uw pincode rechtstreeks naar uw kamer.",
   "Toets uw pincode in op het klavier van de voordeur en druk daarna op de pijltoets ↵. Doe hetzelfde aan uw kamerdeur.",
   "Ons hotel heeft geen lift. Wie hulp nodig heeft met de bagage, kan terecht aan de receptie.",
-]
-
-[[access_code.blokken]]
-module = "practical_info"
-type = "list"
-titel = "Tijdens uw verblijf"
-items = [
-  "Ontbijt: elke dag van {ontbijt_van} tot {ontbijt_tot} in onze 14de-eeuwse gewelfde kelder.",
-  "{wifi_regel}",
   "Parkeren: het hotel heeft geen eigen parking. Parking {parking_naam} ligt op {parking_minuten} minuten wandelen.",
 ]
 
 [[access_code.blokken]]
 module = "practical_info"
 type = "text"
-titel = "Vertrek"
-alineas = ["Uitchecken kan tot {checkout_tot}. U kunt uw bagage gratis bij ons achterlaten. Uw code opent de voordeur nog tot {checkout_voordeur_tot} die dag, bv. om uw bagage op te halen."]
+alineas = ["Ontbijt, wifi, vertrek en alles over uw verblijf vindt u op uw verblijfspagina. Tijdens uw verblijf opent u daar ook de voordeur en uw kamer."]
+
+[[access_code.blokken]]
+type = "button"
+tekst = "Bekijk uw verblijf"
+link = "{checkin_link}"
 
 [[access_code.blokken]]
 type = "text"
@@ -255,26 +241,22 @@ rijen = [[
 
 [[modules.checkin_form]]
 type = "text"
-titel = "Vlot inchecken"
-alineas = ["Om uw aankomst zo vlot mogelijk te laten verlopen, vragen we u enkele gegevens aan te vullen. Een deel hebben we al voor u ingevuld. Het duurt maar een paar minuten."]
+titel = "Uw verblijfspagina"
+alineas = ["Alles voor uw verblijf staat op één persoonlijke pagina. Begin daar met uw online check-in, het duurt maar een paar minuten. Daarna vindt u er wat er nog te betalen is, uw pincode voor de voordeur en uw kamer, en tijdens uw verblijf opent u er de deuren."]
 
 [[modules.checkin_form]]
 type = "button"
-tekst = "Check-in gegevens aanvullen"
+tekst = "Naar uw verblijfspagina"
 link = "{checkin_link}"
 
-[[modules.checkin_form]]
+[[modules.checkin_form_done]]   # formulier al ingevuld: knop naar de verblijfspagina
 type = "text"
-alineas = ["Via deze gegevens sturen we u voor uw aankomst alle praktische informatie, waaronder een persoonlijke pincode voor de voordeur en uw kamerdeur tijdens uw verblijf. Zo kunt u op elk moment binnen, ook buiten de openingsuren van de receptie."]
-
-[[modules.checkin_form_done]]   # formulier al ingevuld: alleen een link om aan te passen
-type = "text"
-titel = "Check-in"
-alineas = ["Bedankt, we hebben uw check-in-gegevens goed ontvangen. Is er iets veranderd? U kunt ze altijd aanpassen."]
+titel = "Online check-in"
+alineas = ["Uw online check-in is gedaan. Alles over uw verblijf vindt u op uw verblijfspagina."]
 
 [[modules.checkin_form_done]]
 type = "button"
-tekst = "Mijn gegevens aanpassen"
+tekst = "Bekijk uw verblijf"
 link = "{checkin_link}"
 
 [[modules.code]]
@@ -294,21 +276,12 @@ items = [
   "Inchecken kan vanaf {receptie_van}. De receptie is open tot {receptie_tot}. Komt u later aan, dan gaat u met uw pincode rechtstreeks naar uw kamer.",
   "Toets uw pincode in op het klavier van de voordeur en druk daarna op de pijltoets ↵. Doe hetzelfde aan uw kamerdeur.",
   "Ons hotel heeft geen lift. Wie hulp nodig heeft met de bagage, kan terecht aan de receptie.",
-]
-
-[[modules.practical_info]]
-type = "list"
-titel = "Tijdens uw verblijf"
-items = [
-  "Ontbijt: elke dag van {ontbijt_van} tot {ontbijt_tot} in onze 14de-eeuwse gewelfde kelder.",
-  "{wifi_regel}",
   "Parkeren: het hotel heeft geen eigen parking. Parking {parking_naam} ligt op {parking_minuten} minuten wandelen.",
 ]
 
 [[modules.practical_info]]
 type = "text"
-titel = "Vertrek"
-alineas = ["Uitchecken kan tot {checkout_tot}. U kunt uw bagage gratis bij ons achterlaten. Uw code opent de voordeur nog tot {checkout_voordeur_tot} die dag, bv. om uw bagage op te halen."]
+alineas = ["Ontbijt, wifi, vertrek en alles over uw verblijf vindt u op uw verblijfspagina. Tijdens uw verblijf opent u daar ook de voordeur en uw kamer."]
 
 [[modules.pay_open_amount]]
 type = "text"
