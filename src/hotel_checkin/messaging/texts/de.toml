@@ -112,7 +112,13 @@ items = [
 [[access_code.blokken]]
 module = "practical_info"
 type = "text"
-alineas = ["Frühstück, WLAN, Abreise und alles zu Ihrem Aufenthalt finden Sie auf Ihrer Aufenthaltsseite. Während Ihres Aufenthalts öffnen Sie dort auch die Haustür und Ihr Zimmer."]
+titel = "Abreise"
+alineas = ["Der Check-out ist bis {checkout_tot} Uhr möglich. Ihr Gepäck können Sie kostenlos bei uns lassen. Ihr Code öffnet die Haustür an diesem Tag noch bis {checkout_voordeur_tot} Uhr, zum Beispiel um Ihr Gepäck abzuholen."]
+
+[[access_code.blokken]]
+module = "practical_info"
+type = "text"
+alineas = ["Frühstück, WLAN und alles zu Ihrem Aufenthalt finden Sie auf Ihrer Aufenthaltsseite. Während Ihres Aufenthalts öffnen Sie dort auch die Haustür und Ihr Zimmer."]
 
 [[access_code.blokken]]
 type = "button"
@@ -283,7 +289,12 @@ items = [
 
 [[modules.practical_info]]
 type = "text"
-alineas = ["Frühstück, WLAN, Abreise und alles zu Ihrem Aufenthalt finden Sie auf Ihrer Aufenthaltsseite. Während Ihres Aufenthalts öffnen Sie dort auch die Haustür und Ihr Zimmer."]
+titel = "Abreise"
+alineas = ["Der Check-out ist bis {checkout_tot} Uhr möglich. Ihr Gepäck können Sie kostenlos bei uns lassen. Ihr Code öffnet die Haustür an diesem Tag noch bis {checkout_voordeur_tot} Uhr, zum Beispiel um Ihr Gepäck abzuholen."]
+
+[[modules.practical_info]]
+type = "text"
+alineas = ["Frühstück, WLAN und alles zu Ihrem Aufenthalt finden Sie auf Ihrer Aufenthaltsseite. Während Ihres Aufenthalts öffnen Sie dort auch die Haustür und Ihr Zimmer."]
 
 [[modules.pay_open_amount]]
 type = "text"

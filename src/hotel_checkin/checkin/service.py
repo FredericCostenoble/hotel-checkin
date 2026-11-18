@@ -96,6 +96,7 @@ def _times(hotel_id: str) -> dict:
     c = load_hotel(hotel_id)
     rec, co, br = c.get("receptie", {}), c.get("checkout", {}), c.get("ontbijt", {})
     return {"checkin_from": rec.get("van", ""), "checkout_until": co.get("tot", ""),
+            "front_door_until": co.get("voordeur_tot", ""),
             "reception_from": rec.get("van", ""), "reception_until": rec.get("tot", ""),
             "breakfast_from": br.get("van", ""), "breakfast_until": br.get("tot", "")}
 

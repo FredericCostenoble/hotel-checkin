@@ -2,6 +2,7 @@
 // Aanspreking zoals in de mails: u, vous, you, Sie.
 const I18N = {
   nl: {
+    luggage: "U kunt uw bagage gratis bij ons achterlaten.", front_until: t => `Uw code opent de voordeur nog tot ${t} die dag, bv. om uw bagage op te halen.`,
     link_warning: "Geef deze link niet zomaar door: wie deze pagina heeft, kan uw pincode zien en tijdens uw verblijf uw kamer openen. Deel hem alleen met wie bij u verblijft.",
     lock_locked: "Slot vergrendeld", lock_unlocked: "Slot open", lock_offline: "Slot niet bereikbaar. Gebruik uw code.",
     loading: "Even geduld...",
@@ -64,6 +65,7 @@ const I18N = {
     closed_title: "Verblijf afgelopen", closed_text: "Deze reservatie is afgelopen. Bedankt voor uw bezoek en graag tot een volgende keer.",
   },
   fr: {
+    luggage: "Vous pouvez laisser vos bagages chez nous gratuitement.", front_until: t => `Votre code ouvre encore la porte d'entrée jusqu'à ${t} ce jour-là, par exemple pour récupérer vos bagages.`,
     link_warning: "Ne transmettez pas ce lien à n'importe qui : avec cette page, on peut voir votre code PIN et ouvrir votre chambre pendant votre séjour. Partagez-le uniquement avec les personnes qui séjournent avec vous.",
     lock_locked: "Serrure verrouillée", lock_unlocked: "Serrure ouverte", lock_offline: "Serrure injoignable. Utilisez votre code.",
     loading: "Un instant...",
@@ -126,6 +128,7 @@ const I18N = {
     closed_title: "Séjour terminé", closed_text: "Cette réservation est terminée. Merci pour votre visite et à une prochaine fois.",
   },
   en: {
+    luggage: "You are welcome to leave your luggage with us free of charge.", front_until: t => `Your code still opens the front door until ${t} that day, for example to collect your luggage.`,
     link_warning: "Do not pass this link on to just anyone: with this page, someone can see your PIN code and open your room during your stay. Only share it with the people staying with you.",
     lock_locked: "Lock locked", lock_unlocked: "Lock open", lock_offline: "Lock not reachable. Use your code.",
     loading: "One moment...",
@@ -188,6 +191,7 @@ const I18N = {
     closed_title: "Stay completed", closed_text: "This reservation has ended. Thank you for your visit, we hope to see you again.",
   },
   de: {
+    luggage: "Ihr Gepäck können Sie kostenlos bei uns lassen.", front_until: t => `Ihr Code öffnet die Haustür an diesem Tag noch bis ${t} Uhr, zum Beispiel um Ihr Gepäck abzuholen.`,
     link_warning: "Geben Sie diesen Link nicht einfach weiter: Mit dieser Seite kann man Ihren PIN-Code sehen und während Ihres Aufenthalts Ihr Zimmer öffnen. Teilen Sie ihn nur mit den Personen, die mit Ihnen wohnen.",
     lock_locked: "Schloss verriegelt", lock_unlocked: "Schloss offen", lock_offline: "Schloss nicht erreichbar. Nutzen Sie Ihren Code.",
     loading: "Einen Moment...",

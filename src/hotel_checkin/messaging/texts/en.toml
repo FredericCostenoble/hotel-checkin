@@ -112,7 +112,13 @@ items = [
 [[access_code.blokken]]
 module = "practical_info"
 type = "text"
-alineas = ["Breakfast, Wi-Fi, departure and everything about your stay are on your stay page. During your stay you also open the front door and your room there."]
+titel = "Departure"
+alineas = ["Check-out is until {checkout_tot}. You are welcome to leave your luggage with us free of charge. Your code still opens the front door until {checkout_voordeur_tot} that day, for example to collect your luggage."]
+
+[[access_code.blokken]]
+module = "practical_info"
+type = "text"
+alineas = ["Breakfast, Wi-Fi and everything about your stay are on your stay page. During your stay you also open the front door and your room there."]
 
 [[access_code.blokken]]
 type = "button"
@@ -283,7 +289,12 @@ items = [
 
 [[modules.practical_info]]
 type = "text"
-alineas = ["Breakfast, Wi-Fi, departure and everything about your stay are on your stay page. During your stay you also open the front door and your room there."]
+titel = "Departure"
+alineas = ["Check-out is until {checkout_tot}. You are welcome to leave your luggage with us free of charge. Your code still opens the front door until {checkout_voordeur_tot} that day, for example to collect your luggage."]
+
+[[modules.practical_info]]
+type = "text"
+alineas = ["Breakfast, Wi-Fi and everything about your stay are on your stay page. During your stay you also open the front door and your room there."]
 
 [[modules.pay_open_amount]]
 type = "text"

@@ -112,7 +112,13 @@ items = [
 [[access_code.blokken]]
 module = "practical_info"
 type = "text"
-alineas = ["Petit-déjeuner, Wi-Fi, départ et tout sur votre séjour se trouvent sur votre page de séjour. Pendant votre séjour, vous y ouvrez aussi la porte d'entrée et votre chambre."]
+titel = "Départ"
+alineas = ["Le départ se fait jusqu'à {checkout_tot}. Vous pouvez laisser vos bagages chez nous gratuitement. Votre code ouvre encore la porte d'entrée jusqu'à {checkout_voordeur_tot} ce jour-là, par exemple pour récupérer vos bagages."]
+
+[[access_code.blokken]]
+module = "practical_info"
+type = "text"
+alineas = ["Petit-déjeuner, Wi-Fi et tout sur votre séjour se trouvent sur votre page de séjour. Pendant votre séjour, vous y ouvrez aussi la porte d'entrée et votre chambre."]
 
 [[access_code.blokken]]
 type = "button"
@@ -283,7 +289,12 @@ items = [
 
 [[modules.practical_info]]
 type = "text"
-alineas = ["Petit-déjeuner, Wi-Fi, départ et tout sur votre séjour se trouvent sur votre page de séjour. Pendant votre séjour, vous y ouvrez aussi la porte d'entrée et votre chambre."]
+titel = "Départ"
+alineas = ["Le départ se fait jusqu'à {checkout_tot}. Vous pouvez laisser vos bagages chez nous gratuitement. Votre code ouvre encore la porte d'entrée jusqu'à {checkout_voordeur_tot} ce jour-là, par exemple pour récupérer vos bagages."]
+
+[[modules.practical_info]]
+type = "text"
+alineas = ["Petit-déjeuner, Wi-Fi et tout sur votre séjour se trouvent sur votre page de séjour. Pendant votre séjour, vous y ouvrez aussi la porte d'entrée et votre chambre."]
 
 [[modules.pay_open_amount]]
 type = "text"

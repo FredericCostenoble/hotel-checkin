@@ -268,7 +268,8 @@ const API = window.CHECKIN_API || "";
       : esc(data.room_type);
     return `<h2 class="ct"><span>${esc(t("card_stay"))}</span></h2><div class="rows">
       ${row(I.cal(), t("arrival"), esc(fmtDayYear(data.arrival) + (tm.checkin_from ? ", " + t("from_time", tm.checkin_from) : "")))}
-      ${row(I.cal(), t("departure"), esc(fmtDayYear(data.departure) + (tm.checkout_until ? ", " + t("until_time", tm.checkout_until) : "")))}
+      ${row(I.cal(), t("departure"), esc(fmtDayYear(data.departure) + (tm.checkout_until ? ", " + t("until_time", tm.checkout_until) : "")),
+        `<div class="muted">${esc(t("luggage"))}${data.access && data.access.front_door && tm.front_door_until ? " " + esc(t("front_until", tm.front_door_until)) : ""}</div>`)}
       ${roomVal ? row(I.bed(), rs.length > 1 ? t("rooms") : t("room"), roomVal) : ""}
       ${data.guest_count ? row(I.person(), t("guests"), esc(t("persons", data.guest_count))) : ""}
       ${tm.breakfast_from ? row(I.cup(), t("breakfast"), esc(t("range", tm.breakfast_from, tm.breakfast_until))) : ""}
