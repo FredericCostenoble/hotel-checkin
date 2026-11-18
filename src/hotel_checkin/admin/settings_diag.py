@@ -13,7 +13,8 @@ def main(hotel_id: str) -> None:
     v = hotel_settings.view(hotel_id)
     print("secties:", [s["section"] for s in v["sections"]])
     sw = next((s for s in v["sections"] if s["section"] == "schakelaars"), None)
-    print("schakelaars:", [f["key"] for f in sw["fields"]] if sw else "ONTBREEKT")
+    print("schakelaars:", [(f["key"], f["type"], f["value"], f["default"], f["env"], f["choices"]) for f in sw["fields"]] if sw else "ONTBREEKT")
+    print("bewaard schakelaars:", ((doc or {}).get("value") or {}).get("schakelaars"))
 
 
 if __name__ == "__main__":
