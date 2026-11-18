@@ -418,6 +418,12 @@ def mail_trigger(timer: func.TimerRequest) -> None:
                 process.cleanup(hotel_id)  # eenmalig: oude verwerkte mails naar hun map
         except Exception:
             logging.exception("%s: mail_trigger mislukt", hotel_id)
+        try:  # eenmalig: bestaande dubbele gastprofielen samenvoegen (daarna alleen nog één leesactie)
+            from hotel_checkin.processes import maintenance
+
+            maintenance.merge_once(hotel_id)
+        except Exception:
+            logging.exception("%s: dubbele gastprofielen samenvoegen mislukt", hotel_id)
         try:  # eerst de lijsten: een gevraagde lijst op een vast uur gebruikt de robotrun van dat uur
             daily_lists.run(hotel_id)
         except Exception:
