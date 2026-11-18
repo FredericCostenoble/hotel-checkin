@@ -90,7 +90,9 @@ def settings(hotel_id: str, kind: str) -> dict:
             "persons": bool(cfg.get("personen", False)),
             "notes": bool(cfg.get("opmerkingen", False)),
             # Hoe een label op de lijst staat (bv. DOUBLE OPMAKEN -> DOUBLE); anders de naam van het label
-            "label_texts": {str(k).upper(): str(v) for k, v in dict(cfg.get("label_tekst") or {}).items()}}
+            "label_texts": {str(k).upper(): str(v) for k, v in dict(cfg.get("label_tekst") or {}).items()},
+            # Kamer die gisteren Out of order stond: Leave met deze opmerking (ze is al vrij)
+            "out_of_order_text": str(cfg.get("buiten_dienst_tekst", "from yesterday") or "")}
 
 
 def twin_rooms(hotel_id: str) -> set[str]:
@@ -418,15 +420,25 @@ def _cleaning_plan(day: date, reservations: list[Reservation], words: list[str],
 
 def build_cleaning(hotel_id: str, day: date, reservations: list[Reservation], words: list[str],
                    stays: list[dict] | None = None, labels: list[str] | None = None,
-                   labels_twin: list[str] | None = None, labels_memo: list[str] | None = None) -> dict:
+                   labels_twin: list[str] | None = None, labels_memo: list[str] | None = None,
+                   out_of_order: list[dict] | None = None) -> dict:
     """stays = het planbord (robot), zie build_breakfast. labels = labels op het planbord die als opmerking komen;
-    labels_twin = alleen op een twin kamer; labels_memo = de interne memo komt bij de opmerkingen."""
+    labels_twin = alleen op een twin kamer; labels_memo = de interne memo komt bij de opmerkingen.
+    out_of_order = dagen dat een kamer Out of order stond ({"room", "date"}): stond ze dat gisteren en vandaag niet
+    meer, dan is ze een Leave met [kuislijst] buiten_dienst_tekst (de kamer is al vrij sinds gisteren)."""
     per_room: dict[str, dict] = {}
     cfg = settings(hotel_id, "cleaning")
     if stays is not None:
         _cleaning_plan(day, reservations, words, labels or [], stays, per_room,
                        {"rooms": twin_rooms(hotel_id), "labels": labels_twin or [], "memo": labels_memo or [],
                         "persons": cfg["persons"], "notes": cfg["notes"], "label_texts": cfg["label_texts"]})
+        before, d = (day - timedelta(days=1)).isoformat(), day.isoformat()
+        off = {(x["room"], x["date"]) for x in out_of_order or []}
+        for room in sorted({room for room, x in off if x == before and (room, d) not in off}):
+            cur = per_room.setdefault(room, {"leave": False, "stay": False, "checkin": False, "remark": "",
+                                             "check": False})
+            cur["leave"] = True
+            cur["remark"] = "; ".join(x for x in (cfg["out_of_order_text"], cur["remark"]) if x)
     for r in reservations if stays is None else []:
         if not _active(r) or not (r.arrival <= day <= r.departure):
             continue
@@ -466,14 +478,15 @@ def build(hotel_id: str, kind: str, day: date) -> dict:
         data = build_breakfast(hotel_id, day, reservations, cfg["words"], stays)
     else:
         data = build_cleaning(hotel_id, day, reservations, cfg["words"], stays, cfg.get("labels") or [],
-                              cfg.get("labels_twin") or [], cfg.get("labels_memo") or [])
+                              cfg.get("labels_twin") or [], cfg.get("labels_memo") or [],
+                              (plan or {}).get("out_of_order") or [])
         data["controle"], data["extra_rows"] = cfg["controle"], cfg["extra_rows"]
     data["source"] = f"planbord van {plan['read_at'][11:16]}" if plan else "reservaties (planbord niet gelezen)"
     return data
 
 
 def planboard(hotel_id: str, day: date) -> dict | None:
-    """Wat de robot op het planbord las voor die dag: {"read_at", "stays"}, of None."""
+    """Wat de robot op het planbord las voor die dag: {"read_at", "stays", "out_of_order"}, of None."""
     try:
         data = json.loads(guests.get_state(hotel_id, PLANBOARD_STATE.format(day=day.isoformat())) or "null")
     except ValueError:
@@ -486,8 +499,10 @@ def save_planboard(hotel_id: str, day: date, parsed: dict, read_at: datetime) ->
     d, before = day.isoformat(), (day - timedelta(days=1)).isoformat()
     keep = [{k: x[k] for k in ("reservation", "room", "arrival", "departure", "persons", "labels")}
             for x in parsed["stays"] if x["arrival"] <= d and x["departure"] >= before]
+    ooo = [{"room": x["room"], "date": x["date"]} for x in parsed.get("out_of_order", [])
+           if x.get("room") and before <= x["date"] <= d]
     guests.set_state(hotel_id, PLANBOARD_STATE.format(day=d),
-                     json.dumps({"read_at": read_at.isoformat(timespec="minutes"), "stays": keep}))
+                     json.dumps({"read_at": read_at.isoformat(timespec="minutes"), "stays": keep, "out_of_order": ooo}))
     try:
         known = dict(json.loads(guests.get_state(hotel_id, CATALOG_STATE) or "{}"))
     except ValueError:

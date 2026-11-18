@@ -553,17 +553,24 @@ def parse_planboard_labels(text: str) -> dict[str, list[str]]:
 _ROOM_NUMBER = re.compile(r"^\s*(\d{1,4})\b\s*-?\s*(.*)$")
 
 
+_NO_ACCOMMODATION = re.compile(r"0{8}-0{4}-0{4}-0{4}-0{12}")
+
+
 def parse_planboard_stays(text: str) -> dict:
     """HTML van het planbord: alle kamers en per kamer wie er wanneer verblijft. Elke kamer van een reservatie is
     een eigen blok met eigen data (een groep kan kamers met andere data hebben). Geen gastnamen.
     {"units": {unit: {"room": "20", "name": "FAMILY APARTMENT"}},
-     "stays": [{"reservation", "accommodation", "unit", "room", "arrival", "departure", "persons", "labels": [naam]}]}
-    room = kamernummer (leeg voor een kamer zonder nummer, bv. DUMMY); persons = het getal voor "×" in het blok."""
+     "stays": [{"reservation", "accommodation", "unit", "room", "arrival", "departure", "persons", "labels": [naam]}],
+     "out_of_order": [{"unit", "room", "date"}]}
+    room = kamernummer (leeg voor een kamer zonder nummer, bv. DUMMY); persons = het getal voor "×" in het blok.
+    out_of_order = elke dag dat een kamer Out of order (Buiten dienst) staat: een cel td per dag, met data-unit en
+    data-date, zonder reservatie (data-accommodation is 00000000-0000-0000-0000-000000000000)."""
     from html.parser import HTMLParser
 
     units: dict[str, dict] = {}
     names: dict[str, str] = {}
     stays: dict[str, dict] = {}
+    ooo: set[tuple[str, str]] = set()
 
     class P(HTMLParser):
         def __init__(self):
@@ -578,6 +585,9 @@ def parse_planboard_stays(text: str) -> dict:
             cls = (a.get("class") or "").split()
             if tag == "tr" and "unit" in cls and a.get("data-id"):
                 self.unit = a["data-id"]
+            if (tag == "td" and a.get("data-unit") and a.get("data-date")
+                    and _NO_ACCOMMODATION.fullmatch(a.get("data-accommodation") or "")):
+                ooo.add((a["data-unit"], a["data-date"]))
             if tag == "div" and "roomname" in cls and self.unit:
                 self.room_text = []
             if a.get("data-labelid") and a.get("data-labelname"):
@@ -622,7 +632,8 @@ def parse_planboard_stays(text: str) -> dict:
         s["labels"] = sorted(names.get(x, x) for x in s["labels"])
         s["room"] = (units.get(s["unit"]) or {}).get("room", "")
         out.append(s)
-    return {"units": units, "stays": out}
+    out_of_order = [{"unit": u, "room": (units.get(u) or {}).get("room", ""), "date": d} for u, d in sorted(ooo)]
+    return {"units": units, "stays": out, "out_of_order": out_of_order}
 
 
 def parse_planboard(text: str, reservation_id: str) -> dict:

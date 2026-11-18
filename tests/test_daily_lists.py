@@ -541,3 +541,38 @@ def test_send_saved_list_manually_with_note(setup):
     assert saved["sent"][0]["manual"] and saved["sent"][0]["by"] == "fred" and saved["sent_at"]
     assert any("manueel verstuurd door fred" in x["error"] for x in repo.robot_runs("lucca", task="ontbijtlijst"))
     assert dl.send_saved("lucca", "breakfast", DAY + timedelta(days=9))["ok"] is False
+
+
+_OOO = '<td id="{d}_{u}" class="unavailable day" data-date="{d}" data-unit="{u}" data-unittype="1" ' \
+       'data-accommodation="00000000-0000-0000-0000-000000000000">Buiten dienst</td>'
+PLANBOARD_OOO = f"""<table>
+<tr class="unit g" data-id="45055"><td><div class="roomname">15 DOUBLE ROOM</div></td>
+  {_OOO.format(d="2026-11-15", u="45055")}
+  <td class="unavailable day" data-date="2026-11-16" data-unit="45055" data-accommodation="acc-15">
+    <div class="x planned-accommodation" data-reservation="RES-15" data-accommodationid="acc-15" data-unit="45055"
+         data-arrival="2026-11-16" data-departure="2026-11-18" data-labelids="">Multani 2 ×</div></td></tr>
+<tr class="unit g" data-id="47192"><td><div class="roomname">11 - SUPERIOR DOUBLE ROOM</div></td>
+  {_OOO.format(d="2026-11-15", u="47192")}{_OOO.format(d="2026-11-16", u="47192")}</tr>
+<tr class="unit g" data-id="51902"><td><div class="roomname">20 FAMILY APARTMENT</div></td>
+  {_OOO.format(d="2026-11-15", u="51902")}
+  <td class=" day" data-date="2026-11-16" data-unit="51902" data-accommodation=""></td></tr>
+</table>"""
+
+
+def test_out_of_order_yesterday_is_leave():
+    """Out of order (Buiten dienst) op 15/11 en niet meer op 16/11: op de lijst van 16/11 een Leave met "from yesterday",
+    zodat de schoonmaakploeg weet dat de kamer al vrij is. Nog altijd Out of order: niets."""
+    from hotel_checkin.pms.lighthouse_parse import parse_planboard_stays
+
+    parsed = parse_planboard_stays(PLANBOARD_OOO)
+    assert {(x["room"], x["date"]) for x in parsed["out_of_order"]} == {
+        ("15", "2026-11-15"), ("11", "2026-11-15"), ("11", "2026-11-16"), ("20", "2026-11-15")}
+    assert [x["room"] for x in parsed["stays"]] == ["15"]
+    day = date(2026, 11, 16)
+    dl.save_planboard("lucca", day, parsed, datetime(2026, 11, 15, 17, 0, tzinfo=TZ))
+    data = dl.build("lucca", "cleaning", day)
+    r15, r20 = _row(data, "15"), _row(data, "20")
+    assert r15["leave"] and r15["checkin"] and r15["remark"] == "from yesterday"
+    assert r20["leave"] and not r20["checkin"] and r20["remark"] == "from yesterday"
+    r11 = _row(data, "11")
+    assert not (r11["leave"] or r11["stay"] or r11["checkin"]) and r11["remark"] == ""
