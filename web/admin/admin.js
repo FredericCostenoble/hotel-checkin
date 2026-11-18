@@ -255,6 +255,7 @@ Object.assign(T.nl, {
   td_filled: "Ingevuld", td_notfilled: "Niet ingevuld", td_paid: "Betaald", td_open: "Open", td_made: "Gemaakt", td_waitpay: "Wacht op betaling", td_sent: "Verstuurd",
   td_notsent: "Niet verstuurd", td_wait: "wacht", td_coming: "komt nog", td_none: "geen", td_deps: "Vertrekken vandaag", td_checkout: t => `Check-out tot ${t}`,
   td_left: "Vertrokken", td_openst: "Openstaand", td_openst_x: a => `Openstaand ${a}`, td_now: "Nu in huis", td_nowcount: (r, g) => `${r} kamers, ${g} gasten`, td_until: d => `tot ${d}`,
+  st_lbl: "Status", st_all: "Alle", st_active: "Niet geannuleerd", st_cancelled: "Geannuleerd", pick_clear: "Toon alle",
   td_more: n => `en nog ${n}`, td_robot: "Robot", td_last: "Laatste run", td_result: "Resultaat", td_next: "Volgende", td_res_x: (n, u) => `${n} nieuwe, ${u} bijgewerkt`,
   td_run: "Robot nu draaien", td_log: "Logboek", td_msgs: "Berichten", td_msgs_failed: (n, x) => `<b>${n} mislukt</b>: ${x}`, td_msgs_today: n => `Vertrekt vandaag nog (${n})`,
   td_lists: "Lijsten", td_cl_today: "Schoonmaaklijst", td_bl: "Ontbijtlijst", td_l_today: "vandaag", td_l_tomorrow: "morgen", td_l_made: (w, x) => `Gemaakt ${w}${x}`,
@@ -337,6 +338,7 @@ Object.assign(T.en, {
   td_filled: "Filled in", td_notfilled: "Not filled in", td_paid: "Paid", td_open: "Open", td_made: "Created", td_waitpay: "Waiting for payment", td_sent: "Sent",
   td_notsent: "Not sent", td_wait: "waiting", td_coming: "still to come", td_none: "none", td_deps: "Departures today", td_checkout: t => `Check-out until ${t}`,
   td_left: "Departed", td_openst: "Outstanding", td_openst_x: a => `Outstanding ${a}`, td_now: "In house now", td_nowcount: (r, g) => `${r} rooms, ${g} guests`, td_until: d => `until ${d}`,
+  st_lbl: "Status", st_all: "All", st_active: "Not cancelled", st_cancelled: "Cancelled", pick_clear: "Show all",
   td_more: n => `and ${n} more`, td_robot: "Robot", td_last: "Last run", td_result: "Result", td_next: "Next", td_res_x: (n, u) => `${n} new, ${u} updated`,
   td_run: "Run robot now", td_log: "Log", td_msgs: "Messages", td_msgs_failed: (n, x) => `<b>${n} failed</b>: ${x}`, td_msgs_today: n => `Still going out today (${n})`,
   td_lists: "Lists", td_cl_today: "Cleaning list", td_bl: "Breakfast list", td_l_today: "today", td_l_tomorrow: "tomorrow", td_l_made: (w, x) => `Made ${w}${x}`,
@@ -530,8 +532,9 @@ async function init() {
     $("#search").oninput = render;
     document.querySelectorAll("#res-head th[data-sort]").forEach(th => th.onclick = () => sortBy(th.dataset.sort));
     $("#from").onchange = render;
+    if ($("#status")) $("#status").onchange = render;
     $("#to").onchange = render;
-    $("#today").onclick = () => { $("#from").value = todayIso(); $("#to").value = ""; render(); };
+    $("#today").onclick = () => { $("#from").value = todayIso(); $("#to").value = ""; resPick = null; render(); };
     $("#list-make").onclick = () => makeList(listKind, false);
     $("#list-send").onclick = () => makeList(listKind, true);
     document.querySelectorAll("#tab-lists .seg label").forEach(l => l.onclick = e => { e.preventDefault(); showTab(l.dataset.kind); });
@@ -752,6 +755,7 @@ function renderToday() {
   const today = todayIso(), tomorrow = addDays(today, 1);
   const live = rows.filter(r => r.status !== "cancelled");
   const arrT = live.filter(r => r.arrival === today), arrM = live.filter(r => r.arrival === tomorrow);
+  todayPicks.tomorrow = { label: t("td_arr_tomorrow", dday(tomorrow)), ids: arrM.map(r => r.id) };
   const deps = live.filter(r => r.departure === today), inHouse = live.filter(r => r.arrival <= today && r.departure > today);
   const codeSent = r => r.messages.some(m => m.type === "access_code" && m.ok);
   const codeFailed = r => r.messages.some(m => m.type === "access_code" && !m.ok) && !codeSent(r);
@@ -765,7 +769,8 @@ function renderToday() {
   failedRows.forEach(r => { const last = [...r.messages].filter(m => !m.ok).pop(); att.push(["err", P.warn, t("td_a_failed", esc(stepShort(last.type)), esc(r.guest), esc([t(CH[last.channel] || last.channel), last.to, last.error].filter(Boolean).join(", "))), `<a class="btn sm" href="#" data-open="${esc(r.id)}">${esc(t("td_a_resend"))}</a>`]); });
   arrT.filter(unpaid).forEach(r => att.push(["warn", P.euro, t("td_a_unpaid", esc(r.guest), r.open_amount ? esc(eur(r.open_amount)) : ""), `<a class="btn2 sm" href="#" data-open="${esc(r.id)}">${esc(t("td_a_open"))}</a>`]));
   const noForm = [...arrT.map(r => [r, "td_today_s"]), ...arrM.map(r => [r, "td_tomorrow_s"])].filter(([r]) => !r.checkin_completed_at);
-  if (noForm.length) att.push(["warn", P.mail, t("td_a_form", noForm.map(([r, w]) => `${esc(r.guest)} (${esc(t(w))})`).join(", ")), `<a class="btn2 sm" href="#res" data-go="res">${esc(t("td_a_view"))}</a>`]);
+  todayPicks.noform = { label: t("td_a_form", "").replace(/<[^>]+>/g, "").replace(/[\s:.]+$/, ""), ids: noForm.map(([r]) => r.id) };
+  if (noForm.length) att.push(["warn", P.mail, t("td_a_form", noForm.map(([r, w]) => `${esc(r.guest)} (${esc(t(w))})`).join(", ")), `<a class="btn2 sm" href="#res" data-go="res" data-pick="noform">${esc(t("td_a_view"))}</a>`]);
   const bl = listData.breakfast;
   if (bl && bl.switch && !(bl.records || []).some(x => x.day === tomorrow)) att.push(["warn", P.coffee || P.clock, t("td_a_blist", esc(bl.time || "")), `<a class="btn2 sm" href="#breakfast" data-go="breakfast">${esc(t("td_a_make"))}</a>`]);
   if ($("#today-cnt")) { $("#today-cnt").hidden = !failedRows.length; $("#today-cnt").textContent = failedRows.length; }
@@ -785,9 +790,10 @@ function renderToday() {
     ${deps.map(r => `<div class="li"><div class="lt"><a class="nm" href="#" data-open="${esc(r.id)}">${esc(r.guest)}</a> <span class="muted">${esc(t("td_room", r.rooms.join(", ")))}</span>${r.open_amount > 0 ? `<div class="small muted">${esc(t("td_openst_x", eur(r.open_amount)))}</div>` : ""}</div>
       ${r.open_amount > 0 ? `<span class="badge b-warn">${IC(P.warn, 14, 2.4)}${esc(t("td_openst"))}</span>` : (r.room_statuses || []).includes("checkout") ? `<span class="badge b-ok">${IC(P.check, 14, 2.4)}${esc(t("td_left"))}</span>` : ""}</div>`).join("") || `<span class="muted small">${esc(t("td_none"))}</span>`}</div></section>`;
   const guestsIn = inHouse.reduce((n, r) => n + (r.guests || 0), 0), roomsIn = inHouse.reduce((n, r) => n + Math.max(1, r.rooms.length), 0);
+  todayPicks.inhouse = { label: t("td_now"), ids: inHouse.map(r => r.id) };
   const nowCard = `<section class="card"><div class="ch"><h2 class="ct">${IC(P.users)} ${esc(t("td_now"))}</h2><span class="small muted">${esc(t("td_nowcount", roomsIn, guestsIn))}</span></div><div class="cb">
     ${inHouse.slice(0, 3).map(r => `<div class="li"><div class="lt"><a class="nm" href="#" data-open="${esc(r.id)}">${esc(r.guest)}</a> <span class="muted">${esc(t("td_room", r.rooms.join(", ")))}${r.guests != null ? ", " + esc(t("r_p", r.guests)) : ""}</span></div><span class="small muted">${esc(t("td_until", dday(r.departure)))}</span></div>`).join("")}
-    ${inHouse.length > 3 ? `<a class="btn3" href="#res" data-go="res" style="padding:0">${esc(t("td_more", inHouse.length - 3))}</a>` : ""}</div></section>`;
+    ${inHouse.length > 3 ? `<a class="btn3" href="#res" data-go="res" data-pick="inhouse" style="padding:0">${esc(t("td_more", inHouse.length - 3))}</a>` : ""}</div></section>`;
   // Rechts: robot, berichten, lijsten, openstaand
   const runs = (todayRuns && todayRuns.runs) || [], lastRun = runs.find(x => x.task === "nieuwe_reservaties") || runs[0];
   const runOk = lastRun ? lastRun.ok !== false : true;  // error bevat ook gewone opmerkingen van een gelukte run
@@ -795,11 +801,12 @@ function renderToday() {
     ${lastRun ? `<dl class="kv"><dt>${esc(t("td_last"))}</dt><dd>${esc(dtime(lastRun.started_at))}${lastRun.finished_at ? `, ${Math.round((new Date(lastRun.finished_at) - new Date(lastRun.started_at)) / 1000)} s` : ""}</dd><dt>${esc(t("td_result"))}</dt><dd>${esc(lastRun.error || t("td_res_x", lastRun.new || 0, Math.max(0, (lastRun.found || 0) - (lastRun.new || 0))))}</dd></dl>` : ""}
     <div class="row"><button class="btn" type="button" id="td-run" ${todayRuns && todayRuns.can_run && !todayRuns.running ? "" : "disabled"}>${IC('<path d="M7 4.5v15l12-7.5z"/>', 14)}${esc(t("td_run"))}</button><a class="btn3" href="settings.html#robot">${esc(t("td_log"))}</a></div></div></section>`;
   const dueToday = live.flatMap(r => (r.plan || []).filter(p => (p.state === "planned" || p.state === "due") && p.due && p.due.slice(0, 10) === today).map(p => ({ r, p }))).sort((a, b) => a.p.due.localeCompare(b.p.due));
+  todayPicks.msgs = { label: t("td_msgs_today", dueToday.length), ids: [...new Set(dueToday.map(({ r }) => r.id))] };
   const msgs = `<section class="card"><div class="ch"><h2 class="ct">${IC(P.mail)} ${esc(t("td_msgs"))}</h2></div><div class="cb">
     ${failedRows.length ? `<div class="att err" style="padding:8px 10px">${IC(P.warn, 16)}<div class="lt">${t("td_msgs_failed", failedRows.length, failedRows.slice(0, 2).map(r => esc(stepShort(msgLast(r) && [...r.messages].filter(m => !m.ok).pop().type) + " " + r.guest)).join(", "))}</div></div>` : ""}
     <div class="lbl" style="margin-top:4px">${esc(t("td_msgs_today", dueToday.length))}</div>
     ${dueToday.slice(0, 4).map(({ r, p }) => `<div class="li"><div class="lt small"><b>${esc(stepShort(p.step))}</b> ${esc(r.guest)}</div><span class="small muted mono">${esc(p.due.length > 10 ? new Date(p.due).toLocaleTimeString(locale(), { hour: "2-digit", minute: "2-digit" }) : "")}</span></div>`).join("")}
-    ${dueToday.length > 4 ? `<a class="btn3" href="#res" data-go="res" style="padding:0">${esc(t("td_more", dueToday.length - 4))}</a>` : ""}</div></section>`;
+    ${dueToday.length > 4 ? `<a class="btn3" href="#res" data-go="res" data-pick="msgs" style="padding:0">${esc(t("td_more", dueToday.length - 4))}</a>` : ""}</div></section>`;
   const lrow = (kind, day, when) => {
     const d = listData[kind], x = d && (d.records || []).find(r => r.day === day);
     const name = t(kind === "breakfast" ? "td_bl" : "td_cl_today");
@@ -830,12 +837,18 @@ function renderToday() {
       ${att.slice(0, 2).map(([k, ic, txt, btn]) => `<div class="att ${k}" style="flex-wrap:wrap">${IC(ic, 18)}<div class="lt">${txt}</div>${btn.replace('class="btn sm"', 'class="btn sm" style="width:100%"')}</div>`).join("")}
       <div class="statgrid" style="grid-template-columns:repeat(3,minmax(0,1fr));gap:8px">${kpi(arrT.length, t("td_arrivals_m"))}${kpi(deps.length, t("td_deps_m"))}${kpi(guestsIn, t("td_inhouse_m"))}</div>
       <section class="mcard"><div class="ct">${esc(t("td_arr_today", "").replace(/,\s*$/, ""))}</div>${arrT.map(r => `<a href="#" class="li" data-open="${esc(r.id)}" style="text-decoration:none;color:#2B2F38"><div class="lt"><b>${esc(r.guest)}</b> <span class="muted">${esc(t("td_room", r.rooms.join(" + ")))}</span><div class="row" style="gap:4px;margin-top:4px">${mStatus(r)} ${labels(r)}</div></div>${ICO.chev}</a>`).join("") || `<span class="muted small">${esc(t("td_no_arr"))}</span>`}</section>
-      <section class="mcard"><div class="ct">${esc(t("td_arr_tomorrow", dday(tomorrow)))}</div><a href="#res" data-go="res" class="li" style="text-decoration:none;color:#2B2F38"><div class="lt"><b>${esc(t("td_tomorrow_n", arrM.length))}</b><div class="small muted">${esc(t("td_tomorrow_open", arrM.filter(r => !r.checkin_completed_at).length, arrM.filter(unpaid).length))}</div></div>${ICO.chev}</a></section>
+      <section class="mcard"><div class="ct">${esc(t("td_arr_tomorrow", dday(tomorrow)))}</div><a href="#res" data-go="res" data-pick="tomorrow" class="li" style="text-decoration:none;color:#2B2F38"><div class="lt"><b>${esc(t("td_tomorrow_n", arrM.length))}</b><div class="small muted">${esc(t("td_tomorrow_open", arrM.filter(r => !r.checkin_completed_at).length, arrM.filter(unpaid).length))}</div></div>${ICO.chev}</a></section>
       ${robot.replace('class="card"', 'class="mcard"')}
       ${lists.replace('class="card"', 'class="mcard"')}
     </div>`;
   el.querySelectorAll("[data-open]").forEach(a => a.onclick = e => { e.preventDefault(); openDetail(a.dataset.open); });
-  el.querySelectorAll("[data-go]").forEach(a => a.onclick = e => { e.preventDefault(); showTab(a.dataset.go); });
+  el.querySelectorAll("[data-go]").forEach(a => a.onclick = e => {
+    e.preventDefault();
+    // "en nog 7", "Bekijken": precies de reservaties waarover het gaat, niet de hele lijst
+    resPick = a.dataset.pick && todayPicks[a.dataset.pick] ? { ...todayPicks[a.dataset.pick], ids: new Set(todayPicks[a.dataset.pick].ids) } : null;
+    showTab(a.dataset.go);
+    if (a.dataset.go === "res") render();
+  });
   el.querySelectorAll("#td-run").forEach(b => b.onclick = async () => {
     b.disabled = true;
     await apiFetch(`${API}/api/monitor/${$("#hotel").value}/run`, { method: "POST" }).catch(() => null);
@@ -1388,11 +1401,14 @@ function msgNext(r) {
   return r.messages_on === false ? t("r_none_off") : t("r_none");
 }
 
+let resPick = null;  // {label, ids}: alleen deze reservaties (link vanuit Vandaag), tot "Toon alle"
+const todayPicks = {};
 function render() {
   const q = $("#search").value.toLowerCase();
   // Verblijf dat (deels) in de gekozen periode valt; lege datum = geen grens
-  const from = $("#from").value, to = $("#to").value;
-  const list = rows.filter(r => (!from || r.departure >= from) && (!to || r.arrival <= to) &&
+  const from = $("#from").value, to = $("#to").value, st = $("#status") ? $("#status").value : "";
+  const list = rows.filter(r => (resPick ? resPick.ids.has(r.id) : (!from || r.departure >= from) && (!to || r.arrival <= to)) &&
+    (!st || (st === "cancelled") === (r.status === "cancelled")) &&
     (!q || [r.guest, r.booking_number, r.email, r.phone, r.backup_email, r.backup_phone].join(" ").toLowerCase().includes(q)));
   list.sort((a, b) => {
     const x = sortValue(a, sortKey), y = sortValue(b, sortKey);
@@ -1404,7 +1420,8 @@ function render() {
     th.classList.toggle("sorted", th.dataset.sort === sortKey);
     th.dataset.dir = th.dataset.sort === sortKey ? (sortDir > 0 ? "asc" : "desc") : "";
   });
-  $("#count").innerHTML = t("res_count", list.length);
+  $("#count").innerHTML = t("res_count", list.length) + (resPick ? ` <span class="badge b-info" style="margin-left:8px">${esc(resPick.label)}</span> <a href="#" class="btn3" id="pick-clear" style="padding:0">${esc(t("pick_clear"))}</a>` : "");
+  if ($("#pick-clear")) $("#pick-clear").onclick = e => { e.preventDefault(); resPick = null; render(); };
   const contactCount = r => [[r.email, r.backup_email], [r.phone, r.backup_phone]].map(x => x.filter(Boolean).length);
   $("#res").innerHTML = list.map(r => {
     const last = msgLast(r), [ne, np] = contactCount(r), cancelled = r.status === "cancelled";
