@@ -75,9 +75,10 @@ def _all_remarks(monkeypatch):
 
 
 def test_cleaning_list_only_what_housekeeping_needs():
-    """Standaard: geen aantal personen en geen vrije opmerkingen (de schoonmaakploeg leest geen Nederlands)."""
+    """Standaard: geen aantal personen en geen vrije opmerkingen (de schoonmaakploeg leest geen Nederlands), wel de
+    herkende wens als korte Engelse opmerking."""
     _r("b", "12", DAY, 1, persons=3, remarks="Please a baby cot. Arrival 20h")
-    assert _row(dl.build("lucca", "cleaning", DAY), "12")["remark"] == ""
+    assert _row(dl.build("lucca", "cleaning", DAY), "12")["remark"] == "Baby bed"
 
 
 def test_cleaning_list(monkeypatch):
@@ -587,3 +588,22 @@ def test_out_of_order_yesterday_is_leave():
     assert r20["leave"] and not r20["checkin"] and r20["remark"] == "from yesterday"
     r11 = _row(data, "11")
     assert not (r11["leave"] or r11["stay"] or r11["checkin"]) and r11["remark"] == ""
+
+
+def test_cleaning_wishes_from_texts():
+    """Baby bed, romantische en verjaardagsversiering: herkend in de teksten (opmerking, folio, interne memo), in alle
+    talen, als korte Engelse opmerking. Geen labels nodig. Ontkenning en voorwaarden van het kanaal tellen niet."""
+    rules = dl.wish_rules("lucca")
+    assert dl.wishes(["Graag een kinderbedje aub"], rules) == ["Baby bed"]
+    assert dl.wishes(["C'est l'anniversaire de ma femme"], rules) == ["Birthday decoration"]
+    assert dl.wishes(["anniversaire de mariage", "Honeymoon!"], rules) == ["Romantic decoration"]
+    assert dl.wishes(["No baby cot needed", "Children and extra beds: cots available on request", "Cottage"], rules) == []
+    day = date(2026, 11, 8)
+    _plan(day)
+    stays = dl.planboard("lucca", day)["stays"]
+    x = next(s for s in stays if s["arrival"] == day.isoformat() and s["room"])
+    _r(x["reservation"], x["room"], day, 1, remarks="We vieren de verjaardag van mijn vrouw",
+       internal_memo="babybed voorzien")
+    remark = _row(dl.build("lucca", "cleaning", day), x["room"])["remark"]
+    assert "Baby bed" in remark and "Birthday decoration" in remark and "vrouw" not in remark
+    assert remark.count("Baby bed") == 1

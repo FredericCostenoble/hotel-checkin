@@ -212,6 +212,63 @@ def notes(texts: list[str | None], words: list[str]) -> list[str]:
     return out
 
 
+# Wensen die de schoonmaakploeg moet weten, herkend in de teksten van de reservatie (opmerking van de gast, folio,
+# interne memo), in alle talen. Op de lijst komt alleen de korte opmerking (Engels: de ploeg spreekt geen Nederlands),
+# nooit de tekst zelf. Per hotel aan te passen in [kuislijst.wensen]: opmerking = "woord, woord, ..." (begin van een
+# woord, hoofdletters maken niet uit; een stukje reguliere expressie mag, bv. anniversaire(?! de mariage)).
+WISHES = {
+    "Baby bed": "babybed, baby bed, baby-bed, baby cot, cots?\\b, cribs?\\b, kinderbed, kinderbett, babybett, babybedje, "
+                "kinderbedje, reisbed, lit bébé, lit bebe, lit parapluie, lit pour bébé, cuna",
+    "Romantic decoration": "romant, rozenblaadjes, rozenblaadje, rose petals, rose petal, pétales, petales, "
+                           "rosenblätter, honeymoon, huwelijksreis, lune de miel, flitterwochen, trouwdag, "
+                           "huwelijksverjaardag, wedding anniversary, anniversaire de mariage, hochzeitstag, "
+                           "jahrestag, verloving, fiançailles, "
+                           "verlobung, aanzoek, demande en mariage, heiratsantrag, anniversary",
+    "Birthday decoration": "verjaardag, jarig, birthday, bday, b-day, "
+                           "anniversaire(?! de mariage), geburtstag, cumpleaños, compleanno",
+}
+# Algemene voorwaarden van het boekingskanaal (bv. "Children and extra beds: cots available on request"): geen wens
+_POLICY = re.compile(r"toegestaan|allowed|accepted|autoris|erlaubt|available|beschikbaar|disponible|verfügbar|"
+                     r"kinderen en extra bedden|children and extra beds|enfants et lits", re.IGNORECASE)
+_NEGATION = re.compile(r"(?<!\w)(?:geen|niet|no|not|without|zonder|pas de|pas besoin|sans|kein|keine|keinen|nicht|ohne)"
+                       r"(?!\w)[^.!?\n]{0,25}$", re.IGNORECASE)
+
+
+def wish_rules(hotel_id: str) -> dict[str, list[re.Pattern]]:
+    cfg = load_hotel(hotel_id).get("kuislijst", {}).get("wensen")
+    rules = {str(k): str(v) for k, v in (cfg if isinstance(cfg, dict) else WISHES).items()}
+    out = {}
+    for text, words in rules.items():
+        pats = []
+        for w in (x.strip() for x in words.split(",")):
+            if not w:
+                continue
+            try:
+                pats.append(re.compile(r"(?<!\w)" + w, re.IGNORECASE))
+            except re.error:
+                pats.append(re.compile(r"(?<!\w)" + re.escape(w), re.IGNORECASE))
+        if pats:
+            out[text] = pats
+    return out
+
+
+def wishes(texts: list[str | None], rules: dict[str, list[re.Pattern]]) -> list[str]:
+    """Welke wensen staan in de teksten? Een woord met kort ervoor een ontkenning (geen, no, pas de, kein ...) telt
+    niet, bv. "no baby cot needed"."""
+    from hotel_checkin.pms.lighthouse_parse import DOOR_CODE_PREFIX
+
+    found = []
+    for text in texts:
+        for part in re.split(r"\n|\s\|\s|(?<=[.!?])\s+", text or ""):
+            if not part.strip() or part.strip().startswith(DOOR_CODE_PREFIX) or _POLICY.search(part):
+                continue
+            for wish, pats in rules.items():
+                if wish not in found and any(m for p in pats for m in p.finditer(part)
+                                             if not _NEGATION.search(part[:m.start()])):
+                    found.append(wish)
+    return [w for w in rules if w in found]
+
+
 def _texts(r: Reservation) -> list[str | None]:
     return [r.remarks, *(x.get("label") for x in r.folio)]
 
@@ -433,10 +490,14 @@ def _cleaning_plan(day: date, reservations: list[Reservation], words: list[str],
             if room == "?":
                 remark.append("nog geen kamer toegewezen" + (f" ({r.booking_number})" if r and r.booking_number else ""))
                 cur["check"] = True
-            if r is not None and not found_done and twin.get("notes"):  # opmerkingen van de reservatie: eerste kamer
-                if r.stairs_help and checkin:
-                    remark.append(STAIRS_REMARK)
-                remark += notes(_texts(r), words)
+            if r is not None and not found_done:  # wensen en opmerkingen van de reservatie: bij de eerste kamer
+                done = {x.lower() for x in remark}
+                remark += [w for w in wishes([*_texts(r), r.internal_memo], twin.get("wishes") or {})
+                           if w.lower() not in done]
+                if twin.get("notes"):
+                    if r.stairs_help and checkin:
+                        remark.append(STAIRS_REMARK)
+                    remark += notes(_texts(r), words)
                 found_done = True
             cur["remark"] = "; ".join(x for x in (cur["remark"], *remark) if x)
 
@@ -455,7 +516,7 @@ def build_cleaning(hotel_id: str, day: date, reservations: list[Reservation], wo
         _cleaning_plan(day, reservations, words, labels or [], stays, per_room,
                        {"rooms": twin_rooms(hotel_id), "labels": labels_twin or [], "memo": labels_memo or [],
                         "persons": cfg["persons"], "notes": cfg["notes"], "label_texts": cfg["label_texts"],
-                        "twin_text": cfg["twin_text"]})
+                        "twin_text": cfg["twin_text"], "wishes": wish_rules(hotel_id)})
         before, d = (day - timedelta(days=1)).isoformat(), day.isoformat()
         off = {(x["room"], x["date"]) for x in out_of_order or []}
         for room in sorted({room for room, x in off if x == before and (room, d) not in off}):
@@ -468,7 +529,8 @@ def build_cleaning(hotel_id: str, day: date, reservations: list[Reservation], wo
             continue
         leave, checkin = r.departure == day, r.arrival == day
         stay = r.arrival < day < r.departure
-        found = notes(_texts(r), words) if (stay or checkin) and cfg["notes"] else []
+        found = wishes([*_texts(r), r.internal_memo], wish_rules(hotel_id)) if (stay or checkin) else []
+        found += notes(_texts(r), words) if (stay or checkin) and cfg["notes"] else []
         for room in r.rooms or ["?"]:
             cur = per_room.setdefault(room, {"leave": False, "stay": False, "checkin": False, "remark": "",
                                              "check": False})

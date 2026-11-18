@@ -95,15 +95,23 @@ email = ["management@hotellucca.be"]   # mail met de Excel als bijlage; leeg = g
 whatsapp = []                 # gsm-nummers (+32...): WhatsApp, of sms als er geen WhatsApp-sjabloon is
 controle = "verantwoordelijke housekeeping"   # functie bovenaan de lijst (Controle: ...), geen naam; leeg = geen regel
 extra_rijen = ["TOILETTEN"]   # vaste rijen onderaan de lijst
-labels = ["BABY BED", "ROMANTISCHE VERSIERING", "VERJAARDAGSVERSIERING"]   # labels op het planbord die als opmerking komen (wie blijft of aankomt)
+labels = ["BABY BED"]   # labels op het planbord die als opmerking komen (wie blijft of aankomt)
 labels_twin = ["DOUBLE OPMAKEN"]        # alleen als opmerking op een twin kamer ([kamers.<nummer>] twin = true)
 labels_memo = []                        # bij deze labels komt de interne memo bij de opmerkingen (bv. SPECIAAL VERZOEK); leeg = nooit
 buiten_dienst_tekst = "from yesterday"  # kamer die gisteren Out of order stond: Leave met deze opmerking (al vrij)
 personen = false      # aantal personen bij check in (true = tonen)
 opmerkingen = false   # vrije opmerkingen uit de reservatie (true = tonen; bij een groep staan ze bij de eerste kamer)
-label_tekst = { "DOUBLE OPMAKEN" = "DOUBLE", "BABY BED" = "Baby bed", "ROMANTISCHE VERSIERING" = "Romantic decoration", "VERJAARDAGSVERSIERING" = "Birthday decoration" }   # hoe een label op de lijst staat (de schoonmaakploeg spreekt geen Nederlands); anders de naam van het label
+label_tekst = { "DOUBLE OPMAKEN" = "DOUBLE", "BABY BED" = "Baby bed" }   # hoe een label op de lijst staat (de schoonmaakploeg spreekt geen Nederlands); anders de naam van het label
 twin_tekst = "TWIN"   # twin kamer ([kamers.<nummer>] twin = true) zonder label DOUBLE OPMAKEN; leeg = niets
 woorden = ["babybed", "baby bed", "baby cot", "cot", "crib", "kinderbed", "kinderbett", "babybett", "lit bébé", "lit parapluie", "extra bed", "bijzetbed", "lit d'appoint", "zusatzbett", "romant", "versiering", "decoratie", "decoration", "décoration", "rozen", "roses", "bloemen", "flowers", "fleurs", "champagne", "cava", "verjaardag", "birthday", "anniversaire", "geburtstag", "anniversary", "jubileum", "huwelijk", "honeymoon", "lune de miel", "aparte bedden", "separate beds", "lits séparés", "kussen", "pillow", "oreiller"]   # zinnen uit de opmerking of de folio met deze woorden komen bij de opmerkingen
+
+[kuislijst.wensen]
+# Wensen herkend in de teksten van de reservatie (opmerking van de gast, folio, interne memo), in alle talen. Op de
+# schoonmaaklijst komt alleen de opmerking links (Engels), nooit de tekst zelf. Rechts de woorden, met een komma
+# (begin van een woord, hoofdletters maken niet uit). Met kort ervoor geen, no, pas de, kein ... telt het niet.
+"Baby bed" = 'babybed, baby bed, baby-bed, baby cot, cots?\b, cribs?\b, kinderbed, kinderbett, babybett, babybedje, kinderbedje, reisbed, lit bébé, lit bebe, lit parapluie, lit pour bébé, cuna'
+"Romantic decoration" = 'romant, rozenblaadjes, rozenblaadje, rose petals, rose petal, pétales, petales, rosenblätter, honeymoon, huwelijksreis, lune de miel, flitterwochen, trouwdag, huwelijksverjaardag, wedding anniversary, anniversaire de mariage, hochzeitstag, jahrestag, verloving, fiançailles, verlobung, aanzoek, demande en mariage, heiratsantrag, anniversary'
+"Birthday decoration" = 'verjaardag, jarig, birthday, bday, b-day, anniversaire(?! de mariage), geburtstag, cumpleaños, compleanno'
 
 [wifi]
 # Wifi in de praktische info van de mails. Lucca: elke kamer heeft een eigen, privé wifinetwerk (QR-code op de kamer).
