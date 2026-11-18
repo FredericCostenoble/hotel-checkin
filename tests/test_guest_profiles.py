@@ -270,3 +270,30 @@ def test_merge_once_only_once():
         repo.save_reservation(r, fields=("guest_id",))
     assert maintenance.merge_once("lucca") == 1
     assert maintenance.merge_once("lucca") is None and len(profiles.list_profiles("lucca")) == 1
+
+
+def test_similar_first_name_alone_is_not_the_same_guest():
+    """Joanne en Johannes lijken op elkaar, maar met een andere familienaam is het niet dezelfde gast."""
+    g = gp.link(_res("j1", "Johannes", "Lindblom"))
+    assert not gp.names_fit("Joanne", "Mitchell", g)
+    assert gp.names_fit("Jan", "Verschraeghen", profiles.get_profile("lucca", gp.link(_res("v1", "Jan", "Verschraegen")).guest_id))
+
+
+def test_split_wrong_link_from_before_the_placeholder_fix():
+    """Vroeger gekoppeld op het nepnummer van Expedia: Mitchell Joanne in het profiel van Lindblom Johannes.
+    Het onderhoud maakt haar los, geeft haar een eigen profiel en telt haar verblijf daar (niet meer bij hem)."""
+    gp.link(_res("l1", "Johannes", "Lindblom", phone="+11111111111"))
+    m = _res("m1", "Joanne", "Mitchell", phone="+11111111111", days_ago=4, rooms=["33"])
+    g = profiles.list_profiles("lucca")[0]
+    m.guest_id = g.guest_id  # zoals de foute koppeling van vroeger
+    repo.save_reservation(m)
+    g.reservation_ids.append("m1")
+    profiles.save_profile(g)
+    assert gp.count_stay(repo.get_reservation("lucca", "m1"))
+    g = profiles.get_profile("lucca", g.guest_id)
+    assert g.stays == 1 and g.rooms == {"33": 1}
+    maintenance.run("lucca")
+    g = profiles.get_profile("lucca", g.guest_id)
+    assert g.reservation_ids == ["l1"] and g.stays == 0 and g.rooms == {} and g.stay_periods == []
+    other = profiles.get_profile("lucca", repo.get_reservation("lucca", "m1").guest_id)
+    assert other.guest_id != g.guest_id and other.last_name == "Mitchell" and other.stays == 1

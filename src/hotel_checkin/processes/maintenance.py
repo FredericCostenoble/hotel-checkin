@@ -49,6 +49,9 @@ def run(hotel_id: str, today: date | None = None) -> dict:
     done = {"linked": 0, "counted": 0, "cancellations": 0, "reservations_deleted": 0, "guests_deleted": 0,
             "access_revoked": 0, "forms_deleted": 0}
     try:
+        # Foute koppelingen van vroeger (bv. alleen hetzelfde nepnummer van Expedia) losmaken; ze worden hieronder
+        # opnieuw gekoppeld en meegeteld bij het juiste profiel
+        done["split"] = guest_profiles.split_wrong_links(hotel_id)
         pool = profiles.list_profiles(hotel_id)
         # Eenmalig: profielen geteld voor verblijven als periodes geteld werden, opnieuw tellen
         if any(g.stays and not g.stay_periods for g in pool):
@@ -100,7 +103,7 @@ def run(hotel_id: str, today: date | None = None) -> dict:
     except Exception as exc:
         guests.log_robot_run(hotel_id, TASK, started, False, error=f"{type(exc).__name__}: {exc}")
         raise
-    note = (f"{done['linked']} gekoppeld, {done['counted']} verblijven en {done['cancellations']} annuleringen meegeteld, "
+    note = ((f"{done['split']} foute koppeling(en) losgemaakt, " if done.get("split") else "") + f"{done['linked']} gekoppeld, {done['counted']} verblijven en {done['cancellations']} annuleringen meegeteld, "
             f"{done['reservations_deleted']} reservaties verwijderd (vertrek voor "
             f"{today - timedelta(days=keep_res):%d/%m/%Y}), {done['guests_deleted']} gasten verwijderd, "
             f"{done['access_revoked']} toegangen bij Salto ingetrokken")

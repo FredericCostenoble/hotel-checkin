@@ -132,11 +132,23 @@ def phones(g: GuestProfile) -> set[str]:
     return {p for p in [g.phone, *g.known_phones] if p and not placeholder_phone(p)}
 
 
+def _names_fit(first: str, last: str, first2: str, last2: str) -> bool:
+    """Passen de namen? Een woord van de naam precies gemeen, of een familienaam die er sterk op lijkt (tikfout).
+    Een voornaam die er alleen op lijkt, telt niet (Joanne en Johannes zijn niet dezelfde). Een van beide zonder
+    naam: ja."""
+    a, b = name_tokens(first, last), name_tokens(first2, last2)
+    if not a or not b:
+        return True
+    if any(len(x) >= 3 and x == y for x in a for y in b):
+        return True
+    la, lb = name_tokens("", last), name_tokens("", last2)
+    return any(len(x) >= 4 and len(y) >= 4 and token_match(x, y) for x in la for y in lb)
+
+
 def names_fit(first: str, last: str, g: GuestProfile) -> bool:
-    """Passen de namen? Minstens een deel van de naam gemeen (of een van beide zonder naam).
-    Zo wordt een partner of familielid met hetzelfde adres of nummer niet samengevoegd."""
-    a, b = name_tokens(first, last), name_tokens(g.first_name, g.last_name)
-    return not a or not b or any(len(x) >= 3 and len(y) >= 3 and token_match(x, y) for x in a for y in b)
+    """Passen de namen van de reservatie bij het profiel? Zo wordt een partner of familielid met hetzelfde adres
+    of nummer niet samengevoegd."""
+    return _names_fit(first, last, g.first_name, g.last_name)
 
 
 def _strong_match(r: Reservation, candidates: list[GuestProfile]) -> GuestProfile | None:
@@ -171,6 +183,92 @@ def _same_stay(r: Reservation, candidates: list[GuestProfile]) -> GuestProfile |
             if other is not None and _overlap(r, other):
                 return g
     return None
+
+
+def _belong_together(a: Reservation, b: Reservation) -> bool:
+    """Twee reservaties van hetzelfde profiel: is er een reden dat het dezelfde gast is? Zelfde eigen e-mailadres of
+    echt gsm-nummer (geen doorstuuradres, geen nepnummer van een boekingssite), of de namen passen."""
+    from hotel_checkin.checkin.service import placeholder_phone
+
+    ea, eb = (a.guest.email or "").lower(), (b.guest.email or "").lower()
+    if ea and ea == eb and is_own_email(ea):
+        return True
+    if a.guest.phone and a.guest.phone == b.guest.phone and not placeholder_phone(a.guest.phone):
+        return True
+    return _names_fit(a.guest.first_name, a.guest.last_name, b.guest.first_name, b.guest.last_name)
+
+
+def _dec(counter: dict, key: str) -> None:
+    if key in counter:
+        counter[key] -= 1
+        if counter[key] <= 0:
+            del counter[key]
+
+
+def _uncount(g: GuestProfile, r: Reservation, others: list[Reservation]) -> None:
+    """Wat reservatie r meetelde in profiel g, er weer aftrekken (r gaat naar een ander profiel). De rest blijft,
+    ook verblijven van reservaties die al opgeruimd zijn. others = de reservaties die in g blijven."""
+    if r.stay_counted_at:
+        a, d = r.arrival.isoformat(), r.departure.isoformat()
+        keep = []
+        for pa, pd in g.stay_periods:  # de nachten van r uit de periodes halen
+            if pd <= a or pa >= d:
+                keep.append([pa, pd])
+                continue
+            if pa < a:
+                keep.append([pa, a])
+            if pd > d:
+                keep.append([d, pd])
+        shared = [o for o in others if o.stay_counted_at and o.arrival < r.departure and r.arrival < o.departure]
+        keep += [[o.arrival.isoformat(), o.departure.isoformat()] for o in shared]  # wat een ander ook telde
+        g.stay_periods = sorted(keep)
+        _apply_periods(g)
+        if r.guest_count:
+            g.persons = max(0, g.persons - r.guest_count)
+            if not shared:
+                g.persons_stays = max(0, g.persons_stays - 1)
+        for room in r.rooms:
+            _dec(g.rooms, room)
+        if r.room_type:
+            _dec(g.room_types, r.room_type)
+        if not shared:
+            _dec(g.channels, channel_of(r))
+        r.stay_counted_at = None
+    if r.cancel_counted_at:
+        g.cancellations = max(0, g.cancellations - 1)
+        r.cancel_counted_at = None
+
+
+def split_wrong_links(hotel_id: str) -> int:
+    """Foute koppelingen van vroeger ongedaan maken: een reservatie in een profiel zonder enige reden om bij de
+    andere reservaties te horen (bv. alleen hetzelfde nepnummer van Expedia, +11111111111, en een voornaam die er
+    wat op leek) wordt losgemaakt; ze krijgt daarna haar eigen profiel (link). Geeft het aantal losgemaakte."""
+    by_id = {r.reservation_id: r for r in guests.list_reservations(hotel_id)}
+    split = 0
+    for g in profiles.list_profiles(hotel_id):
+        rs = [by_id[x] for x in g.reservation_ids if x in by_id]
+        if len(rs) < 2:
+            continue
+        # Groepjes die bij elkaar horen; het groepje met de naam van het profiel blijft (anders het grootste)
+        groups: list[list[Reservation]] = []
+        for r in rs:
+            hit = [grp for grp in groups if any(_belong_together(r, o) for o in grp)]
+            merged_grp = [r] + [x for grp in hit for x in grp]
+            groups = [grp for grp in groups if grp not in hit] + [merged_grp]
+        if len(groups) < 2:
+            continue
+        key = canonical_name(g.first_name, g.last_name)
+        groups.sort(key=lambda grp: (any(canonical_name(x.guest.first_name, x.guest.last_name) == key for x in grp),
+                                     len(grp)), reverse=True)
+        for grp in groups[1:]:
+            for r in grp:
+                _uncount(g, r, groups[0])
+                r.guest_id = None
+                guests.save_reservation(r, fields=("guest_id", "stay_counted_at", "cancel_counted_at"))
+                g.reservation_ids = [x for x in g.reservation_ids if x != r.reservation_id]
+                split += 1
+        profiles.save_profile(g)
+    return split
 
 
 def merge_same_stay(hotel_id: str) -> int:
