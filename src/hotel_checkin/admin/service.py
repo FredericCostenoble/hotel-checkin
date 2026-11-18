@@ -108,6 +108,11 @@ def reservations(hotel_id: str) -> list[dict]:
             "pay_link": r.pay_link or "",
             "app_link": _app_link(hotel_id, r),
             "room_moves": r.room_moves,
+            # Gebeurtenissen voor de detailpagina (alleen tijdstippen die al bewaard worden)
+            "breakfast_labeled_at": r.breakfast_labeled_at.isoformat() if r.breakfast_labeled_at else "",
+            "stairs_label_at": r.stairs_label_at.isoformat() if r.stairs_label_at else "",
+            "contact_checked_at": r.contact_checked_at.isoformat() if r.contact_checked_at else "",
+            "pms_labels": r.pms_labels,
             "arrival": r.arrival.isoformat(),
             "departure": r.departure.isoformat(),
             "guest": f"{r.guest.first_name} {r.guest.last_name}".strip(),

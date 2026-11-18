@@ -38,6 +38,11 @@
   <section id="tab-hotel" class="content v2">
     <div class="ph"><div><h1><span data-t="settings"></span>: <span data-t="tab_hotel"></span></h1><div id="hs-sub" class="sub"></div></div>
       <div id="hs-groups" class="seg" role="radiogroup"><label data-group="func"><input type="radio" name="grp"><span data-t="hs_func"></span></label><label data-group="tech"><input type="radio" name="grp"><span data-t="hs_tech"></span></label></div></div>
+    <div class="m-only" style="display:flex;flex-direction:column;gap:14px">
+      <div class="mh1" data-t="settings"></div>
+      <div class="seg" style="display:flex"><label class="on" style="flex:1;justify-content:center"><input type="radio" name="ms" checked><span data-t="tab_hotel"></span></label><label style="flex:1;justify-content:center" onclick="location.hash='workflow'"><input type="radio" name="ms"><span data-t="nav_messages"></span></label><label style="flex:1;justify-content:center" onclick="location.hash='robot'"><input type="radio" name="ms"><span data-t="tab_robot"></span></label></div>
+      <div class="row" style="flex-wrap:nowrap"><select id="hs-mgroup" class="select" style="min-height:44px" aria-label="Groep"><option value="func" data-t="hs_func"></option><option value="tech" data-t="hs_tech"></option></select><select id="hs-msec" class="select" style="min-height:44px" aria-label="Sectie"></select></div>
+    </div>
     <div id="hs-state" class="small muted"></div>
     <span id="hs-meta" hidden></span><button id="hs-reset" type="button" hidden></button><button id="hs-save" type="button" hidden></button>
     <div class="cols"><nav aria-label="Secties" style="flex:0 0 200px;position:relative"><div id="hs-nav" class="card" style="padding:8px;position:sticky;top:12px"></div></nav>
@@ -45,17 +50,18 @@
   </section>
   <section id="tab-robot" class="content v2" hidden>
     <div class="ph"><div><h1><span data-t="settings"></span>: <span data-t="tab_robot"></span></h1><div class="sub" data-t="rb_sub"></div></div></div>
+    <div class="m-only" style="display:flex;flex-direction:column;gap:14px"><a class="btn3" href="#hotel" style="padding:0;align-self:flex-start"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg><span data-t="s_back"></span></a><div class="mh1" data-t="tab_robot"></div></div>
     <div class="cols"><div class="col-main">
       <section class="card"><div class="cb" style="padding-top:16px"><div class="row" style="gap:18px;align-items:center">
         <div class="stack"><span class="lbl" data-t="rb_state"></span><span id="robot-state" class="row"></span></div>
         <div class="row" style="margin-left:auto;align-items:flex-end"><div class="field" id="hours-wrap"><label for="hours" data-t="rb_hours"></label><input id="hours" class="input" type="number" value="48" min="1" max="720" style="width:80px"></div>
           <button id="run" class="btn" type="button"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 4.5v15l12-7.5z"/></svg><span data-t="run"></span></button></div></div>
-        <div class="help" data-t="rb_help"></div></div></section>
+        <div id="robot-help" class="help"></div></div></section>
       <section class="card"><div class="ch"><h2 class="ct"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="8" width="16" height="12" rx="2"/><path d="M12 4v4M9 13v1M15 13v1M9.5 17h5"/><circle cx="12" cy="3.5" r="1"/></svg> <span data-t="rb_log"></span></h2><div class="row"><div class="subtabs" hidden><button type="button" data-sub="log" class="active"></button><button type="button" data-sub="azure" id="sub-azure" hidden></button></div><select id="task" class="select" style="width:auto" aria-label="Task"></select></div></div>
         <div id="sub-log" class="tbox"><table>
           <thead><tr><th data-t="r_start"></th><th data-t="r_duration"></th><th data-t="r_task"></th><th data-t="r_result"></th><th data-t="r_found"></th><th data-t="r_new"></th><th data-t="r_error"></th><th><button type="button" id="bin-all" class="bin"></button></th></tr></thead>
-          <tbody id="runs"></tbody></table></div></section>
-    </div><div class="col-side">
+          <tbody id="runs"></tbody></table></div><div id="mruns" class="m-only" style="display:flex;flex-direction:column;gap:14px"></div></section>
+    </div><div class="col-side" style="flex-basis:400px">
       <section class="card"><div class="ch"><h2 class="ct"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg> <span data-t="exec_title"></span></h2></div>
         <div id="exec-wrap" class="tbox"><table><thead><tr><th data-t="r_start"></th><th data-t="exec_end"></th><th data-t="r_duration"></th><th data-t="exec_status"></th></tr></thead><tbody id="execs"></tbody></table></div></section>
     </div></div>
@@ -63,6 +69,9 @@
   <section id="tab-workflow" class="content v2" hidden>
     <div class="ph"><div><h1><span data-t="settings"></span>: <span data-t="nav_messages"></span></h1><div class="sub" data-t="wfx_sub"></div></div><span id="wf-meta" class="who"></span></div>
     <div id="wf-savebar" class="savebar" hidden><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.5l9.5 16.5h-19z"/><path d="M12 10v4.5M12 17.5v.5"/></svg><span style="flex:1"><b data-t="wfx_unsaved"></b> <span id="wf-state"></span></span><button id="wf-reset" class="btn2 sm" type="button" data-t="wf_reset"></button><button id="wf-cancel" class="btn2 sm" type="button" data-t="d_cancel"></button><button id="wf-save" class="btn sm" type="button" data-t="wf_save" disabled></button></div>
+    <div class="m-only" style="display:flex;flex-direction:column;gap:14px"><a class="btn3" href="#hotel" style="padding:0;align-self:flex-start"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg><span data-t="s_back"></span></a><div class="mh1" data-t="nav_messages"></div>
+      <select id="wf-mflow" class="select" style="min-height:44px" aria-label="Flow"></select>
+      <section class="mcard"><div class="ct" data-t="wf_line_m"></div><div id="wf-msteps"></div></section></div>
     <div id="wf-flows" class="seg" role="radiogroup"></div>
     <section class="card"><div class="ch"><h2 class="ct"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg> <span data-t="wfx_line"></span></h2><span class="small muted" data-t="wfx_click"></span></div><div class="cb"><div id="wf-flowline" class="flowline"></div></div></section>
     <div class="cols"><div class="col-main"><section class="card"><div class="ch"><h2 class="ct"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3.5 6.5l8.5 6.5 8.5-6.5"/></svg> <span id="wf-step-title"></span></h2></div><div class="cb"><div id="wf-timeline"></div></div></section></div>

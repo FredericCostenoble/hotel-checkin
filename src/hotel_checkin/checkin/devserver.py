@@ -118,7 +118,7 @@ class Handler(BaseHTTPRequestHandler):
             self._json(200, maintenance.run(parts[2]))
         elif method == "GET" and len(parts) == 4 and parts[3] == "guests":
             self._json(200, admin.guests(parts[2]))
-        elif len(parts) == 4 and parts[3] in ("lists", "list-xlsx"):
+        elif len(parts) == 4 and parts[3] in ("lists", "list-xlsx", "list-pdf"):
             # Tabbladen Ontbijt en Kuis (zelfde als function_app.py)
             from urllib.parse import parse_qs, urlparse
 
@@ -134,6 +134,12 @@ class Handler(BaseHTTPRequestHandler):
                 if data:
                     self._send(200, lists.xlsx(data, admin.hotel_name(parts[2])),
                                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+                else:
+                    self._json(404, {"error": "not_found"})
+            elif parts[3] == "list-pdf":
+                data = admin.daily_list(parts[2], kind, q.get("day", ""))
+                if data:
+                    self._send(200, lists.pdf(data, admin.hotel_name(parts[2])), "application/pdf")
                 else:
                     self._json(404, {"error": "not_found"})
             elif method == "GET":

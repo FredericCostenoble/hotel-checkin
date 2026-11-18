@@ -225,7 +225,7 @@ Object.assign(T.nl, {
   l_sent: x => `Verstuurd: ${x}`, l_not_sent: "Niet verstuurd", l_none_sel: "Kies een lijst om te bekijken.", l_mail: n => `mail ${n}`, l_wa: n => `WhatsApp ${n}`, l_sms: n => `sms ${n}`, l_failed: "Mislukt",
   gc_uit: "Uit", gc_selectie: "Selectie", gc_aan: "Aan", gc_uit_help: "Er gaat niets naar gasten.", gc_selectie_help: "Alleen reservaties die je zelf aanzet. Om te testen.", gc_aan_help: "Alle reservaties, behalve wie je uitvinkt.",
   hs_env_badge: "Vast per omgeving (Key Vault)", hs_env_note: "Deze waarden liggen vast per omgeving en zijn hier niet te wijzigen. Aanpassen gebeurt in Azure Key Vault.",
-  rb_sub: "Leest Lighthouse volgens het schema van het hotel", rb_state: "Toestand", rb_hours: "Uren terug", rb_help: "De knop is uit zolang de robot bezig is.", rb_log: "Logboek per run",
+  rb_busy: "Bezig", rb_idle: "Klaar", rb_sub: "Leest Lighthouse volgens het schema van het hotel", rb_state: "Toestand", rb_hours: "Uren terug", rb_help: "De knop is uit zolang de robot bezig is.", rb_log: "Logboek per run",
   wfx_sub: "Welke berichten wanneer vertrekken, per flow", wfx_unsaved: "Niet bewaarde wijzigingen", wfx_in_flow: f => `in de flow ${f}`, wfx_line: "Tijdlijn van boeking tot na vertrek",
   wfx_click: "Klik een stap om ze te wijzigen", wfx_step: s => `Stap: ${s}`, wfx_recog: "Herkennen van deze flow", wfx_booking: "Boeking",
   nav_today: "Vandaag", td_update: (d, u) => `${d}, laatste update ${u}`, td_arr: "aankomsten vandaag", td_arr_tom: "aankomsten morgen", td_dep: "vertrekken vandaag",
@@ -246,6 +246,14 @@ Object.assign(T.nl, {
   td_room: n => `kamer ${n}`, td_tax: "toeristenbelasting", td_none_attn: "Niets dat aandacht vraagt.", td_no_arr: "Geen aankomsten.", td_ok: "In orde",
   td_miss_form: "Mist formulier", td_miss_pay: "Mist betaling", td_miss_code: "Mist code-mail", td_tomorrow_n: n => `${n} aankomsten`, td_tomorrow_open: (f, p) => `${f} formulier en ${p} betaling open`,
   td_arrivals_m: "aankomsten", td_deps_m: "vertrekken", td_inhouse_m: "in huis", td_robot_ok: "Gelukt", td_robot_err: "Fout", td_robot_last_m: (w, n, u) => `Laatste run ${w}, ${n} nieuw, ${u} bijgewerkt`,
+  ev_event: "Gebeurtenis", ev_reply: "Antwoord", ev_all: "Alles", ev_msgs: "Alleen berichten", ev_events: "Alleen gebeurtenissen", ev_ok: "Gelukt", ev_lh: "Lighthouse", ev_recv: "Ontvangen",
+  ev_booked: "Reservatie gemaakt in Lighthouse", ev_added: "Reservatie gelezen door de robot", ev_payout: "Overschrijving Booking.com geregistreerd", ev_payreq: "Betaalverzoek gemaakt in Lighthouse",
+  ev_bf: "Label ONTBIJT gezet in Lighthouse", ev_stairs: "Regel in de interne memo: moeilijk ter been", ev_stairs_lbl: "Label NIET VERPLAATSEN gezet in Lighthouse",
+  ev_move: (a, b) => `Kamerwissel in Lighthouse: ${a} (was ${b})`, ev_form: "Formulier ingevuld in de gast-app", ev_contact: "Contactgegevens gelezen in Lighthouse",
+  ev_codes: "Pincodes gemaakt bij Salto", ev_codes_lh: "Code en status KLAAR OM IN TE CHECKEN gezet in Lighthouse",
+  g_synced: d => `laatst gesynchroniseerd ${d}`, g_back: "Gasten", s_back: "Instellingen", hs_sec_reset_confirm: s => `De sectie "${s}" terugzetten naar de standaardwaarden uit het hotelbestand?`,
+  hs_group_lbl: "Groep", hs_sec_lbl: "Sectie", wf_flow_m: f => `Flow: ${f}`, wf_line_m: "Van boeking tot na vertrek", wf_preview_m: "Voorbeeldmail", rb_now_m: "Nu draaien",
+  rb_done_m: (a, b) => `${a} van ${b} gedaan`, rb_del_sel: "Selectie verwijderen", rp_search: "Zoekt oorzaak", rp_test: "Klaar om te testen", rp_solved: "Opgelost",
   gp_nowsuffix: "(nu)", gp_wa: "WhatsApp", gp_sms: "Sms", gp_none: "Kies een gast in de lijst.", gp_stays_m: n => `${n} verblijven`,
 });
 Object.assign(T.en, {
@@ -283,7 +291,7 @@ Object.assign(T.en, {
   l_sent: x => `Sent: ${x}`, l_not_sent: "Not sent", l_none_sel: "Choose a list to view.", l_mail: n => `mail ${n}`, l_wa: n => `WhatsApp ${n}`, l_sms: n => `SMS ${n}`, l_failed: "Failed",
   gc_uit: "Off", gc_selectie: "Selection", gc_aan: "On", gc_uit_help: "Nothing goes to guests.", gc_selectie_help: "Only reservations you switch on yourself. For testing.", gc_aan_help: "All reservations, except the ones you untick.",
   hs_env_badge: "Fixed per environment (Key Vault)", hs_env_note: "These values are fixed per environment and cannot be changed here. They are changed in Azure Key Vault.",
-  rb_sub: "Reads Lighthouse on the hotel's schedule", rb_state: "State", rb_hours: "Hours back", rb_help: "The button is off while the robot is running.", rb_log: "Log per run",
+  rb_busy: "Running", rb_idle: "Ready", rb_sub: "Reads Lighthouse on the hotel's schedule", rb_state: "State", rb_hours: "Hours back", rb_help: "The button is off while the robot is running.", rb_log: "Log per run",
   wfx_sub: "Which messages go out when, per flow", wfx_unsaved: "Unsaved changes", wfx_in_flow: f => `in the flow ${f}`, wfx_line: "Timeline from booking to after departure",
   wfx_click: "Click a step to change it", wfx_step: s => `Step: ${s}`, wfx_recog: "Recognising this flow", wfx_booking: "Booking",
   nav_today: "Today", td_update: (d, u) => `${d}, last update ${u}`, td_arr: "arrivals today", td_arr_tom: "arrivals tomorrow", td_dep: "departures today",
@@ -304,6 +312,14 @@ Object.assign(T.en, {
   td_room: n => `room ${n}`, td_tax: "tourist tax", td_none_attn: "Nothing needs attention.", td_no_arr: "No arrivals.", td_ok: "OK",
   td_miss_form: "Missing form", td_miss_pay: "Missing payment", td_miss_code: "Missing code mail", td_tomorrow_n: n => `${n} arrivals`, td_tomorrow_open: (f, p) => `${f} form and ${p} payment open`,
   td_arrivals_m: "arrivals", td_deps_m: "departures", td_inhouse_m: "in house", td_robot_ok: "Succeeded", td_robot_err: "Error", td_robot_last_m: (w, n, u) => `Last run ${w}, ${n} new, ${u} updated`,
+  ev_event: "Event", ev_reply: "Reply", ev_all: "All", ev_msgs: "Messages only", ev_events: "Events only", ev_ok: "Succeeded", ev_lh: "Lighthouse", ev_recv: "Received",
+  ev_booked: "Reservation made in Lighthouse", ev_added: "Reservation read by the robot", ev_payout: "Booking.com payout registered", ev_payreq: "Payment request created in Lighthouse",
+  ev_bf: "Label ONTBIJT set in Lighthouse", ev_stairs: "Line in the internal memo: difficulty with stairs", ev_stairs_lbl: "Label NIET VERPLAATSEN set in Lighthouse",
+  ev_move: (a, b) => `Room change in Lighthouse: ${a} (was ${b})`, ev_form: "Form filled in in the guest app", ev_contact: "Contact details read in Lighthouse",
+  ev_codes: "PIN codes created at Salto", ev_codes_lh: "Code and status READY TO CHECK IN set in Lighthouse",
+  g_synced: d => `last synchronized ${d}`, g_back: "Guests", s_back: "Settings", hs_sec_reset_confirm: s => `Reset the section "${s}" to the defaults from the hotel file?`,
+  hs_group_lbl: "Group", hs_sec_lbl: "Section", wf_flow_m: f => `Flow: ${f}`, wf_line_m: "From booking to after departure", wf_preview_m: "Preview mail", rb_now_m: "Run now",
+  rb_done_m: (a, b) => `${a} of ${b} done`, rb_del_sel: "Delete selection", rp_search: "Looking for the cause", rp_test: "Ready to test", rp_solved: "Solved",
   gp_nowsuffix: "(now)", gp_wa: "WhatsApp", gp_sms: "SMS", gp_none: "Choose a guest in the list.", gp_stays_m: n => `${n} stays`,
 });
 let lang = "nl";
@@ -390,12 +406,14 @@ async function loadRepair() {
   try { s = await get(`/api/monitor/${h}/repair`); } catch (e) { box.hidden = true; return; }
   const b = s.banner;
   if (!b) { box.hidden = true; return; }
-  box.className = `repair-banner ${b.level}`;
+  // Ontwerp (Kop-varianten): rode kader met de oorzaak, de stappen van de herstelling en de knop
+  box.className = "repair v2";
   const link = t => esc(t).replace(/(https?:\/\/\S+?)([).,]?)(\s|$)/g, '<a href="$1">$1</a>$2$3');
-  box.innerHTML = b.lines.map((l, i) => `<p${i === 0 ? ' class="first"' : ""}>${link(l)}</p>`).join("")
-    + (b.promote && s.may_promote ? `<p><button type="button" class="primary" id="promote" ${s.can_promote ? "" : "disabled"}
-         title="${esc(s.why_not || "")}">Deze versie naar PRD zetten</button>
-         <span class="muted" id="promote-msg">${s.can_promote ? "" : esc("Kan nu niet: " + (s.why_not || ""))}</span></p>` : "");
+  const testing = b.level === "blue";
+  const stepsHtml = `<div class="steps" aria-label="Status"><span class="${testing ? "done" : "cur"}">${testing ? IC(P.check, 12, 2.6) : ""}${esc(t("rp_search"))}</span><span class="${testing ? "cur" : ""}">${esc(t("rp_test"))}</span><span>${esc(t("rp_solved"))}</span></div>`;
+  box.innerHTML = `<span class="ri">${IC(P.warn, 22)}</span><div class="rb"><div class="rt">${link(b.lines[0] || "")}</div>${b.lines.slice(1).map(l => `<div class="small" style="color:#5A2620">${link(l)}</div>`).join("")}${stepsHtml}
+    ${b.promote && s.may_promote && !s.can_promote ? `<span class="small" id="promote-msg" style="color:#5A2620">${esc("Kan nu niet: " + (s.why_not || ""))}</span>` : `<span class="small" id="promote-msg"></span>`}</div>
+    ${b.promote && s.may_promote ? `<button type="button" class="btn" id="promote" style="background:#7E241D" ${s.can_promote ? "" : "disabled"} title="${esc(s.why_not || "")}">${IC('<path d="M14.5 6.5a4 4 0 0 0 5 5l-9 9a2.1 2.1 0 0 1-3-3l9-9a4 4 0 0 0-2-2z"/><path d="M14.5 6.5L17 4l3 3-2.5 2.5"/>', 16)}Deze versie naar PRD zetten</button>` : ""}`;
   box.hidden = false;
   const btn = $("#promote");
   if (btn) btn.onclick = async () => {
@@ -496,6 +514,7 @@ function showTab(name, initial = false) {
   if ($("#tab-detail")) $("#tab-detail").hidden = true;
   if (LIST_KINDS.includes(name) && !initial) loadList(name);
   if (name === "today") loadTodayRuns();
+  if (name === "guests") { if ($("#tab-guests")) $("#tab-guests").classList.remove("gdet"); loadGuestSync(); }
   if (location.hash.slice(1) !== name) history[initial ? "replaceState" : "pushState"](null, "", "#" + name);
 }
 
@@ -770,7 +789,7 @@ const P = {
 };
 const chIcon = ch => IC(ch === "email" ? P.mail : ch === "whatsapp" ? P.wa : P.phone, 13);
 const eur = x => x == null ? "" : "EUR " + Number(x).toLocaleString("nl-BE", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-let detailId = "";
+let detailId = "", detailFilter = "";
 
 function openDetail(id) {
   detailId = id;
@@ -825,8 +844,29 @@ function renderDetail() {
       </div></div>`;
   }).join("");
   const legend = ["sent", "failed", "planned", "missed", "cond", "off"].map(k => { const [, bc, ic, label] = KIND[k]; return `<span class="badge ${bc}">${k === "cond" || k === "off" ? "" : IC(ic, 14, 2.4)}${esc(t(label))}</span>`; }).join("");
-  const attempts = [...r.messages].reverse().map(m => `<tr><td class="mono small">${esc(dtime(m.at))}</td><td><b>${esc(stepShort(m.type))}</b></td><td>${esc(t(CH[m.channel] || m.channel))}</td>
-    <td class="small">${toCell(m)}</td><td><span class="badge ${m.ok ? "b-ok" : "b-err"}">${esc(t("st_" + m.status) || m.status)}</span></td><td class="small" style="color:#8B2E2E">${esc([m.error, m.note].filter(Boolean).join(". "))}</td></tr>`).join("");
+  // Alle pogingen en gebeurtenissen: berichten uit het log, plus wat er met de reservatie gebeurde (tijdstippen die bewaard worden)
+  const EVTYPES = ["checkin_form", "incoming", "app_unlock", "app_pay", "booking_payout", "pay_request", "pms_sync", "room_change"];
+  const items = r.messages.map(m => {
+    const ev = EVTYPES.includes(m.type);
+    return { at: m.at, kind: ev ? "event" : "msg", what: m.type === "incoming" ? t("ev_reply") : ev ? t("ev_event") : stepShort(m.type),
+      detail: ev ? [stepShort(m.type), m.note].filter(Boolean).join(": ") : t(CH[m.channel] || m.channel), to: ev && m.type !== "incoming" ? "" : toCell(m),
+      badge: m.type === "incoming" ? ["b-info", t("ev_recv")] : [m.ok ? "b-ok" : "b-err", t("st_" + m.status) || m.status], err: [m.error, ev ? "" : m.note].filter(Boolean).join(". ") };
+  });
+  const ev = (at, text, lh = true) => { if (at) items.push({ at, kind: "event", what: t("ev_event"), detail: text, to: "", badge: lh ? ["b-info", t("ev_lh")] : ["b-ok", t("ev_ok")], err: "" }); };
+  ev(r.booked_at, t("ev_booked"));
+  ev(r.added_at, t("ev_added"), false);
+  ev(r.contact_checked_at, t("ev_contact"));
+  if (!r.messages.some(m => m.type === "checkin_form")) ev(r.checkin_completed_at, t("ev_form"), false);
+  ev(r.payout_registered_at, `${t("ev_payout")}${r.folio_total != null ? ` (${eur(r.folio_total)})` : ""}`, false);
+  ev(r.pay_requested_at, t("ev_payreq"), false);
+  ev(r.breakfast_labeled_at, t("ev_bf"), false);
+  ev(r.stairs_memo_at, t("ev_stairs"), false);
+  ev(r.stairs_label_at, t("ev_stairs_lbl"), false);
+  (r.room_moves || []).forEach(m => ev(m.at, t("ev_move", [].concat(m.to || []).join(" + "), [].concat(m.from || []).join(" + "))));
+  items.sort((a, b) => String(b.at).localeCompare(String(a.at)));
+  const shownItems = items.filter(x => !detailFilter || x.kind === detailFilter);
+  const attempts = shownItems.map(x => `<tr><td class="mono small">${esc(dtime(x.at))}</td><td><b>${esc(x.what)}</b></td><td>${esc(x.detail)}</td>
+    <td class="small">${x.to}</td><td><span class="badge ${x.badge[0]}">${esc(x.badge[1])}</span></td><td class="small" style="color:#8B2E2E">${esc(x.err)}</td></tr>`).join("");
   // Rechts: pincodes, betaling, contact, gegevens
   const codes = r.access_codes || [];
   const pins = codes.length ? `<section class="card"><div class="ch"><h2 class="ct">${IC(P.key)} ${esc(t("d_pins"))}</h2><span class="badge b-ok">${IC(P.check, 14, 2.4)}${esc(t("d_made"))}</span></div><div class="cb">
@@ -859,13 +899,14 @@ function renderDetail() {
   const tagsBf = (r.pms_labels || []).some(l => /ontbijt|breakfast/i.test(l)) ? ` <span class="tag t-bf">Ontbijt</span>` : "";
   const checked = !!r.messages_on || (mode === "uit" && r.messages_pick === "on");
   el.innerHTML = `<a class="btn3" href="#res" id="d-back" style="padding:0;align-self:flex-start">${IC(P.back, 16)}${esc(t("d_back"))}</a>
-    <div class="ph"><div><h1>${esc(r.guest)} <span class="muted" style="font-weight:400;font-size:20px">#${esc(r.booking_number)}</span></h1><div class="sub">${esc(sub)}</div>
+    <div class="ph"><div><h1>${esc(r.guest)}${r.booking_number ? ` <span class="muted" style="font-weight:400;font-size:20px">#${esc(r.booking_number)}</span>` : ""}</h1><div class="sub">${esc(sub)}</div>
       <div class="row" style="margin-top:8px;gap:6px">${resTags(r)}${tagsBf}</div></div><div class="acts">${acts}</div></div>
     <div class="cols"><div class="col-main">
       <section class="card"><div class="cb" style="padding-top:16px"><div class="toggle" style="padding:0"><div class="tx"><label class="tn" for="d-auto">${esc(t("d_auto"))}</label><div class="help">${esc(t("mo_hint_" + mode))}${mode !== "uit" ? esc(t("d_auto_off")) : ""}</div></div><input id="d-auto" class="switch" type="checkbox" ${checked ? "checked" : ""}></div></div></section>
       <section class="card"><div class="ch"><h2 class="ct">${IC(P.mail)} ${esc(t("d_timeline"))}</h2><div class="legend">${legend}</div></div><div class="cb"><div class="tl">${steps}</div></div></section>
-      ${r.messages.length ? `<section class="card"><div class="ch"><h2 class="ct">${IC(P.clock)} ${esc(t("d_attempts"))}</h2></div><div class="tbox"><table><thead><tr><th>${esc(t("d_time"))}</th><th>${esc(t("d_msg"))}</th><th>${esc(t("d_chan"))}</th><th>${esc(t("d_to"))}</th><th>${esc(t("d_status"))}</th><th>${esc(t("d_err"))}</th></tr></thead><tbody>${attempts}</tbody></table></div></section>` : ""}
+      ${items.length ? `<section class="card"><div class="ch"><h2 class="ct">${IC(P.clock)} ${esc(t("d_attempts"))}</h2><select id="d-filter" class="select" style="width:auto" aria-label="Filter"><option value="">${esc(t("ev_all"))}</option><option value="msg" ${detailFilter === "msg" ? "selected" : ""}>${esc(t("ev_msgs"))}</option><option value="event" ${detailFilter === "event" ? "selected" : ""}>${esc(t("ev_events"))}</option></select></div><div class="tbox"><table><thead><tr><th>${esc(t("d_time"))}</th><th>${esc(t("d_msg"))}</th><th>${esc(t("d_chan"))}</th><th>${esc(t("d_to"))}</th><th>${esc(t("d_status"))}</th><th>${esc(t("d_err"))}</th></tr></thead><tbody>${attempts}</tbody></table></div></section>` : ""}
     </div><div class="col-side">${pins}${pay}${contact}${data}</div></div>`;
+  if ($("#d-filter")) $("#d-filter").onchange = () => { detailFilter = $("#d-filter").value; renderDetail(); };
   $("#d-back").onclick = e => { e.preventDefault(); $("#tab-detail").hidden = true; showTab("res"); };
   if ($("#d-guest")) $("#d-guest").onclick = e => { e.preventDefault(); $("#tab-detail").hidden = true; openGuest(r.guest_id); };
   $("#d-auto").onchange = async () => {
@@ -1094,7 +1135,15 @@ function contactLines(x) {
     x.phone && esc(x.phone), x.backup_phone && extra(x.backup_phone)].filter(Boolean).join("<br>");
 }
 
-let gSel = "";  // gekozen gast (profiel rechts)
+let gSel = "", guestSync = "";  // gekozen gast (profiel rechts), laatste synchronisatie (robotlog, taak onderhoud)
+async function loadGuestSync() {
+  try {
+    const d = await get(`/api/monitor/${$("#hotel").value}/runs`);
+    const last = (d.runs || []).find(x => x.task === "onderhoud" && x.ok !== false);
+    guestSync = last ? (last.finished_at || last.started_at) : "";
+    renderGuests();
+  } catch (e) { /* niet erg: dan zonder tijdstip */ }
+}
 const ICG = {
   mail: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3.5 6.5l8.5 6.5 8.5-6.5"/></svg>',
   wa: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20.5l1.4-5A8 8 0 1 1 21 12z"/></svg>',
@@ -1118,7 +1167,7 @@ function renderGuests() {
     th.dataset.dir = th.dataset.gsort === gSortKey ? (gSortDir > 0 ? "asc" : "desc") : "";
   });
   if (!gSel || !list.some(g => g.id === gSel)) gSel = list[0]?.id || "";
-  $("#g-count").textContent = t("g_profiles", list.length);
+  $("#g-count").textContent = t("g_profiles", list.length) + (guestSync ? " · " + t("g_synced", dtime(guestSync)) : "");
   const nomkt = g => g.opt_out ? ` <span class="tag t-off">${esc(t("gp_nomkt"))}</span>` : "";
   $("#guests").innerHTML = list.map(g => `
     <tr data-g="${esc(g.id)}" style="cursor:pointer${g.id === gSel ? ";background:#EEF0F5" : ""}">
@@ -1132,8 +1181,9 @@ function renderGuests() {
   document.querySelectorAll("#guests [data-g], #mguests [data-g]").forEach(el => el.onclick = e => {
     e.preventDefault();
     gSel = el.dataset.g;
+    $("#tab-guests").classList.add("gdet");  // gsm: het profiel als eigen scherm
     renderGuests();
-    if (matchMedia("(max-width:760px)").matches) $("#g-profile").scrollIntoView({ behavior: "smooth" });
+    window.scrollTo(0, 0);
   });
   renderProfile();
   renderMatches();
@@ -1161,7 +1211,7 @@ function renderProfile() {
     : r.arrival <= today ? `<span class="badge b-info">${esc(t("gp_now"))}</span>` : `<span class="badge b-wait">${esc(t("gp_coming"))}</span>`;
   const resLines = res.slice(0, 3).map(r => `<div class="li"><div class="lt"><a href="#" class="nm" data-open-res="${esc(g.id)}">#${esc(r.booking_number)}</a> ${esc(`${dshort(r.arrival)} ${t("stay_to")} ${dlong(r.departure)}${r.rooms.length ? ", " + t("r_room", r.rooms.join(", ")).toLowerCase() : ""}`)}</div>${badge(r)}</div>`).join("");
   const inHouse = res.some(r => r.status !== "cancelled" && r.arrival <= today && r.departure > today);
-  el.innerHTML = `<section class="card"><div class="ch"><div><h2 style="font-size:20px">${esc(g.name)}</h2><div class="small muted">${esc([countryName(g.country), g.first_stay ? t("gp_since", dmonth(g.first_stay)) : ""].filter(Boolean).join(" · "))}</div></div>
+  el.innerHTML = `<a class="btn3 m-only" href="#guests" id="gp-back" style="padding:0;align-self:flex-start">${IC(P.back, 16)}${esc(t("g_back"))}</a><section class="card"><div class="ch"><div><h2 style="font-size:20px">${esc(g.name)}</h2><div class="small muted">${esc([countryName(g.country), g.first_stay ? t("gp_since", dmonth(g.first_stay)) : ""].filter(Boolean).join(" · "))}</div></div>
     <div class="row">${g.opt_out ? `<span class="tag t-off">${esc(t("gp_nomkt"))}</span>` : ""}${g.stays > 1 ? `<span class="tag t-on">${esc(t("gp_back"))}</span>` : ""}</div></div>
     <div class="cb"><div class="statgrid" style="grid-template-columns:repeat(auto-fit,minmax(110px,1fr))">
       <div class="stat"><span class="n">${g.stays}</span><span class="l">${esc(t("gp_stays"))}</span></div>
@@ -1174,6 +1224,7 @@ function renderProfile() {
     <div class="lbl" style="margin-top:6px">${esc(t("gp_res"))}</div>${resLines}
     ${g.reservations.length ? `<a class="btn3" href="#" data-open-res="${esc(g.id)}" style="padding:0">${esc(t("gp_all", g.reservations.length))}</a>` : ""}</div></section>`;
   el.querySelectorAll("[data-open-res]").forEach(a => a.onclick = e => { e.preventDefault(); openReservations(a.dataset.openRes); });
+  if ($("#gp-back")) $("#gp-back").onclick = e => { e.preventDefault(); $("#tab-guests").classList.remove("gdet"); window.scrollTo(0, 0); };
   el.querySelectorAll("input[data-mute]").forEach(box => box.onchange = async () => {
     const id = box.dataset.mute;
     // Per kanaal: alle regels van hetzelfde kanaal mee aan- of uitvinken
@@ -1379,7 +1430,10 @@ function renderRuns(d) {
   $("#run").disabled = busy || !d.can_run;
   // In de cloud bepaalt de robot zelf vanaf wanneer (sinds de vorige geslaagde run)
   $("#hours-wrap").hidden = !!d.cloud;
-  $("#robot-state").innerHTML = busy ? `<span class="badge b-info">${esc(t("busy"))}</span>` : `<span class="badge ${d.can_run ? "b-ok" : "b-wait"}">${esc(d.can_run ? (d.cloud ? t("scheduled") : "ok") : t("not_installed"))}</span>`;
+  // Toestand kort in een label (ontwerp); de uitleg over het zelf starten staat eronder
+  $("#robot-state").innerHTML = busy ? `<span class="badge b-info">${IC(P.clock, 14, 2.4)}${esc(t("rb_busy"))}</span>`
+    : d.can_run ? `<span class="badge b-ok">${IC(P.check, 14, 2.4)}${esc(t("rb_idle"))}</span>` : `<span class="badge b-wait">${esc(t("not_installed"))}</span>`;
+  if ($("#robot-help")) $("#robot-help").textContent = [t("rb_help"), d.can_run && d.cloud ? t("scheduled") : ""].filter(Boolean).join(" ");
   // Filter op taak: vaste keuzes, plus eventuele andere taken uit het logboek
   const sel = $("#task"), chosen = sel.value || taskFilter;
   const tasks = [...new Set([...TASKS, ...d.runs.map(x => x.task)])];
@@ -1449,7 +1503,7 @@ function renderRuns(d) {
     const open = rk in runOpen ? runOpen[rk] : g === firstRun;
     const head = `<tr class="run-head" data-toggle="${esc(rk)}" title="${esc(t(open ? "run_close" : "run_open"))}"><td><span class="caret-run">${open ? "\u25BE" : "\u25B8"}</span> ${stamp(new Date(t0).toISOString())}</td><td>${Math.round((t1 - t0) / 1000)} s${rows[0] ? startText(rows[0], execStart) : ""}</td>
       <td><span class="task task-robot">${t("run_label")}</span></td>
-      <td class="${running ? "running" : (failed ? "err" : (partials ? "warn" : "ok"))}">${state}</td><td></td><td></td>
+      <td><span class="badge ${running ? "b-info" : failed ? "b-err" : partials ? "b-warn" : "b-ok"}">${state}</span></td><td></td><td></td>
       <td class="wrap muted">${esc(tasks.length ? t("run_tasks", tasks.length) + ": " + tasks.join(", ") : (rows[0] && rows[0].error) || "")}</td><td></td></tr>`;
     const body = rows.filter(x => !(rows.length === 1 && x.task === "robot")).map(x => rowHtml(x, t0, true)).join("");
     const inner = (body + (g.live ? liveHtml(g.live, t0) : ""))
@@ -1457,6 +1511,22 @@ function renderRuns(d) {
     return head + inner;
   }).join("");
   $("#runs").innerHTML = html || `<tr><td colspan="8" class="muted">${t("no_runs")}</td></tr>`;
+  if ($("#mruns")) {
+    $("#mruns").innerHTML = ordered.filter(g => g.rows.length).slice(0, 20).map(g => {
+      const rs = [...g.rows].sort((a, b) => new Date(a.started_at) - new Date(b.started_at));
+      const t0 = Math.min(...rs.map(x => +new Date(x.started_at))), t1 = Math.max(...rs.map(x => +new Date(x.finished_at || x.started_at)));
+      const failed = rs.filter(x => !x.ok).length, partials = rs.filter(x => x.ok && Number(x.skipped || 0) > 0).length;
+      const badge = `<span class="badge ${failed ? "b-err" : partials ? "b-warn" : "b-ok"}">${esc(failed ? t("fail") : partials ? t("partial") : t("ok"))}</span>`;
+      const rk = g.exec || g.key, open = rk in runOpen ? runOpen[rk] : g === firstRun;
+      const secs = Math.round((t1 - t0) / 1000), dur = secs >= 60 ? `${Math.floor(secs / 60)} min ${secs % 60} s` : `${secs} s`;
+      const todo = rs.reduce((n, x) => n + (Number(x.found) || 0), 0), done = rs.reduce((n, x) => n + (Number(x.new) || 0), 0);
+      const steps = open ? rs.filter(x => x.task !== "robot").map(x => `<div class="li"><div class="lt small"><b>${esc(taskName(x.task))}</b><div class="muted">${esc([hms(x.started_at), Math.round((new Date(x.finished_at || x.started_at) - new Date(x.started_at)) / 1000) + " s", NO_COUNTS.includes(x.task) ? "" : `${x.new}/${x.found}`, x.error].filter(Boolean).join(" · "))}</div></div><span class="badge ${!x.ok ? "b-err" : Number(x.skipped || 0) > 0 ? "b-warn" : "b-ok"}">${esc(!x.ok ? t("fail") : Number(x.skipped || 0) > 0 ? t("partial") : t("ok"))}</span></div>`).join("") : "";
+      const err = failed ? rs.find(x => x.error) : null;
+      return `<section class="mcard"${failed ? ' style="box-shadow:0 0 0 2px #E6BDBD"' : ""}><button class="mrow btn3" type="button" data-mrun="${esc(rk)}" style="padding:0;text-decoration:none;color:#2B2F38;width:100%"><span><b>${esc(dday(new Date(t0).toISOString().slice(0, 10)))} ${esc(hms(new Date(t0).toISOString()).slice(0, 5))}</b> · ${esc(dur)}</span>${open ? IC('<path d="M6 9l6 6 6-6"/>', 18) : badge}</button>
+        ${open ? `<div class="row">${badge}<span class="small">${esc(t("rb_done_m", done, todo))}</span></div>${steps}` : ""}${err && !open ? `<div class="small">${esc(err.error)}</div>` : ""}</section>`;
+    }).join("") || `<div class="muted">${t("no_runs")}</div>`;
+    document.querySelectorAll("#mruns [data-mrun]").forEach(b => b.onclick = () => { const k = b.dataset.mrun; runOpen[k] = !(k in runOpen ? runOpen[k] : false) || !b.parentElement.querySelector(".li"); renderRuns(runsData); });
+  }
   document.querySelectorAll("#runs .bin").forEach(b => b.onclick = () => deleteRun(b.dataset.id));
   document.querySelectorAll("#runs tr[data-toggle]").forEach(tr => tr.onclick = () => {
     const k = tr.dataset.toggle, nowOpen = !tr.nextElementSibling || tr.nextElementSibling.hidden;
@@ -1469,7 +1539,7 @@ function renderRuns(d) {
   $("#sub-azure").hidden = !d.executions;
   if (!d.executions && subTab === "azure") showSub("log");
   $("#exec-wrap").hidden = false;
-  $("#execs").innerHTML = (d.executions || []).map(e =>
+  $("#execs").innerHTML = (d.executions || []).slice(0, 10).map(e =>
     `<tr><td>${stamp(e.start)}</td><td>${stamp(e.end)}</td>
       <td>${e.start && e.end ? Math.round((new Date(e.end) - new Date(e.start)) / 1000) + " s" : ""}</td>
       <td><span class="badge ${e.status === "Succeeded" ? "b-ok" : e.status === "Failed" ? "b-err" : "b-info"}" title="${esc(e.name)}">${esc(e.status)}</span></td></tr>`).join("");
@@ -1538,6 +1608,14 @@ function renderWorkflow() {
       <a href="#" class="card2 ${s.step === wfStep ? "sel" : ""} ${s.enabled ? "" : "off"}" data-step="${esc(s.step)}"><b>${esc(stepShort(s.step))}</b><span class="small muted">${esc(s.enabled ? whenText(s) : t("pl_off"))}</span><span class="small">${esc(s.enabled ? chans(s) : t("sw_st_off"))}</span></a></div>`;
   }).join("");
   document.querySelectorAll("#wf-flowline [data-step]").forEach(a => a.onclick = e => { e.preventDefault(); wfStep = a.dataset.step; renderWorkflow(); });
+  if ($("#wf-mflow")) {
+    $("#wf-mflow").innerHTML = c.flows.map(f => `<option value="${f}" ${f === wfFlow ? "selected" : ""}>${esc(t("wf_flow_m", t("flow_" + f)))}</option>`).join("");
+    $("#wf-mflow").onchange = () => { wfFlow = $("#wf-mflow").value; renderWorkflow(); };
+    $("#wf-msteps").innerHTML = order.map(({ s }) => `<a href="#" class="li" data-mstep="${esc(s.step)}" style="text-decoration:none;color:#2B2F38;${s.step === wfStep ? "background:#EEF0F5;margin:0 -14px;padding:9px 14px" : ""}">
+      <span class="c ${s.enabled ? "c-ok" : "c-off"}" style="width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex:none">${IC(s.enabled ? P.mail : P.x, 13)}</span>
+      <div class="lt"><b>${esc(stepShort(s.step))}</b><div class="small muted">${esc(s.enabled ? whenText(s) : t("pl_off"))}</div></div>${IC(s.step === wfStep ? '<path d="M6 9l6 6 6-6"/>' : '<path d="M9 6l6 6-6 6"/>', 18)}</a>`).join("");
+    document.querySelectorAll("#wf-msteps [data-mstep]").forEach(a => a.onclick = e => { e.preventDefault(); wfStep = a.dataset.mstep; renderWorkflow(); });
+  }
   const cur = order.find(({ s }) => s.step === wfStep);
   $("#wf-step-title").textContent = cur ? t("wfx_step", stepShort(cur.s.step)) : "";
   $("#wf-timeline").innerHTML = cur ? stepCard(cur.s, cur.i, flow, c) : "";
@@ -2367,6 +2445,7 @@ function hsShown() {
     .map(([s]) => s);
 }
 
+let hsMSec = 0;  // gsm: gekozen sectie
 const LOCK = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>';
 // Invoerveld in de stijl van het ontwerp (klasse input/select/switch), zelfde data-attributen als vroeger
 function hsField(sec, f, i) {
@@ -2425,11 +2504,25 @@ function renderSettings() {
       }).join("");
       if (env) body += `<div class="note">${LOCK.replace('width="13" height="13"', 'width="16" height="16"')}<span>${esc(t("hs_env_note"))}</span></div>`;
     }
-    return `<section class="card" id="hs-s${n}"><div class="ch"><h2 class="ct">${esc(title)}</h2>${env ? `<span class="locked">${LOCK}${esc(t("hs_env_badge"))}</span>` : ""}</div>
+    return `<section class="card" id="hs-s${n}" data-sec="${esc(sec.section)}"><div class="ch"><h2 class="ct">${esc(title)}</h2>${env ? `<span class="locked">${LOCK}${esc(t("hs_env_badge"))}</span>` : ""}</div>
       <div class="cb"${sec.section === "schakelaars" ? ' style="gap:0"' : ""}>${help ? `<div class="help">${esc(help)}</div>` : ""}${body}${env && !sec.fields.some(f => !f.env) ? "" : foot}</div></section>`;
   }).join("");
   document.querySelectorAll("#hs-sections .hs-save-btn").forEach(b => b.onclick = saveSettings);
-  document.querySelectorAll("#hs-sections .hs-reset-btn").forEach(b => b.onclick = resetSettings);
+  document.querySelectorAll("#hs-sections .hs-reset-btn").forEach(b => b.onclick = () => {
+    const sec = hs.sections.find(x => x.section === b.closest("section").dataset.sec);
+    if (!sec || !confirm(t("hs_sec_reset_confirm", t("sec_" + sec.section.replace(".", "_")) || sec.section))) return;
+    if (sec.free) delete hsEdit[sec.section];
+    else hsEdit[sec.section] = Object.fromEntries(sec.fields.filter(f => !f.env).map(f => [f.key, f.default]));
+    saveSettings();
+  });
+  // Gsm (ontwerp m-Instellingen-hotel): groep en sectie kiezen, één sectie tegelijk
+  if ($("#hs-mgroup")) {
+    $("#hs-mgroup").value = hsGroup;
+    $("#hs-mgroup").onchange = () => { hsGroup = $("#hs-mgroup").value; try { localStorage.setItem("hsGroup", hsGroup); } catch (e) { /* geen opslag */ } hsMSec = 0; renderSettings(); };
+    $("#hs-msec").innerHTML = shown.map((sec, n) => `<option value="${n}" ${n === hsMSec ? "selected" : ""}>${esc(t("sec_" + sec.section.replace(".", "_")) || sec.section)}</option>`).join("");
+    $("#hs-msec").onchange = () => { hsMSec = +$("#hs-msec").value; renderSettings(); };
+    document.querySelectorAll("#hs-sections > section").forEach((el, n) => el.classList.toggle("msel", n === hsMSec));
+  }
   document.querySelectorAll("#hs-nav [data-jump]").forEach(a => a.onclick = e => { e.preventDefault(); $("#" + a.dataset.jump).scrollIntoView({ behavior: "smooth", block: "start" }); });
   document.querySelectorAll("#hs-sections [data-key]").forEach(el => el.onchange = () => {
     const sec = hs.sections.find(x => x.section === el.dataset.sec), f = sec.fields.find(x => x.key === el.dataset.key);
@@ -2566,7 +2659,7 @@ function renderList(kind) {
   const hotel = encodeURIComponent($("#hotel").value);
   $("#list-preview").innerHTML = x ? `<div class="row" style="justify-content:space-between"><div class="lbl">${esc(t("l_preview"))}</div><div class="row">
       <a class="btn2 sm" href="${API}/api/monitor/${hotel}/list-xlsx?kind=${sk}&day=${esc(sd)}">${DL}Excel</a>
-      <button class="btn2 sm" type="button" id="list-print">${DL}PDF</button>
+      <a class="btn2 sm" href="${API}/api/monitor/${hotel}/list-pdf?kind=${sk}&day=${esc(sd)}">${DL}PDF</a>
       <button class="btn3" type="button" id="list-del" title="${esc(t("del"))}">${BIN}</button></div></div>
     <div class="paper" id="list-paper"><div class="row" style="justify-content:space-between;align-items:flex-start"><div><div class="lbl">${esc(hotelNow().name || "")}</div>
       <h2 style="font-size:20px;margin-top:2px">${esc(t("l_title_" + sk, dayLong(sd)))}</h2><div class="small muted">${esc(t("l_made_by", dtime(x.generated_at), x.generated_by === "automatisch" ? t("dl_auto") : x.generated_by))}</div></div>
@@ -2577,12 +2670,6 @@ function renderList(kind) {
       if (!confirm(t("dl_del_confirm", dayLong(sd)))) return;
       await get(`/api/monitor/${hotel}/lists?kind=${sk}&day=${encodeURIComponent(sd)}&action=delete`, { method: "POST" });
       listSel = ""; loadList(sk);
-    };
-    // PDF: het voorbeeld afdrukken (in de afdrukdialoog: opslaan als PDF)
-    $("#list-print").onclick = () => {
-      const w = window.open("", "_blank");
-      w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${esc(t("l_title_" + sk, dayLong(sd)))}</title><link rel="stylesheet" href="design.css"></head><body class="v2" style="background:#fff;padding:24px">${$("#list-paper").outerHTML}</body></html>`);
-      w.document.close(); w.onload = () => w.print();
     };
   }
 }

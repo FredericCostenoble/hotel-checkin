@@ -299,7 +299,7 @@ def admin_api(req: func.HttpRequest) -> func.HttpResponse:
         return func.HttpResponse(content.encode("utf-8"), headers={
             "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "no-store",
             "Content-Disposition": f'attachment; filename="lighthouse-{key}.html.txt"'})
-    if what in ("lists", "list-xlsx"):
+    if what in ("lists", "list-xlsx", "list-pdf"):
         # Tabbladen Ontbijt en Kuis: ?kind=breakfast|cleaning. GET = bewaarde lijsten; POST &day=JJJJ-MM-DD[&send=1]
         # = (opnieuw) maken en eventueel versturen; list-xlsx&day=... = de Excel downloaden
         from datetime import date
@@ -318,6 +318,13 @@ def admin_api(req: func.HttpRequest) -> func.HttpResponse:
             return func.HttpResponse(lists.xlsx(data, admin.hotel_name(hotel)), headers={
                 "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                 "Content-Disposition": f'attachment; filename="{name}"', "Cache-Control": "no-store"})
+        if what == "list-pdf" and req.method == "GET":
+            # Knop PDF bij het voorbeeld van de lijst (monitor)
+            data = admin.daily_list(hotel, kind, req.params.get("day", ""))
+            if not data:
+                return _json(404, {"error": "not_found"})
+            return func.HttpResponse(lists.pdf(data, admin.hotel_name(hotel)), mimetype="application/pdf", headers={
+                "Content-Disposition": f'attachment; filename="{lists.pdf_name(data)}"', "Cache-Control": "no-store"})
         if what == "lists" and req.method == "GET":
             return _json(200, daily_lists.view(hotel, kind))
         if what == "lists" and req.method == "POST":
