@@ -436,3 +436,127 @@ table.lists td:last-child { white-space: nowrap; }
   ul.plan .pl-head { flex-wrap: wrap; }
   ul.plan .pl-head .reason { white-space: normal; }
 }
+
+/* ===================================================================================================
+   Nieuwe look (18/11/2026): rustig en klassiek. Donkere kop, titels in een schreefletter (Source Serif 4),
+   tekst in Inter, kaarten met een fijne rand, het grijsblauw van het logo voor wat actief is.
+   Alleen kleuren, letters, randen en vormen; de indeling en het gedrag blijven zoals hierboven.
+   Lettertypes staan zelf in fonts/ (geen Google Fonts: geen IP-adressen naar derden).
+   =================================================================================================== */
+@font-face { font-family: "Inter"; font-weight: 400; font-style: normal; font-display: swap; src: url("fonts/inter-latin-400-normal.woff2") format("woff2"); }
+@font-face { font-family: "Inter"; font-weight: 500; font-style: normal; font-display: swap; src: url("fonts/inter-latin-500-normal.woff2") format("woff2"); }
+@font-face { font-family: "Inter"; font-weight: 600; font-style: normal; font-display: swap; src: url("fonts/inter-latin-600-normal.woff2") format("woff2"); }
+@font-face { font-family: "Inter"; font-weight: 700; font-style: normal; font-display: swap; src: url("fonts/inter-latin-700-normal.woff2") format("woff2"); }
+@font-face { font-family: "Source Serif 4"; font-weight: 600; font-style: normal; font-display: swap; src: url("fonts/source-serif-4-latin-600-normal.woff2") format("woff2"); }
+
+:root { --ink: #23262E; --ink-2: #2F333D; --ink-line: #3B404C; --ink-text: #C9CDD6; --brand: #B4BCCC;
+  --accent: #4E5669; --line: #E3E6EB; --bg: #F5F6F8; --text: #23262E; --muted: #5F6574;
+  --serif: "Source Serif 4", Georgia, "Times New Roman", serif; }
+body { font-family: Inter, "Helvetica Neue", Helvetica, Arial, sans-serif; font-feature-settings: "tnum" 1; -webkit-font-smoothing: antialiased; }
+.muted { color: #6A707E; }
+
+/* Kop: donker, merknaam in de schreefletter */
+header { background: var(--ink); color: var(--ink-text); border-bottom: 0; }
+header label { color: var(--ink-text); }
+header select { background: var(--ink-2); color: #fff; border: 1px solid var(--ink-line); border-radius: 8px; padding: 6px 10px; }
+.brand { color: var(--brand); }
+.brand .name { color: #fff; font-family: var(--serif); font-weight: 600; font-size: 19px; letter-spacing: 0; }
+.brand .name b { color: #fff; }
+.brand .env { background: #fff; color: var(--ink); border-radius: 5px; letter-spacing: .12em; }
+.brand .env-tst { background: #F2B544; color: #3D2700; }
+.brand .env-prd { background: #fff; color: #A82A21; }
+.version { color: #8D93A1; }
+.env-switch { border-color: var(--ink-line); color: var(--ink-text); }
+.env-switch.to-prd { color: #F0A39C; }
+.env-switch.to-tst { color: #F2C77A; }
+.langs button { background: transparent; color: var(--ink-text); border-color: var(--ink-line); border-radius: 6px; font-weight: 600; }
+.langs button.active { background: #fff; color: var(--ink); border-color: #fff; }
+a.settings-btn { background: transparent; border-color: var(--ink-line); color: #fff; border-radius: 8px; }
+a.settings-btn:hover, .settings-btn.active { background: var(--brand); border-color: var(--brand); color: var(--ink); }
+/* Hoofdschakelaars: bolletje met woord */
+.switches .sw { border-color: var(--ink-line); background: var(--ink-2); color: var(--ink-text); border-radius: 999px; }
+.switches .sw::before { content: ""; display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 6px; vertical-align: 1px; background: transparent; box-shadow: inset 0 0 0 1.5px #8D93A1; }
+.switches .sw.on { background: var(--ink-2); color: #fff; border-color: var(--ink-line); }
+.switches .sw.on::before { background: #4CB07A; box-shadow: none; }
+.switches .sw.off { background: transparent; color: #8D93A1; }
+.switches .sw.sel { background: var(--ink-2); color: #F2C77A; border-color: var(--ink-line); }
+.switches .sw.sel::before { background: #E39A3C; box-shadow: none; }
+.switches .sw.todo { background: transparent; color: #F2C77A; border-color: #8A6A2E; }
+
+/* Tabbladen: rustige knoppen, actief in het grijsblauw van het logo */
+nav { gap: 6px; padding: 14px 16px 10px; }
+nav button { border: 1px solid transparent; background: transparent; border-radius: 8px; color: var(--muted); font-weight: 500; padding: 8px 14px; }
+nav button svg { color: #8A90A0; }
+nav button:hover { background: #ECEEF2; color: var(--ink); }
+nav button:hover svg { color: var(--ink); }
+nav button.active { background: var(--brand); color: var(--ink); font-weight: 600; }
+nav button.active svg { color: var(--ink); }
+nav button.active::before, nav button.active::after { content: none; }
+nav button.back { color: var(--accent); }
+
+/* Werkvlak als kaart */
+main { border: 1px solid var(--line); border-radius: 12px; padding: 16px; }
+.page-title { color: var(--accent); padding-top: 22px; }
+.page-title h1 { font-family: var(--serif); font-weight: 600; font-size: 28px; }
+h3 { font-family: var(--serif); font-weight: 600; font-size: 17px; text-transform: none; letter-spacing: 0; color: var(--ink); }
+.modal-box h3 { font-family: var(--serif); font-size: 16px; color: var(--ink); }
+.hs-card, #wf-side, .tl-step .card { border-color: var(--line); border-radius: 12px; }
+.hs-card h3 { color: var(--ink); font-size: 17px; }
+.hs-row { border-top-color: #EDEFF2; }
+.hs-row label, .fields .lbl, #wf-side h3 { color: var(--muted); }
+.hs-row.changed label { color: var(--ink); }
+.hs-row.changed input[type=text], .hs-row.changed input[type=number] { border-color: var(--accent); background: #F3F4F7; }
+.tl-step .group-title { color: var(--ink); background: #F1F2F5; border-left: 0; border-radius: 6px; }
+.modal-box { border-radius: 12px; }
+
+/* Velden */
+input[type=search], input[type=date], input[type=number], input[type=text], main select, .modal select {
+  border: 1px solid #CDD1D9; border-radius: 8px; background: #fff; font: inherit; }
+input[type=search] { padding: 7px 10px; }
+.reset { border-radius: 8px; border-color: #CDD1D9; }
+
+/* Tabellen */
+th { font-size: 11px; letter-spacing: .1em; color: #7A808E; font-weight: 600; }
+.table-wrap thead th { background: #fff; }
+th, td { border-bottom-color: #EDEFF2; }
+td { padding-top: 8px; padding-bottom: 8px; }
+tbody tr:hover td { background: #FAFAFB; }
+th[data-sort]:hover, th[data-gsort]:hover { color: var(--ink); }
+td a { text-decoration: underline; text-decoration-color: #B9BEC9; text-underline-offset: 2px; }
+a.jump, button.link { color: var(--accent); }
+details.ct summary { color: var(--accent); }
+a.lh { color: var(--accent); border-color: var(--line); border-radius: 6px; }
+a.lh:hover { background: #F1F2F5; border-color: var(--accent); }
+tr.run-head td { background: #F1F2F5; border-top-color: #DDE0E6; }
+tr.run-head:hover td { background: #E9EBEF; }
+
+/* Knoppen: hoofdknop donker, overal dezelfde vorm */
+button.primary, button.secondary { background: var(--ink); border-color: var(--ink); color: #fff; border-radius: 8px; font-weight: 600; padding: 6px 14px; }
+button.primary:hover:not(:disabled), button.secondary:hover:not(:disabled) { background: #3A3F4B; border-color: #3A3F4B; color: #fff; }
+button.secondary { background: #fff; color: var(--ink); border-color: #CDD1D9; }
+button.secondary:hover:not(:disabled) { background: #fff; color: var(--ink); border-color: var(--ink); }
+
+/* Labels: zacht, met een fijne rand */
+.tag { border-radius: 5px; padding: 1px 7px; background: #F1F2F5; color: #3A3F4B; }
+.tag.flow, .tag.nrf { background: #F1F2F5; color: #3A3F4B; }
+.tag.ch.todo, .k-planned .tag.pl { background: #EEF0F4; color: #3A3F4B; }
+.k-due .tag.pl { background: var(--ink); color: #fff; }
+.subtabs button { border-color: var(--line); border-radius: 999px; }
+.subtabs button.active { background: var(--brand); color: var(--ink); border-color: var(--brand); }
+.chip { background: #ECEEF2; }
+.info { background: #F3F4F7; color: var(--muted); border-radius: 8px; }
+.send-bar { background: #F3F4F7; border-color: var(--line); border-radius: 8px; }
+.repair-banner { border-radius: 10px; }
+tr.live td { background: #F3F4F7; }
+td.running { color: var(--ink); }
+#matches-wrap { border-radius: 10px; }
+
+@media (max-width: 760px) {
+  main { border-radius: 0; border-left: 0; border-right: 0; }
+  nav { padding: 10px 8px 8px; }
+  table.cards tbody tr { border-radius: 12px; border-color: var(--line); }
+  table.cards thead th[data-sort], table.cards thead th[data-gsort] { border-color: var(--line); }
+  table.cards thead th.sorted { background: var(--brand); color: var(--ink); }
+  table.cards td::before { color: #7A808E; }
+  table.cards tr.run-head { background: #F1F2F5; }
+}
