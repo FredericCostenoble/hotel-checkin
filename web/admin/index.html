@@ -56,33 +56,24 @@
     <div id="mres" class="m-only" style="display:flex;flex-direction:column;gap:14px"></div>
   </section>
 </section>
+<section id="tab-detail" class="content v2" hidden></section>
+  <section id="tab-guests" class="content v2" hidden>
+    <div class="ph"><div><h1 data-t="tab_guests"></h1><div class="sub" data-t="g_sub"></div></div></div>
+    <div class="cols">
+      <div class="col-main">
+        <section id="matches-card" class="card" hidden><div class="ch"><h2 class="ct"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14.5a6.5 6.5 0 0 1 3.5 5.5"/></svg> <span data-t="m_card"></span></h2><span class="badge b-warn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.5l9.5 16.5h-19z"/><path d="M12 10v4.5M12 17.5v.5"/></svg><span id="m-open"></span></span></div><div id="matches" class="cb"></div></section>
+        <section class="card"><div class="cb" style="padding-top:16px"><div class="row" style="align-items:flex-end;gap:10px"><div class="field" style="flex:1 1 240px"><label for="g-search" data-t="search_lbl"></label><div class="inwrap"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><input id="g-search" class="input" type="search" data-tp="g_search"></div></div><button id="g-update" class="btn2" type="button"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 0 0-14.5-4.5L4 8"/><path d="M4 4v4h4"/><path d="M4 13a8 8 0 0 0 14.5 4.5L20 16"/><path d="M20 20v-4h-4"/></svg><span data-t="g_update"></span></button><button id="g-search-reset" type="button" hidden></button></div><div class="small muted"><span id="g-count"></span> <span id="g-state"></span></div></div>
+          <div class="tbox d-only"><table><thead id="g-head"><tr><th data-gsort="name" data-t="g_name"></th><th data-gsort="country" data-t="g_country"></th><th data-gsort="stays" data-t="g_stays"></th><th data-gsort="last_stay" data-t="g_last"></th><th data-gsort="preferred_channel" data-t="g_channel"></th></tr></thead><tbody id="guests"></tbody></table></div>
+          <div id="mguests" class="m-only cb" style="display:flex;flex-direction:column;gap:10px"></div>
+        </section>
+      </div>
+      <div id="g-profile" class="col-side" style="flex-basis:400px"></div>
+    </div>
+  </section>
 <main class="legacy">
 
 
-  <section id="tab-guests" hidden>
-    <div class="tools">
-      <input id="g-search" type="search" data-tp="g_search"><button id="g-search-reset" type="button" class="reset" data-tt="reset">&times;</button>
-      <span id="g-count" class="muted"></span>
-      <button id="g-update" type="button" class="secondary" data-t="g_update"></button>
-      <span id="g-state" class="muted"></span>
-    </div>
-    <details id="matches-wrap" hidden>
-      <summary id="matches-title"></summary>
-      <p class="muted" data-t="m_help"></p>
-      <table><tbody id="matches"></tbody></table>
-    </details>
-    <div class="table-wrap"><table>
-      <thead id="g-head"><tr>
-        <th data-gsort="name" data-t="c_guest"></th><th data-gsort="email" data-t="c_contact"></th>
-        <th data-gsort="country" data-t="g_country"></th><th data-gsort="stays" data-t="g_stays"></th><th data-gsort="cancellations" data-t="g_cancelled"></th>
-        <th data-gsort="avg_nights" data-t="g_avg_nights"></th><th data-gsort="avg_persons" data-t="g_avg_persons"></th>
-        <th data-gsort="first_stay" data-t="g_first"></th><th data-gsort="last_stay" data-t="g_last"></th>
-        <th data-gsort="preferred_channel" data-t="g_channel"></th><th data-gsort="rooms" data-t="g_rooms"></th>
-        <th data-gsort="reservations" data-t="tab_res"></th><th data-t="g_msgs"></th>
-      </tr></thead>
-      <tbody id="guests"></tbody>
-    </table></div>
-  </section>
+
 
   <section id="tab-breakfast" hidden>
     <div class="tools">

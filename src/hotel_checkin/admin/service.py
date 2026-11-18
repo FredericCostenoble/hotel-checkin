@@ -41,6 +41,17 @@ def hotels() -> list[dict]:
             for h in list_hotels()]
 
 
+def _app_link(hotel_id: str, r) -> str:
+    """Link naar de gast-app van deze reservatie (knop Gast-app bekijken in de monitor)."""
+    if not r.token:
+        return ""
+    try:
+        from hotel_checkin.messaging import templates
+        return templates.checkin_link(hotel_id, r.token, r.guest.language)
+    except Exception:  # noqa: BLE001 - geen formulieradres ingesteld: geen knop
+        return ""
+
+
 def hotel_name(hotel_id: str) -> str:
     return load_hotel(hotel_id)["hotel"]["naam"]
 
@@ -86,6 +97,17 @@ def reservations(hotel_id: str) -> list[dict]:
             "id": r.reservation_id,
             "booking_number": r.booking_number or "",
             "lighthouse_url": lighthouse + r.reservation_id,  # het id is de GUID van Lighthouse
+            # Detailpagina van de reservatie (monitor): pincodes, betaling en de gast-app van deze gast
+            "access_codes": [{"room": c.get("room", ""), "pin": c.get("pin", "")} for c in r.access_codes],
+            "access_valid_from": r.access_valid_from.isoformat() if r.access_valid_from else "",
+            "access_valid_until": r.access_valid_until.isoformat() if r.access_valid_until else "",
+            "codes_in_pms": bool(r.pms_codes_line),
+            "paid": r.paid, "open_amount": r.open_amount, "folio": r.folio, "folio_total": r.folio_total,
+            "payout_registered_at": r.payout_registered_at.isoformat() if r.payout_registered_at else "",
+            "pay_requested_at": r.pay_requested_at.isoformat() if r.pay_requested_at else "",
+            "pay_link": r.pay_link or "",
+            "app_link": _app_link(hotel_id, r),
+            "room_moves": r.room_moves,
             "arrival": r.arrival.isoformat(),
             "departure": r.departure.isoformat(),
             "guest": f"{r.guest.first_name} {r.guest.last_name}".strip(),

@@ -202,6 +202,25 @@ Object.assign(T.nl, {
   r_emails: "E-mailadressen", r_phones: "Gsm-nummers", r_details: n => `Details ${n}`,
   res_count: n => `<b style="color:#2B2F38">${n} reservaties</b>`, res_sel: 'Gastcommunicatie staat op <b>selectie</b>: alleen reservaties met het label "Berichten aan" krijgen berichten.',
   sw_robot: "Robot", sw_go: "Naar de instellingen", sw_st_on: "aan", sw_st_off: "uit", sw_st_sel: "selectie",
+  g_sub: "Gastprofielen los van de reservaties, ook na het verblijf bewaard.", g_name: "Naam", g_profiles: n => `${n} gastprofielen`,
+  m_card: "Te beslissen: mogelijk dezelfde gast", m_open: n => `${n} open`, m_and: "en", m_keep: "Samenvoegen", m_apart: "Apart houden",
+  gp_since: d => `gastprofiel sinds ${d}`, gp_nomkt: "Geen marketing", gp_back: "Terugkerend", gp_stays: "verblijven", gp_canc: "geannuleerd",
+  gp_nights: "nachten gem.", gp_pers: "personen gem.", gp_first: "Eerste verblijf", gp_last: "Laatste verblijf", gp_chan: "Voorkeurskanaal", gp_rooms: "Kamers",
+  gp_contact: "Contact", gp_help: "Vinkje weg: dit kanaal nooit gebruiken voor deze gast.", gp_use: "gebruiken", gp_relay: "doorstuuradres, niet voor marketing",
+  gp_form: "formulier", gp_booking: "reservatie", gp_res: "Reservaties", gp_all: n => `Alle ${n} reservaties`, gp_now: "Nu", gp_left: "Vertrokken", gp_coming: "Komt",
+  d_back: "Reservaties", d_nights: n => `${n} nachten`, d_persons: n => `${n} personen`, d_rooms: x => `kamer ${x}`, d_and: "en",
+  d_open_lh: "Open in Lighthouse", d_app: "Gast-app bekijken", d_profile: "Gastprofiel", d_auto: "Automatische berichten voor deze reservatie",
+  d_auto_off: " Zet je het uit, dan gaat er niets meer automatisch naar deze gast.", d_timeline: "Tijdlijn van de berichten",
+  d_sent: "Verstuurd", d_failed: "Mislukt", d_planned: "Komt nog", d_missed: "Te laat", d_cond: "Voorwaarde niet voldaan", d_off: "Niet actief",
+  d_again: "Opnieuw versturen", d_now: "Nu versturen", d_send: "Versturen", d_cancel: "Annuleren", d_attempts: "Alle pogingen en gebeurtenissen",
+  d_time: "Tijdstip", d_msg: "Bericht of gebeurtenis", d_chan: "Kanaal of detail", d_to: "Naar", d_status: "Status", d_err: "Fout",
+  d_pins: "Pincodes", d_made: "Gemaakt", d_valid: (a, b) => `geldig ${a} tot ${b}`, d_pins_pms: "Gemaakt bij Salto en in Lighthouse gezet.", d_pins_salto: "Gemaakt bij Salto, nog niet in Lighthouse gezet.",
+  d_pay: "Betaling", d_open: "Open", d_paid: "Betaald", d_rooms_lbl: "Kamers", d_paid_payout: d => `Betaald (overschrijving Booking.com ${d})`, d_unpaid: "Niet betaald", d_unknown: "Nog niet gecontroleerd",
+  d_open_lbl: "Openstaand", d_total: "Totaal", d_payreq: "Betaalverzoek bekijken", d_payreq_at: d => `Betaalverzoek gemaakt op ${d}.`,
+  d_contact: "Contact", d_src: x => `bron: ${x}`, d_add: "Adres toevoegen", d_add_ph: "E-mailadres of gsm-nummer (+32...)", d_data: "Gegevens",
+  d_k_chan: "Kanaal", d_k_flow: "Flow", d_k_rate: "Tarief", d_k_booked: "Geboekt op", d_k_added: "Toegevoegd", d_k_updated: "Bijgewerkt", d_nrf: "niet annuleerbaar", d_flex: "annuleerbaar",
+  d_door: "Voordeur", d_moves: "Kamerwissel",
+  gp_nowsuffix: "(nu)", gp_wa: "WhatsApp", gp_sms: "Sms", gp_none: "Kies een gast in de lijst.", gp_stays_m: n => `${n} verblijven`,
 });
 Object.assign(T.en, {
   nav_lists: "Lists", nav_messages: "Messages", logout: "Sign out", search_lbl: "Search",
@@ -215,6 +234,25 @@ Object.assign(T.en, {
   r_emails: "E-mail addresses", r_phones: "Mobile numbers", r_details: n => `Details ${n}`,
   res_count: n => `<b style="color:#2B2F38">${n} reservations</b>`, res_sel: 'Guest communication is set to <b>selection</b>: only reservations with the label "Messages on" get messages.',
   sw_robot: "Robot", sw_go: "To the settings", sw_st_on: "on", sw_st_off: "off", sw_st_sel: "selection",
+  g_sub: "Guest profiles separate from the reservations, kept after the stay.", g_name: "Name", g_profiles: n => `${n} guest profiles`,
+  m_card: "To decide: possibly the same guest", m_open: n => `${n} open`, m_and: "and", m_keep: "Merge", m_apart: "Keep apart",
+  gp_since: d => `guest profile since ${d}`, gp_nomkt: "No marketing", gp_back: "Returning", gp_stays: "stays", gp_canc: "cancelled",
+  gp_nights: "nights avg.", gp_pers: "persons avg.", gp_first: "First stay", gp_last: "Last stay", gp_chan: "Preferred channel", gp_rooms: "Rooms",
+  gp_contact: "Contact", gp_help: "Untick: never use this channel for this guest.", gp_use: "use", gp_relay: "relay address, not for marketing",
+  gp_form: "form", gp_booking: "reservation", gp_res: "Reservations", gp_all: n => `All ${n} reservations`, gp_now: "Now", gp_left: "Departed", gp_coming: "Coming",
+  d_back: "Reservations", d_nights: n => `${n} nights`, d_persons: n => `${n} persons`, d_rooms: x => `room ${x}`, d_and: "and",
+  d_open_lh: "Open in Lighthouse", d_app: "View guest app", d_profile: "Guest profile", d_auto: "Automatic messages for this reservation",
+  d_auto_off: " If you switch it off, nothing more goes to this guest automatically.", d_timeline: "Timeline of the messages",
+  d_sent: "Sent", d_failed: "Failed", d_planned: "Still to come", d_missed: "Too late", d_cond: "Condition not met", d_off: "Not active",
+  d_again: "Send again", d_now: "Send now", d_send: "Send", d_cancel: "Cancel", d_attempts: "All attempts and events",
+  d_time: "Time", d_msg: "Message or event", d_chan: "Channel or detail", d_to: "To", d_status: "Status", d_err: "Error",
+  d_pins: "PIN codes", d_made: "Created", d_valid: (a, b) => `valid ${a} until ${b}`, d_pins_pms: "Created at Salto and set in Lighthouse.", d_pins_salto: "Created at Salto, not yet set in Lighthouse.",
+  d_pay: "Payment", d_open: "Open", d_paid: "Paid", d_rooms_lbl: "Rooms", d_paid_payout: d => `Paid (Booking.com payout ${d})`, d_unpaid: "Not paid", d_unknown: "Not checked yet",
+  d_open_lbl: "Outstanding", d_total: "Total", d_payreq: "View payment request", d_payreq_at: d => `Payment request created on ${d}.`,
+  d_contact: "Contact", d_src: x => `source: ${x}`, d_add: "Add address", d_add_ph: "E-mail address or mobile number (+32...)", d_data: "Details",
+  d_k_chan: "Channel", d_k_flow: "Flow", d_k_rate: "Rate", d_k_booked: "Booked on", d_k_added: "Added", d_k_updated: "Updated", d_nrf: "non-refundable", d_flex: "refundable",
+  d_door: "Front door", d_moves: "Room change",
+  gp_nowsuffix: "(now)", gp_wa: "WhatsApp", gp_sms: "SMS", gp_none: "Choose a guest in the list.", gp_stays_m: n => `${n} stays`,
 });
 let lang = "nl";
 const t = (k, ...a) => { const v = T[lang][k]; return typeof v === "function" ? v(...a) : v; };
@@ -401,6 +439,7 @@ function showTab(name, initial = false) {
   document.querySelectorAll("[data-mtab]").forEach(x => x.classList.toggle("on", x.dataset.mtab === mt));
   document.body.classList.remove("menu-open");
   TABS.forEach(n => { $(`#tab-${n}`).hidden = n !== name; });
+  if ($("#tab-detail")) $("#tab-detail").hidden = true;
   if (LIST_KINDS.includes(name) && !initial) loadList(name);
   if (location.hash.slice(1) !== name) history[initial ? "replaceState" : "pushState"](null, "", "#" + name);
 }
@@ -551,6 +590,146 @@ function showMessages(id) {
   $("#msgs").hidden = false;
 }
 
+
+// ---------------------------------------------------------------- detail van een reservatie (ontwerp: Reservatie detail)
+const IC = (d, n = 15, w = 2) => `<svg width="${n}" height="${n}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+const P = {
+  back: '<path d="M15 6l-6 6 6 6"/>', ext: '<path d="M14 4h6v6M20 4l-9 9"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/>',
+  eye: '<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
+  users: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14.5a6.5 6.5 0 0 1 3.5 5.5"/>',
+  mail: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3.5 6.5l8.5 6.5 8.5-6.5"/>', check: '<path d="M5 12.5l4.5 4.5L19 7.5"/>',
+  warn: '<path d="M12 3.5l9.5 16.5h-19z"/><path d="M12 10v4.5M12 17.5v.5"/>', clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  x: '<path d="M6 6l12 12M18 6L6 18"/>', dots: '<circle cx="5" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="19" cy="12" r="1.2"/>',
+  send: '<path d="M21 3L10 14"/><path d="M21 3l-7 18-4-7-7-4z"/>', wa: '<path d="M21 12a8 8 0 0 1-11.6 7.1L4 20.5l1.4-5A8 8 0 1 1 21 12z"/>',
+  phone: '<path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/>',
+  key: '<circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M17 6l3 3M14 9l2 2"/>', euro: '<path d="M17 6.5A7 7 0 1 0 17 17.5"/><path d="M4 10h9M4 14h9"/>',
+  card: '<rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18M7 15h4"/>', plus: '<path d="M12 5v14M5 12h14"/>',
+  bed: '<path d="M3 18V7"/><path d="M21 18v-5a3 3 0 0 0-3-3h-8v6"/><path d="M3 15h18"/><circle cx="6.5" cy="11" r="1.5"/>',
+};
+const chIcon = ch => IC(ch === "email" ? P.mail : ch === "whatsapp" ? P.wa : P.phone, 13);
+const eur = x => x == null ? "" : "EUR " + Number(x).toLocaleString("nl-BE", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+let detailId = "";
+
+function openDetail(id) {
+  detailId = id;
+  TABS.forEach(n => { $(`#tab-${n}`).hidden = true; });
+  $("#tab-detail").hidden = false;
+  document.querySelectorAll("nav button[data-tab]").forEach(x => x.classList.toggle("on", x.dataset.tab === "res"));
+  document.querySelectorAll("[data-mtab]").forEach(x => x.classList.toggle("on", x.dataset.mtab === "res"));
+  renderDetail();
+  window.scrollTo(0, 0);
+}
+
+function renderDetail() {
+  const r = rows.find(x => x.id === detailId), el = $("#tab-detail");
+  if (!r || el.hidden) return;
+  const mode = (hotelNow().switches || {}).berichten || "uit";
+  const n = nights(r);
+  const sub = [`${dday(r.arrival)} ${t("stay_to")} ${dday(r.departure)} ${r.departure.slice(0, 4)} (${t("d_nights", n)})`,
+    r.rooms.length ? t("d_rooms", r.rooms.join(` ${t("d_and")} `)) : r.room_type, r.guests != null ? t("d_persons", r.guests) : "",
+    [r.source, t("r_flow", t("flow_" + r.flow) || r.flow)].filter(Boolean).join(", "), r.rate_plan].filter(Boolean).join(" · ");
+  const acts = [r.lighthouse_url && `<a class="btn2" href="${esc(r.lighthouse_url)}" target="_blank" rel="noopener">${IC(P.ext)}${esc(t("d_open_lh"))}</a>`,
+    r.app_link && `<a class="btn2" href="${esc(r.app_link)}" target="_blank" rel="noopener">${IC(P.eye)}${esc(t("d_app"))}</a>`,
+    r.guest_id && guestById(r.guest_id) && `<a class="btn2" href="#" id="d-guest">${IC(P.users)}${esc(t("d_profile"))}</a>`].filter(Boolean).join("");
+  // Tijdlijn: elke stap uit de planning met de kanalen en de laatste poging per kanaal
+  const KIND = { sent: ["c-ok", "b-ok", P.check, "d_sent"], failed: ["c-err", "b-err", P.x, "d_failed"], due: ["c-wait", "b-wait", P.clock, "d_planned"],
+    planned: ["c-wait", "b-wait", P.clock, "d_planned"], missed: ["c-cond", "b-warn", P.dots, "d_missed"], cond: ["c-cond", "b-warn", P.dots, "d_cond"], off: ["c-off", "b-no", P.dots, "d_off"] };
+  const steps = (r.plan || []).map((p, i, all) => {
+    const k = planKind(p), [cc, bc, ic, label] = KIND[k] || KIND.off;
+    const mine = r.messages.filter(m => m.type === p.step), sent = mine.filter(m => m.ok);
+    const when = p.state === "sent" && sent.length ? dtime(sent[0].at) : p.due ? (p.due.length > 10 ? dtime(p.due) : dshort(p.due)) : "";
+    const key = (ch, to) => ch + "|" + (to || "").toLowerCase(), targets = new Map();
+    (p.channels || []).forEach(c => targets.set(key(c.channel, c.to), c));
+    mine.forEach(m => { if (!targets.has(key(m.channel, m.to))) targets.set(key(m.channel, m.to), { channel: m.channel, to: m.to, reason: "" }); });
+    const chips = [...targets.values()].map(c => {
+      const tries = mine.filter(m => key(m.channel, m.to) === key(c.channel, c.to)), last = tries[tries.length - 1];
+      let cls = "wait", txt;
+      if (last) { cls = last.ok ? "ok" : "err"; txt = t("st_" + last.status) || last.status; }
+      else if (["sent", "failed", "planned", "due"].includes(p.state)) txt = c.reason ? t("chr_" + c.reason) : t("pl_" + (p.state === "sent" || p.state === "failed" ? "not_tried" : "planned"));
+      else txt = c.reason && c.reason !== "fallback" ? t("chr_" + c.reason) : "";
+      return `<span class="chip ${cls}" title="${esc([last && stamp(last.at), last && last.error].filter(Boolean).join(" · "))}">${chIcon(c.channel)}${esc(t(CH[c.channel] || c.channel))}${c.to ? " · " + esc(c.to) : ""}${txt ? ` · <b>${esc(txt)}</b>` : ""}</span>`;
+    }).join("");
+    const err = mine.filter(m => !m.ok && (m.error || m.note)).pop();
+    const sendable = READY.includes(p.step);
+    const why = p.reason && !["sent", "failed"].includes(k) ? reasonText(p.reason) : "";
+    return `<div class="tls"><div class="tm"><span class="c ${cc}">${IC(ic, 15, 2.6)}</span>${i < all.length - 1 ? '<span class="ln"></span>' : ""}</div>
+      <div class="tb${k === "failed" ? " err" : ""}"><div class="th"><span class="tn">${esc(stepShort(p.step))}</span><span class="badge ${bc}">${esc(t(label))}</span><span class="small muted">${esc(when)}</span>
+        ${sendable ? `<button class="btn2 sm d-send" type="button" data-step="${esc(p.step)}" style="margin-left:auto">${IC(P.send, 14)}${esc(t(sent.length ? "d_again" : "d_now"))}</button>` : ""}</div>
+        ${why ? `<div class="small muted">${esc(why)}</div>` : ""}
+        ${chips ? `<div class="row" style="gap:6px">${chips}</div>` : ""}
+        ${err ? `<div class="small" style="color:#7E241D">${esc([err.error, err.note].filter(Boolean).join(". "))}</div>` : ""}
+        ${sendable ? `<div class="pop" data-pop="${esc(p.step)}" hidden><div class="lbl">${esc(t(sent.length ? "d_again" : "d_now"))}</div><div class="send-bar" data-bar="${esc(p.step)}"></div><div class="row"><button class="btn3 d-cancel" type="button">${esc(t("d_cancel"))}</button></div></div>` : ""}
+      </div></div>`;
+  }).join("");
+  const legend = ["sent", "failed", "planned", "missed", "cond", "off"].map(k => { const [, bc, ic, label] = KIND[k]; return `<span class="badge ${bc}">${k === "cond" || k === "off" ? "" : IC(ic, 14, 2.4)}${esc(t(label))}</span>`; }).join("");
+  const attempts = [...r.messages].reverse().map(m => `<tr><td class="mono small">${esc(dtime(m.at))}</td><td><b>${esc(stepShort(m.type))}</b></td><td>${esc(t(CH[m.channel] || m.channel))}</td>
+    <td class="small">${toCell(m)}</td><td><span class="badge ${m.ok ? "b-ok" : "b-err"}">${esc(t("st_" + m.status) || m.status)}</span></td><td class="small" style="color:#8B2E2E">${esc([m.error, m.note].filter(Boolean).join(". "))}</td></tr>`).join("");
+  // Rechts: pincodes, betaling, contact, gegevens
+  const codes = r.access_codes || [];
+  const pins = codes.length ? `<section class="card"><div class="ch"><h2 class="ct">${IC(P.key)} ${esc(t("d_pins"))}</h2><span class="badge b-ok">${IC(P.check, 14, 2.4)}${esc(t("d_made"))}</span></div><div class="cb">
+    ${codes.map((c, i) => `<div class="li"><div class="lt"><b>${esc(/^\d+$/.test(c.room) ? t("r_room", c.room) : !c.room || /voordeur|front|door/i.test(c.room) ? t("d_door") : c.room)}</b>${i === 0 && r.access_valid_from ? `<div class="small muted">${esc(t("d_valid", dtime(r.access_valid_from), dtime(r.access_valid_until)))}</div>` : ""}</div><span class="code">${esc(c.pin)}<span class="enter">&#8629;</span></span></div>`).join("")}
+    <div class="small muted">${esc(t(r.codes_in_pms ? "d_pins_pms" : "d_pins_salto"))}</div></div></section>` : "";
+  const open = r.open_amount != null && r.open_amount > 0;
+  const roomPay = r.payout_registered_at ? t("d_paid_payout", dshort(r.payout_registered_at)) : r.paid === true ? t("d_paid") : r.paid === false ? t("d_unpaid") : t("d_unknown");
+  const pay = `<section class="card"><div class="ch"><h2 class="ct">${IC(P.euro)} ${esc(t("d_pay"))}</h2>${open ? `<span class="badge b-warn">${IC(P.warn, 14, 2.4)}${esc(t("d_open"))}</span>` : r.paid ? `<span class="badge b-ok">${IC(P.check, 14, 2.4)}${esc(t("d_paid"))}</span>` : ""}</div><div class="cb">
+    <dl class="kv"><dt>${esc(t("d_rooms_lbl"))}</dt><dd>${esc(roomPay)}</dd>${(r.folio || []).filter(l => /toerist|city|tax/i.test(l.label || "")).map(l => `<dt>${esc(l.label)}</dt><dd>${esc(eur(l.amount))}</dd>`).join("")}
+    ${r.folio_total != null ? `<dt>${esc(t("d_total"))}</dt><dd>${esc(eur(r.folio_total))}</dd>` : ""}<dt>${esc(t("d_open_lbl"))}</dt><dd>${esc(r.open_amount != null ? eur(r.open_amount) : "-")}</dd></dl>
+    ${r.pay_link ? `<div class="row"><a class="btn2 sm" href="${esc(r.pay_link)}" target="_blank" rel="noopener">${IC(P.card, 14)}${esc(t("d_payreq"))}</a></div>` : ""}
+    ${r.pay_requested_at ? `<div class="small muted">${esc(t("d_payreq_at", dtime(r.pay_requested_at)))}</div>` : ""}</div></section>`;
+  const cl = [];
+  const addC = (v, ic, src) => { if (v && !cl.some(x => x.v.toLowerCase() === v.toLowerCase())) cl.push({ v, ic, src }); };
+  addC(r.email, P.mail, r.email_platform || (r.checkin_completed_at ? t("src_form") : "Lighthouse"));
+  addC(r.backup_email, P.mail, t("src_form_extra"));
+  addC(r.relay_email, P.mail, `${t("src_relay")}${r.relay_platform ? " " + r.relay_platform : ""}`);
+  addC(r.phone, P.phone, r.checkin_completed_at ? t("src_form") : "Lighthouse");
+  addC(r.backup_phone, P.phone, t("src_form_extra"));
+  const contact = `<section class="card"><div class="ch"><h2 class="ct">${IC(P.phone)} ${esc(t("d_contact"))}</h2></div><div class="cb">
+    ${cl.map(c => `<div class="li">${IC(c.ic, 16)}<div class="lt"><b>${esc(c.v)}</b><div class="small muted">${esc(t("d_src", c.src))}</div></div></div>`).join("")}
+    <button class="btn2 sm" type="button" id="d-add" style="align-self:flex-start">${IC(P.plus, 14)}${esc(t("d_add"))}</button>
+    <div id="d-add-form" class="pop" hidden><div class="field"><input id="d-add-v" class="input" placeholder="${esc(t("d_add_ph"))}"></div><div class="row"><button class="btn sm" type="button" id="d-add-go">${esc(t("d_add"))}</button><button class="btn3" type="button" id="d-add-x">${esc(t("d_cancel"))}</button><span id="d-add-err" class="small" style="color:#8B2E2E"></span></div></div></div></section>`;
+  const data = `<section class="card"><div class="ch"><h2 class="ct">${IC(P.bed)} ${esc(t("d_data"))}</h2></div><div class="cb"><dl class="kv">
+    <dt>${esc(t("d_k_chan"))}</dt><dd>${esc(r.source)}</dd><dt>${esc(t("d_k_flow"))}</dt><dd>${esc(t("flow_" + r.flow) || r.flow)}</dd>
+    <dt>${esc(t("d_k_rate"))}</dt><dd>${esc(r.rate_plan)}${r.non_refundable != null ? ` (${esc(t(r.non_refundable ? "d_nrf" : "d_flex"))})` : ""}</dd>
+    <dt>Lighthouse</dt><dd>${esc(r.pms_status)}</dd><dt>${esc(t("d_k_booked"))}</dt><dd>${esc(r.booked_at ? dlong(r.booked_at.slice(0, 10)) + " " + r.booked_at.slice(11, 16) : "")}</dd>
+    <dt>${esc(t("d_k_added"))}</dt><dd>${esc(r.added_at ? dlong(r.added_at.slice(0, 10)) + " " + new Date(r.added_at).toLocaleTimeString(locale(), { hour: "2-digit", minute: "2-digit" }) : "")}</dd>
+    <dt>${esc(t("d_k_updated"))}</dt><dd>${esc(r.updated_at ? dlong(r.updated_at.slice(0, 10)) + " " + new Date(r.updated_at).toLocaleTimeString(locale(), { hour: "2-digit", minute: "2-digit" }) : "")}</dd></dl></div></section>`;
+  const tagsBf = (r.pms_labels || []).some(l => /ontbijt|breakfast/i.test(l)) ? ` <span class="tag t-bf">Ontbijt</span>` : "";
+  const checked = !!r.messages_on || (mode === "uit" && r.messages_pick === "on");
+  el.innerHTML = `<a class="btn3" href="#res" id="d-back" style="padding:0;align-self:flex-start">${IC(P.back, 16)}${esc(t("d_back"))}</a>
+    <div class="ph"><div><h1>${esc(r.guest)} <span class="muted" style="font-weight:400;font-size:20px">#${esc(r.booking_number)}</span></h1><div class="sub">${esc(sub)}</div>
+      <div class="row" style="margin-top:8px;gap:6px">${resTags(r)}${tagsBf}</div></div><div class="acts">${acts}</div></div>
+    <div class="cols"><div class="col-main">
+      <section class="card"><div class="cb" style="padding-top:16px"><div class="toggle" style="padding:0"><div class="tx"><label class="tn" for="d-auto">${esc(t("d_auto"))}</label><div class="help">${esc(t("mo_hint_" + mode))}${mode !== "uit" ? esc(t("d_auto_off")) : ""}</div></div><input id="d-auto" class="switch" type="checkbox" ${checked ? "checked" : ""}></div></div></section>
+      <section class="card"><div class="ch"><h2 class="ct">${IC(P.mail)} ${esc(t("d_timeline"))}</h2><div class="legend">${legend}</div></div><div class="cb"><div class="tl">${steps}</div></div></section>
+      ${r.messages.length ? `<section class="card"><div class="ch"><h2 class="ct">${IC(P.clock)} ${esc(t("d_attempts"))}</h2></div><div class="tbox"><table><thead><tr><th>${esc(t("d_time"))}</th><th>${esc(t("d_msg"))}</th><th>${esc(t("d_chan"))}</th><th>${esc(t("d_to"))}</th><th>${esc(t("d_status"))}</th><th>${esc(t("d_err"))}</th></tr></thead><tbody>${attempts}</tbody></table></div></section>` : ""}
+    </div><div class="col-side">${pins}${pay}${contact}${data}</div></div>`;
+  $("#d-back").onclick = e => { e.preventDefault(); $("#tab-detail").hidden = true; showTab("res"); };
+  if ($("#d-guest")) $("#d-guest").onclick = e => { e.preventDefault(); $("#tab-detail").hidden = true; openGuest(r.guest_id); };
+  $("#d-auto").onchange = async () => {
+    const on = $("#d-auto").checked;
+    const d = await get(`/api/monitor/${$("#hotel").value}/select?id=${encodeURIComponent(r.id)}&on=${on ? 1 : 0}`, { method: "POST" }).catch(e => ({ ok: false, error: String(e) }));
+    if (!d.ok) { alert(d.error || "?"); $("#d-auto").checked = !on; return; }
+    rows = await get(`/api/monitor/${$("#hotel").value}/reservations`);
+    render(); renderDetail();
+  };
+  el.querySelectorAll(".d-send").forEach(b => b.onclick = () => {
+    const pop = el.querySelector(`[data-pop="${b.dataset.step}"]`);
+    pop.hidden = !pop.hidden;
+    if (!pop.hidden) sendBar(r, b.dataset.step, pop.querySelector(".send-bar"));
+  });
+  el.querySelectorAll(".d-cancel").forEach(b => b.onclick = () => { b.closest(".pop").hidden = true; });
+  $("#d-add").onclick = () => { $("#d-add-form").hidden = !$("#d-add-form").hidden; };
+  $("#d-add-x").onclick = () => { $("#d-add-form").hidden = true; };
+  $("#d-add-go").onclick = async () => {
+    const v = $("#d-add-v").value.trim(), isMail = v.includes("@");
+    const q = new URLSearchParams({ id: r.id, email: isMail ? v : "", phone: isMail ? "" : v });
+    const d = await get(`/api/monitor/${$("#hotel").value}/contact?${q}`, { method: "POST" }).catch(e => ({ ok: false, error: String(e) }));
+    if (!d.ok) { $("#d-add-err").textContent = d.error || t("load_error"); return; }
+    rows = await get(`/api/monitor/${$("#hotel").value}/reservations`);
+    render(); renderDetail();
+  };
+}
+
 // Ontvanger: buiten PRD ging het bericht naar het testadres, niet naar de gast
 let hotelList = [];
 const hotelNow = () => hotelList.find(h => h.id === $("#hotel").value) || {};
@@ -633,7 +812,7 @@ function sendBar(r, step, bar) {
     const d = await get(`/api/monitor/${$("#hotel").value}/resend?${q}`, { method: "POST" }).catch(e => ({ ok: false, error: String(e) }));
     if (!d.ok) alert(d.error || t("load_error"));
     await load();
-    showMessages(r.id);
+    if ($("#tab-detail") && !$("#tab-detail").hidden) renderDetail(); else showMessages(r.id);
   };
 }
 
@@ -648,7 +827,7 @@ function stickColumns(table, n) {
     left += th.getBoundingClientRect().width;
   });
 }
-window.addEventListener("resize", () => { stickColumns($("#guests")?.closest("table"), 1); });
+
 
 // Soort toestand in de tijdlijn, elk met een eigen kleur:
 // sent (verstuurd), failed (mislukt), due (nu), planned (komt nog), missed (moment voorbij),
@@ -715,7 +894,7 @@ async function loadGuests() {
 function guestById(id) { return guestData.guests.find(g => g.id === id); }
 
 // Van een reservatie naar de gast, en van een gast naar zijn reservaties: gewoon het zoekvak invullen
-function openGuest(id) { $("#g-search").value = guestById(id)?.name || ""; showTab("guests"); renderGuests(); }
+function openGuest(id) { gSel = id; $("#g-search").value = guestById(id)?.name || ""; showTab("guests"); renderGuests(); }
 function openReservations(id) {
   $("#search").value = guestById(id)?.name || "";
   $("#from").value = ""; $("#to").value = "";  // ook voorbije verblijven
@@ -752,6 +931,17 @@ function contactLines(x) {
     x.phone && esc(x.phone), x.backup_phone && extra(x.backup_phone)].filter(Boolean).join("<br>");
 }
 
+let gSel = "";  // gekozen gast (profiel rechts)
+const ICG = {
+  mail: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3.5 6.5l8.5 6.5 8.5-6.5"/></svg>',
+  wa: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20.5l1.4-5A8 8 0 1 1 21 12z"/></svg>',
+  phone: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/></svg>',
+};
+const dlong = iso => iso ? new Date(iso + (iso.length === 10 ? "T00:00" : "")).toLocaleDateString(locale(), { day: "numeric", month: "short", year: "numeric" }).replace(/\./g, "") : "";
+const dmonth = iso => iso ? new Date(iso + (iso.length === 10 ? "T00:00" : "")).toLocaleDateString(locale(), { month: "short", year: "numeric" }).replace(/\./g, "") : "";
+const countryName = c => { try { return c ? new Intl.DisplayNames([locale()], { type: "region" }).of(c.toUpperCase()) : ""; } catch { return c; } };
+const num1 = x => x == null ? "" : Number(x).toLocaleString(locale(), { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+
 function renderGuests() {
   const q = $("#g-search").value.toLowerCase();
   const list = guestData.guests.filter(g => (!q || [g.name, g.email, g.phone, g.backup_email, g.backup_phone].join(" ").toLowerCase().includes(q)));
@@ -764,40 +954,80 @@ function renderGuests() {
     th.classList.toggle("sorted", th.dataset.gsort === gSortKey);
     th.dataset.dir = th.dataset.gsort === gSortKey ? (gSortDir > 0 ? "asc" : "desc") : "";
   });
-  $("#g-count").textContent = t("g_count", list.length);
+  if (!gSel || !list.some(g => g.id === gSel)) gSel = list[0]?.id || "";
+  $("#g-count").textContent = t("g_profiles", list.length);
+  const nomkt = g => g.opt_out ? ` <span class="tag t-off">${esc(t("gp_nomkt"))}</span>` : "";
   $("#guests").innerHTML = list.map(g => `
-    <tr>
-      <td>${g.reservations.length ? `<a href="#" class="jump" data-res="${esc(g.id)}" title="${esc(t("show_res"))}">${esc(g.name)}</a>` : esc(g.name)}</td><td class="wrap">${contactCell(g)}</td>
-      <td>${esc(g.country)}${g.language ? ` <span class="muted">${esc(g.language)}</span>` : ""}</td>
-      <td>${g.stays}</td><td>${g.cancellations ? `<span title="${esc(day(g.last_cancelled))}">${g.cancellations}</span>` : ""}</td><td>${g.avg_nights ?? ""}</td><td>${g.avg_persons ?? ""}</td>
-      <td>${day(g.first_stay)}</td><td>${day(g.last_stay)}</td>
-      <td title="${esc(g.channels.map(c => `${c.name} ${c.count}×`).join(", "))}">${esc(g.preferred_channel)}</td>
-      <td>${esc(g.rooms.join(", "))}${g.room_type ? ` <span class="muted">${esc(g.room_type)}</span>` : ""}</td>
-      <td>${g.reservations.length ? `<a href="#" class="jump" data-res="${esc(g.id)}" title="${esc(t("show_res"))}">${ICON_RES} ${g.reservations.length}</a>` : "0"}</td>
-      <td class="mute" title="${esc(t("g_mute_hint"))}">${["email", "whatsapp", "sms"].map(c => `<label class="chk"><input type="checkbox" data-mute="${esc(g.id)}" value="${c}" ${(g.muted || []).includes(c) ? "" : "checked"}> ${esc(t(CH[c]))}</label>`).join("")}</td>
-    </tr>`).join("") || `<tr><td colspan="13" class="muted">${t("no_guests")}</td></tr>`;
-  document.querySelectorAll("#guests a[data-res]").forEach(a => a.onclick = e => { e.preventDefault(); openReservations(a.dataset.res); });
-  document.querySelectorAll("#guests input[data-mute]").forEach(el => el.onchange = async () => {
-    const id = el.dataset.mute;
-    const muted = [...document.querySelectorAll(`#guests input[data-mute="${id}"]`)].filter(x => !x.checked).map(x => x.value);
-    const g = guestById(id);
-    if (g) g.muted = muted;
-    await get(`/api/monitor/${$("#hotel").value}/guests?action=channels&a=${encodeURIComponent(id)}&muted=${muted.join(",")}`, { method: "POST" });
+    <tr data-g="${esc(g.id)}" style="cursor:pointer${g.id === gSel ? ";background:#EEF0F5" : ""}">
+      <td><a class="nm" href="#" data-g="${esc(g.id)}">${esc(g.name)}</a>${nomkt(g)}</td><td>${esc(g.country)}</td>
+      <td class="mono">${g.stays}</td><td class="small">${esc(dlong(g.last_stay))}</td><td class="small">${esc(g.preferred_channel)}</td>
+    </tr>`).join("") || `<tr><td colspan="5" class="muted">${t("no_guests")}</td></tr>`;
+  $("#mguests").innerHTML = list.map(g => `<a href="#" class="mcard" data-g="${esc(g.id)}" style="text-decoration:none;color:#2B2F38">
+      <div class="mrow"><b style="font-size:16px">${esc(g.name)}</b>${ICO.chev}</div>
+      <div class="small muted">${esc([g.country, t("gp_stays_m", g.stays), g.last_stay ? dlong(g.last_stay) : "", g.preferred_channel].filter(Boolean).join(" · "))}</div>
+      ${g.opt_out ? `<div class="row" style="gap:4px"><span class="tag t-off">${esc(t("gp_nomkt"))}</span></div>` : ""}</a>`).join("") || `<div class="muted">${t("no_guests")}</div>`;
+  document.querySelectorAll("#guests [data-g], #mguests [data-g]").forEach(el => el.onclick = e => {
+    e.preventDefault();
+    gSel = el.dataset.g;
+    renderGuests();
+    if (matchMedia("(max-width:760px)").matches) $("#g-profile").scrollIntoView({ behavior: "smooth" });
   });
+  renderProfile();
   renderMatches();
-  stickColumns($("#guests").closest("table"), 1);
+}
+
+// Profiel van de gekozen gast, zoals in het ontwerp (rechts)
+function renderProfile() {
+  const g = guestById(gSel), el = $("#g-profile");
+  if (!g) { el.innerHTML = `<section class="card"><div class="cb" style="padding-top:16px"><span class="muted">${esc(t("gp_none"))}</span></div></section>`; return; }
+  const muted = g.muted || [];
+  const own = [...new Set([g.email, g.backup_email, ...(g.known_emails || [])].filter(Boolean))].filter(x => !(g.relay_emails || []).includes(x));
+  const phones = [...new Set([g.phone, g.backup_phone, ...(g.known_phones || [])].filter(Boolean))];
+  const src = x => x === g.email && g.form ? t("gp_form") : t("gp_booking");
+  const line = (icon, value, sub, ch, disabled) => `<div class="li">${icon}<div class="lt"><b>${esc(value)}</b><div class="small muted">${esc(sub)}</div></div>
+    <label class="row small" style="gap:6px;font-weight:600"><input type="checkbox" ${disabled ? "disabled" : `data-mute="${esc(g.id)}" value="${ch}"`} ${!disabled && !muted.includes(ch) ? "checked" : ""} style="width:18px;height:18px;margin:0">${esc(t("gp_use"))}</label></div>`;
+  const contacts = [
+    ...own.map(x => line(ICG.mail, x, src(x), "email")),
+    ...(g.relay_emails || []).map(x => line(ICG.mail, x, t("gp_relay"), "", true)),
+    ...phones.flatMap(x => [line(ICG.wa, x, `${t("gp_wa")}, ${src(x)}`, "whatsapp"), line(ICG.phone, x, `${t("gp_sms")}, ${src(x)}`, "sms")]),
+  ].join("");
+  const today = todayIso();
+  const res = g.reservations.map(id => rows.find(r => r.id === id)).filter(Boolean).sort((a, b) => b.arrival.localeCompare(a.arrival));
+  const badge = r => r.status === "cancelled" ? `<span class="badge b-err">${esc(t("r_cancelled"))}</span>`
+    : r.departure < today ? `<span class="badge b-ok">${esc(t("gp_left"))}</span>`
+    : r.arrival <= today ? `<span class="badge b-info">${esc(t("gp_now"))}</span>` : `<span class="badge b-wait">${esc(t("gp_coming"))}</span>`;
+  const resLines = res.slice(0, 3).map(r => `<div class="li"><div class="lt"><a href="#" class="nm" data-open-res="${esc(g.id)}">#${esc(r.booking_number)}</a> ${esc(`${dshort(r.arrival)} ${t("stay_to")} ${dlong(r.departure)}${r.rooms.length ? ", " + t("r_room", r.rooms.join(", ")).toLowerCase() : ""}`)}</div>${badge(r)}</div>`).join("");
+  const inHouse = res.some(r => r.status !== "cancelled" && r.arrival <= today && r.departure > today);
+  el.innerHTML = `<section class="card"><div class="ch"><div><h2 style="font-size:20px">${esc(g.name)}</h2><div class="small muted">${esc([countryName(g.country), g.first_stay ? t("gp_since", dmonth(g.first_stay)) : ""].filter(Boolean).join(" · "))}</div></div>
+    <div class="row">${g.opt_out ? `<span class="tag t-off">${esc(t("gp_nomkt"))}</span>` : ""}${g.stays > 1 ? `<span class="tag t-on">${esc(t("gp_back"))}</span>` : ""}</div></div>
+    <div class="cb"><div class="statgrid" style="grid-template-columns:repeat(auto-fit,minmax(110px,1fr))">
+      <div class="stat"><span class="n">${g.stays}</span><span class="l">${esc(t("gp_stays"))}</span></div>
+      <div class="stat"><span class="n">${g.cancellations || 0}</span><span class="l">${esc(t("gp_canc"))}</span></div>
+      <div class="stat"><span class="n">${esc(num1(g.avg_nights))}</span><span class="l">${esc(t("gp_nights"))}</span></div>
+      <div class="stat"><span class="n">${esc(num1(g.avg_persons))}</span><span class="l">${esc(t("gp_pers"))}</span></div></div>
+    <dl class="kv"><dt>${esc(t("gp_first"))}</dt><dd>${esc(dmonth(g.first_stay))}</dd><dt>${esc(t("gp_last"))}</dt><dd>${esc(dlong(g.last_stay))}${inHouse ? " " + esc(t("gp_nowsuffix")) : ""}</dd>
+      <dt>${esc(t("gp_chan"))}</dt><dd>${esc(g.preferred_channel)}</dd><dt>${esc(t("gp_rooms"))}</dt><dd>${esc(g.rooms.join(", "))}</dd></dl>
+    <div class="lbl" style="margin-top:6px">${esc(t("gp_contact"))}</div><div class="help">${esc(t("gp_help"))}</div>${contacts}
+    <div class="lbl" style="margin-top:6px">${esc(t("gp_res"))}</div>${resLines}
+    ${g.reservations.length ? `<a class="btn3" href="#" data-open-res="${esc(g.id)}" style="padding:0">${esc(t("gp_all", g.reservations.length))}</a>` : ""}</div></section>`;
+  el.querySelectorAll("[data-open-res]").forEach(a => a.onclick = e => { e.preventDefault(); openReservations(a.dataset.openRes); });
+  el.querySelectorAll("input[data-mute]").forEach(box => box.onchange = async () => {
+    const id = box.dataset.mute;
+    // Per kanaal: alle regels van hetzelfde kanaal mee aan- of uitvinken
+    el.querySelectorAll(`input[data-mute][value="${box.value}"]`).forEach(x => { x.checked = box.checked; });
+    const m = ["email", "whatsapp", "sms"].filter(c => { const x = el.querySelector(`input[data-mute][value="${c}"]`); return x && !x.checked; });
+    g.muted = m;
+    await get(`/api/monitor/${$("#hotel").value}/guests?action=channels&a=${encodeURIComponent(id)}&muted=${m.join(",")}`, { method: "POST" });
+  });
 }
 
 function renderMatches() {
   const m = guestData.matches.filter(x => guestById(x.a) && guestById(x.b));
-  $("#matches-wrap").hidden = !m.length;
-  $("#matches-title").textContent = t("m_title", m.length);
-  const who = g => `<strong>${esc(g.name)}</strong> <span class="muted">${esc([g.country, g.email, g.phone, g.stays + "×"].filter(Boolean).join(" · "))}</span>`;
-  $("#matches").innerHTML = m.map(x => `
-    <tr><td><div class="m-pair"><span>${who(guestById(x.a))}</span><span>${who(guestById(x.b))}</span></div>
-        <div class="m-why">${esc(t("m_" + x.reason))}${x.contact ? `: ${esc(x.contact)}` : ""}</div></td>
-      <td class="m-act"><button type="button" class="secondary" data-act="merge" data-a="${esc(x.a)}" data-b="${esc(x.b)}">${esc(t("m_merge"))}</button>
-        <button type="button" class="secondary" data-act="different" data-a="${esc(x.a)}" data-b="${esc(x.b)}">${esc(t("m_different"))}</button></td></tr>`).join("");
+  $("#matches-card").hidden = !m.length;
+  $("#m-open").textContent = t("m_open", m.length);
+  const who = g => `<b>${esc(g.name)}</b> (${esc([g.preferred_channel, g.last_stay ? g.last_stay.slice(0, 4) : ""].filter(Boolean).join(", "))})`;
+  $("#matches").innerHTML = m.map(x => `<div class="note warn" style="flex-wrap:wrap"><div style="flex:1 1 280px">${who(guestById(x.a))} ${esc(t("m_and"))} ${who(guestById(x.b))}: ${esc(t("m_" + x.reason))}${x.contact ? ` (${esc(x.contact)})` : ""}</div>
+    <div class="row"><button class="btn sm" type="button" data-act="merge" data-a="${esc(x.a)}" data-b="${esc(x.b)}">${esc(t("m_keep"))}</button><button class="btn2 sm" type="button" data-act="different" data-a="${esc(x.a)}" data-b="${esc(x.b)}">${esc(t("m_apart"))}</button></div></div>`).join("");
   document.querySelectorAll("#matches button").forEach(b => b.onclick = async () => {
     if (b.dataset.act === "merge" && !confirm(t("m_confirm"))) return;
     await get(`/api/monitor/${$("#hotel").value}/guests?action=${b.dataset.act}&a=${encodeURIComponent(b.dataset.a)}&b=${encodeURIComponent(b.dataset.b)}`, { method: "POST" });
@@ -903,12 +1133,8 @@ function render() {
   }).join("") || `<div class="muted">${t("no_res")}</div>`;
   document.querySelectorAll("#res a[data-guest]").forEach(a => a.onclick = e => { e.preventDefault(); openGuest(a.dataset.guest); });
   // Popup altijd met verse gegevens (bv. net ingevuld formulier, nieuw bericht)
-  document.querySelectorAll("#res [data-msgs], #mres [data-msgs]").forEach(a => a.onclick = async e => {
-    e.preventDefault();
-    showMessages(a.dataset.msgs);
-    await refreshNow();
-    if (!$("#msgs").hidden) showMessages(a.dataset.msgs);
-  });
+  document.querySelectorAll("#res [data-msgs], #mres [data-msgs]").forEach(a => a.onclick = e => { e.preventDefault(); openDetail(a.dataset.msgs); });
+  renderDetail();
 }
 
 async function loadRuns() {
@@ -2195,7 +2421,7 @@ function labelCells(table) {
 let labelTimer = null;
 new MutationObserver(() => {
   clearTimeout(labelTimer);
-  labelTimer = setTimeout(() => document.querySelectorAll("table").forEach(labelCells), 50);
+  labelTimer = setTimeout(() => document.querySelectorAll("table").forEach(tb => { if (!tb.closest(".v2")) labelCells(tb); }), 50);
 }).observe(document.body, { childList: true, subtree: true, characterData: true });
 
 // Als laatste: alle functies en variabelen hierboven bestaan dan
