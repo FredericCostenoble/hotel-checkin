@@ -476,7 +476,8 @@ const API = window.CHECKIN_API || "";
     $("backup-box").open = !!(data.backup_email || data.backup_phone);
     $("language").value = langChosenByGuest || !I18N[data.language] ? lang : data.language;
     $("no_marketing").checked = data.no_marketing;
-    $("stairs_help").checked = !!data.stairs_help;
+    $("stairs_yes").checked = !!data.stairs_help;
+    $("stairs_no").checked = data.completed && !data.stairs_help;
   }
   $("details-edit").addEventListener("click", () => { editing = true; fillForm(); renderDetails(); $("email").focus(); });
 
@@ -503,7 +504,7 @@ const API = window.CHECKIN_API || "";
       backup_phone: composePhone($("backup_phone_cc").value, $("backup_phone").value),
       language: $("language").value,
       no_marketing: $("no_marketing").checked,
-      stairs_help: !!data.stairs && $("stairs_help").checked,
+      stairs_help: !!data.stairs && $("stairs_yes").checked,
     };
     try {
       const res = await postWithRetry(API + "/api/checkin/" + encodeURIComponent(token), {

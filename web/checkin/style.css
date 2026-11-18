@@ -155,13 +155,17 @@ p { margin: 0; }
   min-height: 52px; border: 1.5px solid #9A9FAA; border-radius: 10px; padding: 0 14px; font-size: 17px;
   font-family: inherit; background: #fff; color: inherit; width: 100%;
 }
+.field > select {
+  -webkit-appearance: none; appearance: none; padding-right: 44px;
+  background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%232B2F38' stroke-width='1.6'/%3E%3C/svg%3E") no-repeat right 16px center;
+}
 .input:focus, select:focus, input:focus { outline: 2px solid var(--accd); outline-offset: 1px; }
 input.invalid { border-color: var(--error); }
 .tel { display: grid; grid-template-columns: 108px minmax(0, 1fr); gap: 8px; }
 .cc-wrap { position: relative; min-width: 0; }
 .cc-wrap .cc {
   color: transparent; -webkit-appearance: none; appearance: none; padding-right: 28px;
-  background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%232B2F38' stroke-width='1.6'/%3E%3C/svg%3E") no-repeat right 10px center;
+  background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%232B2F38' stroke-width='1.6'/%3E%3C/svg%3E") no-repeat right 14px center;
 }
 .cc-wrap .cc option { color: var(--text); }
 .cc-label {
@@ -172,12 +176,9 @@ input.invalid { border-color: var(--error); }
 .choice label { min-height: 50px; border: 1.5px solid #9A9FAA; border-radius: 10px; display: flex; align-items: center; gap: 10px; padding: 0 14px; font-weight: 600; cursor: pointer; }
 fieldset.field { border: 0; padding: 0; margin: 0; }
 .check { display: flex; gap: 12px; align-items: flex-start; min-height: 44px; cursor: pointer; }
-/* Ja/nee-vragen: altijd een vinkje in een kader, zelfde vorm voor elke vraag */
-.check.box { border: 1.5px solid #9A9FAA; border-radius: 10px; padding: 13px 14px; font-weight: 600; }
-.check.box:has(input:checked) { border-color: var(--accd); background: #F7F8FA; }
-/* Kleine lettertjes vlak boven de privacyzin (geen reclame) */
-.check.fine { font-size: 14px; color: #565B66; min-height: 0; gap: 10px; align-items: center; margin-bottom: -8px; }
-.check.fine input { width: 18px; height: 18px; margin: 0; }
+/* Vinkjes en keuzerondjes in de kleur van het hotel */
+input[type="checkbox"], input[type="radio"] { accent-color: var(--accd); }
+.choice label:has(input:checked) { border-color: var(--accd); background: #F7F8FA; }
 .check input, .choice input { width: 22px; height: 22px; margin: 2px 0 0; flex: none; }
 .hint { font-size: 14px; color: #565B66; }
 .error { color: var(--error); font-size: 15px; }
