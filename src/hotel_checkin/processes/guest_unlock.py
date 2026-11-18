@@ -103,6 +103,44 @@ def _lock_ids(hotel_id: str, door: str) -> list[str]:
     return salto.lock_ids_for(hotel_id, [door.split(":", 1)[1]], common=False)
 
 
+_STATUS_CACHE: dict[tuple[str, str], tuple[datetime, dict]] = {}
+STATUS_TTL = timedelta(seconds=20)
+
+
+def door_status(hotel_id: str, r: Reservation, now: datetime) -> dict[str, dict] | None:
+    """Toestand van de deuren van deze gast voor de app: per deur online en locked (zie salto.lock_status).
+    Alleen voor wie mag ontgrendelen en binnen de periode van de code; anders None. Een deur met meer sloten
+    (bv. eigen ingang en kamer): online als alle sloten online zijn, vergrendeld als alle sloten vergrendeld zijn.
+    Kort bewaard (STATUS_TTL), zodat de app Salto niet bij elke vraag opnieuw aanspreekt."""
+    if not allowed(hotel_id, r):
+        return None
+    from hotel_checkin.access import salto
+
+    out = {}
+    for door in doors(hotel_id, r):
+        start, end = window(hotel_id, r, door)
+        if not start <= now <= end:
+            continue
+        states = []
+        try:
+            for lock_id in _lock_ids(hotel_id, door):
+                hit = _STATUS_CACHE.get((hotel_id, lock_id))
+                if hit is None or now - hit[0] > STATUS_TTL:
+                    hit = (now, salto.lock_status(hotel_id, lock_id))
+                    _STATUS_CACHE[(hotel_id, lock_id)] = hit
+                states.append(hit[1])
+        except Exception as exc:  # noqa: BLE001 - toestand onbekend; de app toont dan niets
+            logging.warning("%s: toestand van %s niet gelezen: %s", hotel_id, door, exc)
+            states = []
+        if not states:
+            out[door] = {"online": None, "locked": None}
+            continue
+        on = [s["online"] for s in states]
+        lk = [s["locked"] for s in states]
+        out[door] = {"online": None if None in on else all(on), "locked": None if None in lk else all(lk)}
+    return out
+
+
 def open_door(hotel_id: str, r: Reservation, door: str, now: datetime) -> tuple[bool, str]:
     """Open een deur voor deze gast. Geeft (ok, reden) terug; reden: opened, not_allowed, unknown_door,
     too_early, too_late, too_many, failed."""

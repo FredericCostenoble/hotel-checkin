@@ -17,6 +17,7 @@ const API = window.CHECKIN_API || "";
   let editing = false;
   let formFilled = false;  // het formulier één keer vullen, niet overschrijven terwijl de gast typt
   const doorState = {};  // deur -> ready, busy, done, fail
+  let doorStatus = {};  // deur -> {online, locked} volgens Salto (alleen tijdens het verblijf)
   const CACHE_KEY = "gastapp:" + token;
   const PAY_KEY = "gastapp-pay:" + token;
   const PAY_PENDING_MS = 30 * 60 * 1000;
@@ -122,11 +123,16 @@ const API = window.CHECKIN_API || "";
       `<li class="${cls}"><span class="num">${cls === "done" ? I.check(16) : i + 1}</span><span class="sl">${esc(label)}</span><span class="ss">${esc(status)}</span></li>`).join("")}</ol>`;
   }
 
+  function warningHtml() {
+    return `<div class="note warn">${I.alert()}<span>${esc(t("link_warning"))}</span></div>`;
+  }
+
   function introHtml() {
     return `<h2 class="ct"><span>${esc(t("intro_title"))}</span></h2>
       <p>${esc(t(data.completed ? "intro_done" : "intro_new"))}</p>
       ${stepsHtml()}
-      <p class="muted">${esc(t("intro_keep"))}</p>`;
+      <p class="muted">${esc(t("intro_keep"))}</p>
+      ${warningHtml()}`;
   }
 
   function payItemHtml() {
@@ -224,6 +230,12 @@ const API = window.CHECKIN_API || "";
       state = badge("b-wait", I.clock(16), t("badge_not_yet"));
       body = note(I.clock(), a.code_date && a.code_date > todayIso() ? esc(t("code_on", fmtDay(a.code_date))).replace(esc(fmtDay(a.code_date)), `<b>${esc(fmtDay(a.code_date))}</b>`) : esc(t("code_soon")));
     }
+    const ds = pin && data.phase === "stay" ? doorStatus[door] : null;
+    if (ds && ds.online === false) {
+      body = `<div class="lockstate off">${I.nonet()}<span>${esc(t("lock_offline"))}</span></div>` + codeBlockHtml(door, pin, label);
+    } else if (ds && ds.locked !== null && ds.locked !== undefined) {
+      body = `<div class="lockstate ${ds.locked ? "" : "open"}">${ds.locked ? I.lock(20) : svg('<rect x="5" y="11" width="14" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 7.5-2"></path>', 20)}<span>${esc(t(ds.locked ? "lock_locked" : "lock_unlocked"))}</span></div>` + body;
+    }
     const later = pin ? "" : " later";
     return `<div class="tile${later}"><div class="tile-h"><div class="tile-t">${icon}<span>${esc(title)}</span></div>${state}</div>
       ${sub ? `<div class="tile-s">${esc(sub)}</div>` : ""}
@@ -239,7 +251,7 @@ const API = window.CHECKIN_API || "";
     const howto = (a.codes || []).length
       ? `<div class="howto"><div class="keypad" aria-hidden="true">${[1, 2, 3, 4, 5, 6, 7, 8, 9, "", 0].map((k) => `<span>${k}</span>`).join("")}<span class="go">↵</span></div><div style="font-size:15px"><b>${esc(t("howto_title"))}</b><br>${esc(t("howto_text"))}</div></div>`
       : "";
-    return `<h2 class="ct"><span>${esc(t("card_access"))}</span></h2>${tiles}${howto}`;
+    return `<h2 class="ct"><span>${esc(t("card_access"))}</span></h2>${tiles}${howto}${(a.codes || []).length ? warningHtml() : ""}`;
   }
 
   function contactButtons() {
@@ -408,6 +420,17 @@ const API = window.CHECKIN_API || "";
     btn.addEventListener("click", (e) => { if (e.detail === 0) unlock(btn.dataset.door); });
   }
 
+  async function loadDoors() {
+    if (!data || data.phase !== "stay" || !data.access || !data.access.unlock || offline || !navigator.onLine) return;
+    try {
+      const res = await fetch(API + "/api/checkin/" + encodeURIComponent(token) + "/doors", { cache: "no-store" });
+      if (!res.ok) return;
+      const body = await res.json();
+      doorStatus = body.doors || {};
+      renderCards();
+    } catch (e) { /* toestand onbekend: niets tonen */ }
+  }
+
   async function unlock(door) {
     doorState[door] = "busy";
     renderCards();
@@ -421,6 +444,7 @@ const API = window.CHECKIN_API || "";
     } catch (e) { ok = false; }
     doorState[door] = ok ? "done" : "fail";
     renderCards();
+    if (ok) [2500, 9000].forEach((ms) => setTimeout(loadDoors, ms));  // slot gaat open en weer dicht
     setTimeout(() => { doorState[door] = "ready"; renderCards(); }, ok ? 6000 : 30000);
   }
 
@@ -568,8 +592,8 @@ const API = window.CHECKIN_API || "";
   setInterval(() => {
     ticks += 1;
     if (document.hidden || editing || !data) return;
-    if (payPending() || ticks % 5 === 0) load(true).then(renderCards);
-    else renderCards();  // tijden van de schuifknoppen
+    if (payPending() || ticks % 5 === 0) load(true).then(renderCards).then(loadDoors);
+    else { renderCards(); loadDoors(); }  // tijden van de schuifknoppen, toestand van de sloten
   }, 60 * 1000);
   document.addEventListener("visibilitychange", () => { if (!document.hidden && data && !editing) load(true).then(renderCards); });
 
@@ -578,5 +602,5 @@ const API = window.CHECKIN_API || "";
   }
 
   render();
-  load().then(render);
+  load().then(render).then(loadDoors);
 })();

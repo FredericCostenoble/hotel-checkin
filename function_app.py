@@ -81,6 +81,17 @@ def post_unlock(req: func.HttpRequest) -> func.HttpResponse:
     return _json(status, {"ok": ok, "reason": reason})
 
 
+@app.route(route="api/checkin/{token}/doors", methods=["GET"], auth_level=func.AuthLevel.ANONYMOUS)
+def get_doors(req: func.HttpRequest) -> func.HttpResponse:
+    """Gast-app: toestand van de deuren (vergrendeld, bereikbaar), alleen tijdens het verblijf."""
+    try:
+        doors = checkin.door_status(req.route_params.get("token", ""))
+    except Exception:  # noqa: BLE001 - de app toont dan gewoon geen toestand
+        logging.exception("toestand van de deuren niet gelezen")
+        doors = None
+    return _json(200, {"doors": doors or {}})
+
+
 @app.route(route="api/checkin/{token}/pay", methods=["POST"], auth_level=func.AuthLevel.ANONYMOUS)
 def post_pay(req: func.HttpRequest) -> func.HttpResponse:
     """Gast-app: de gast klikte op Betalen; Lighthouse meteen opnieuw laten lezen (processes/guest_payment.py)."""

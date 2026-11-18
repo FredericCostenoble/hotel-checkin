@@ -322,6 +322,21 @@ def unlock(token: str, door: str, now: datetime | None = None) -> tuple[bool, st
     return guest_unlock.open_door(r.hotel_id, r, str(door or ""), now or _now(r.hotel_id))
 
 
+def door_status(token: str, now: datetime | None = None) -> dict | None:
+    """Toestand van de deuren (vergrendeld, bereikbaar) voor de app, tijdens het verblijf. None = niets te tonen."""
+    if token.startswith(DEMO_PREFIX):
+        d = form_data(token)
+        if not d or not (d.get("access") or {}).get("unlock"):
+            return None
+        return {door: {"online": True, "locked": True} for door in d["access"]["unlock"]}
+    r = repo.get_by_token(token) if token else None
+    if r is None:
+        return None
+    from hotel_checkin.processes import guest_unlock
+
+    return guest_unlock.door_status(r.hotel_id, r, now or _now(r.hotel_id))
+
+
 def pay_started(token: str, now: datetime | None = None) -> bool:
     """De gast klikte op Betalen: Lighthouse meteen opnieuw laten lezen (processes/guest_payment.py)."""
     if token.startswith(DEMO_PREFIX):

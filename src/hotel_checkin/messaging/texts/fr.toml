@@ -121,6 +121,10 @@ link = "{checkin_link}"
 
 [[access_code.blokken]]
 type = "text"
+alineas = ["Ne partagez cet e-mail et le lien vers votre page de séjour qu'avec les personnes qui séjournent avec vous : avec votre code PIN et cette page, on peut ouvrir votre chambre."]
+
+[[access_code.blokken]]
+type = "text"
 alineas = ["Une question ? Appelez-nous au {hotel_telefoon} ou répondez simplement à cet e-mail."]
 
 [at_the_door]

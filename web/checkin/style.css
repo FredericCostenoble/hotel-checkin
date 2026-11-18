@@ -138,6 +138,10 @@ p { margin: 0; }
 .fail-t { display: flex; align-items: center; gap: 8px; font-weight: 700; color: #8B2E2E; }
 .fail .code { font-size: 52px; color: var(--text); }
 .fail .enter { width: 58px; height: 58px; font-size: 32px; }
+.lockstate { display: flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 700; color: #454953; margin-top: -4px; }
+.lockstate.open { color: #245A3A; }
+.lockstate.off { color: #8B2E2E; }
+.note.warn { background: #FFF6E0; color: #5A4200; }
 .howto { display: flex; gap: 16px; align-items: center; }
 .keypad { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; width: 132px; flex: none; padding: 10px; border-radius: 12px; background: #2B2F38; }
 .keypad span { height: 28px; border-radius: 6px; background: #474C57; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; }

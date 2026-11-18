@@ -139,3 +139,29 @@ def test_pay_started_requests_refresh_once(monkeypatch):
     assert not guest_payment.pay_started("lucca", r, now + timedelta(minutes=5))  # net gevraagd
     assert guest_payment.pay_started("lucca", r, now + timedelta(minutes=11))
     assert [m["message_type"] for m in repo.messages_for("lucca", "r1")] == ["app_pay", "app_pay"]
+
+
+def test_door_status(monkeypatch):
+    states = {"front": {"online": True, "locked": True, "battery": "fresh"},
+              "lock16": {"online": False, "locked": None, "battery": None}}
+    monkeypatch.setattr(salto, "lock_status", lambda h, lock_id, client=None: states[lock_id])
+    guest_unlock._STATUS_CACHE.clear()
+    r = _res()
+    assert guest_unlock.door_status("lucca", r, datetime(2099, 1, 10, 15, tzinfo=TZ)) == {
+        "front": {"online": True, "locked": True}, "room:16": {"online": False, "locked": None}}
+    assert guest_unlock.door_status("lucca", r, datetime(2099, 1, 9, 15, tzinfo=TZ)) == {}  # nog niet aangekomen
+    assert guest_unlock.door_status("lucca", _res(completed=False, rid="r9"), datetime(2099, 1, 10, 15, tzinfo=TZ)) is None
+
+
+def test_salto_lock_status(monkeypatch):
+    def handler(req: httpx.Request) -> httpx.Response:
+        if req.url.path.endswith("/connect/token"):
+            return httpx.Response(200, json={"access_token": "tok", "expires_in": 3600})
+        assert req.method == "GET" and req.url.path == "/v1.2/sites/site1/locks/lock16"
+        return httpx.Response(200, json={"id": "lock16", "locked_state": "locked", "online": True, "battery_level": "fresh"})
+    settings = {"SALTO_SITE_ID": "site1", "SALTO_USERNAME": "u", "SALTO_PASSWORD": "p", "SALTO_CLIENT_ID": "c",
+                "SALTO_CLIENT_SECRET": "s"}
+    monkeypatch.setattr(salto, "hotel_setting", lambda h, n, default=None, required=True, shared=True: settings.get(n, default))
+    salto._tokens.clear()
+    assert salto.lock_status("lucca", "lock16", client=httpx.Client(transport=httpx.MockTransport(handler))) == {
+        "online": True, "locked": True, "battery": "fresh"}

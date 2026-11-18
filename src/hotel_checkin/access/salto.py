@@ -207,6 +207,17 @@ def open_lock(hotel_id: str, lock_id: str, client: httpx.Client | None = None) -
     _call(hotel_id, "PATCH", f"/v1.2/sites/{{site}}/locks/{lock_id}/locking", {"locked_state": "unlocked"}, client)
 
 
+def lock_status(hotel_id: str, lock_id: str, client: httpx.Client | None = None) -> dict:
+    """Toestand van een slot: online (bereikbaar via de IQ), locked (vergrendeld) en battery (batterij, zoals Salto
+    ze noemt, bv. fresh of low). None = Salto gaf het niet mee. Salto weet niet of de deur zelf open staat."""
+    data = _call(hotel_id, "GET", f"/v1.2/sites/{{site}}/locks/{lock_id}", client=client) or {}
+    state = str(data.get("locked_state") or "").lower()
+    online = data.get("online", data.get("is_online"))
+    return {"online": bool(online) if online is not None else None,
+            "locked": True if state == "locked" else False if state == "unlocked" else None,
+            "battery": str(data.get("battery_level") or data.get("battery_status") or "") or None}
+
+
 def common_lock_ids(hotel_id: str) -> list[str]:
     """Gemeenschappelijke deuren (voordeur en dergelijke), [salto] common_lock_ids."""
     return list(load_hotel(hotel_id).get("salto", {}).get("common_lock_ids", []))
