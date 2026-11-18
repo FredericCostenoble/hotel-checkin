@@ -22,7 +22,8 @@ META_DOC = "hotel_settings_meta"  # per sectie: wie en wanneer gewijzigd in de m
 EXCLUDED = ("flows",)  # tabblad Workflow
 # Instellingen met een vaste keuzelijst
 CHOICES = {("workflow_parameters", "city_tax_unit"): ("person_night", "person_stay"),
-           ("schakelaars", "berichten"): ("uit", "aan", "selectie")}
+           ("schakelaars", "berichten"): ("uit", "aan", "selectie"),
+           ("kamers", "verdieping_regel"): ("eerste_cijfer", "geen")}
 # Oude waarden die in de monitor bewaard zijn, getoond als de nieuwe keuze
 LEGACY = {("schakelaars", "berichten"): {True: "aan", False: "uit", "true": "aan", "false": "uit"}}
 
@@ -140,6 +141,41 @@ def _with_current(options: tuple, current) -> list:
     return out
 
 
+ROOM_BASE = (("verdieping", "text"), ("lijst", "text"), ("twin", "bool"))
+ROOM_TEXTS = ("naam", "kort", "toegang")
+ROOM_LANGS = ("nl", "fr", "en", "de")
+
+
+def _room_template(file_rooms: dict[str, dict]) -> list[dict]:
+    """Vaste velden voor elke uitzondering per kamer: verdieping, naam op de lijsten, twin, en per taal
+    naam, kort en toegang. Talen en extra sleutels die in het hotelbestand staan, komen erbij."""
+    seen = [k for v in file_rooms.values() for k in v]
+    langs = list(dict.fromkeys([*ROOM_LANGS, *(k.rsplit("_", 1)[1] for k in seen
+                                                if "_" in k and k.rsplit("_", 1)[0] in ROOM_TEXTS)]))
+    keys = [(k, kind) for k, kind in ROOM_BASE] + [(f"{t}_{lg}", "text") for lg in langs for t in ROOM_TEXTS]
+    known = {k for k, _ in keys}
+    keys += [(k, _kind(v)) for room in file_rooms.values() for k, v in room.items() if k not in known]
+    return [{"key": k, "type": kind} for k, kind in dict.fromkeys(keys)]
+
+
+def _room_section(hotel_id: str, field_help: dict, changed: dict, per: dict, doc: dict | None) -> dict:
+    file_rooms = hotels.room_exceptions(hotels.load_hotel_file(hotel_id))
+    now = hotels.room_exceptions(hotels.load_hotel(hotel_id))
+    template = _room_template(file_rooms | now)
+    help_ = {f["key"]: next((field_help[(f"kamers.{r}", f["key"])] for r in file_rooms
+                             if field_help.get((f"kamers.{r}", f["key"]))), "") for f in template}
+    for f in template:
+        f["help"] = help_[f["key"]]
+    m = per.get(hotels.ROOM_EXCEPTIONS) if hotels.ROOM_EXCEPTIONS in changed else None
+    return {"section": hotels.ROOM_EXCEPTIONS, "rooms": True, "free": False, "help": "", "fields": [],
+            "template": template,
+            "items": [{"room": r, "values": v} for r, v in now.items()],
+            "default_items": [{"room": r, "values": v} for r, v in file_rooms.items()],
+            "meta": {"updated_by": m["by"], "updated_at": m["at"]} if m else (
+                {"updated_by": doc["updated_by"], "updated_at": doc["updated_at"]}
+                if doc and any(k.startswith("kamers.") for k in changed) else {})}
+
+
 def view(hotel_id: str) -> dict:
     """Alle instellingen met type, standaard, huidige waarde en uitleg, per sectie."""
     from hotel_checkin.guests import repository
@@ -150,6 +186,8 @@ def view(hotel_id: str) -> dict:
     names = _env_names()
     sections = []
     for name, values in default.items():
+        if name.startswith("kamers."):
+            continue  # uitzonderingen per kamer: één sectie, zie _room_section
         free = name in hotels.FREE_SECTIONS
         now = current.get(name, {})
         keys = list(dict.fromkeys(list(values) + (list(now) if free else [])))
@@ -171,6 +209,9 @@ def view(hotel_id: str) -> dict:
         m = per.get(sec["section"]) if sec["section"] in changed else None
         sec["meta"] = {"updated_by": m["by"], "updated_at": m["at"]} if m else (
             {"updated_by": doc["updated_by"], "updated_at": doc["updated_at"]} if doc and sec["section"] in changed else {})
+    rooms = _room_section(hotel_id, field_help, changed, per, doc)
+    at = next((n + 1 for n, x in enumerate(sections) if x["section"] == "kamers"), len(sections))
+    sections.insert(at, rooms)
     return {"sections": sections, "meta": {"source": "monitor" if doc else "file",
                                            "updated_by": doc["updated_by"] if doc else "",
                                            "updated_at": doc["updated_at"] if doc else ""}}
@@ -199,6 +240,13 @@ def validate(hotel_id: str, changes: dict) -> dict:
     default = _sections(hotels.load_hotel_file(hotel_id))
     out: dict[str, dict] = {}
     for section, values in (changes or {}).items():
+        if section == hotels.ROOM_EXCEPTIONS:
+            rooms = _validate_rooms(hotel_id, values)
+            if rooms is not None:
+                out[section] = rooms
+            continue
+        if section.startswith("kamers.") and section in default:
+            continue  # oude vorm (één sectie per kamer): vervangen door de lijst hierboven
         if section not in default or not isinstance(values, dict):
             raise ValueError(f"Onbekende sectie: {section}")
         base = default[section]
@@ -227,6 +275,36 @@ def validate(hotel_id: str, changes: dict) -> dict:
     return out
 
 
+def _validate_rooms(hotel_id: str, values) -> dict | None:
+    """Uitzonderingen per kamer: {kamernummer: {veld: waarde}}. Lege velden vallen weg. None = gelijk aan het bestand."""
+    if not isinstance(values, dict):
+        raise ValueError("Uitzonderingen per kamer: verkeerde vorm")  # noqa: TRY004 - getoond in de monitor
+    file_rooms = hotels.room_exceptions(hotels.load_hotel_file(hotel_id))
+    kinds = {f["key"]: f["type"] for f in _room_template(file_rooms)}
+    out: dict[str, dict] = {}
+    for room, fields in values.items():
+        room = str(room).strip()
+        if not re.fullmatch(r"[\w-]{1,20}", room):
+            raise ValueError(f"Uitzonderingen per kamer: ongeldig kamernummer {room!r}")
+        if room in out:
+            raise ValueError(f"Uitzonderingen per kamer: kamer {room} staat er twee keer")
+        if not isinstance(fields, dict):
+            raise ValueError(f"Kamer {room}: verkeerde vorm")  # noqa: TRY004 - getoond in de monitor
+        clean = {}
+        for k, v in fields.items():
+            if not re.fullmatch(r"[a-z][a-z0-9_]{0,40}", str(k)):
+                raise ValueError(f"Kamer {room}: ongeldige naam {k!r}")
+            kind = kinds.get(k, "text")
+            value = _coerce(kind, v, f"kamer {room}.{k}")
+            if kind == "bool":
+                if value or k in file_rooms.get(room, {}):
+                    clean[k] = value
+            elif str(value).strip() or (k in file_rooms.get(room, {}) and value == file_rooms[room][k]):
+                clean[k] = str(value).strip()
+        out[room] = clean
+    return None if out == file_rooms else out
+
+
 def save(hotel_id: str, changes: dict, user: str, only: list[str] | None = None) -> dict:
     """Bewaar de wijzigingen (fout met uitleg als iets niet klopt). Met only: alleen die secties (knop Bewaren of
     Terug naar standaard van één sectie); de andere secties blijven zoals ze bewaard waren."""
@@ -238,7 +316,8 @@ def save(hotel_id: str, changes: dict, user: str, only: list[str] | None = None)
     before = dict((doc or {}).get("value") or {})
     if only:
         clean = validate(hotel_id, {k: v for k, v in (changes or {}).items() if k in only})
-        merged = {k: v for k, v in before.items() if k not in only} | clean
+        drop = set(only) | ({k for k in before if k.startswith("kamers.")} if hotels.ROOM_EXCEPTIONS in only else set())
+        merged = {k: v for k, v in before.items() if k not in drop} | clean
     else:
         merged = validate(hotel_id, changes)
     if merged:

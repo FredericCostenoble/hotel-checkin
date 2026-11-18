@@ -84,13 +84,30 @@ def load_hotel(hotel_id: str) -> dict:
         return base
     merged = copy.deepcopy(base)
     for section, values in changes.items():
+        if section == ROOM_EXCEPTIONS:
+            continue  # hieronder, na de rest
         target = merged
         for part in section.split("."):  # bv. "salto.rooms"
             target = target.setdefault(part, {})
         if isinstance(values, dict) and section in FREE_SECTIONS:
             target.clear()  # vrije lijst (kamers, sjablonen): de bewaarde versie vervangt alles
         target.update(values)
+    if isinstance(changes.get(ROOM_EXCEPTIONS), dict):
+        # Uitzonderingen per kamer: de bewaarde lijst vervangt alle [kamers.<nummer>] van het bestand
+        rooms = merged.setdefault("kamers", {})
+        for k in [k for k, v in rooms.items() if isinstance(v, dict)]:
+            del rooms[k]
+        rooms.update(copy.deepcopy(changes[ROOM_EXCEPTIONS]))
     return merged
+
+
+# Uitzonderingen per kamer ([kamers.<nummer>] in het bestand): in de monitor één lijst, bewaard onder deze naam
+ROOM_EXCEPTIONS = "kamers.uitzonderingen"
+
+
+def room_exceptions(cfg: dict) -> dict[str, dict]:
+    """Kamers met een eigen naam, ingang of verdieping: kamernummer -> instellingen."""
+    return {str(k): v for k, v in cfg.get("kamers", {}).items() if isinstance(v, dict)}
 
 
 # Secties zonder vaste sleutels: kamer -> Salto-deur, WhatsApp-sjablonen per bericht en taal

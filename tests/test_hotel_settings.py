@@ -81,3 +81,28 @@ def test_list_time_is_a_robot_time():
     with pytest.raises(ValueError):
         hs.validate("lucca", {"ontbijtlijst": {"uur": "17:45"}})
     assert hs.validate("lucca", {"ontbijtlijst": {"uur": "18:00"}}) == {"ontbijtlijst": {"uur": "18:00"}}
+
+
+def test_room_exceptions_one_section_same_fields_add_and_remove():
+    """Uitzonderingen per kamer: één lijst, dezelfde velden voor elke kamer, zelf kamers toevoegen en weghalen."""
+    v = hotel_settings.view("lucca")
+    names = [s["section"] for s in v["sections"]]
+    assert not any(n.startswith("kamers.") and n != hotels.ROOM_EXCEPTIONS for n in names)
+    rooms = next(s for s in v["sections"] if s["section"] == hotels.ROOM_EXCEPTIONS)
+    keys = [f["key"] for f in rooms["template"]]
+    assert {"verdieping", "lijst", "twin", "naam_nl", "kort_de", "toegang_fr"} <= set(keys)
+    assert [x["room"] for x in rooms["items"]] == ["2", "20", "16"]
+    # Kamer 16 krijgt een eigen naam, kamer 20 valt weg
+    items = {x["room"]: dict(x["values"]) for x in rooms["items"] if x["room"] != "20"}
+    items["16"] |= {"naam_nl": "twin kamer", "lijst": "", "verdieping": ""}
+    hotel_settings.save("lucca", {hotels.ROOM_EXCEPTIONS: items}, "fred", only=[hotels.ROOM_EXCEPTIONS])
+    cfg = hotels.load_hotel("lucca")["kamers"]
+    assert "20" not in cfg and cfg["16"] == {"twin": True, "naam_nl": "twin kamer"} and cfg["2"]["naam_nl"] == "historische suite"
+    assert cfg["lijst_volgorde"][0] == "20"  # gewone instellingen van [kamers] blijven
+    with pytest.raises(ValueError):
+        hotel_settings.save("lucca", {hotels.ROOM_EXCEPTIONS: {"1 2": {}}}, "fred", only=[hotels.ROOM_EXCEPTIONS])
+    # Terug naar het bestand
+    file_items = {x["room"]: x["values"] for x in rooms["default_items"]}
+    hotel_settings.save("lucca", {hotels.ROOM_EXCEPTIONS: file_items}, "fred", only=[hotels.ROOM_EXCEPTIONS])
+    assert "20" in hotels.load_hotel("lucca")["kamers"]
+    assert hotels.ROOM_EXCEPTIONS not in ((repo.get_config_doc("lucca", hotels.SETTINGS_DOC) or {}).get("value") or {})

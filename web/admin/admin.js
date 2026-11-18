@@ -63,7 +63,7 @@ const T = {
     sec_schakelaars: "Hoofdschakelaars", sec_hotel: "Hotel", sec_test: "Testomgeving", sec_workflow_parameters: "Toeristenbelasting en munt", sec_reviews: "Reviews", sec_verzending: "Afzender van de mails", sec_receptie: "Receptie", sec_checkout: "Check-out", sec_ontbijt: "Ontbijt", sec_betaalverzoek: "Betaalverzoeken",
     sec_wifi: "Wifi", sec_parking: "Parking", sec_nood: "Noodnummer", sec_doorschakelen: "Oproepen doorschakelen", sec_twilio: "Twilio (sms en WhatsApp)", sec_robot: "Robot",
     sec_messaging: "Berichten", sec_whatsapp: "WhatsApp-sjablonen", sec_retention: "Bewaartermijnen", sec_salto: "Salto",
-    sec_salto_rooms: "Salto: kamers en deuren", sec_lighthouse: "Lighthouse", sec_checkin: "Check-in-formulier",
+    sec_salto_rooms: "Salto: kamers en deuren", sec_lighthouse: "Lighthouse", sec_checkin: "Check-in-formulier", sec_kuislijst_label_tekst: "Schoonmaaklijst: tekst van de labels", unit_eerste_cijfer: "eerste cijfer van het kamernummer", unit_geen: "geen verdieping tonen", sec_bewaking: "Bewaking", sec_beheer: "Beheer",
     sec_privacy: "Privacyverklaring", sec_kleuren: "Kleuren", settings: "Instellingen", back: "Monitor", open_lh: "Openen in Lighthouse", pl_not_tried: "niet geprobeerd", backup: "extra adres uit het check-in-formulier",
     rs_now: "Nu versturen", rs_again: "Opnieuw versturen", rs_confirm: (step, ch, to) => `${step} nu versturen per ${ch} naar ${to}?`,
     rs_confirm_test: (step, ch, test, to) => `${step} nu versturen per ${ch} naar het testadres ${test}? (bedoeld voor ${to}; in de testomgeving gaat niets naar de gast)`,
@@ -156,7 +156,7 @@ const T = {
     sec_schakelaars: "Main switches", sec_hotel: "Hotel", sec_test: "Test environment", sec_workflow_parameters: "City tax and currency", sec_reviews: "Reviews", sec_verzending: "Mail sender", sec_receptie: "Reception", sec_checkout: "Check-out", sec_ontbijt: "Breakfast", sec_betaalverzoek: "Payment requests",
     sec_wifi: "Wi-Fi", sec_parking: "Parking", sec_nood: "Emergency number", sec_doorschakelen: "Call forwarding", sec_twilio: "Twilio (SMS and WhatsApp)", sec_robot: "Robot",
     sec_messaging: "Messages", sec_whatsapp: "WhatsApp templates", sec_retention: "Retention", sec_salto: "Salto",
-    sec_salto_rooms: "Salto: rooms and doors", sec_lighthouse: "Lighthouse", sec_checkin: "Check-in form",
+    sec_salto_rooms: "Salto: rooms and doors", sec_lighthouse: "Lighthouse", sec_checkin: "Check-in form", sec_kuislijst_label_tekst: "Cleaning list: label text", unit_eerste_cijfer: "first digit of the room number", unit_geen: "do not show a floor", sec_bewaking: "Monitoring", sec_beheer: "Administration",
     sec_privacy: "Privacy statement", sec_kleuren: "Colours", settings: "Settings", back: "Monitor", open_lh: "Open in Lighthouse", pl_not_tried: "not tried", backup: "extra address from the check-in form",
     rs_now: "Send now", rs_again: "Send again", rs_confirm: (step, ch, to) => `Send ${step} now by ${ch} to ${to}?`,
     rs_confirm_test: (step, ch, test, to) => `Send ${step} now by ${ch} to the test address ${test}? (meant for ${to}; in the test environment nothing goes to the guest)`,
@@ -191,7 +191,18 @@ const T = {
 };
 // Teksten van het ontwerp (Claude Design, canvas Beheerapp Hotel Lucca)
 Object.assign(T.nl, {
-  m_arrives: d => `aankomst ${d}`, dlg_send: "Versturen", dlg_delete: "Verwijderen", dlg_reset: "Terugzetten", dlg_leave: "Niet bewaren en verder",
+  m_arrives: d => `aankomst ${d}`, dlg_send: "Versturen",
+  rx_title: "Uitzonderingen per kamer", rx_help: "Kamers die afwijken van de rest: eigen naam, eigen ingang, geen verdieping, twin. Alle andere kamers volgen de regels hierboven.",
+  rx_add: "Uitzondering toevoegen", rx_edit: "Aanpassen", rx_close: "Klaar", rx_del: "Verwijderen", rx_room: "Kamernummer", rx_none: "Nog geen uitzonderingen.",
+  rx_new: "nieuwe uitzondering", rx_del_confirm: r => `De uitzondering voor kamer ${r} verwijderen? Ze verdwijnt pas als je bewaart.`,
+  rx_no_room: "Vul bij elke uitzondering een kamernummer in.", rx_dup: r => `Kamer ${r} staat er twee keer.`, rx_empty: "geen waarden",
+  rx_f_verdieping: ["Verdieping", "Leeg = geen verdieping tonen in de mail en de sms (bv. een eigen ingang). Of een getal, bv. 0 voor de benedenverdieping."],
+  rx_f_lijst: ["Naam op de lijsten", "Eigen naam in plaats van het nummer op de ontbijt- en schoonmaaklijst (bv. App). Leeg = het nummer."],
+  rx_f_twin: ["Twin kamer", "Standaard opgemaakt met 2 aparte bedden. Het label DOUBLE OPMAKEN komt dan bij de opmerkingen op de schoonmaaklijst."],
+  rx_f_naam: ["Naam", "In de code-mail, na het kamernummer (bv. Kamer 2, historische suite)."],
+  rx_f_kort: ["Kort", "In de sms, na het kamernummer."],
+  rx_f_toegang: ["Toegang", "Uitleg onder de code in de mail, bv. hoe de gast bij de eigen ingang komt."],
+  rx_lang: { nl: "Nederlands", fr: "Frans", en: "Engels", de: "Duits" }, dlg_delete: "Verwijderen", dlg_reset: "Terugzetten", dlg_leave: "Niet bewaren en verder",
   nav_lists: "Lijsten", nav_messages: "Berichten", logout: "Afmelden", search_lbl: "Zoeken",
   tst_bar: "Testomgeving: berichten gaan alleen naar de testadressen", env_name_prd: "Productie", env_name_tst: "Testomgeving",
   c_stay: "Verblijf", c_res: "Reservatie", c_room_rate: "Kamer en tarief", c_channel: "Kanaal",
@@ -258,7 +269,18 @@ Object.assign(T.nl, {
   gp_nowsuffix: "(nu)", gp_wa: "WhatsApp", gp_sms: "Sms", gp_none: "Kies een gast in de lijst.", gp_stays_m: n => `${n} verblijven`,
 });
 Object.assign(T.en, {
-  m_arrives: d => `arriving ${d}`, dlg_send: "Send", dlg_delete: "Delete", dlg_reset: "Reset", dlg_leave: "Leave without saving",
+  m_arrives: d => `arriving ${d}`, dlg_send: "Send",
+  rx_title: "Room exceptions", rx_help: "Rooms that differ from the rest: own name, own entrance, no floor, twin. All other rooms follow the rules above.",
+  rx_add: "Add exception", rx_edit: "Edit", rx_close: "Done", rx_del: "Delete", rx_room: "Room number", rx_none: "No exceptions yet.",
+  rx_new: "new exception", rx_del_confirm: r => `Delete the exception for room ${r}? It is only gone after you save.`,
+  rx_no_room: "Fill in a room number for every exception.", rx_dup: r => `Room ${r} is listed twice.`, rx_empty: "no values",
+  rx_f_verdieping: ["Floor", "Empty = no floor in the mail and the SMS (e.g. own entrance). Or a number, e.g. 0 for the ground floor."],
+  rx_f_lijst: ["Name on the lists", "Own name instead of the number on the breakfast and cleaning list (e.g. App). Empty = the number."],
+  rx_f_twin: ["Twin room", "Made up with 2 separate beds by default. The label DOUBLE OPMAKEN then goes to the remarks on the cleaning list."],
+  rx_f_naam: ["Name", "In the code mail, after the room number (e.g. Room 2, historic suite)."],
+  rx_f_kort: ["Short", "In the SMS, after the room number."],
+  rx_f_toegang: ["Access", "Explanation under the code in the mail, e.g. how the guest gets to the own entrance."],
+  rx_lang: { nl: "Dutch", fr: "French", en: "English", de: "German" }, dlg_delete: "Delete", dlg_reset: "Reset", dlg_leave: "Leave without saving",
   nav_lists: "Lists", nav_messages: "Messages", logout: "Sign out", search_lbl: "Search",
   tst_bar: "Test environment: messages only go to the test addresses", env_name_prd: "Production", env_name_tst: "Test environment",
   c_stay: "Stay", c_res: "Reservation", c_room_rate: "Room and rate", c_channel: "Channel",
@@ -2007,6 +2029,16 @@ const HS_TEXT = {
    "kuislijst.controle": ["Controle", "Functie bovenaan de lijst (Controle: ...), geen naam. Leeg = geen regel."],
    "kuislijst.extra_rijen": ["Vaste rijen onderaan", "Bv. TOILETTEN. Meer rijen met een komma."],
    "kuislijst.labels": ["Labels als opmerking", "Labels op het planbord in Lighthouse die bij de opmerkingen komen, bv. BABY BED. Meer labels met een komma."],
+   "hotel.tijdzone": ["Tijdzone", "Voor de kalender van de workflow (herinnering, code-mail, opruimen), bv. Europe/Brussels."],
+   "test.guest_names": ["Testgasten (achternaam)", "Reservaties van deze gasten zijn testreservaties: de robot mag er ook in TST in Lighthouse schrijven. Echte reservaties leest TST alleen. Meer namen met een komma."],
+   "checkout.kamer_tot": ["Kamerdeur open tot", "Op de dag van vertrek werkt de code aan de kamerdeur nog tot dit uur (marge na de check-out, niet in de mails)."],
+   "checkout.voordeur_tot": ["Voordeur open tot", "Op de dag van vertrek werkt de code aan de voordeur (en andere gemeenschappelijke deuren) nog tot dit uur, bv. om de bagage op te halen."],
+   "twilio.contact_whatsapp": ["WhatsApp-nummer van het hotel", "Antwoordt een gast op het nummer van de automatische berichten, dan krijgt hij dit nummer (WhatsApp Business-app van het hotel) in een automatisch antwoord."],
+   "twilio.doorsturen": ["Antwoorden doorsturen naar", "Antwoorden van gasten op de automatische berichten gaan per mail naar deze adressen. Meer adressen met een komma."],
+   "salto.pin_lengte": ["Lengte van de pincode", "Eigen gekozen pincodes van dit aantal cijfers (vraagt Custom Pin, Salto KS Pro). Leeg = Salto kiest de code."],
+   "salto.max_gebruikers": ["Maximum gebruikers", "Maximum aantal gebruikers van het abonnement bij Salto (personeel inbegrepen). Leeg = niet nakijken."],
+   "kamers.verdieping_regel": ["Verdieping uit het kamernummer", "eerste_cijfer: het eerste cijfer van het kamernummer is de verdieping (12 = 1e verdieping). geen: nooit een verdieping tonen. Kamers die afwijken staan bij de uitzonderingen."],
+   "beheer.prd_vrijgeven": ["Mag naar PRD zetten", "Wie op TST een geteste herstelling voor Lighthouse naar PRD mag zetten: het e-mailadres waarmee je je aanmeldt. Meer adressen met een komma."],
    "bewaking.email": ["Mail naar", "Wie het dagelijkse overzicht en de waarschuwingen krijgt. Meer adressen met een komma."],
    "bewaking.overzicht_uur": ["Dagelijks overzicht om", "Uur van de mail met de aankomsten van vandaag en morgen."],
    "bewaking.controle_uren": ["Extra controles om", "Uren waarop de aankomsten nog eens nagekeken worden (mail alleen bij een probleem). Leeg = geen."],
@@ -2322,6 +2354,16 @@ const HS_TEXT = {
    "kuislijst.controle": ["Check", "Role at the top of the list (Controle: ...), not a name. Empty = no line."],
    "kuislijst.extra_rijen": ["Fixed rows at the bottom", "E.g. TOILETTEN. More rows separated by commas."],
    "kuislijst.labels": ["Labels as remarks", "Labels on the Lighthouse planboard that are added to the remarks, e.g. BABY BED. More labels separated by commas."],
+   "hotel.tijdzone": ["Time zone", "For the calendar of the workflow (reminder, code mail, clean-up), e.g. Europe/Brussels."],
+   "test.guest_names": ["Test guests (last name)", "Reservations of these guests are test reservations: the robot may also write to Lighthouse for them in TST. TST only reads real reservations. More names separated by commas."],
+   "checkout.kamer_tot": ["Room door open until", "On the day of departure the code for the room door still works until this time (margin after check-out, not in the mails)."],
+   "checkout.voordeur_tot": ["Front door open until", "On the day of departure the code for the front door (and other shared doors) still works until this time, e.g. to pick up luggage."],
+   "twilio.contact_whatsapp": ["Hotel WhatsApp number", "When a guest replies to the number of the automatic messages, an automatic answer gives them this number (the hotel's WhatsApp Business app)."],
+   "twilio.doorsturen": ["Forward replies to", "Guest replies to the automatic messages are mailed to these addresses. More addresses separated by commas."],
+   "salto.pin_lengte": ["PIN code length", "Own chosen PIN codes with this many digits (needs Custom Pin, Salto KS Pro). Empty = Salto chooses the code."],
+   "salto.max_gebruikers": ["Maximum users", "Maximum number of users of the Salto subscription (staff included). Empty = do not check."],
+   "kamers.verdieping_regel": ["Floor from the room number", "eerste_cijfer: the first digit of the room number is the floor (12 = 1st floor). geen: never show a floor. Rooms that differ are listed under the exceptions."],
+   "beheer.prd_vrijgeven": ["May release to PRD", "Who may move a tested Lighthouse fix from TST to PRD: the e-mail address used to sign in. More addresses separated by commas."],
    "bewaking.email": ["Mail to", "Who receives the daily overview and the warnings. More addresses separated by commas."],
    "bewaking.overzicht_uur": ["Daily overview at", "Time of the mail with today's and tomorrow's arrivals."],
    "bewaking.controle_uren": ["Extra checks at", "Times at which arrivals are checked again (mail only if there is a problem). Empty = none."],
@@ -2481,7 +2523,7 @@ function hsInput(sec, f, i) {
 
 // Instellingen in twee groepen: Dagelijks (wat het hotel geregeld aanpast, in deze volgorde) en Technisch (de rest)
 const HS_FUNCTIONAL = ["schakelaars", "hotel", "receptie", "checkout", "doorschakelen", "nood", "ontbijtlijst", "kuislijst",
-  "ontbijt", "wifi", "parking", "reviews", "workflow_parameters"];
+  "kamers", "ontbijt", "wifi", "parking", "reviews", "workflow_parameters"];
 let hsGroup = (() => { try { return localStorage.getItem("hsGroup") || "func"; } catch (e) { return "func"; } })();
 
 function hsShown() {
@@ -2490,7 +2532,7 @@ function hsShown() {
   const order = s => { const i = HS_FUNCTIONAL.indexOf(root(s)); return i < 0 ? 999 : i; };
   return hs.sections
     .map((s, n) => [s, n])
-    .filter(([s]) => (hsGroup === "func") === HS_FUNCTIONAL.includes(root(s)))
+    .filter(([s]) => !s.rooms && !(root(s) === "test" && isPrd()) && (hsGroup === "func") === HS_FUNCTIONAL.includes(root(s)))
     .sort(([a, i], [b, j]) => order(a) - order(b) || i - j)
     .map(([s]) => s);
 }
@@ -2507,6 +2549,77 @@ function hsField(sec, f, i) {
   return `<input class="input" type="text" ${attrs} value="${esc(v ?? "")}">`;
 }
 
+// ---- Uitzonderingen per kamer: in de sectie Kamers, een lijst met per kamer zijn waarden
+const RX = "kamers.uitzonderingen";
+let rxOpen = -1;  // welke uitzondering open staat om aan te passen
+const rxSec = () => hs && hs.sections.find(x => x.rooms);
+const rxItems = () => hsEdit[RX] || rxSec().items;
+const rxEdit = () => (hsEdit[RX] = hsEdit[RX] || rxSec().items.map(x => ({ room: x.room, values: { ...x.values } })));
+function rxLabel(key) {
+  const m = key.match(/^(naam|kort|toegang)_(\w+)$/);
+  if (m) return [`${t("rx_f_" + m[1])[0]} (${m[2].toUpperCase()})`, t("rx_f_" + m[1])[1]];
+  return t("rx_f_" + key) || [key, ""];
+}
+function rxSummary(x) {
+  const v = x.values, l = lang === "en" ? "en" : "nl", bits = [];
+  const nm = v["naam_" + l] || v.naam_nl || v.naam_en;
+  if (nm) bits.push(`<b>${esc(nm)}</b>`);
+  if (v["kort_" + l] || v.kort_nl) bits.push(esc(v["kort_" + l] || v.kort_nl));
+  if (v.lijst) bits.push(`${esc(t("rx_f_lijst")[0])}: ${esc(v.lijst)}`);
+  if ("verdieping" in v) bits.push(`${esc(t("rx_f_verdieping")[0])}: ${esc(v.verdieping === "" ? "-" : v.verdieping)}`);
+  if (v.twin) bits.push(esc(t("rx_f_twin")[0]));
+  return bits.join(" · ") || `<span class="muted">${esc(t("rx_empty"))}</span>`;
+}
+function rxBlock() {
+  const sec = rxSec();
+  if (!sec) return "";
+  const items = rxItems(), tpl = sec.template;
+  const field = (n, f) => {
+    const v = items[n].values[f.key], [lbl, hlp] = rxLabel(f.key), id = `rx-${n}-${f.key}`, long = /^toegang_/.test(f.key);
+    const attrs = `id="${id}" data-rx="${n}" data-rk="${esc(f.key)}"`;
+    if (f.type === "bool") return `<div class="toggle"><div class="tx"><label class="tn" for="${id}">${esc(lbl)}</label>${hlp ? `<div class="help">${esc(hlp)}</div>` : ""}</div><input class="switch" type="checkbox" ${attrs} ${v ? "checked" : ""}></div>`;
+    const input = long ? `<textarea class="input" rows="3" ${attrs}>${esc(v ?? "")}</textarea>` : `<input class="input" type="text" ${attrs} value="${esc(v ?? "")}">`;
+    return `<div class="field"${long ? ' style="grid-column:1/-1"' : ""}><label for="${id}">${esc(lbl)}</label>${input}${hlp ? `<span class="help">${esc(hlp)}</span>` : ""}</div>`;
+  };
+  const editor = n => {
+    const base = tpl.filter(f => ["verdieping", "lijst"].includes(f.key)), bools = tpl.filter(f => f.type === "bool");
+    const langs = [...new Set(tpl.map(f => (f.key.match(/^(?:naam|kort|toegang)_(\w+)$/) || [])[1]).filter(Boolean))];
+    const extra = tpl.filter(f => f.type !== "bool" && !["verdieping", "lijst"].includes(f.key) && !/^(naam|kort|toegang)_/.test(f.key));
+    return `<div class="rx-ed">
+      <div class="fgrid"><div class="field"><label for="rx-${n}-room">${esc(t("rx_room"))}</label><input class="input" id="rx-${n}-room" data-rx="${n}" data-rk="" value="${esc(items[n].room)}"></div>${base.map(f => field(n, f)).join("")}</div>
+      ${bools.map(f => field(n, f)).join("")}
+      ${langs.map(lg => `<div class="rx-lang">${esc((t("rx_lang") || {})[lg] || lg.toUpperCase())}</div><div class="fgrid">${["naam", "kort", "toegang"].map(k => tpl.find(f => f.key === `${k}_${lg}`)).filter(Boolean).map(f => field(n, f)).join("")}</div>`).join("")}
+      ${extra.length ? `<div class="fgrid">${extra.map(f => field(n, f)).join("")}</div>` : ""}
+      <div class="row" style="justify-content:flex-end"><button type="button" class="btn2 sm" data-rx-close>${esc(t("rx_close"))}</button></div></div>`;
+  };
+  return `<div class="rx"><h3 class="rx-t">${esc(t("rx_title"))}</h3><div class="help">${esc(t("rx_help"))}</div>
+    <div class="rx-list">${items.length ? items.map((x, n) => `<div class="rx-item${n === rxOpen ? " open" : ""}">
+      <div class="rx-row"><span class="rx-room">${esc(x.room ? t("r_room", x.room) : t("rx_new"))}</span><span class="rx-sum">${rxSummary(x)}</span>
+        <span class="row" style="gap:6px;flex:none"><button type="button" class="btn2 sm" data-rx-open="${n}">${esc(n === rxOpen ? t("rx_close") : t("rx_edit"))}</button><button type="button" class="btn3" data-rx-del="${n}">${esc(t("rx_del"))}</button></span></div>
+      ${n === rxOpen ? editor(n) : ""}</div>`).join("") : `<div class="muted">${esc(t("rx_none"))}</div>`}</div>
+    <button type="button" class="btn2" data-rx-add style="align-self:flex-start">+ ${esc(t("rx_add"))}</button></div>`;
+}
+function rxWire() {
+  document.querySelectorAll("#hs-sections [data-rx]").forEach(el => el.onchange = () => {
+    const x = rxEdit()[+el.dataset.rx];
+    if (!el.dataset.rk) x.room = el.value.trim();
+    else x.values[el.dataset.rk] = el.type === "checkbox" ? el.checked : el.value;
+    hsTouched();
+  });
+  document.querySelectorAll("#hs-sections [data-rx-open]").forEach(b => b.onclick = () => { rxOpen = rxOpen === +b.dataset.rxOpen ? -1 : +b.dataset.rxOpen; renderSettings(); });
+  document.querySelectorAll("#hs-sections [data-rx-close]").forEach(b => b.onclick = () => { rxOpen = -1; renderSettings(); });
+  document.querySelectorAll("#hs-sections [data-rx-del]").forEach(b => b.onclick = async () => {
+    const n = +b.dataset.rxDel, x = rxItems()[n];
+    if (x.room && !await ask(t("rx_del_confirm", x.room), { ok: t("dlg_delete"), danger: true })) return;
+    rxEdit().splice(n, 1); rxOpen = -1; hsTouched();
+  });
+  const add = $("#hs-sections [data-rx-add]");
+  if (add) add.onclick = () => {
+    rxEdit().push({ room: "", values: {} }); rxOpen = rxItems().length - 1; hsTouched();
+    setTimeout(() => { const el = $(`#rx-${rxOpen}-room`); if (el) { el.focus(); el.scrollIntoView({ block: "center" }); } });
+  };
+}
+
 function renderSettings() {
   if (!hs || !$("#hs-sections")) return;
   document.querySelectorAll("#hs-groups label").forEach(b => b.classList.toggle("on", b.dataset.group === hsGroup));
@@ -2516,8 +2629,9 @@ function renderSettings() {
   const shown = hsShown();
   $("#hs-nav").innerHTML = shown.map((sec, n) => `<a href="#hs-s${n}" data-jump="hs-s${n}" style="display:block;padding:6px 10px;border-radius:6px;text-decoration:none;font-weight:${n === 0 ? 700 : 500};${n === 0 ? "background:#E6E9EF;" : ""}color:#2B2F38">${esc(t("sec_" + sec.section.replace(".", "_")) || sec.section)}</a>`).join("");
   // Per sectie: wie wijzigde ze laatst, en Bewaren alleen actief als er in deze sectie iets veranderde
-  const foot = sec => { const m = sec.meta || {}; const w = m.updated_at ? t("wf_changed", m.updated_by || "?", stamp(m.updated_at)) : t("wf_from_file");
-    return `<div class="row" style="justify-content:space-between;border-top:1px solid #EEF0F3;padding-top:12px"><span class="who">${esc(w)}</span><div class="row"><button class="btn3 hs-reset-btn" type="button">${esc(t("wf_reset"))}</button><button class="btn hs-save-btn" type="button" ${hsEdit[sec.section] ? "" : "disabled"}>${esc(t("wf_save"))}</button></div></div>`; };
+  const foot = sec => { const rx = sec.section === "kamers" && rxSec() ? rxSec() : null;
+    const m = rx && (rx.meta || {}).updated_at > ((sec.meta || {}).updated_at || "") ? rx.meta : sec.meta || {}; const w = m.updated_at ? t("wf_changed", m.updated_by || "?", stamp(m.updated_at)) : t("wf_from_file");
+    return `<div class="row" style="justify-content:space-between;border-top:1px solid #EEF0F3;padding-top:12px"><span class="who">${esc(w)}</span><div class="row"><button class="btn3 hs-reset-btn" type="button">${esc(t("wf_reset"))}</button><button class="btn hs-save-btn" type="button" ${hsEdit[sec.section] || (rx && hsEdit[RX]) ? "" : "disabled"}>${esc(t("wf_save"))}</button></div></div>`; };
   $("#hs-sections").innerHTML = shown.map((sec, n) => {
     const title = t("sec_" + sec.section.replace(".", "_")) || sec.section;
     const help = (HS_TEXT[lang] || HS_TEXT.en).sections[sec.section] || "";
@@ -2555,17 +2669,23 @@ function renderSettings() {
         return `<div class="toggle"><div class="tx"><label class="tn" for="hs-${id}">${esc(lbl)}</label>${hlp ? `<div class="help">${esc(hlp)}</div>` : ""}</div><input id="hs-${id}" class="switch" type="checkbox" data-sec="${esc(sec.section)}" data-key="${esc(f.key)}" ${hsValue(sec, f) ? "checked" : ""}${f.env ? " disabled" : ""}></div>`;
       }).join("");
       if (env) body += `<div class="note">${LOCK.replace('width="13" height="13"', 'width="16" height="16"')}<span>${esc(t("hs_env_note"))}</span></div>`;
+      if (sec.section === "kamers") body += rxBlock();
     }
     return `<section class="card" id="hs-s${n}" data-sec="${esc(sec.section)}"><div class="ch"><h2 class="ct">${esc(title)}</h2>${env ? `<span class="locked">${LOCK}${esc(t("hs_env_badge"))}</span>` : ""}</div>
       <div class="cb"${sec.section === "schakelaars" ? ' style="gap:0"' : ""}>${help ? `<div class="help">${esc(help)}</div>` : ""}${body}${env && !sec.fields.some(f => !f.env) ? "" : foot(sec)}</div></section>`;
   }).join("");
-  document.querySelectorAll("#hs-sections .hs-save-btn").forEach(b => b.onclick = () => saveSettings(b.closest("section").dataset.sec));
+  document.querySelectorAll("#hs-sections .hs-save-btn").forEach(b => b.onclick = () => {
+    const s = b.closest("section").dataset.sec;
+    saveSettings(s === "kamers" && rxSec() ? `kamers,${RX}` : s);
+  });
+  rxWire();
   document.querySelectorAll("#hs-sections .hs-reset-btn").forEach(b => b.onclick = async () => {
     const sec = hs.sections.find(x => x.section === b.closest("section").dataset.sec);
     if (!sec || !await ask(t("hs_sec_reset_confirm", t("sec_" + sec.section.replace(".", "_")) || sec.section), { ok: t("dlg_reset"), danger: true })) return;
     hsEdit[sec.section] = sec.free ? Object.fromEntries(sec.fields.map(f => [f.key, f.default]).filter(([, v]) => v != null))
       : Object.fromEntries(sec.fields.filter(f => !f.env).map(f => [f.key, f.default]));
-    saveSettings(sec.section);
+    if (sec.section === "kamers" && rxSec()) { hsEdit[RX] = rxSec().default_items.map(x => ({ room: x.room, values: { ...x.values } })); rxOpen = -1; }
+    saveSettings(sec.section === "kamers" && rxSec() ? `kamers,${RX}` : sec.section);
   });
   // Gsm (ontwerp m-Instellingen-hotel): groep en sectie kiezen, één sectie tegelijk
   if ($("#hs-mgroup")) {
@@ -2609,7 +2729,12 @@ function hsTouched() {
 async function saveSettings(only) {
   // Alles wat op het scherm staat (ook ongewijzigd): de server bewaart alleen wat verschilt van het bestand
   const body = {};
+  const rooms = rxSec() ? rxItems() : [];
+  if (rooms.some(x => !x.room)) { notice(t("rx_no_room")); return; }
+  const dup = rooms.map(x => x.room).find((r, n, a) => a.indexOf(r) !== n);
+  if (dup) { notice(t("rx_dup", dup)); return; }
   hs.sections.forEach(sec => {
+    if (sec.rooms) { body[sec.section] = Object.fromEntries(rooms.map(x => [x.room, x.values])); return; }
     if (sec.free) body[sec.section] = hsEdit[sec.section] || Object.fromEntries(sec.fields.map(f => [f.key, f.value]));
     else body[sec.section] = Object.fromEntries(sec.fields.map(f => [f.key, hsValue(sec, f)]));
   });
@@ -2620,7 +2745,7 @@ async function saveSettings(only) {
   const d = await r.json().catch(() => ({}));
   if (!r.ok) { $("#hs-state").textContent = d.error || `${t("load_error")} ${r.status}`; $("#hs-state").className = "err"; return; }
   hs = d;
-  if (sections) { sections.split(",").forEach(k => delete hsEdit[k]); hsDirty = Object.keys(hsEdit).length > 0; }
+  if (sections) { sections.split(",").forEach(k => delete hsEdit[k]); hsDirty = Object.keys(hsEdit).length > 0; if (sections.includes(RX)) rxOpen = -1; }
   else { hsEdit = {}; hsDirty = false; }
   $("#hs-state").className = "muted";
   $("#hs-state").textContent = t("wf_saved");

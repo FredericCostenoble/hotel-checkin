@@ -375,3 +375,15 @@ html body .dlg-back.v2 .btn.danger{background:#8B2E2E}
   .dlg-back.v2 .dlg-f{flex-direction:column-reverse;padding-bottom:calc(20px + env(safe-area-inset-bottom))}
   .dlg-back.v2 .dlg-f .btn,.dlg-back.v2 .dlg-f .btn2{width:100%;min-height:46px}
 }
+/* Uitzonderingen per kamer (instellingen, sectie Kamers) */
+.v2 .rx{display:flex;flex-direction:column;gap:10px;border-top:1px solid #EEF0F3;padding-top:14px}
+html body .v2 .rx-t{font-family:"Source Serif 4",Georgia,serif;font-size:17px;font-weight:600;color:#23262E}
+.v2 .rx-list{display:flex;flex-direction:column;gap:8px}
+.v2 .rx-item{border:1px solid #E3E6EB;border-radius:10px;background:#fff}
+.v2 .rx-item.open{border-color:#23262E}
+.v2 .rx-row{display:flex;align-items:center;gap:14px;padding:10px 14px;flex-wrap:wrap}
+.v2 .rx-room{font-weight:700;min-width:80px;color:#23262E}
+.v2 .rx-sum{flex:1 1 260px;min-width:0;color:#565B66;font-size:14px}
+.v2 .rx-ed{display:flex;flex-direction:column;gap:12px;padding:4px 14px 14px;border-top:1px solid #EEF0F3}
+.v2 .rx-lang{font-size:12px;letter-spacing:.12em;text-transform:uppercase;font-weight:700;color:#5C6478;margin-top:6px}
+.v2 .rx-ed textarea.input{min-height:76px;padding-top:9px;resize:vertical;font-family:inherit;line-height:1.45}
