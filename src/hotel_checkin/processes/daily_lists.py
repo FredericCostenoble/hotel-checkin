@@ -91,6 +91,8 @@ def settings(hotel_id: str, kind: str) -> dict:
             "notes": bool(cfg.get("opmerkingen", False)),
             # Hoe een label op de lijst staat (bv. DOUBLE OPMAKEN -> DOUBLE); anders de naam van het label
             "label_texts": {str(k).upper(): str(v) for k, v in dict(cfg.get("label_tekst") or {}).items()},
+            # Twin kamer ([kamers.<nummer>] twin = true) zonder label uit labels_twin: deze opmerking; leeg = geen
+            "twin_text": str(cfg.get("twin_tekst", "TWIN") or ""),
             # Kamer die gisteren Out of order stond: Leave met deze opmerking (ze is al vrij)
             "out_of_order_text": str(cfg.get("buiten_dienst_tekst", "from yesterday") or "")}
 
@@ -399,6 +401,9 @@ def _cleaning_plan(day: date, reservations: list[Reservation], words: list[str],
             texts = twin.get("label_texts") or {}
             remark += [texts.get(lab.upper(), lab.capitalize()) for lab in x["labels"] if lab.upper() in wanted
                        or (lab.upper() in twin_labels and room in twin_rooms_)]
+            if (room in twin_rooms_ and twin.get("twin_text")
+                    and not any(lab.upper() in twin_labels for lab in x["labels"])):
+                remark.insert(0, twin["twin_text"])  # twin kamer zonder label DOUBLE OPMAKEN: zo laten (TWIN)
             if any(lab.upper() in memo_labels for lab in x["labels"]):
                 memo = " ".join((r.internal_memo or "").split()) if r else ""
                 if memo:
@@ -431,7 +436,8 @@ def build_cleaning(hotel_id: str, day: date, reservations: list[Reservation], wo
     if stays is not None:
         _cleaning_plan(day, reservations, words, labels or [], stays, per_room,
                        {"rooms": twin_rooms(hotel_id), "labels": labels_twin or [], "memo": labels_memo or [],
-                        "persons": cfg["persons"], "notes": cfg["notes"], "label_texts": cfg["label_texts"]})
+                        "persons": cfg["persons"], "notes": cfg["notes"], "label_texts": cfg["label_texts"],
+                        "twin_text": cfg["twin_text"]})
         before, d = (day - timedelta(days=1)).isoformat(), day.isoformat()
         off = {(x["room"], x["date"]) for x in out_of_order or []}
         for room in sorted({room for room, x in off if x == before and (room, d) not in off}):
