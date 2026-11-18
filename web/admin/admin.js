@@ -189,6 +189,33 @@ const T = {
     exec_title: "Runs according to Azure", exec_end: "End", exec_status: "Status", exec_name: "Name",
   },
 };
+// Teksten van het ontwerp (Claude Design, canvas Beheerapp Hotel Lucca)
+Object.assign(T.nl, {
+  nav_lists: "Lijsten", nav_messages: "Berichten", logout: "Afmelden", search_lbl: "Zoeken",
+  tst_bar: "Testomgeving: berichten gaan alleen naar de testadressen", env_name_prd: "Productie", env_name_tst: "Testomgeving",
+  c_stay: "Verblijf", c_res: "Reservatie", c_room_rate: "Kamer en tarief", c_channel: "Kanaal",
+  r_until: (d, n) => `tot ${d}, ${n} n.`, r_booked: d => `geboekt ${d}`, r_updated: d => `bijgewerkt ${d}`,
+  r_returning: n => `terugkerend (${n}x)`, r_form: "Formulier", r_noform: "Geen formulier", r_stairs: "Trappen",
+  r_msgs_on: "Berichten aan", r_msgs_off: "Berichten uit", r_cancelled: "Geannuleerd", r_rooms: n => `${n} kamers`,
+  r_roomtype: "kamertype", r_room: n => `Kamer ${n}`, r_p: n => `${n} p.`, r_flow: f => `flow ${f}`, r_rate_nrf: "NFR", r_rate_flex: "Annuleerbaar",
+  r_next: x => `Volgende: ${x}`, r_next_m: x => `volgende: ${x}`, r_none: "geen", r_none_off: "geen (uit)", r_failed: x => `${x} mislukt`,
+  r_emails: "E-mailadressen", r_phones: "Gsm-nummers", r_details: n => `Details ${n}`,
+  res_count: n => `<b style="color:#2B2F38">${n} reservaties</b>`, res_sel: 'Gastcommunicatie staat op <b>selectie</b>: alleen reservaties met het label "Berichten aan" krijgen berichten.',
+  sw_robot: "Robot", sw_go: "Naar de instellingen", sw_st_on: "aan", sw_st_off: "uit", sw_st_sel: "selectie",
+});
+Object.assign(T.en, {
+  nav_lists: "Lists", nav_messages: "Messages", logout: "Sign out", search_lbl: "Search",
+  tst_bar: "Test environment: messages only go to the test addresses", env_name_prd: "Production", env_name_tst: "Test environment",
+  c_stay: "Stay", c_res: "Reservation", c_room_rate: "Room and rate", c_channel: "Channel",
+  r_until: (d, n) => `until ${d}, ${n} n.`, r_booked: d => `booked ${d}`, r_updated: d => `updated ${d}`,
+  r_returning: n => `returning (${n}x)`, r_form: "Form", r_noform: "No form", r_stairs: "Stairs",
+  r_msgs_on: "Messages on", r_msgs_off: "Messages off", r_cancelled: "Cancelled", r_rooms: n => `${n} rooms`,
+  r_roomtype: "room type", r_room: n => `Room ${n}`, r_p: n => `${n} p.`, r_flow: f => `flow ${f}`, r_rate_nrf: "NRF", r_rate_flex: "Refundable",
+  r_next: x => `Next: ${x}`, r_next_m: x => `next: ${x}`, r_none: "none", r_none_off: "none (off)", r_failed: x => `${x} failed`,
+  r_emails: "E-mail addresses", r_phones: "Mobile numbers", r_details: n => `Details ${n}`,
+  res_count: n => `<b style="color:#2B2F38">${n} reservations</b>`, res_sel: 'Guest communication is set to <b>selection</b>: only reservations with the label "Messages on" get messages.',
+  sw_robot: "Robot", sw_go: "To the settings", sw_st_on: "on", sw_st_off: "off", sw_st_sel: "selection",
+});
 let lang = "nl";
 const t = (k, ...a) => { const v = T[lang][k]; return typeof v === "function" ? v(...a) : v; };
 const locale = () => (lang === "en" ? "en-GB" : "nl-BE");
@@ -229,9 +256,10 @@ function setLang(l) {
   document.querySelectorAll("[data-t]").forEach(e => { e.textContent = t(e.dataset.t); });
   document.querySelectorAll("[data-tp]").forEach(e => { e.placeholder = t(e.dataset.tp); });
   document.querySelectorAll("[data-tt]").forEach(e => { e.title = t(e.dataset.tt); });
-  document.querySelectorAll(".langs button").forEach(b => b.classList.toggle("active", b.dataset.lang === lang));
-  if ($("#env-bar")) $("#env-bar").textContent = t("env_bar_" + ($(".brand .env")?.textContent || "").trim().toLowerCase());
-  if ($("#env-switch") && !$("#env-switch").hidden) $("#env-switch").textContent = t("env_to_" + ($("#env-switch").className.includes("to-prd") ? "prd" : "tst"));
+  document.querySelectorAll("[data-lang]").forEach(b => { b.classList.toggle("active", b.dataset.lang === lang); b.classList.toggle("on", b.dataset.lang === lang); });
+  const envNow = ($("#env")?.textContent || "").trim().toLowerCase();
+  if ($("#envname")) $("#envname").textContent = t("env_name_" + envNow) || "";
+  if ($("#env-switch") && !$("#env-switch").hidden) $("#env-switch").textContent = t("env_to_" + (envNow === "tst" ? "prd" : "tst"));
   renderSwitches();
   if (PAGE === "main") { render(); renderGuests(); LIST_KINDS.forEach(k => renderList(k)); } else { renderWorkflow(); renderSettings(); if (runsData) renderRuns(runsData); }
 }
@@ -241,18 +269,21 @@ function setLang(l) {
 const NOT_BUILT = [];
 
 function renderSwitches() {
-  const el = $("#switches");
+  const el = $("#switches"), mel = $("#mswitches");
   if (!el) return;
   const sw = hotelNow().switches;
   el.hidden = !sw;
+  if (mel) mel.hidden = !sw;
   if (!sw) return;
-  el.title = t("sw_title");
-  el.innerHTML = [["reservaties", "sw_read"], ["overschrijvingen", "sw_payout"], ["berichten", "sw_messages"], ["ontbijt_labels", "sw_breakfast"], ["ontbijtlijst", "sw_blist"], ["kuislijst", "sw_clist"], ["ontgrendelen", "sw_unlock"]].map(([k, label]) =>
-    // Groen = aan, grijs = uit (geen AAN/UIT in de tekst; staat wel in de tooltip)
-    // Berichten: uit, aan of selectie (oranje: alleen voor aangevinkte reservaties)
-    k === "berichten" && sw[k] === "selectie"
-      ? `<span class="sw sel" title="${esc(t(label))}: ${esc(t("sw_selection"))}">${esc(t(label))} (${esc(t("sw_selection"))})</span>`
-      : `<span class="sw ${sw[k] && sw[k] !== "uit" ? "on" : "off"}${NOT_BUILT.includes(k) ? " todo" : ""}" title="${esc(t(label))}: ${t(sw[k] && sw[k] !== "uit" ? "sw_on" : "sw_off")}">${esc(t(label))}${NOT_BUILT.includes(k) ? ` (${t("sw_not_built")})` : ""}</span>`).join("");
+  const items = [["reservaties", "sw_robot"], ["overschrijvingen", "sw_payout"], ["ontbijt_labels", "sw_breakfast"], ["ontbijtlijst", "sw_blist"], ["kuislijst", "sw_clist"], ["ontgrendelen", "sw_unlock"], ["berichten", "sw_messages"]];
+  const html = items.map(([k, label]) => {
+    const st = k === "berichten" && sw[k] === "selectie" ? "sel" : sw[k] && sw[k] !== "uit" ? "on" : "off";
+    return `<a class="sw ${st}" href="settings.html#hotel" title="${esc(t("sw_go"))}"><span class="d d-${st}"></span>${esc(t(label))} <span class="st">${esc(t("sw_st_" + st))}</span></a>`;
+  }).join("");
+  el.innerHTML = html;
+  if (mel) mel.innerHTML = html;
+  // Uitleg bij selectie (zoals in het ontwerp, onder de titel Reservaties)
+  if ($("#res-sub")) { $("#res-sub").hidden = sw.berichten !== "selectie"; $("#res-sub").innerHTML = t("res_sel"); }
 }
 
 async function refreshSwitches() {
@@ -288,14 +319,20 @@ async function loadRepair() {
 }
 
 async function init() {
-  document.querySelectorAll(".langs button").forEach(b => b.onclick = () => setLang(b.dataset.lang));
+  document.querySelectorAll("[data-lang]").forEach(b => b.onclick = () => setLang(b.dataset.lang));
   setLang(store("lang") || (navigator.language || "nl").slice(0, 2));
   const hotels = await get("/api/monitor/hotels");
   hotelList = hotels;
   $("#hotel").innerHTML = hotels.map(h => `<option value="${esc(h.id)}">${esc(h.name)}</option>`).join("");
   const saved = store("hotel");
   if (saved && hotels.some(h => h.id === saved)) $("#hotel").value = saved;
-  $("#hotel").onchange = () => { store("hotel", $("#hotel").value); renderSwitches(); loadRepair(); load(); };
+  const setLogo = () => { const h = hotelNow(); ["#logo", "#mlogo"].forEach(s => { if ($(s) && h.logo_url) { $(s).src = h.logo_url; $(s).alt = h.name; } }); };
+  setLogo();
+  $("#hotel").onchange = () => { store("hotel", $("#hotel").value); setLogo(); renderSwitches(); loadRepair(); load(); };
+  fetch("/.auth/me").then(r => r.ok ? r.json() : null).then(d => { const u = d && (d.clientPrincipal || (d[0] || {})); if (u && $("#me")) $("#me").textContent = u.userDetails || u.user_id || ""; }).catch(() => {});
+  if ($("#m-menu")) $("#m-menu").onclick = () => document.body.classList.toggle("menu-open");
+  if ($("#m-hotel")) $("#m-hotel").onclick = () => { document.body.classList.add("menu-open"); $("#hotel").focus(); };
+  document.addEventListener("click", e => { if (document.body.classList.contains("menu-open") && !e.target.closest(".side, #m-menu, #m-hotel")) document.body.classList.remove("menu-open"); });
   renderSwitches();
   loadRepair();
   if ($("#version").textContent.includes("__")) $("#version").textContent = "dev";  // lokaal, niet uitgerold
@@ -359,7 +396,10 @@ function showTab(name, initial = false) {
     return;
   }
   current = name;
-  document.querySelectorAll("nav button[data-tab]").forEach(x => x.classList.toggle("active", x.dataset.tab === name));
+  document.querySelectorAll("nav button[data-tab]").forEach(x => { x.classList.toggle("active", x.dataset.tab === name); x.classList.toggle("on", x.dataset.tab === name && !x.classList.contains("lbtn-lists")); });
+  const mt = PAGE === "settings" ? "settings" : LIST_KINDS.includes(name) ? "lists" : name;
+  document.querySelectorAll("[data-mtab]").forEach(x => x.classList.toggle("on", x.dataset.mtab === mt));
+  document.body.classList.remove("menu-open");
   TABS.forEach(n => { $(`#tab-${n}`).hidden = n !== name; });
   if (LIST_KINDS.includes(name) && !initial) loadList(name);
   if (location.hash.slice(1) !== name) history[initial ? "replaceState" : "pushState"](null, "", "#" + name);
@@ -608,7 +648,7 @@ function stickColumns(table, n) {
     left += th.getBoundingClientRect().width;
   });
 }
-window.addEventListener("resize", () => { stickColumns($("#res")?.closest("table"), 4); stickColumns($("#guests")?.closest("table"), 1); });
+window.addEventListener("resize", () => { stickColumns($("#guests")?.closest("table"), 1); });
 
 // Soort toestand in de tijdlijn, elk met een eigen kleur:
 // sent (verstuurd), failed (mislukt), due (nu), planned (komt nog), missed (moment voorbij),
@@ -780,6 +820,43 @@ function sortBy(k) {
   render();
 }
 
+const ICO = {
+  ext: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6M20 4l-9 9"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>',
+  mail: n => `<svg width="${n}" height="${n}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3.5 6.5l8.5 6.5 8.5-6.5"/></svg>`,
+  phone: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/></svg>',
+  chev: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>',
+};
+// Datums zoals in het ontwerp: "wo 18 nov", "18 nov 07:12"
+const dday = iso => iso ? new Date(iso + (iso.length === 10 ? "T00:00" : "")).toLocaleDateString(locale(), { weekday: "short", day: "numeric", month: "short" }).replace(/\./g, "") : "";
+const dshort = iso => iso ? new Date(iso + (iso.length === 10 ? "T00:00" : "")).toLocaleDateString(locale(), { day: "numeric", month: "short" }).replace(/\./g, "") : "";
+const dtime = iso => iso ? `${dshort(iso)} ${new Date(iso).toLocaleTimeString(locale(), { hour: "2-digit", minute: "2-digit" })}` : "";
+const nights = r => Math.round((new Date(r.departure) - new Date(r.arrival)) / 86400000);
+
+// Labels bij de gast: formulier, trappen, berichten aan/uit, geannuleerd
+function resTags(r) {
+  const tg = [];
+  if (r.status === "cancelled") tg.push(`<span class="tag t-off">${esc(t("r_cancelled"))}</span>`);
+  else tg.push(r.checkin_completed_at ? `<span class="tag t-on" title="${esc(stamp(r.checkin_completed_at))}">${esc(t("r_form"))}</span>` : `<span class="tag t-off">${esc(t("r_noform"))}</span>`);
+  if (r.stairs) tg.push(`<span class="tag t-st" title="${esc(t("stairs_tip"))}">${esc(t("r_stairs"))}</span>`);
+  if (r.messages_pick) tg.push(`<span class="tag ${r.messages_pick === "on" ? "t-on" : "t-off"}">${esc(t(r.messages_pick === "on" ? "r_msgs_on" : "r_msgs_off"))}</span>`);
+  return tg.join(" ");
+}
+const roomLabel = r => r.rooms.length ? t("r_room", r.rooms.join(", ")) : (r.room_type || "");
+const rateTag = r => r.non_refundable === true ? t("r_rate_nrf") : r.non_refundable === false ? t("r_rate_flex") : "";
+// Laatste bericht en het volgende uit de planning
+function msgLast(r) {
+  const ms = [...r.messages].sort((a, b) => String(a.at).localeCompare(String(b.at)));
+  const last = ms[ms.length - 1];
+  if (!last) return null;
+  const failed = !ms.filter(m => m.type === last.type).some(m => m.ok);
+  return { failed, text: failed ? t("r_failed", stepShort(last.type)) : `${stepShort(last.type)} ${dshort(last.at)}` };
+}
+function msgNext(r) {
+  const next = (r.plan || []).find(p => p.state === "planned" || p.state === "due");
+  if (next) return `${stepShort(next.step)} ${next.due ? (next.due.length > 10 ? dtime(next.due) : dshort(next.due)) : ""}`.trim();
+  return r.messages_on === false ? t("r_none_off") : t("r_none");
+}
+
 function render() {
   const q = $("#search").value.toLowerCase();
   // Verblijf dat (deels) in de gekozen periode valt; lege datum = geen grens
@@ -796,28 +873,42 @@ function render() {
     th.classList.toggle("sorted", th.dataset.sort === sortKey);
     th.dataset.dir = th.dataset.sort === sortKey ? (sortDir > 0 ? "asc" : "desc") : "";
   });
-  $("#count").textContent = t("count", list.length);
-  $("#res").innerHTML = list.map(r => `
-    <tr class="${r.status === "cancelled" ? "cancelled" : ""}">
-      <td>${day(r.arrival)}</td><td>${day(r.departure)}</td>
-      <td class="nowrap">${esc(r.booking_number)}${r.lighthouse_url ? ` <a class="lh" href="${esc(r.lighthouse_url)}" target="_blank" rel="noopener" title="${esc(t("open_lh"))}">${ICON_LH}</a>` : ""}</td><td>${r.guest_id && guestById(r.guest_id) ? `<a href="#" class="jump" data-guest="${esc(r.guest_id)}" title="${esc(t("show_guest"))}">${ICON_GUEST} ${esc(r.guest)}</a>` : esc(r.guest)}${r.guest_stays ? ` <span class="tag back">${esc(t("returning", r.guest_stays))}</span>` : ""}
-        <div>${r.checkin_completed_at ? `<span class="tag form-yes" title="${esc(stamp(r.checkin_completed_at))}">${esc(t("form_yes"))}</span>` : `<span class="tag form-no">${esc(t("form_no"))}</span>`}${r.messages_pick ? ` <span class="tag ${r.messages_pick === "on" ? "msgs-on" : "msgs-off"}">${esc(t(r.messages_pick === "on" ? "tag_msgs_on" : "tag_msgs_off"))}</span>` : ""}${r.stairs ? ` <span class="tag stairs" title="${esc(t("stairs_tip") + (r.stairs_memo_at ? " " + t("stairs_in_lh", stamp(r.stairs_memo_at)) : ""))}">${esc(t("stairs_tag"))}</span>` : ""}</div></td><td>${esc(r.guests ?? "")}</td>
-      <td>${esc(r.rooms.join(", ") || r.room_type)}</td>
-      <td>${r.non_refundable === true ? `<span class="tag nrf">${esc(t("rate_nrf"))}</span>` : r.non_refundable === false ? `<span class="tag flex">${esc(t("rate_flex"))}</span>` : ""}${r.rate_plan ? `<div class="muted small">${esc(r.rate_plan)}</div>` : ""}</td><td>${esc(r.source)}</td><td><span class="tag flow">${esc(t("flow_" + r.flow) || r.flow)}</span></td><td>${esc(r.pms_status)}</td>
-      <td>${stamp(r.booked_at)}</td><td>${stamp(r.added_at)}</td><td>${stamp(r.updated_at)}</td>
-      <td>${r.checkin_completed_at ? `<span class="ok">${t("yes")}</span> ${stamp(r.checkin_completed_at)}` : `<span class="muted">${t("no")}</span>`}</td>
-      <td class="wrap">${contactLines(r)}</td>
-      <td class="wrap">${msgSummary(r)}</td>
-    </tr>`).join("") || `<tr><td colspan="16" class="muted">${t("no_res")}</td></tr>`;
+  $("#count").innerHTML = t("res_count", list.length);
+  const contactCount = r => [[r.email, r.backup_email], [r.phone, r.backup_phone]].map(x => x.filter(Boolean).length);
+  $("#res").innerHTML = list.map(r => {
+    const last = msgLast(r), [ne, np] = contactCount(r), cancelled = r.status === "cancelled";
+    const pms = cancelled ? `<span class="badge b-err">${esc(t("r_cancelled"))}</span>` : r.pms_status ? `<span class="badge ${/klaar|ready/i.test(r.pms_status) ? "b-ok" : "b-info"}">${esc(r.pms_status)}</span>` : "";
+    const guest = r.guest_id && guestById(r.guest_id) ? `<a class="nm" href="#" data-guest="${esc(r.guest_id)}">${esc(r.guest)}</a>` : `<span class="nm">${esc(r.guest)}</span>`;
+    return `<tr class="${cancelled ? "cancel" : last && last.failed ? "warnrow" : ""}">
+      <td class="mono"><b>${esc(dday(r.arrival))}</b><div class="small muted">${esc(t("r_until", dday(r.departure), nights(r)))}</div></td>
+      <td>${r.lighthouse_url ? `<a href="${esc(r.lighthouse_url)}" target="_blank" rel="noopener" class="row" style="gap:4px;font-weight:700" title="${esc(t("open_lh"))}">#${esc(r.booking_number)} ${ICO.ext}</a>` : `<b>#${esc(r.booking_number)}</b>`}${r.booked_at ? `<div class="small muted">${esc(t("r_booked", dshort(r.booked_at)))}</div>` : ""}${r.updated_at ? `<div class="small muted">${esc(t("r_updated", dtime(r.updated_at)))}</div>` : ""}</td>
+      <td>${guest}${r.guest_stays ? `<div class="small muted">${esc(t("r_returning", r.guest_stays))}</div>` : ""}<div class="row" style="gap:4px;margin-top:4px">${resTags(r)}</div></td>
+      <td><b>${esc(roomLabel(r))}</b>${r.guests != null ? ` <span class="small muted">${esc(t("r_p", r.guests))}</span>` : ""}<div class="small muted">${esc(r.rooms.length > 1 ? t("r_rooms", r.rooms.length) : r.rooms.length ? r.room_type : t("r_roomtype"))}</div><div style="margin-top:3px">${rateTag(r) ? `<span class="tag">${esc(rateTag(r))}</span>` : ""} <span class="small muted">${esc(r.rate_plan)}</span></div></td>
+      <td>${esc(r.source)}<div class="small muted">${esc(t("r_flow", t("flow_" + r.flow) || r.flow))}</div></td>
+      <td>${pms}</td>
+      <td><div class="row small" style="gap:10px"><span class="row" style="gap:3px" title="${esc(t("r_emails"))}">${ICO.mail(14)}${ne}</span><span class="row" style="gap:3px" title="${esc(t("r_phones"))}">${ICO.phone}${np}</span></div></td>
+      <td><a href="#" class="msgs" data-msgs="${esc(r.id)}" title="${esc(t("mg_click"))}">${last ? `<div class="small"${last.failed ? ' style="color:#8B2E2E"' : ""}><b>${esc(last.text)}</b></div>` : ""}<div class="small muted">${esc(t("r_next", msgNext(r)))}</div></a></td>
+      <td><a class="btn3" href="#" data-msgs="${esc(r.id)}" aria-label="${esc(t("r_details", r.guest))}">${ICO.chev}</a></td>
+    </tr>`;
+  }).join("") || `<tr><td colspan="9" class="muted">${t("no_res")}</td></tr>`;
+  $("#mres").innerHTML = list.map(r => {
+    const last = msgLast(r);
+    return `<a href="#" class="mcard" data-msgs="${esc(r.id)}" style="text-decoration:none;color:#2B2F38;${last && last.failed ? "box-shadow:0 0 0 2px #E6BDBD" : ""}">
+      <div class="mrow"><b style="font-size:16px${r.status === "cancelled" ? ";text-decoration:line-through" : ""}">${esc(r.guest)}</b>${ICO.chev}</div>
+      <div class="small muted">${esc(`${dday(r.arrival)} ${t("stay_to")} ${dday(r.departure)} · ${roomLabel(r)}${r.guests != null ? " · " + t("r_p", r.guests) : ""}`)}</div>
+      <div class="small muted">${esc(["#" + r.booking_number, r.source, rateTag(r)].filter(Boolean).join(" · "))}</div>
+      <div class="row" style="gap:4px">${resTags(r)}</div>
+      <div class="small"${last && last.failed ? ' style="color:#8B2E2E"' : ""}>${ICO.mail(13)} ${esc([last ? last.text : "", t("r_next_m", msgNext(r))].filter(Boolean).join(" · "))}</div>
+    </a>`;
+  }).join("") || `<div class="muted">${t("no_res")}</div>`;
   document.querySelectorAll("#res a[data-guest]").forEach(a => a.onclick = e => { e.preventDefault(); openGuest(a.dataset.guest); });
   // Popup altijd met verse gegevens (bv. net ingevuld formulier, nieuw bericht)
-  document.querySelectorAll("#res a[data-msgs]").forEach(a => a.onclick = async e => {
+  document.querySelectorAll("#res [data-msgs], #mres [data-msgs]").forEach(a => a.onclick = async e => {
     e.preventDefault();
     showMessages(a.dataset.msgs);
     await refreshNow();
     if (!$("#msgs").hidden) showMessages(a.dataset.msgs);
   });
-  stickColumns($("#res").closest("table"), 4);
 }
 
 async function loadRuns() {
@@ -2064,31 +2155,26 @@ async function makeList(kind, send) {
 // Link naar de andere omgeving (monitor-tst.hotellucca.be <-> monitor.hotellucca.be), zelfde pagina
 // en tabblad. Altijd eerst bevestigen; naar PRD met een duidelijke waarschuwing (echte gasten).
 function envSwitch() {
-  const env = ($(".brand .env")?.textContent || "").trim().toLowerCase();
+  const env = ($("#env")?.textContent || "").trim().toLowerCase();
   document.body.classList.add("env-" + (env === "prd" || env === "tst" ? env : "dev"));
-  // Brede balk bovenaan en de omgeving in de titel van het tabblad: altijd zien waar je bent
-  if (env === "prd" || env === "tst") {
-    const bar = document.createElement("div");
-    bar.id = "env-bar";
-    bar.className = "env-bar env-bar-" + env;
-    bar.textContent = t("env_bar_" + env);
-    document.body.prepend(bar);
-    document.title = `[${env.toUpperCase()}] ${document.title}`;
-  }
+  if (env === "prd" || env === "tst") document.title = `[${env.toUpperCase()}] ${document.title}`;
+  else document.querySelectorAll("#env, [data-env]").forEach(e => { e.hidden = true; });  // lokaal: geen badge
+  if ($("#envname")) $("#envname").textContent = t("env_name_" + env) || "";
+  if ($("#tstbar")) $("#tstbar").hidden = env !== "tst";
   const host = location.hostname;
   const other = env === "tst" && host.startsWith("monitor-tst.") ? host.replace("monitor-tst.", "monitor.")
     : env === "prd" && host.startsWith("monitor.") ? host.replace("monitor.", "monitor-tst.") : null;
-  const link = $("#env-switch");
-  if (!other || !link) return;
+  if (!other) return;
   const target = env === "tst" ? "prd" : "tst";
-  link.hidden = false;
-  link.className = `env-switch to-${target}`;
-  link.textContent = t("env_to_" + target);
-  link.href = `${location.protocol}//${other}${location.pathname}${location.hash}`;
-  link.onclick = e => {
-    link.href = `${location.protocol}//${other}${location.pathname}${location.hash}`;  // zelfde tabblad als nu
-    if (!confirm(t("env_confirm_" + target))) e.preventDefault();
-  };
+  [$("#env-switch"), $("#tst-switch")].filter(Boolean).forEach(link => {
+    link.hidden = false;
+    if (link.id === "env-switch") link.textContent = t("env_to_" + target);
+    link.href = `${location.protocol}//${other}${location.pathname}${location.hash}`;
+    link.onclick = e => {
+      link.href = `${location.protocol}//${other}${location.pathname}${location.hash}`;  // zelfde tabblad als nu
+      if (!confirm(t("env_confirm_" + target))) e.preventDefault();
+    };
+  });
 }
 
 // Smartphone: tabellen tonen als kaartjes (CSS, admin.css "Smartphone"). Elke cel krijgt de kolomnaam als label,

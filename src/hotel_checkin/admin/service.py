@@ -26,6 +26,7 @@ def hotels() -> list[dict]:
 
     prd = safety.is_production()
     return [{"id": h, "name": load_hotel(h)["hotel"]["naam"], "production": prd,
+             "logo_url": load_hotel(h)["hotel"].get("logo_url", ""),  # logo bovenaan de monitor
              "test_email": "" if prd else (safety.test_address("email", h) or ""),
              "test_phone": "" if prd else (safety.test_address("phone", h) or ""),
              "phone_enabled": send_messages.phone_enabled(h),
