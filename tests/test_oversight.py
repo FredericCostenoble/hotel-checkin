@@ -130,6 +130,20 @@ def test_robot_alert_only_when_a_planned_run_was_missed(setup, monkeypatch):
     assert alarm and "08:00" in alarm
 
 
+def test_run_just_before_the_hour_counts_for_that_hour(setup, monkeypatch):
+    """Run om 10:59 (melding van Lighthouse): de robot start om 11:00 niet opnieuw, dus ook geen alarm om 11:30."""
+    from hotel_checkin.processes import new_reservation, robot_schedule
+
+    monkeypatch.setenv("LUCCA_ROBOT_CHECK_MINUTES", "60")
+    monkeypatch.setenv("LUCCA_SCHAKELAARS_RESERVATIES", "true")
+    tz = oversight.clock.tz("lucca")
+    repo.log_robot_run("lucca", new_reservation.TASK, datetime(2026, 11, 19, 10, 59, 10, tzinfo=tz), True, 0, 0, "ok")
+    assert not robot_schedule.due("lucca", datetime(2026, 11, 19, 11, 1, tzinfo=tz))
+    assert oversight.robot_problem("lucca", 3, datetime(2026, 11, 19, 11, 31, tzinfo=tz)) is None
+    alarm = oversight.robot_problem("lucca", 3, datetime(2026, 11, 19, 12, 31, tzinfo=tz))  # 12:00 wel gemist
+    assert alarm and "12:00" in alarm
+
+
 def test_check_warns_once_for_missing_code_mail(setup, monkeypatch):
     _with(monkeypatch, checks=["17:00", "20:00"])
     today = date(2026, 11, 3)

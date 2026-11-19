@@ -134,7 +134,7 @@ def robot_problem(hotel_id: str, max_hours: float, now: datetime | None = None) 
     # met de nacht erbij ('s nachts alleen de nachtelijke uren, robot_schedule.last_planned).
     slot = robot_schedule.last_planned(hotel_id, now - timedelta(minutes=GRACE_MINUTES))
     if slot is not None:
-        missed = last < slot
+        missed = last < slot - robot_schedule.SLOT_MARGIN  # zelfde marge als de robot (robot_schedule.due)
         what = f"geen geslaagde run voor het geplande uur van {slot:%H:%M}"
     else:
         missed = now - last > timedelta(hours=max_hours)

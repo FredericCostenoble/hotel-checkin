@@ -121,6 +121,11 @@ def _slot_start(every: float, now: datetime) -> datetime:
     return now.replace(hour=start // 60, minute=start % 60, second=0, microsecond=0)
 
 
+# Een run die tot zoveel voor een vast uur start, telt voor dat uur (de robot start dan niet opnieuw). Het alarm
+# (oversight.robot_problem) gebruikt dezelfde marge, anders geeft een run om 10:59 een vals alarm voor 11:00.
+SLOT_MARGIN = timedelta(minutes=1)
+
+
 def last_planned(hotel_id: str, now: datetime) -> datetime | None:
     """Het laatste vaste uur (now in lokale tijd) waarop de robot volgens het schema moest draaien, met de nacht
     erbij: 's nachts alleen de nachtelijke uren, en voor het eerste nachtelijke uur het laatste gewone uur voor de
@@ -162,7 +167,7 @@ def due(hotel_id: str, now: datetime | None = None) -> bool:
         return False  # net gestart (of geprobeerd): de robot heeft tijd nodig om te starten
     if tried and datetime.fromisoformat(tried) >= start and last and last >= start:
         return False
-    return last is None or last < start - timedelta(minutes=1)
+    return last is None or last < start - SLOT_MARGIN
 
 
 def run(hotel_id: str, now: datetime | None = None) -> str:
