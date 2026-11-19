@@ -144,8 +144,8 @@ avond_tot = "08:00"
 
 [twilio]
 # Afzendnummers van dit hotel (niet geheim). Het Twilio-account zelf is gedeeld (Key Vault).
-sms_from = "+32460250399"          # eigen Belgisch gsm-nummer (Twilio, gekocht 17/11/2026)
-whatsapp_from = "+32460250399"     # WhatsApp-afzender op hetzelfde nummer (nog te registreren via Self Sign-up)
+sms_from = "+32460252233"          # eigen Belgisch gsm-nummer (Twilio, gekocht 19/11/2026; +32460250399 vrijgegeven)
+whatsapp_from = "+32460252233"     # WhatsApp-afzender op hetzelfde nummer (nog te registreren via Self Sign-up)
 # Antwoorden van gasten (of personeel) op het nummer van de automatische berichten (processes/incoming.py):
 # het bericht gaat per mail naar doorsturen, en de afzender krijgt een automatisch antwoord met dit WhatsApp-nummer
 # van het hotel (de WhatsApp Business-app). In Twilio bij het nummer en de WhatsApp-afzender instellen:

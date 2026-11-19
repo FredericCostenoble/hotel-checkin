@@ -15,7 +15,7 @@ def _clean(monkeypatch):
 
 def test_hotel_file_before_shared(monkeypatch):
     monkeypatch.setenv("TWILIO_SMS_FROM", "+111")
-    assert hotel_setting("lucca", "TWILIO_SMS_FROM") == "+32460250399"
+    assert hotel_setting("lucca", "TWILIO_SMS_FROM") == "+32460252233"
 
 
 def test_own_secret_before_hotel_file(monkeypatch):
