@@ -125,6 +125,13 @@ def next_day(hotel_id: str, kind: str, now: datetime | None = None) -> date:
     return base + timedelta(days=settings(hotel_id, kind)["days"])
 
 
+def manual_day(hotel_id: str, kind: str, now: datetime | None = None) -> date:
+    """Voorgestelde dag om met de hand een lijst te maken: de lijst die vandaag gemaakt wordt (vandaag + dag),
+    ook na het uur van de automatische lijst (anders zou na 17:00 overmorgen voorgesteld worden)."""
+    now = now or datetime.now(clock.tz(hotel_id))
+    return now.astimezone(clock.tz(hotel_id)).date() + timedelta(days=settings(hotel_id, kind)["days"])
+
+
 # ---------------------------------------------------------------- kamers
 
 
@@ -835,6 +842,7 @@ def view(hotel_id: str, kind: str) -> dict:
                        "made": bool(_made_at(hotel_id, k, r))}
                       for k, r in requests(hotel_id).items() if k.startswith(kind + ":")), key=lambda x: x["day"])
     return {"kind": kind, "switch": switch(hotel_id, kind), "next_day": next_day(hotel_id, kind).isoformat(),
+            "manual_day": manual_day(hotel_id, kind).isoformat(),
             "pending": pending, "robot_busy": bool(pending) and _robot_busy(hotel_id),
             "time": cfg["time"], "days": cfg["days"], "email": cfg["email"], "whatsapp": cfg["whatsapp"],
             "phone_on": _phone_on(hotel_id),

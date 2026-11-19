@@ -607,3 +607,14 @@ def test_cleaning_wishes_from_texts():
     remark = _row(dl.build("lucca", "cleaning", day), x["room"])["remark"]
     assert "Baby bed" in remark and "Birthday decoration" in remark and "vrouw" not in remark
     assert remark.count("Baby bed") == 1
+
+
+def test_manual_day_is_today_plus_day_also_after_the_hour(setup):
+    """Lijst voor (met de hand): na 17:00 nog altijd de lijst van vandaag (morgen), niet die van overmorgen."""
+    from datetime import datetime
+
+    tz = dl.clock.tz("lucca")
+    late = datetime(2026, 11, 19, 17, 30, tzinfo=tz)
+    assert dl.manual_day("lucca", "breakfast", late) == date(2026, 11, 20)
+    assert dl.manual_day("lucca", "cleaning", late) == date(2026, 11, 20)
+    assert dl.next_day("lucca", "breakfast", late) == date(2026, 11, 21)  # volgende automatische lijst

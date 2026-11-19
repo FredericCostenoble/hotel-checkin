@@ -3083,7 +3083,7 @@ function renderList(kind) {
   if (!$("#list-rows") || kind !== listKind) return;
   document.querySelectorAll("#tab-lists .seg label").forEach(l => l.classList.toggle("on", l.dataset.kind === kind));
   const dayInput = $("#list-day");
-  if (d && (dayInput.dataset.kind !== kind + $("#hotel").value)) { dayInput.value = listDay[kind] || d.next_day; dayInput.dataset.kind = kind + $("#hotel").value; }
+  if (d && (dayInput.dataset.kind !== kind + $("#hotel").value)) { dayInput.value = listDay[kind] || d.manual_day || d.next_day; dayInput.dataset.kind = kind + $("#hotel").value; }
   dayInput.onchange = () => { listDay[listKind] = dayInput.value; };
   $("#list-info").textContent = d ? t("dl_info", d.switch, d.time, d.days, recipients(d), d.keep) : "";
   const state = $("#list-state");
