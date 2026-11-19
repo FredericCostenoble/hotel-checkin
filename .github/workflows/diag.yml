@@ -30,3 +30,4 @@ jobs:
           python -m hotel_checkin.admin.guest_diag lucca
           python -m hotel_checkin.admin.settings_diag lucca
           python -m hotel_checkin.admin.index_diag lucca
+          python -m hotel_checkin.admin.messages_diag lucca
