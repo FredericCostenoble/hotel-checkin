@@ -76,9 +76,18 @@ def _all_remarks(monkeypatch):
 
 def test_cleaning_list_only_what_housekeeping_needs():
     """Standaard: geen aantal personen en geen vrije opmerkingen (de schoonmaakploeg leest geen Nederlands), wel de
-    herkende wens als korte Engelse opmerking."""
-    _r("b", "12", DAY, 1, persons=3, remarks="Please a baby cot. Arrival 20h")
+    herkende wens uit de interne memo als korte Engelse opmerking."""
+    _r("b", "12", DAY, 1, persons=3, remarks="Arrival 20h", internal_memo="Babybed voorzien")
     assert _row(dl.build("lucca", "cleaning", DAY), "12")["remark"] == "Baby bed"
+
+
+def test_cleaning_no_wish_from_booking_text_in_remarks():
+    """Standaardtekst van Booking.com in de opmerking ("Het maximale aantal kinderbedjes is 1.") is geen wens:
+    alleen het label BABY BED of de interne memo tellen."""
+    _r("b", "12", DAY, 1, remarks="Booking conditions: Kinderen en extra bedden: Kinderen van alle leeftijden zijn "
+       "toegestaan. 1 kind (t/m 2 jaar) verblijft voor € 15 per kind per verblijf bij gebruik van beschikbare "
+       "kinderbedjes. U heeft geen extra bedden toegevoegd. Het maximale aantal kinderbedjes is 1. Please a baby cot.")
+    assert "Baby bed" not in (_row(dl.build("lucca", "cleaning", DAY), "12")["remark"] or "")
 
 
 def test_cleaning_list(monkeypatch):
@@ -591,8 +600,8 @@ def test_out_of_order_yesterday_is_leave():
 
 
 def test_cleaning_wishes_from_texts():
-    """Baby bed, romantische en verjaardagsversiering: herkend in de teksten (opmerking, folio, interne memo), in alle
-    talen, als korte Engelse opmerking. Geen labels nodig. Ontkenning en voorwaarden van het kanaal tellen niet."""
+    """Baby bed, romantische en verjaardagsversiering: herkend in de interne memo (niet in de opmerking van de
+    reservatie), in alle talen, als korte Engelse opmerking. Ontkenning en voorwaarden van het kanaal tellen niet."""
     rules = dl.wish_rules("lucca")
     assert dl.wishes(["Graag een kinderbedje aub"], rules) == ["Baby bed"]
     assert dl.wishes(["C'est l'anniversaire de ma femme"], rules) == ["Birthday decoration"]
@@ -605,7 +614,7 @@ def test_cleaning_wishes_from_texts():
     _r(x["reservation"], x["room"], day, 1, remarks="We vieren de verjaardag van mijn vrouw",
        internal_memo="babybed voorzien")
     remark = _row(dl.build("lucca", "cleaning", day), x["room"])["remark"]
-    assert "Baby bed" in remark and "Birthday decoration" in remark and "vrouw" not in remark
+    assert "Baby bed" in remark and "Birthday decoration" not in remark and "vrouw" not in remark  # opmerking telt niet
     assert remark.count("Baby bed") == 1
 
 

@@ -108,7 +108,8 @@ twin_tekst = "TWIN"   # twin kamer ([kamers.<nummer>] twin = true) zonder label 
 woorden = ["babybed", "baby bed", "baby cot", "cot", "crib", "kinderbed", "kinderbett", "babybett", "lit bébé", "lit parapluie", "extra bed", "bijzetbed", "lit d'appoint", "zusatzbett", "romant", "versiering", "decoratie", "decoration", "décoration", "rozen", "roses", "bloemen", "flowers", "fleurs", "champagne", "cava", "verjaardag", "birthday", "anniversaire", "geburtstag", "anniversary", "jubileum", "huwelijk", "honeymoon", "lune de miel", "aparte bedden", "separate beds", "lits séparés", "kussen", "pillow", "oreiller"]   # zinnen uit de opmerking of de folio met deze woorden komen bij de opmerkingen
 
 [kuislijst.wensen]
-# Wensen herkend in de teksten van de reservatie (opmerking van de gast, folio, interne memo), in alle talen. Op de
+# Wensen herkend in de interne memo van het hotel (niet in de opmerking van de reservatie of de folio: daar staat
+# standaardtekst van de boekingssites, bv. "Het maximale aantal kinderbedjes is 1."), in alle talen. Op de
 # schoonmaaklijst komt alleen de opmerking links (Engels), nooit de tekst zelf. Rechts de woorden, met een komma
 # (begin van een woord, hoofdletters maken niet uit). Met kort ervoor geen, no, pas de, kein ... telt het niet.
 "Baby bed" = 'babybed, baby bed, baby-bed, baby cot, cots?\b, cribs?\b, kinderbed, kinderbett, babybett, babybedje, kinderbedje, reisbed, lit bébé, lit bebe, lit parapluie, lit pour bébé, cuna'
