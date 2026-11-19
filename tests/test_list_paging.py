@@ -89,9 +89,10 @@ def test_failed_message_problem_and_dismiss(setup):
     assert repo.messages_for("lucca", "r005")[-1]["dismissed_by"] == "fred"  # blijft in het logboek
 
 
-def test_guest_days_zero_keeps_profiles_forever(setup, monkeypatch):
+def test_guest_days_zero_keeps_profiles_forever(monkeypatch):
     from hotel_checkin.processes import maintenance
 
+    repo.use_memory_store()  # zonder de testgegevens hierboven (die hebben verblijven zonder periodes)
     monkeypatch.setenv("LUCCA_RETENTION_GUEST_DAYS", "0")
     g = profiles.new_profile("lucca")
     g.first_name, g.last_name, g.stays, g.last_stay = "Ann", "Oud", 1, date(2000, 1, 1)
