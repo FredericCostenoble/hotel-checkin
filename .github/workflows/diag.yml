@@ -29,3 +29,4 @@ jobs:
           export STORAGE_TABLE_ENDPOINT=$(az storage account list -g "rg-checkin-${{ inputs.environment }}" --query "[0].primaryEndpoints.table" -o tsv)
           python -m hotel_checkin.admin.guest_diag lucca
           python -m hotel_checkin.admin.settings_diag lucca
+          python -m hotel_checkin.admin.index_diag lucca

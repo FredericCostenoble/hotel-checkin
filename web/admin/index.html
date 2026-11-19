@@ -51,10 +51,11 @@
       <div id="count" class="row small muted"></div>
     </div>
     <div class="tbox d-only"><table>
-      <thead id="res-head"><tr><th data-sort="arrival" data-t="c_stay"></th><th data-sort="booking_number" data-t="c_res"></th><th data-sort="guest" data-t="c_guest"></th><th data-sort="room" data-t="c_room_rate"></th><th data-sort="source" data-t="c_channel"></th><th data-sort="pms_status">Lighthouse</th><th data-sort="email" data-t="c_contact"></th><th data-sort="messages" data-t="c_messages"></th><th><span style="position:absolute;left:-9999px">Open</span></th></tr></thead>
+      <thead id="res-head"><tr><th data-sort="arrival" data-t="c_stay"></th><th data-sort="booking_number" data-t="c_res"></th><th data-sort="guest" data-t="c_guest"></th><th data-sort="room" data-t="c_room_rate"></th><th data-sort="source" data-t="c_channel"></th><th data-sort="pms_status">Lighthouse</th><th data-sort="email" data-t="c_contact"></th><th data-t="c_messages"></th><th><span style="position:absolute;left:-9999px">Open</span></th></tr></thead>
       <tbody id="res"></tbody>
     </table></div>
     <div id="mres" class="m-only" style="display:flex;flex-direction:column;gap:14px"></div>
+    <div id="res-more" class="list-more" aria-live="polite"></div>
   </section>
 </section>
 <section id="tab-today" class="content v2" hidden></section>
@@ -67,6 +68,7 @@
         <section class="card"><div class="cb" style="padding-top:16px"><div class="row" style="align-items:flex-end;gap:10px"><div class="field" style="flex:1 1 240px"><label for="g-search" data-t="search_lbl"></label><div class="inwrap"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><input id="g-search" class="input" type="search" data-tp="g_search"></div></div><button id="g-update" class="btn2" type="button"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 0 0-14.5-4.5L4 8"/><path d="M4 4v4h4"/><path d="M4 13a8 8 0 0 0 14.5 4.5L20 16"/><path d="M20 20v-4h-4"/></svg><span data-t="g_update"></span></button><button id="g-search-reset" type="button" hidden></button></div><div class="small muted"><span id="g-count"></span> <span id="g-state"></span></div></div>
           <div class="tbox d-only"><table><thead id="g-head"><tr><th data-gsort="name" data-t="g_name"></th><th data-gsort="country" data-t="g_country"></th><th data-gsort="reservations" data-t="g_res"></th><th data-gsort="stays" data-t="g_stays"></th><th data-gsort="last_stay" data-t="g_last"></th><th data-gsort="preferred_channel" data-t="g_channel"></th></tr></thead><tbody id="guests"></tbody></table></div>
           <div id="mguests" class="m-only cb" style="display:flex;flex-direction:column;gap:10px"></div>
+          <div id="g-more" class="list-more" aria-live="polite"></div>
         </section>
       </div>
       <div id="g-profile" class="col-side" style="flex-basis:400px"></div>

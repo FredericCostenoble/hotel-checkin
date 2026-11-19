@@ -27,11 +27,11 @@ const T = {
     step_reminder: "Herinnering (formulier niet ingevuld)", step_access_code: "Code en praktische info",
     f_enabled: "Actief", f_when: "Wanneer", f_days: "Dagen voor aankomst", f_channels: "Kanalen", f_only_if: "Alleen als",
     f_replaced_by: "Overslaan als al aan de beurt", f_late: "Alleen als de boeking vóór die dag binnenkwam (anders kreeg de gast net de bevestiging)",
-    wf_later_rule: "Deze mail gaat niet weg als op dat moment al een latere mail aan de beurt is (bv. bij een late boeking krijgt de gast meteen alleen de code-mail).", f_pay: "Betaalknop", f_content: "In de mail", g_when: "Wanneer versturen", wf_example: "Voorbeeldmail", pv_subject: "Onderwerp",
+    wf_later_rule: "Deze mail gaat niet weg als op dat moment al een latere mail aan de beurt is (bv. bij een late boeking krijgt de gast meteen alleen de code-mail).", f_pay: "Betaalknop", f_content: "In de gast-app", g_when: "Wanneer versturen", wf_example: "Voorbeeldmail", pv_subject: "Onderwerp",
     m_reservation: "reservatiegegevens", m_checkin_form: "link check-in-formulier", m_code: "pincode", m_practical_info: "praktische info", m_pay: "betaalknop",
     wf_pay_note: "Knop om het openstaande bedrag online te betalen: alleen de toeristenbelasting of alles, wat in Lighthouse nog openstaat.",
     wf_form_note: "De link naar het formulier valt vanzelf weg als de gast het al invulde.",
-    f_rates: "Inhoud van de mail", m_message: "tekst van de mail", rate_nfr: "NFR (niet annuleerbaar)", rate_standard: "Standaard (annuleerbaar of onbekend)",
+    f_rates: "Inhoud in de gast-app", m_message: "tekst van het bericht", rate_nfr: "NFR (niet annuleerbaar)", rate_standard: "Standaard (annuleerbaar of onbekend)",
     rate_row_off: "niets aangevinkt: gaat niet weg", rate_example: "voorbeeld",
     wf_rule_code: "Pincode: alleen als de kamer betaald is in Lighthouse (toeristenbelasting mag openstaan).",
     wf_rule_pay: "Betaalknop: alleen als er nog iets openstaat en Lighthouse een betaallink gaf.",
@@ -120,11 +120,11 @@ const T = {
     step_reminder: "Reminder (form not filled in)", step_access_code: "Code and practical info",
     f_enabled: "Active", f_when: "When", f_days: "Days before arrival", f_channels: "Channels", f_only_if: "Only if",
     f_replaced_by: "Skip if already due", f_late: "Only if the booking came in before that day (otherwise the guest just got the confirmation)",
-    wf_later_rule: "This mail is not sent if a later mail is already due at that moment (e.g. with a late booking the guest only gets the code mail).", f_pay: "Pay button", f_content: "In the mail", g_when: "When to send", wf_example: "Example mail", pv_subject: "Subject",
+    wf_later_rule: "This mail is not sent if a later mail is already due at that moment (e.g. with a late booking the guest only gets the code mail).", f_pay: "Pay button", f_content: "In the guest app", g_when: "When to send", wf_example: "Example mail", pv_subject: "Subject",
     m_reservation: "reservation details", m_checkin_form: "check-in form link", m_code: "PIN code", m_practical_info: "practical info", m_pay: "pay button",
     wf_pay_note: "Button to pay the open amount online: just the city tax or everything, whatever is still open in Lighthouse.",
     wf_form_note: "The form link is left out automatically when the guest already filled it in.",
-    f_rates: "Mail content", m_message: "mail text", rate_nfr: "NFR (non-refundable)", rate_standard: "Standard (refundable or unknown)",
+    f_rates: "Guest app content", m_message: "message text", rate_nfr: "NFR (non-refundable)", rate_standard: "Standard (refundable or unknown)",
     rate_row_off: "nothing ticked: not sent", rate_example: "example",
     wf_rule_code: "PIN code: only when the room is paid in Lighthouse (city tax may be open).",
     wf_rule_pay: "Pay button: only when something is still open and Lighthouse gave a payment link.",
@@ -191,7 +191,7 @@ const T = {
 };
 // Teksten van het ontwerp (Claude Design, canvas Beheerapp Hotel Lucca)
 Object.assign(T.nl, {
-  m_arrives: d => `aankomst ${d}`, dlg_send: "Versturen",
+  m_arrives: d => `aankomst ${d}`, list_more: (n, tot) => `${n} van ${tot} getoond, scroll voor meer`, dlg_send: "Versturen",
   ls_send: "Versturen", ls_title: "Lijst manueel versturen", ls_q: l => `Ben je zeker dat je de ${l} manueel wil versturen?`, ls_to: "Wordt verstuurd naar",
   ls_by_mail: "Mail", ls_by_wa: "WhatsApp (sms als WhatsApp niet lukt)", ls_wa_off: "WhatsApp en sms staan uit, wordt niet verstuurd", ls_no_to: "Er zijn geen ontvangers ingesteld voor deze lijst (instellingen, Hotel).",
   ls_past: d => `Let op: dit is geen lijst voor vandaag! Het is de lijst van ${d}.`, ls_already: (w, to) => `Deze lijst is al verstuurd op ${w} naar ${to}.`,
@@ -276,7 +276,7 @@ Object.assign(T.nl, {
   gp_nowsuffix: "(nu)", gp_wa: "WhatsApp", gp_sms: "Sms", gp_none: "Kies een gast in de lijst.", gp_stays_m: n => `${n} verblijven`,
 });
 Object.assign(T.en, {
-  m_arrives: d => `arriving ${d}`, dlg_send: "Send",
+  m_arrives: d => `arriving ${d}`, list_more: (n, tot) => `${n} of ${tot} shown, scroll for more`, dlg_send: "Send",
   ls_send: "Send", ls_title: "Send list manually", ls_q: l => `Are you sure you want to send the ${l} manually?`, ls_to: "Will be sent to",
   ls_by_mail: "Mail", ls_by_wa: "WhatsApp (SMS if WhatsApp fails)", ls_wa_off: "WhatsApp and SMS are off, will not be sent", ls_no_to: "No recipients are set for this list (settings, Hotel).",
   ls_past: d => `Watch out: this is not a list for today! It is the list of ${d}.`, ls_already: (w, to) => `This list was already sent on ${w} to ${to}.`,
@@ -404,6 +404,80 @@ const notice = (text, opts = {}) => dialog(text, { ...opts, cancel: false });
 const day = iso => iso ? new Date(iso + (iso.length === 10 ? "T00:00" : "")).toLocaleDateString(locale(), { day: "2-digit", month: "2-digit", year: "2-digit" }) : "";
 const stamp = iso => iso ? new Date(iso).toLocaleString(locale(), { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) : "";
 let rows = [], runsData = null, timer = null, waitTries = 0;
+const resAsked = new Set();  // reservaties die al eens opgevraagd werden (niet blijven vragen als ze er niet meer zijn)
+
+// ---- Lijsten per 50 van de server (index op de server), doorlopend scrollen
+// rows = alle reservaties die de app al kent (cache, per id). De lijst Reservaties toont resIds (volgorde van de
+// server), Vandaag toont todayIds (aankomsten en vertrekken rond vandaag en mislukte berichten).
+const RES_PAGE = 50;
+let resIds = [], resTotal = 0, resNext = null, resLoading = false, resSeq = 0, todayIds = null;
+function mergeRows(items) {
+  const m = new Map(rows.map(r => [r.id, r]));
+  items.forEach(r => m.set(r.id, r));
+  rows = [...m.values()];
+}
+const resById = id => rows.find(r => r.id === id);
+const allRows = () => rows;
+function resParams(offset, limit) {
+  const p = new URLSearchParams({ page: "1", offset: String(offset), limit: String(limit) });
+  if (resPick) p.set("ids", [...resPick.ids].join(","));
+  else {
+    if ($("#search").value.trim()) p.set("q", $("#search").value.trim());
+    if ($("#from").value) p.set("from", $("#from").value);
+    if ($("#to").value) p.set("to", $("#to").value);
+    if ($("#status") && $("#status").value) p.set("status", $("#status").value);
+  }
+  p.set("sort", sortKey === "messages" ? "arrival" : sortKey);
+  p.set("dir", sortDir > 0 ? "asc" : "desc");
+  return p;
+}
+// reset: opnieuw van boven (filter of sortering veranderd); keep: zoveel rijen meteen laden (verversen zonder
+// dat de lijst korter wordt en de scrollpositie verspringt)
+async function loadResPage(reset = true, keep = 0) {
+  if (!$("#res")) return;
+  const seq = ++resSeq;
+  resLoading = true;
+  const offset = reset ? 0 : resIds.length, limit = reset ? Math.max(RES_PAGE, keep) : RES_PAGE;
+  try {
+    const d = await get(`/api/monitor/${$("#hotel").value}/reservations?${resParams(offset, limit)}`);
+    if (seq !== resSeq) return;  // er kwam intussen een nieuwere vraag
+    mergeRows(d.items);
+    const ids = d.items.map(r => r.id);
+    resIds = reset ? ids : resIds.concat(ids.filter(id => !resIds.includes(id)));
+    resTotal = d.total; resNext = d.next;
+  } finally {
+    if (seq === resSeq) resLoading = false;
+  }
+  render();
+}
+async function loadToday() {
+  const today = todayIso();
+  const d = await get(`/api/monitor/${$("#hotel").value}/reservations?page=1&window=${addDays(today, -2)},${addDays(today, 14)}`);
+  mergeRows(d.items);
+  todayIds = new Set(d.items.map(r => r.id));
+}
+// Alles verversen; de lijst houdt zoveel rijen als er nu geladen zijn
+async function loadReservations() {
+  await Promise.all([loadToday(), loadResPage(true, resIds.length)]);
+}
+// Precies deze reservaties ophalen als de app ze nog niet kent (detail, gastprofiel)
+async function ensureRes(ids, fresh = false) {
+  const miss = fresh ? ids : ids.filter(id => !resById(id));
+  if (!miss.length) return;
+  const d = await get(`/api/monitor/${$("#hotel").value}/reservations?page=1&ids=${encodeURIComponent(miss.join(","))}`);
+  mergeRows(d.items);
+}
+let resFilterTimer = null;
+function resFilterChanged(delay = 0) {
+  clearTimeout(resFilterTimer);
+  resFilterTimer = setTimeout(() => { loadResPage(true); }, delay);
+}
+// Doorlopend scrollen: een lege rij onder de lijst; komt die in beeld, dan de volgende 50
+function watchMore(sentinelId, more) {
+  const el = $(sentinelId);
+  if (!el || !("IntersectionObserver" in window)) return;
+  new IntersectionObserver(es => { if (es.some(e => e.isIntersecting)) more(); }, { rootMargin: "600px 0px" }).observe(el);
+}
 const runOpen = {};  // robotlog: welke runs zelf open- of dichtgeklapt werden (blijft zo bij het verversen)
 const TASKS = ["nieuwe_reservaties", "contactgegevens_nalezen", "overschrijving_booking", "lighthouse_bijwerken", "betaalverzoeken", "ontbijt_labels", "meldingen", "onderhoud", "berichten", "ontbijtlijst", "kuislijst"];
 // Taken zonder Te doen/Gedaan (alleen een notitie, bv. de bewaking: welke mail verstuurd werd)
@@ -525,20 +599,22 @@ async function init() {
   window.addEventListener("hashchange", () => { const n = location.hash.slice(1); if (TABS.includes(n) && n !== current) showTab(n); });
   showTab(TABS.includes(location.hash.slice(1)) ? location.hash.slice(1) : TABS[0], true);
   if (PAGE === "main") {
-    $("#g-search").oninput = renderGuests;
+    $("#g-search").oninput = () => gFilterChanged(250);
+    watchMore("#g-more", () => { if (gNext != null && !gLoading) loadGuestPage(false); });
     // Filter wissen: zoekvak leeg (reservaties: ook terug "vanaf vandaag")
-    $("#search-reset").onclick = () => { $("#search").value = ""; $("#from").value = todayIso(); $("#to").value = ""; render(); };
-    $("#g-search-reset").onclick = () => { $("#g-search").value = ""; renderGuests(); };
+    $("#search-reset").onclick = () => { $("#search").value = ""; $("#from").value = todayIso(); $("#to").value = ""; resFilterChanged(); };
+    $("#g-search-reset").onclick = () => { $("#g-search").value = ""; gFilterChanged(); };
     $("#g-update").onclick = updateGuests;
     $("#msgs-close").onclick = () => { $("#msgs").hidden = true; };
     $("#msgs").onclick = e => { if (e.target.id === "msgs") $("#msgs").hidden = true; };
     document.querySelectorAll("#g-head th[data-gsort]").forEach(th => th.onclick = () => gSortBy(th.dataset.gsort));
-    $("#search").oninput = render;
+    $("#search").oninput = () => resFilterChanged(250);
     document.querySelectorAll("#res-head th[data-sort]").forEach(th => th.onclick = () => sortBy(th.dataset.sort));
-    $("#from").onchange = () => { resPick = null; render(); };
-    if ($("#status")) $("#status").onchange = render;
-    $("#to").onchange = () => { resPick = null; render(); };
-    $("#today").onclick = () => { $("#from").value = todayIso(); $("#to").value = ""; resPick = null; render(); };
+    $("#from").onchange = () => { resPick = null; resFilterChanged(); };
+    if ($("#status")) $("#status").onchange = () => resFilterChanged();
+    $("#to").onchange = () => { resPick = null; resFilterChanged(); };
+    $("#today").onclick = () => { $("#from").value = todayIso(); $("#to").value = ""; resPick = null; resFilterChanged(); };
+    watchMore("#res-more", () => { if (resNext != null && !resLoading) loadResPage(false); });
     $("#list-make").onclick = () => makeList(listKind, false);
     $("#list-send").onclick = () => makeList(listKind, true);
     document.querySelectorAll("#tab-lists .seg label").forEach(l => l.onclick = e => { e.preventDefault(); showTab(l.dataset.kind); });
@@ -602,9 +678,8 @@ function showTab(name, initial = false, leave = false) {
 let lastLoad = 0;
 async function refreshNow() {
   lastLoad = Date.now();
-  rows = await get(`/api/monitor/${$("#hotel").value}/reservations`);
-  render();
-  await loadGuests();
+  await loadReservations();
+  await loadGuests(true);
 }
 function refreshSoon() {
   if (PAGE !== "main" || document.hidden || !$("#msgs").hidden || Date.now() - lastLoad < 15000) return;
@@ -622,8 +697,7 @@ async function load() {
     loadRuns();
     return;
   }
-  rows = await get(`/api/monitor/${$("#hotel").value}/reservations`);
-  render();
+  await loadReservations();
   loadGuests();
   loadWorkflow();
   LIST_KINDS.forEach(k => { listData[k] = null; listDay[k] = ""; loadList(k); });  // stappen die al verstuurd kunnen worden (tijdlijn per reservatie)
@@ -662,7 +736,7 @@ function showMessages(id) {
     const on = $("#msgs-on").checked;
     const d = await get(`/api/monitor/${$("#hotel").value}/select?id=${encodeURIComponent(r.id)}&on=${on ? 1 : 0}`, { method: "POST" }).catch(e => ({ ok: false, error: String(e) }));
     if (!d.ok) { $("#msgs-on").checked = !on; notice(d.error || "?"); return; }
-    rows = await get(`/api/monitor/${$("#hotel").value}/reservations`);
+    await ensureRes([id], true);
     render();
     showMessages(id);
   };
@@ -755,7 +829,8 @@ const yn = (cls, ic, txt) => `<span class="yn ${cls}">${IC(ic, 14, cls === "na" 
 
 function renderToday() {
   const el = $("#tab-today");
-  if (!el || !rows) return;
+  if (!el || !todayIds) return;
+  const rows = allRows().filter(r => todayIds.has(r.id));
   const today = todayIso(), tomorrow = addDays(today, 1);
   const live = rows.filter(r => r.status !== "cancelled");
   const arrT = live.filter(r => r.arrival === today), arrM = live.filter(r => r.arrival === tomorrow);
@@ -852,7 +927,7 @@ function renderToday() {
     resPick = a.dataset.pick && todayPicks[a.dataset.pick] ? { ...todayPicks[a.dataset.pick], ids: new Set(todayPicks[a.dataset.pick].ids) } : null;
     if (resPick) clearResFilters();
     showTab(a.dataset.go);
-    if (a.dataset.go === "res") render();
+    if (a.dataset.go === "res") loadResPage(true);
   });
   el.querySelectorAll("#td-run").forEach(b => b.onclick = async () => {
     b.disabled = true;
@@ -919,6 +994,7 @@ function openDetail(id) {
   document.querySelectorAll("nav button[data-tab]").forEach(x => x.classList.toggle("on", x.dataset.tab === "res"));
   document.querySelectorAll("[data-mtab]").forEach(x => x.classList.toggle("on", x.dataset.mtab === "res"));
   renderDetail();
+  if (!resById(id)) ensureRes([id]).then(renderDetail).catch(() => {});
   window.scrollTo(0, 0);
 }
 
@@ -1039,7 +1115,7 @@ function renderDetail() {
     const on = $("#d-auto").checked;
     const d = await get(`/api/monitor/${$("#hotel").value}/select?id=${encodeURIComponent(r.id)}&on=${on ? 1 : 0}`, { method: "POST" }).catch(e => ({ ok: false, error: String(e) }));
     if (!d.ok) { $("#d-auto").checked = !on; notice(d.error || "?"); return; }
-    rows = await get(`/api/monitor/${$("#hotel").value}/reservations`);
+    await ensureRes([r.id], true);
     render(); renderDetail();
   };
   el.querySelectorAll(".d-send").forEach(b => b.onclick = () => {
@@ -1055,7 +1131,7 @@ function renderDetail() {
     const q = new URLSearchParams({ id: r.id, email: isMail ? v : "", phone: isMail ? "" : v });
     const d = await get(`/api/monitor/${$("#hotel").value}/contact?${q}`, { method: "POST" }).catch(e => ({ ok: false, error: String(e) }));
     if (!d.ok) { $("#d-add-err").textContent = d.error || t("load_error"); return; }
-    rows = await get(`/api/monitor/${$("#hotel").value}/reservations`);
+    await ensureRes([r.id], true);
     render(); renderDetail();
   };
 }
@@ -1198,7 +1274,48 @@ const ICON_RES = `<svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="t
 let gSortKey = "last_stay", gSortDir = -1;
 const gValue = (g, k) => k === "rooms" ? g.rooms.join(", ") : k === "reservations" ? g.reservations.length
   : k === "email" ? (g.email || g.phone) : (g[k] ?? "");
-function gSortBy(k) { gSortDir = k === gSortKey ? -gSortDir : 1; gSortKey = k; renderGuests(); }
+function gSortBy(k) { gSortDir = k === gSortKey ? -gSortDir : 1; gSortKey = k; loadGuestPage(true); }
+
+// Gasten per 50 van de server (zelfde werking als de reservaties): guestData.guests = alle gekende profielen (cache),
+// gIds = de lijst in de volgorde van de server
+let gIds = [], gTotal = 0, gNext = null, gLoading = false, gSeq = 0, gFilterTimer = null;
+function mergeGuests(items) {
+  const m = new Map(guestData.guests.map(g => [g.id, g]));
+  items.forEach(g => m.set(g.id, g));
+  guestData.guests = [...m.values()];
+}
+async function loadGuestPage(reset = true, keep = 0) {
+  if (!$("#guests")) return;
+  const seq = ++gSeq;
+  gLoading = true;
+  const offset = reset ? 0 : gIds.length;
+  const p = new URLSearchParams({ page: "1", offset: String(offset), limit: String(reset ? Math.max(RES_PAGE, keep) : RES_PAGE),
+    sort: gSortKey, dir: gSortDir > 0 ? "asc" : "desc" });
+  if ($("#g-search").value.trim()) p.set("q", $("#g-search").value.trim());
+  try {
+    const d = await get(`/api/monitor/${$("#hotel").value}/guests?${p}`);
+    if (seq !== gSeq) return;
+    mergeGuests([...d.guests, ...(d.match_guests || [])]);
+    if (d.matches) guestData.matches = d.matches;
+    const ids = d.guests.map(g => g.id);
+    gIds = reset ? ids : gIds.concat(ids.filter(id => !gIds.includes(id)));
+    gTotal = d.total; gNext = d.next;
+  } finally {
+    if (seq === gSeq) gLoading = false;
+  }
+  renderGuests();
+  render();
+}
+async function ensureGuests(ids) {
+  const miss = ids.filter(id => id && !guestById(id));
+  if (!miss.length) return;
+  const d = await get(`/api/monitor/${$("#hotel").value}/guests?page=1&ids=${encodeURIComponent(miss.join(","))}`);
+  mergeGuests(d.guests);
+}
+function gFilterChanged(delay = 0) {
+  clearTimeout(gFilterTimer);
+  gFilterTimer = setTimeout(() => loadGuestPage(true), delay);
+}
 
 // Synchroniseren: koppelen, voorbije verblijven meetellen (nooit dubbel), opruimen
 async function updateGuests() {
@@ -1215,23 +1332,28 @@ async function updateGuests() {
   }
 }
 
-async function loadGuests() {
-  guestData = await get(`/api/monitor/${$("#hotel").value}/guests`);
-  renderGuests();
-  render();
+// keep: verversen zonder dat de lijst korter wordt (zelfde aantal rijen opnieuw laden)
+async function loadGuests(keep = false) {
+  await loadGuestPage(true, keep ? gIds.length : 0);
 }
 
 function guestById(id) { return guestData.guests.find(g => g.id === id); }
 
 // Van een reservatie naar de gast (zoekvak), en van een gast naar precies zijn reservaties (ook onder een andere
 // naam, bv. na samenvoegen; ook voorbije verblijven)
-function openGuest(id) { gSel = id; $("#g-search").value = guestById(id)?.name || ""; showTab("guests"); renderGuests(); }
+async function openGuest(id) {
+  gSel = id;
+  await ensureGuests([id]).catch(() => {});
+  $("#g-search").value = guestById(id)?.name || "";
+  showTab("guests");
+  loadGuestPage(true);
+}
 function openReservations(id) {
   const g = guestById(id);
   $("#search").value = "";
   resPick = g ? { label: g.name, ids: new Set(g.reservations) } : null;
   clearResFilters();
-  showTab("res"); render();
+  showTab("res"); loadResPage(true);
 }
 
 // Gastprofiel: alle contactgegevens met de bron. Hoofdadres en -nummer (bevestigd in het formulier of
@@ -1284,19 +1406,15 @@ const countryName = c => { try { return c ? new Intl.DisplayNames([locale()], { 
 const num1 = x => x == null ? "" : Number(x).toLocaleString(locale(), { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 
 function renderGuests() {
-  const q = $("#g-search").value.toLowerCase();
-  const list = guestData.guests.filter(g => (!q || [g.name, g.email, g.phone, g.backup_email, g.backup_phone].join(" ").toLowerCase().includes(q)));
-  list.sort((a, b) => {
-    const x = gValue(a, gSortKey), y = gValue(b, gSortKey);
-    if (x === "" || x === null || y === "" || y === null) return x === y ? 0 : (x === "" || x === null ? 1 : -1);
-    return (typeof x === "number" ? x - y : String(x).localeCompare(String(y), locale(), { numeric: true })) * gSortDir;
-  });
+  // Zoeken en sorteren doet de server (per 50, loadGuestPage)
+  const list = gIds.map(guestById).filter(Boolean);
   document.querySelectorAll("#g-head th[data-gsort]").forEach(th => {
     th.classList.toggle("sorted", th.dataset.gsort === gSortKey);
     th.dataset.dir = th.dataset.gsort === gSortKey ? (gSortDir > 0 ? "asc" : "desc") : "";
   });
-  if (!gSel || !list.some(g => g.id === gSel)) gSel = list[0]?.id || "";
-  $("#g-count").textContent = t("g_profiles", list.length) + (guestSync ? " · " + t("g_synced", dtime(guestSync)) : "");
+  if (!gSel || !guestById(gSel)) gSel = list[0]?.id || "";
+  if ($("#g-more")) $("#g-more").textContent = gNext != null ? t("list_more", list.length, gTotal) : "";
+  $("#g-count").textContent = t("g_profiles", gTotal) + (guestSync ? " · " + t("g_synced", dtime(guestSync)) : "");
   const nomkt = g => g.opt_out ? ` <span class="tag t-off">${esc(t("gp_nomkt"))}</span>` : "";
   $("#guests").innerHTML = list.map(g => `
     <tr data-g="${esc(g.id)}" style="cursor:pointer${g.id === gSel ? ";background:#EEF0F5" : ""}">
@@ -1361,7 +1479,9 @@ function renderProfile() {
       : [line(ICG.wa, x, `${t("gp_wa")}, ${src(x)}`, "whatsapp"), line(ICG.phone, x, `${t("gp_sms")}, ${src(x)}`, "sms")]),
   ].join("");
   const today = todayIso();
-  const res = g.reservations.map(id => rows.find(r => r.id === id)).filter(Boolean).sort((a, b) => b.arrival.localeCompare(a.arrival));
+  const missing = g.reservations.filter(id => !resById(id) && !resAsked.has(id));
+  if (missing.length) { missing.forEach(id => resAsked.add(id)); ensureRes(missing).then(renderProfile).catch(() => {}); }
+  const res = g.reservations.map(resById).filter(Boolean).sort((a, b) => b.arrival.localeCompare(a.arrival));
   const badge = r => r.status === "cancelled" ? `<span class="badge b-err">${esc(t("r_cancelled"))}</span>`
     : r.departure < today ? `<span class="badge b-ok">${esc(t("gp_left"))}</span>`
     : r.arrival <= today ? `<span class="badge b-info">${esc(t("gp_now"))}</span>` : `<span class="badge b-wait">${esc(t("gp_coming"))}</span>`;
@@ -1442,7 +1562,7 @@ function sortBy(k) {
   sortDir = k === sortKey ? -sortDir : 1;
   sortKey = k;
   try { localStorage.setItem("monitor-sort", JSON.stringify([sortKey, sortDir])); } catch (e) { /* geen opslag */ }
-  render();
+  loadResPage(true);
 }
 
 const ICO = {
@@ -1491,24 +1611,15 @@ function clearResFilters() {
 let resPick = null;  // {label, ids}: alleen deze reservaties (link vanuit Vandaag), tot "Toon alle"
 const todayPicks = {};
 function render() {
-  const q = $("#search").value.toLowerCase();
-  // Verblijf dat (deels) in de gekozen periode valt; lege datum = geen grens
-  const from = $("#from").value, to = $("#to").value, st = $("#status") ? $("#status").value : "";
-  const list = rows.filter(r => (resPick ? resPick.ids.has(r.id) : (!from || r.departure >= from) && (!to || r.arrival <= to)) &&
-    (!st || (st === "cancelled") === (r.status === "cancelled")) &&
-    (!q || [r.guest, r.booking_number, r.email, r.phone, r.backup_email, r.backup_phone].join(" ").toLowerCase().includes(q)));
-  list.sort((a, b) => {
-    const x = sortValue(a, sortKey), y = sortValue(b, sortKey);
-    // lege waarden altijd onderaan
-    if (x === "" || y === "") return x === y ? 0 : (x === "" ? 1 : -1);
-    return (typeof x === "number" ? x - y : String(x).localeCompare(String(y), locale(), { numeric: true })) * sortDir;
-  });
+  // Zoeken, filteren en sorteren doet de server (per 50, zie loadResPage); hier alleen tonen
+  const list = resIds.map(resById).filter(Boolean);
   document.querySelectorAll("#res-head th[data-sort]").forEach(th => {
     th.classList.toggle("sorted", th.dataset.sort === sortKey);
     th.dataset.dir = th.dataset.sort === sortKey ? (sortDir > 0 ? "asc" : "desc") : "";
   });
-  $("#count").innerHTML = t("res_count", list.length) + (resPick ? ` <span class="badge b-info" style="margin-left:8px">${esc(t("pick_filter"))}: ${esc(resPick.label)} (${resPick.ids.size})</span> <a href="#" class="btn3" id="pick-clear" style="padding:0">${esc(t("pick_clear"))}</a>` : "");
-  if ($("#pick-clear")) $("#pick-clear").onclick = e => { e.preventDefault(); resPick = null; render(); };
+  if ($("#res-more")) $("#res-more").textContent = resNext != null ? t("list_more", list.length, resTotal) : "";
+  $("#count").innerHTML = t("res_count", resTotal) + (resPick ? ` <span class="badge b-info" style="margin-left:8px">${esc(t("pick_filter"))}: ${esc(resPick.label)} (${resPick.ids.size})</span> <a href="#" class="btn3" id="pick-clear" style="padding:0">${esc(t("pick_clear"))}</a>` : "");
+  if ($("#pick-clear")) $("#pick-clear").onclick = e => { e.preventDefault(); resPick = null; loadResPage(true); };
   const contactCount = r => [[r.email, r.backup_email], [r.phone, r.backup_phone]].map(x => x.filter(Boolean).length);
   $("#res").innerHTML = list.map(r => {
     const last = msgLast(r), [ne, np] = contactCount(r), cancelled = r.status === "cancelled";

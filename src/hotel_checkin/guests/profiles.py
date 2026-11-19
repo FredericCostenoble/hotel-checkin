@@ -66,6 +66,9 @@ def save_profile(g: GuestProfile) -> GuestProfile:
     g.created_at = g.created_at or now
     g.updated_at = now
     _table(T_GUESTS).upsert_entity(_to_entity(g))
+    from hotel_checkin.guests import index
+
+    index.put_guest(g)
     return g
 
 
@@ -83,6 +86,9 @@ def list_profiles(hotel_id: str) -> list[GuestProfile]:
 
 def delete_profile(hotel_id: str, guest_id: str) -> None:
     _table(T_GUESTS).delete_entity(_key(hotel_id), guest_id)
+    from hotel_checkin.guests import index
+
+    index.drop_guest(hotel_id, guest_id)
 
 
 def _pair_key(a: str, b: str) -> str:

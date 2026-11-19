@@ -326,6 +326,9 @@ def save_reservation(reservation: Reservation, fields: tuple[str, ...] | list[st
         _index_token(reservation.hotel_id, reservation.reservation_id, entity["token"])
     reservation.created_at = datetime.fromisoformat(entity["created_at"])
     reservation.updated_at = datetime.fromisoformat(entity["updated_at"])
+    from hotel_checkin.guests import index
+
+    index.put_reservation(_from_entity(entity))  # zoals bewaard (ook velden die dit proces niet schreef)
     return reservation
 
 
@@ -406,6 +409,9 @@ def delete_reservation(hotel_id: str, reservation_id: str) -> None:
     if r is not None and r.token:
         _table(T_TOKENS).delete_entity(_key(r.token), "")
     _table(T_RESERVATIONS).delete_entity(_key(hotel_id), _key(reservation_id))
+    from hotel_checkin.guests import index
+
+    index.drop_reservation(hotel_id, reservation_id)
 
 
 def get_reservation(hotel_id: str, reservation_id: str) -> Reservation | None:
@@ -558,6 +564,12 @@ def messages_for_hotel(hotel_id: str) -> dict[str, list[dict]]:
     for rows in out.values():
         rows.sort(key=lambda e: e["RowKey"])
     return out
+
+
+def failed_message_reservations(hotel_id: str) -> set[str]:
+    """Reservaties met minstens één mislukt bericht (voor Vandaag: Mislukte berichten), zonder alle berichten te lezen."""
+    rows = _table(T_MESSAGES).query_entities(_prefix_filter(hotel_id) + " and ok eq false", select=["reservation_id", "ok"])
+    return {e["reservation_id"] for e in rows if not e.get("ok")}
 
 
 def messages_for(hotel_id: str, reservation_id: str) -> list[dict]:

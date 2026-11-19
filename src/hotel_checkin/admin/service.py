@@ -65,12 +65,88 @@ def daily_list(hotel_id: str, kind: str, day: str) -> dict | None:
     return repo.get_daily_list(hotel_id, kind, day)
 
 
-def reservations(hotel_id: str) -> list[dict]:
+def _parallel(fn, items, workers: int = 8) -> list:
+    """Dezelfde opvraging voor veel sleutels tegelijk (Table Storage: één punt-opvraging per sleutel)."""
+    items = list(items)
+    if len(items) <= 1:
+        return [fn(x) for x in items]
+    from concurrent.futures import ThreadPoolExecutor
+
+    with ThreadPoolExecutor(max_workers=min(workers, len(items))) as pool:
+        return list(pool.map(fn, items))
+
+
+PAGE = 50
+RES_SORT = {"arrival", "departure", "booking_number", "guest", "room", "source", "pms_status", "email", "status"}
+
+
+def _sort_key(value):
+    """Lege waarden altijd onderaan, getallen als getal, tekst zonder hoofdletters."""
+    if value in ("", None):
+        return (1, 0, "")
+    if isinstance(value, (int, float)):
+        return (0, value, "")
+    return (0, 0, str(value).lower())
+
+
+def _page(rows: list[dict], sort: str, desc: bool, offset: int, limit: int, value) -> tuple[list[dict], int]:
+    filled = [r for r in rows if value(r, sort) not in ("", None)]
+    empty = [r for r in rows if value(r, sort) in ("", None)]
+    filled.sort(key=lambda r: (_sort_key(value(r, sort)), r.get("id", "")), reverse=desc)
+    ordered = filled + empty
+    return ordered[offset:offset + limit], len(ordered)
+
+
+def reservations_page(hotel_id: str, q: str = "", date_from: str = "", date_to: str = "", status: str = "",
+                      sort: str = "arrival", desc: bool = False, offset: int = 0, limit: int = PAGE,
+                      ids: list[str] | None = None, window: tuple[str, str] | None = None) -> dict:
+    """Een pagina reservaties voor de monitor: zoeken, filteren en sorteren gebeurt op de index (guests/index.py),
+    de volledige gegevens alleen voor de getoonde rijen.
+
+    ids: precies deze reservaties (detail, gastprofiel, link vanuit Vandaag). window: (van, tot) voor Vandaag:
+    alles wat in die periode aankomt, vertrekt of verblijft, zonder paginering."""
+    from hotel_checkin.guests import index
+
+    rows = index.reservations(hotel_id)
+    if ids is not None:
+        want = set(ids)
+        rows = [r for r in rows if r["id"] in want]
+    elif window is not None:
+        a, b = window
+        failed = repo.failed_message_reservations(hotel_id)  # Vandaag toont ook mislukte berichten van later
+        rows = [r for r in rows if (r["departure"] >= a and r["arrival"] <= b) or (r["id"] in failed and r["departure"] >= a)]
+        limit = len(rows)
+    else:
+        ql = q.lower().strip()
+        rows = [r for r in rows if (not date_from or r["departure"] >= date_from) and (not date_to or r["arrival"] <= date_to)
+                and (not status or (status == "cancelled") == (r["status"] == "cancelled"))
+                and (not ql or ql in r["search"])]
+    sort = sort if sort in RES_SORT else "arrival"
+
+    def value(r, k):
+        if k == "room":
+            return ", ".join(r.get("rooms") or []) or r.get("room_type", "")
+        if k == "email":
+            return r.get("email") or r.get("phone") or ""
+        return r.get(k, "")
+    page, total = _page(rows, sort, desc, max(0, offset), max(1, min(limit if ids is None else len(rows) or 1, 500)), value)
+    full = _parallel(lambda x: repo.get_reservation(hotel_id, x["id"]), page)
+    items = reservations(hotel_id, only=[r for r in full if r])
+    return {"items": items, "total": total, "offset": offset, "next": offset + len(page) if offset + len(page) < total else None}
+
+
+def reservations(hotel_id: str, only: list | None = None, msgs_by_res: dict | None = None) -> list[dict]:
+    """Volledige gegevens per reservatie voor de monitor. only: alleen deze reservaties (Reservation-objecten),
+    met alleen hun gastprofielen en berichten; None = alle (oude manier, voor tests en het overzicht)."""
     from hotel_checkin.core import workflow
     from hotel_checkin.guests import profiles
     from hotel_checkin.processes import send_messages
 
-    all_profiles = profiles.list_profiles(hotel_id)
+    if only is None:
+        all_profiles = profiles.list_profiles(hotel_id)
+    else:
+        ids = {r.guest_id for r in only if r.guest_id}
+        all_profiles = [p for p in _parallel(lambda gid: profiles.get_profile(hotel_id, gid), sorted(ids)) if p]
     periods = {g.guest_id: g.stay_periods for g in all_profiles}
     muted = {g.guest_id: set(g.muted_channels) for g in all_profiles}
     own_email = {g.guest_id: g.email for g in all_profiles if g.email_own and g.email}
@@ -90,8 +166,14 @@ def reservations(hotel_id: str) -> list[dict]:
         a, d = r.arrival.isoformat(), r.departure.isoformat()
         return sum(1 for pa, pd in periods.get(r.guest_id, []) if not (a < pd and d > pa))
     out = []
-    all_msgs = repo.messages_for_hotel(hotel_id)  # één query voor alle berichten, niet één per reservatie
-    for r in repo.list_reservations(hotel_id):
+    if msgs_by_res is not None:
+        all_msgs = msgs_by_res
+    elif only is None:
+        all_msgs = repo.messages_for_hotel(hotel_id)  # één query voor alle berichten, niet één per reservatie
+    else:
+        all_msgs = dict(zip([r.reservation_id for r in only],
+                            _parallel(lambda r: repo.messages_for(hotel_id, r.reservation_id), only), strict=True))
+    for r in (repo.list_reservations(hotel_id) if only is None else only):
         msgs = all_msgs.get(r.reservation_id, [])
         out.append({
             "id": r.reservation_id,
@@ -169,19 +251,26 @@ def runs(hotel_id: str) -> dict:
     ]}
 
 
-def guests(hotel_id: str) -> dict:
-    """Gastprofielen en mogelijke dubbels voor de monitor."""
+def guests(hotel_id: str, only: list | None = None, with_matches: bool = True) -> dict:
+    """Gastprofielen en mogelijke dubbels voor de monitor. only: alleen deze profielen (GuestProfile), met alleen
+    hun eigen reservaties; None = alle."""
     from hotel_checkin.guests import profiles
     from hotel_checkin.processes import guest_profiles
 
     opted_out = {e for e in repo.opted_out_emails(hotel_id)}
     opted_out_by_guest = {e for e in opted_out if repo.opt_out_source(hotel_id, e) not in (None, "monitor")}
     res_by_guest: dict[str, list] = {}
-    for r in repo.list_reservations(hotel_id):
-        if r.guest_id:
-            res_by_guest.setdefault(r.guest_id, []).append(r)
+    if only is None:
+        for r in repo.list_reservations(hotel_id):
+            if r.guest_id:
+                res_by_guest.setdefault(r.guest_id, []).append(r)
+    else:
+        pairs = [(g.guest_id, rid) for g in only for rid in g.reservation_ids]
+        for (gid, _), r in zip(pairs, _parallel(lambda p: repo.get_reservation(hotel_id, p[1]), pairs), strict=True):
+            if r and r.guest_id == gid:
+                res_by_guest.setdefault(gid, []).append(r)
     out = []
-    for g in profiles.list_profiles(hotel_id):
+    for g in (profiles.list_profiles(hotel_id) if only is None else only):
         channels = sorted(g.channels.items(), key=lambda kv: -kv[1])
         rooms = sorted(g.rooms.items(), key=lambda kv: -kv[1])
         out.append({
@@ -220,7 +309,60 @@ def guests(hotel_id: str) -> dict:
             "reservations": g.reservation_ids,
             "updated_at": g.updated_at.isoformat() if g.updated_at else "",
         })
-    return {"guests": out, "matches": guest_profiles.possible_matches(hotel_id)}
+    return {"guests": out, "matches": guest_profiles.possible_matches(hotel_id) if with_matches else []}
+
+
+def list_request(hotel_id: str, what: str, params) -> dict | list:
+    """GET reservations/guests van de monitor. Met page=1: per pagina (q, from, to, status, sort, dir, offset,
+    limit, ids, window); zonder: de volledige lijst zoals vroeger (oudere pagina's die nog open staan)."""
+    p = {k: (params.get(k) or "") for k in ("page", "q", "from", "to", "status", "sort", "dir", "offset", "limit",
+                                             "ids", "window")}
+    ids = [x for x in p["ids"].split(",") if x] if p["ids"] else None
+    num = lambda v, d: int(v) if str(v).isdigit() else d
+    if what == "reservations":
+        if not p["page"]:
+            return reservations(hotel_id)
+        window = tuple(p["window"].split(",", 1)) if "," in p["window"] else None
+        return reservations_page(hotel_id, p["q"], p["from"], p["to"], p["status"], p["sort"] or "arrival",
+                                 p["dir"] == "desc", num(p["offset"], 0), num(p["limit"], PAGE), ids, window)
+    if not p["page"]:
+        return guests(hotel_id)
+    return guests_page(hotel_id, p["q"], p["sort"] or "last_stay", p["dir"] != "asc", num(p["offset"], 0),
+                       num(p["limit"], PAGE), ids)
+
+
+GUEST_SORT = {"name", "country", "stays", "reservations", "last_stay", "first_stay", "preferred_channel"}
+
+
+def guests_page(hotel_id: str, q: str = "", sort: str = "last_stay", desc: bool = True, offset: int = 0,
+                limit: int = PAGE, ids: list[str] | None = None) -> dict:
+    """Een pagina gastprofielen: zoeken en sorteren op de index, volledige gegevens alleen voor de getoonde
+    rijen. De mogelijke dubbels (Te beslissen) komen mee met de eerste pagina."""
+    from hotel_checkin.guests import index, profiles
+    from hotel_checkin.processes import guest_profiles
+
+    rows = index.guests(hotel_id)
+    if ids is not None:
+        want = set(ids)
+        rows = [r for r in rows if r["id"] in want]
+    else:
+        ql = q.lower().strip()
+        rows = [r for r in rows if not ql or ql in r["search"]]
+    sort = sort if sort in GUEST_SORT else "last_stay"
+    page, total = _page(rows, sort, desc, max(0, offset), max(1, min(limit if ids is None else len(rows) or 1, 500)),
+                        lambda r, k: r.get(k, ""))
+    full = [p for p in _parallel(lambda x: profiles.get_profile(hotel_id, x["id"]), page) if p]
+    data = guests(hotel_id, only=full, with_matches=False)
+    out = {"guests": data["guests"], "total": total, "offset": offset,
+           "next": offset + len(page) if offset + len(page) < total else None}
+    if ids is None and offset == 0:
+        matches = guest_profiles.possible_matches(hotel_id)
+        out["matches"] = matches
+        # De gasten uit de voorstellen meesturen, ook als ze niet op deze pagina staan
+        need = sorted({x for m in matches for x in (m["a"], m["b"])} - {g["id"] for g in out["guests"]})
+        extra = [p for p in _parallel(lambda gid: profiles.get_profile(hotel_id, gid), need) if p]
+        out["match_guests"] = guests(hotel_id, only=extra, with_matches=False)["guests"]
+    return out
 
 
 def merge_guests(hotel_id: str, keep: str, other: str) -> bool:

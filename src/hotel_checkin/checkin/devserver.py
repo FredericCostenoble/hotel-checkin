@@ -69,6 +69,11 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
+    def _params(self) -> dict:
+        from urllib.parse import parse_qs, urlparse
+
+        return {k: v[0] for k, v in parse_qs(urlparse(self.path).query).items()}
+
     def _json(self, status: int, obj) -> None:
         self._send(status, json.dumps(obj).encode(), "application/json")
 
@@ -79,7 +84,7 @@ class Handler(BaseHTTPRequestHandler):
         if method == "GET" and parts[2:] == ["hotels"]:
             self._json(200, admin.hotels())
         elif method == "GET" and len(parts) == 4 and parts[3] == "reservations":
-            self._json(200, admin.reservations(parts[2]))
+            self._json(200, admin.list_request(parts[2], "reservations", self._params()))
         elif method == "POST" and len(parts) == 4 and parts[3] == "preview":
             body = json.loads(self.rfile.read(int(self.headers.get("Content-Length", 0))) or b"{}")
             self._json(200, admin.workflow_preview(parts[2], body))
@@ -119,7 +124,7 @@ class Handler(BaseHTTPRequestHandler):
 
             self._json(200, maintenance.run(parts[2]))
         elif method == "GET" and len(parts) == 4 and parts[3] == "guests":
-            self._json(200, admin.guests(parts[2]))
+            self._json(200, admin.list_request(parts[2], "guests", self._params()))
         elif len(parts) == 4 and parts[3] in ("lists", "list-xlsx", "list-pdf"):
             # Tabbladen Ontbijt en Kuis (zelfde als function_app.py)
             from urllib.parse import parse_qs, urlparse

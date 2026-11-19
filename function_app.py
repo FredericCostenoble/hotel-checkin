@@ -238,7 +238,7 @@ def admin_api(req: func.HttpRequest) -> func.HttpResponse:
     if hotel not in list_hotels():
         return _json(404, {"error": "hotel"})
     if req.method == "GET" and what == "reservations":
-        return _json(200, admin.reservations(hotel))
+        return _json(200, admin.list_request(hotel, what, req.params))
     if what == "preview" and req.method == "POST":
         # Voorbeeldmail voor een stap (tabblad Workflow)
         try:
@@ -348,7 +348,7 @@ def admin_api(req: func.HttpRequest) -> func.HttpResponse:
             return _json(200, {"ok": True} | result)
         return _json(405, {"error": "method"})
     if req.method == "GET" and what == "guests":
-        return _json(200, admin.guests(hotel))
+        return _json(200, admin.list_request(hotel, what, req.params))
     if req.method == "POST" and what == "maintenance":
         # Knop "Synchroniseren": gasten koppelen, voorbije verblijven meetellen, opruimen
         from hotel_checkin.processes import maintenance
@@ -435,6 +435,12 @@ def mail_trigger(timer: func.TimerRequest) -> None:
                 process.cleanup(hotel_id)  # eenmalig: oude verwerkte mails naar hun map
         except Exception:
             logging.exception("%s: mail_trigger mislukt", hotel_id)
+        try:  # index van de lijsten in de monitor (eenmalig opbouwen, daarna alleen een leesactie)
+            from hotel_checkin.guests import index as list_index
+
+            list_index.ensure(hotel_id)
+        except Exception:
+            logging.exception("%s: index van de lijsten opbouwen mislukt", hotel_id)
         try:  # eenmalig: bestaande dubbele gastprofielen samenvoegen (daarna alleen nog één leesactie)
             from hotel_checkin.processes import maintenance
 
