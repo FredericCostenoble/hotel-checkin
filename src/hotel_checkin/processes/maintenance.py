@@ -8,7 +8,7 @@ een run van de robot die toch al draait. Telt nooit iets dubbel (stay_counted_at
 3. Reservaties (en hun berichtenlog) verwijderen zodra het vertrek langer dan
    [retention] reservation_days geleden is (Lucca: 30, zoals in de privacyverklaring).
    Alleen als het verblijf al meegeteld is of geannuleerd werd.
-4. Gastprofielen verwijderen als het laatste verblijf langer dan [retention] guest_days geleden
+4. Gastprofielen verwijderen als het laatste verblijf langer dan [retention] guest_days geleden (0 = nooit)
    of de laatste annulering langer dan [retention] guest_days geleden is (Lucca: 730), en
    profielen zonder verblijf, annulering of reservatie.
 5. Indieningen van het check-in-formulier van reservaties die er niet meer zijn, verwijderen
@@ -93,7 +93,7 @@ def run(hotel_id: str, today: date | None = None) -> dict:
             g.reservation_ids = [x for x in g.reservation_ids if x in remaining]
             # Laatste contact: laatste verblijf of laatste annulering
             last = max(filter(None, (g.last_stay, g.last_cancelled)), default=None)
-            expired = last and last < today - timedelta(days=keep_guest)
+            expired = keep_guest > 0 and last and last < today - timedelta(days=keep_guest)  # 0 = altijd bewaren
             empty = not g.stays and not g.cancellations and not g.reservation_ids
             if expired or empty:
                 profiles.delete_profile(hotel_id, g.guest_id)

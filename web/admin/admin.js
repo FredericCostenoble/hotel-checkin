@@ -249,6 +249,13 @@ Object.assign(T.nl, {
   nav_today: "Vandaag", td_update: (d, u) => `${d}, laatste update ${u}`, td_arr: "aankomsten vandaag", td_arr_tom: "aankomsten morgen", td_dep: "vertrekken vandaag",
   td_inhouse: (r) => `gasten in huis (${r} kamers)`, td_failed: "bericht mislukt", td_attn: "Vraagt aandacht", td_points: n => `${n} punten`,
   td_a_failed: (s, g, x) => `<b>${s} mislukt</b> voor ${g}${x ? ` (${x})` : ""}.`, td_a_resend: "Opnieuw versturen",
+  td_a_failed2: (s, ch, g, to, why) => `<b>${s} per ${ch} niet verstuurd</b> voor ${g}${to ? ` (${to})` : ""}. ${why}`,
+  td_a_tech: "Technische fout", td_a_dismiss: "Negeren",
+  pb_mail_rights: "De app mag geen mails versturen: de rechten in Microsoft 365 ontbreken.",
+  pb_provider_rights: "Twilio weigerde de aanmelding: het account of de sleutel klopt niet.",
+  pb_bad_address: "Het adres of nummer is ongeldig.", pb_not_delivered: "Verstuurd, maar niet afgeleverd bij de gast.",
+  pb_template: "WhatsApp weigerde het bericht (sjabloon niet goedgekeurd of buiten het venster van 24 uur).",
+  pb_unavailable: "De dienst was even niet bereikbaar.", pb_other: "Onbekende fout.",
   td_a_unpaid: (g, a) => `<b>${g} komt vandaag</b> en heeft nog niet betaald${a ? ` (${a})` : ""}. Zonder betaling geen pincode.`, td_a_open: "Reservatie openen",
   td_a_form: x => `<b>Formulier niet ingevuld:</b> ${x}.`, td_a_view: "Bekijken", td_today_s: "vandaag", td_tomorrow_s: "morgen",
   td_a_blist: t => `<b>Ontbijtlijst voor morgen</b> nog niet gemaakt (automatisch om ${t}).`, td_a_make: "Nu maken",
@@ -334,6 +341,13 @@ Object.assign(T.en, {
   nav_today: "Today", td_update: (d, u) => `${d}, last update ${u}`, td_arr: "arrivals today", td_arr_tom: "arrivals tomorrow", td_dep: "departures today",
   td_inhouse: (r) => `guests in house (${r} rooms)`, td_failed: "message failed", td_attn: "Needs attention", td_points: n => `${n} items`,
   td_a_failed: (s, g, x) => `<b>${s} failed</b> for ${g}${x ? ` (${x})` : ""}.`, td_a_resend: "Send again",
+  td_a_failed2: (s, ch, g, to, why) => `<b>${s} by ${ch} not sent</b> for ${g}${to ? ` (${to})` : ""}. ${why}`,
+  td_a_tech: "Technical error", td_a_dismiss: "Dismiss",
+  pb_mail_rights: "The app may not send mail: the Microsoft 365 permissions are missing.",
+  pb_provider_rights: "Twilio refused the sign-in: the account or key is wrong.",
+  pb_bad_address: "The address or number is invalid.", pb_not_delivered: "Sent, but not delivered to the guest.",
+  pb_template: "WhatsApp refused the message (template not approved or outside the 24 hour window).",
+  pb_unavailable: "The service was briefly unavailable.", pb_other: "Unknown error.",
   td_a_unpaid: (g, a) => `<b>${g} arrives today</b> and has not paid yet${a ? ` (${a})` : ""}. No PIN code without payment.`, td_a_open: "Open reservation",
   td_a_form: x => `<b>Form not filled in:</b> ${x}.`, td_a_view: "View", td_today_s: "today", td_tomorrow_s: "tomorrow",
   td_a_blist: t => `<b>Breakfast list for tomorrow</b> not made yet (automatically at ${t}).`, td_a_make: "Make now",
@@ -839,13 +853,21 @@ function renderToday() {
   const codeSent = r => r.messages.some(m => m.type === "access_code" && m.ok);
   const codeFailed = r => r.messages.some(m => m.type === "access_code" && !m.ok) && !codeSent(r);
   const unpaid = r => r.paid === false;
-  const failedRows = live.filter(r => { const l = msgLast(r); return l && l.failed && r.departure >= today; });
+  // Mislukt bericht: tot het opnieuw gelukt is, iemand op Negeren klikte of de gast vertrokken is
+  const lastFail = r => [...r.messages].filter(m => !m.ok).pop();
+  const failedRows = live.filter(r => { const l = msgLast(r), f = lastFail(r); return l && l.failed && f && !f.dismissed_at && r.departure >= today; });
   const labels = r => [(r.pms_labels || []).some(l => /ontbijt|breakfast/i.test(l)) ? `<span class="tag t-bf">Ontbijt</span>` : "", r.stairs ? `<span class="tag t-st">${esc(t("r_stairs"))}</span>` : ""].filter(Boolean).join(" ") || `<span class="muted small">${esc(t("td_none"))}</span>`;
   const gLink = r => `<a class="nm" href="#" data-open="${esc(r.id)}">${esc(r.guest)}</a>${r.guest_stays ? ` <span class="small muted">(${esc(t("r_returning", r.guest_stays))})</span>` : ""}<div class="small muted">#${esc(r.booking_number)}</div>`;
   const room = r => esc(r.rooms.join(" + ") || r.room_type);
   // Vraagt aandacht
   const att = [];
-  failedRows.forEach(r => { const last = [...r.messages].filter(m => !m.ok).pop(); att.push(["err", P.warn, t("td_a_failed", esc(stepShort(last.type)), esc(r.guest), esc([t(CH[last.channel] || last.channel), last.to, last.error].filter(Boolean).join(", "))), `<a class="btn sm" href="#" data-open="${esc(r.id)}">${esc(t("td_a_resend"))}</a>`]); });
+  failedRows.forEach(r => {
+    const last = lastFail(r), ch = last.channel === "email" ? "mail" : last.channel === "sms" ? "sms" : "WhatsApp";
+    const tech = last.error ? `<details class="tech"><summary>${esc(t("td_a_tech"))}</summary><code>${esc(last.error)}</code></details>` : "";
+    att.push(["err", P.warn, t("td_a_failed2", esc(stepShort(last.type)), esc(ch), esc(r.guest), esc(last.to || ""),
+      esc(t("pb_" + (last.problem || "other")) || t("pb_other"))) + tech,
+      `<span class="row" style="gap:6px;flex:none"><a class="btn sm" href="#" data-open="${esc(r.id)}">${esc(t("td_a_resend"))}</a><button type="button" class="btn2 sm" data-dismiss="${esc(r.id)}">${esc(t("td_a_dismiss"))}</button></span>`]);
+  });
   arrT.filter(unpaid).forEach(r => att.push(["warn", P.euro, t("td_a_unpaid", esc(r.guest), r.open_amount ? esc(eur(r.open_amount)) : ""), `<a class="btn2 sm" href="#" data-open="${esc(r.id)}">${esc(t("td_a_open"))}</a>`]));
   const noForm = [...arrT.map(r => [r, "td_today_s"]), ...arrM.map(r => [r, "td_tomorrow_s"])].filter(([r]) => !r.checkin_completed_at);
   todayPicks.noform = { label: t("td_a_form", "").replace(/<[^>]+>/g, "").replace(/[\s:.]+$/, ""), ids: noForm.map(([r]) => r.id) };
@@ -976,6 +998,18 @@ function goBackFromDetail() {
 function markOpened() {
   document.querySelectorAll("tr[data-row-open]").forEach(tr => tr.classList.toggle("sel", tr.dataset.rowOpen === lastOpened));
 }
+// Negeren (Vandaag): mislukte berichten van die reservatie niet meer als aandachtspunt tonen
+document.addEventListener("click", async e => {
+  const b = e.target.closest("[data-dismiss]");
+  if (!b) return;
+  e.preventDefault();
+  b.disabled = true;
+  try {
+    await get(`/api/monitor/${encodeURIComponent($("#hotel").value)}/dismiss?id=${encodeURIComponent(b.dataset.dismiss)}`, { method: "POST" });
+    await ensureRes([b.dataset.dismiss], true);
+    renderToday();
+  } catch (err) { b.disabled = false; notice(String(err.message || err)); }
+});
 // Hele rij klikbaar: overal waar een rij data-row-open heeft (behalve op een link, knop of veld in de rij)
 document.addEventListener("click", e => {
   const tr = e.target.closest("tr[data-row-open]");
@@ -2302,7 +2336,7 @@ const HS_TEXT = {
    ],
    "retention.guest_days": [
     "Gasten bewaren (dagen na laatste verblijf)",
-    "Daarna wordt het gastprofiel gewist."
+    "Daarna wordt het gastprofiel gewist. 0 = altijd bewaren."
    ],
    "salto.identity_url": [
     "Aanmeldserver",
@@ -2632,7 +2666,7 @@ const HS_TEXT = {
    ],
    "retention.guest_days": [
     "Keep guests (days after last stay)",
-    "After that the guest profile is deleted."
+    "After that the guest profile is deleted. 0 = keep forever."
    ],
    "salto.identity_url": [
     "Login server",

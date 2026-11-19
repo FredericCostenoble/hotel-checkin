@@ -385,6 +385,9 @@ def admin_api(req: func.HttpRequest) -> func.HttpResponse:
         # Met de hand een e-mailadres of gsm-nummer toevoegen: ?id=<reservatie>&email=..&phone=..
         p = req.params
         return _json(200, admin.add_contact(hotel, p.get("id", ""), p.get("email", ""), p.get("phone", "")))
+    if req.method == "POST" and what == "dismiss":
+        # Mislukte berichten van een reservatie negeren op Vandaag: ?id=<reservatie>
+        return _json(200, admin.dismiss_failed(hotel, req.params.get("id", ""), _admin_user(req) or ""))
     if req.method == "POST" and what == "resend":
         # Eén bericht nu (opnieuw) versturen: ?id=<reservatie>&step=<stap>&channel=<kanaal>&to=<adres>
         p = req.params

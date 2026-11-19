@@ -233,11 +233,38 @@ def reservations(hotel_id: str, only: list | None = None, msgs_by_res: dict | No
             "messages": [
                 {"type": m["message_type"], "channel": m["channel"], "ok": m["ok"], "at": m["sent_at"],
                  "to": m.get("recipient", ""), "delivered_to": m.get("delivered_to", ""), "status": m.get("status") or ("sent" if m["ok"] else "failed"),
-                 "error": m.get("error", ""), "note": m.get("note", ""), "status_at": m.get("status_at", "")}
+                 "error": m.get("error", ""), "note": m.get("note", ""), "status_at": m.get("status_at", ""),
+                 "problem": message_problem(m) if not m["ok"] else "", "dismissed_at": m.get("dismissed_at", "")}
                 for m in msgs
             ],
         })
     return out
+
+
+def message_problem(m: dict) -> str:
+    """Wat er functioneel misliep met een bericht, als code voor de monitor (de technische fout blijft apart)."""
+    err, ch = str(m.get("error") or "").lower(), m.get("channel", "")
+    if not err and m.get("status") in ("undelivered", "failed"):
+        return "not_delivered"
+    if "graph 401" in err or "graph 403" in err or "erroraccessdenied" in err or "authorization" in err:
+        return "mail_rights" if ch == "email" else "provider_rights"
+    if "20003" in err or "authenticate" in err:
+        return "provider_rights"
+    if any(x in err for x in ("invalidrecipient", "invalid recipient", "21211", "21614", "63003", "not a valid", "not a mobile")):
+        return "bad_address"
+    if any(x in err for x in ("63016", "outside the allowed window", "template")):
+        return "template"
+    if m.get("status") in ("undelivered", "failed"):
+        return "not_delivered"
+    if "timeout" in err or "timed out" in err or "connection" in err or " 5" in err[:12]:
+        return "unavailable"
+    return "other"
+
+
+def dismiss_failed(hotel_id: str, reservation_id: str, user: str) -> dict:
+    """Negeren op Vandaag: de mislukte berichten van deze reservatie niet meer als aandachtspunt tonen."""
+    n = repo.dismiss_failed_messages(hotel_id, reservation_id, user)
+    return {"ok": True, "dismissed": n}
 
 
 def runs(hotel_id: str) -> dict:

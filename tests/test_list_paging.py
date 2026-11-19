@@ -74,3 +74,28 @@ def test_index_rebuilt_when_missing(setup):
 def test_without_page_the_old_full_list(setup):
     assert len(service.list_request("lucca", "reservations", {})) == 120
     assert len(service.list_request("lucca", "guests", {})["guests"]) == 120
+
+
+def test_failed_message_problem_and_dismiss(setup):
+    from hotel_checkin.core.models import Channel, SendResult
+
+    repo.log_message("lucca", "r005", "confirmation", SendResult(channel=Channel.EMAIL, to="a@b.c", ok=False,
+                     error='Graph 403: {"error":{"code":"ErrorAccessDenied"}}'))
+    assert "r005" in repo.failed_message_reservations("lucca")
+    m = service.list_request("lucca", "reservations", {"page": "1", "ids": "r005"})["items"][0]["messages"][-1]
+    assert m["problem"] == "mail_rights" and not m["dismissed_at"]
+    assert service.dismiss_failed("lucca", "r005", "fred")["dismissed"] == 1
+    assert "r005" not in repo.failed_message_reservations("lucca")
+    assert repo.messages_for("lucca", "r005")[-1]["dismissed_by"] == "fred"  # blijft in het logboek
+
+
+def test_guest_days_zero_keeps_profiles_forever(setup, monkeypatch):
+    from hotel_checkin.processes import maintenance
+
+    monkeypatch.setenv("LUCCA_RETENTION_GUEST_DAYS", "0")
+    g = profiles.new_profile("lucca")
+    g.first_name, g.last_name, g.stays, g.last_stay = "Ann", "Oud", 1, date(2000, 1, 1)
+    g.stay_periods = [["2000-01-01", "2000-01-03"]]
+    profiles.save_profile(g)
+    maintenance.run("lucca", today=date(2026, 12, 1))
+    assert profiles.get_profile("lucca", g.guest_id) is not None

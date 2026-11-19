@@ -212,9 +212,9 @@ phone = false
 [retention]
 # Opruimen bij het synchroniseren van de gasten (processes/maintenance.py). Dagen na vertrek / na het laatste verblijf.
 # reservation_days: reservaties en hun berichtenlog (privacyverklaring: einde verblijf + max. 1 maand).
-# guest_days: gastprofielen (soft opt-in: max. 2 jaar na het laatste verblijf).
+# guest_days: gastprofielen; 0 = altijd bewaren (beslissing 19/11/2026; de privacyverklaring moet dat vermelden).
 reservation_days = 30
-guest_days = 730
+guest_days = 0
 
 [salto]
 # Salto KS (KS Connect API), zie src/hotel_checkin/access/salto.py en projectnotitie claude/salto-ks-connect.md.

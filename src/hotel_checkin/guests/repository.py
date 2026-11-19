@@ -568,8 +568,21 @@ def messages_for_hotel(hotel_id: str) -> dict[str, list[dict]]:
 
 def failed_message_reservations(hotel_id: str) -> set[str]:
     """Reservaties met minstens één mislukt bericht (voor Vandaag: Mislukte berichten), zonder alle berichten te lezen."""
-    rows = _table(T_MESSAGES).query_entities(_prefix_filter(hotel_id) + " and ok eq false", select=["reservation_id", "ok"])
-    return {e["reservation_id"] for e in rows if not e.get("ok")}
+    rows = _table(T_MESSAGES).query_entities(_prefix_filter(hotel_id) + " and ok eq false",
+                                             select=["reservation_id", "ok", "dismissed_at"])
+    return {e["reservation_id"] for e in rows if not e.get("ok") and not e.get("dismissed_at")}
+
+
+def dismiss_failed_messages(hotel_id: str, reservation_id: str, by: str) -> int:
+    """Mislukte berichten van een reservatie als gezien markeren (Negeren op Vandaag). Ze blijven in het logboek."""
+    table, n = _table(T_MESSAGES), 0
+    for m in messages_for(hotel_id, reservation_id):
+        if not m.get("ok") and not m.get("dismissed_at"):
+            e = dict(m)
+            e["dismissed_at"], e["dismissed_by"] = _now().isoformat(), by or "?"
+            table.upsert_entity(e)
+            n += 1
+    return n
 
 
 def messages_for(hotel_id: str, reservation_id: str) -> list[dict]:
