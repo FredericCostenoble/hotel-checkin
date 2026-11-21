@@ -1,0 +1,33 @@
+# Diagnose (alleen lezen): WhatsApp-sjablonen bij Twilio met hun status en de reden van Meta.
+name: WhatsApp templates diag
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        type: choice
+        options: [prd, tst]
+        default: prd
+permissions:
+  id-token: write
+  contents: read
+jobs:
+  diag:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    steps:
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      - run: |
+          rg="rg-checkin-${{ inputs.environment }}"
+          kv=$(az keyvault list -g "$rg" --query "[?!contains(name,'sess')].name | [0]" -o tsv)
+          sid=""; tok=""
+          for p in lucca- ""; do
+            [ -z "$sid" ] && sid=$(az keyvault secret show --vault-name "$kv" -n "${p}twilio-account-sid" --query value -o tsv 2>/dev/null || true)
+            [ -z "$tok" ] && tok=$(az keyvault secret show --vault-name "$kv" -n "${p}twilio-auth-token" --query value -o tsv 2>/dev/null || true)
+          done
+          echo "::add-mask::$tok"
+          curl -s -u "$sid:$tok" "https://content.twilio.com/v2/ContentAndApprovals?PageSize=200" \
+            | jq -r '.contents[] | [.friendly_name, .language, (.approval_requests.status // "-"), (.approval_requests.category // "-"), (.approval_requests.rejection_reason // "")] | @tsv'
