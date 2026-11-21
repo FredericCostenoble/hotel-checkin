@@ -69,8 +69,9 @@ body = "Your room at Hotel Lucca has changed: you are now staying in room {{1}}.
 [room_change.de]
 body = "Ihr Zimmer im Hotel Lucca hat sich geändert: Sie wohnen jetzt in Zimmer {{1}}. Ihr Code bleibt {{2}} ↵ Weitere Informationen in Ihrer E-Mail."
 
-[breakfast_list.nl]
-body = "Ontbijtlijst voor {{1}}: {{2}}. Open de pdf voor de volledige lijst om af te drukken."
+# Lijsten voor het personeel: in het Engels, zoals de lijsten zelf
+[breakfast_list.en]
+body = "Breakfast list for {{1}}: {{2}}. Open the PDF for the full list to print."
 
-[cleaning_list.nl]
-body = "Schoonmaaklijst voor {{1}}: {{2}}. Open de pdf voor de volledige lijst met de opmerkingen."
+[cleaning_list.en]
+body = "Cleaning list for {{1}}: {{2}}. Open the PDF for the full list with the remarks."

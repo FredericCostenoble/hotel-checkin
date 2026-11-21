@@ -38,12 +38,17 @@ TEMPLATES: dict[str, dict] = {
     "reminder": {"vars": ("voornaam",), "button": "checkin_suffix", "langs": ("nl", "fr", "en", "de")},
     "access_code": {"vars": ("kamer_kort", "pincode"), "button": "checkin_suffix", "langs": ("nl", "fr", "en", "de")},
     "room_change": {"vars": ("kamer_kort", "pincode"), "langs": ("nl", "fr", "en", "de")},
-    "breakfast_list": {"vars": ("dag", "samenvatting"), "media": "pdf_pad", "langs": ("nl",)},
-    "cleaning_list": {"vars": ("dag", "samenvatting"), "media": "pdf_pad", "langs": ("nl",)},
+    # Lijsten voor het personeel: in het Engels, zoals de lijsten zelf (dag en samenvatting komen Engels uit
+    # daily_lists: lists.day_text en describe)
+    "breakfast_list": {"vars": ("dag", "samenvatting"), "media": "pdf_pad", "langs": ("en",),
+                       "samples": {"samenvatting": "12 persons in 6 rooms"}},
+    "cleaning_list": {"vars": ("dag", "samenvatting"), "media": "pdf_pad", "langs": ("en",),
+                      "samples": {"samenvatting": "3 leave, 5 stay, 2 check in",
+                                  "pdf_pad": "lucca/cleaning/2026-11-13/1763050000/a1b2c3/cleaning-list-2026-11-13.pdf"}},
 }
 # Voorbeeldwaarden: Meta vraagt ze bij het goedkeuren (en de monitor toont er een voorbeeld mee)
 SAMPLES = {"voornaam": "Jan", "checkin_suffix": "a1b2c3d4&lang=nl", "kamer_kort": "16 verdiep 1", "pincode": "4821",
-           "dag": "vrijdag 13/11/2026", "samenvatting": "12 personen in 6 kamers",
+           "dag": "Friday 13/11/2026", "samenvatting": "12 persons in 6 rooms",
            "pdf_pad": "lucca/breakfast/2026-11-13/1763050000/a1b2c3/breakfast-list-2026-11-13.pdf"}
 
 BODY_MAX, BODY_MAX_BUTTON, BUTTON_MAX, FOOTER_MAX = 1024, 640, 20, 60
@@ -52,6 +57,11 @@ CHECK_EVERY_MONITOR = timedelta(seconds=60)  # bij het openen van de monitor
 FIELDS = ("body", "button", "footer")
 # Content Template Builder in de Twilio Console (lijst met zoekvak; een link per sjabloon is niet gedocumenteerd)
 CONSOLE_URL = "https://console.twilio.com/us1/develop/sms/content-template-builder"
+
+
+def samples_of(step: str) -> dict[str, str]:
+    """Voorbeeldwaarden voor dit bericht (eigen waarden van het bericht gaan voor)."""
+    return SAMPLES | TEMPLATES[step].get("samples", {})
 
 
 def _now() -> datetime:
@@ -244,7 +254,8 @@ def view(hotel_id: str, refresh: bool = True) -> dict:
                 "manual_sid": manual if manual and not e.get("active") else "",
             })
         out.append({"step": step, "vars": list(spec["vars"]), "button": bool(spec.get("button")),
-                    "media": bool(spec.get("media")), "samples": [SAMPLES[v] for v in spec["vars"]],
+                    "media": bool(spec.get("media")), "samples": [samples_of(step)[v] for v in spec["vars"]],
+                    "media_sample": samples_of(step)[spec["media"]].rsplit("/", 1)[-1] if spec.get("media") else "",
                     "langs": langs})
     return {"templates": out, "console_url": CONSOLE_URL, "button_prefix": button_prefix(hotel_id), "media_prefix": media_prefix() or "",
             "env": environment(), "limits": {"body": BODY_MAX, "body_button": BODY_MAX_BUTTON,
@@ -311,14 +322,15 @@ def submit(hotel_id: str, step: str, lang: str, user: str, client=None) -> dict:
     if tpl.get("media") and not spec.get("media"):
         return {"ok": False, "message": "Het adres van de pdf is alleen gekend in Azure (TST of PRD)."}
     n = len(tpl["vars"])
-    samples = {str(i): SAMPLES[v] for i, v in enumerate(tpl["vars"], 1)}
+    sample = samples_of(step)
+    samples = {str(i): sample[v] for i, v in enumerate(tpl["vars"], 1)}
     url = media = None
     if tpl.get("button"):
         url = f"{spec['url']}{{{{{n + 1}}}}}"
-        samples[str(n + 1)] = SAMPLES[tpl["button"]]
+        samples[str(n + 1)] = sample[tpl["button"]]
     if tpl.get("media"):
         media = f"{spec['media']}{{{{{n + 1}}}}}"
-        samples[str(n + 1)] = SAMPLES[tpl["media"]]
+        samples[str(n + 1)] = sample[tpl["media"]]
     types = twilio.build_types(text["body"], text.get("button"), url, text.get("footer"), media)
     version = int(e.get("version") or 0) + 1
     name = template_name(hotel_id, step, lang, version)

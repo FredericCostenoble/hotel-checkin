@@ -690,7 +690,7 @@ def pdf_for_link(hotel_id: str, kind: str, day: str, expires: str, sig: str,
 
 
 def _send_phone(hotel_id: str, data: dict, to: str, hotel_name: str, note: str = "") -> dict:
-    """WhatsApp met het goedgekeurde sjabloon ([whatsapp] template_breakfast_list_nl / template_cleaning_list_nl):
+    """WhatsApp met het goedgekeurde sjabloon (Engels, zoals de lijst: [whatsapp] template_breakfast_list_en / template_cleaning_list_en):
     de pdf als document bovenaan, {{1}} de dag, {{2}} kort wat erop staat, {{3}} pad van de pdf. Anders, of als dat
     mislukt, per sms met de hele lijst."""
     from hotel_checkin.checkin.service import normalize_phone
@@ -703,7 +703,7 @@ def _send_phone(hotel_id: str, data: dict, to: str, hotel_name: str, note: str =
     number = normalize_phone(to)
     if not number:
         return {"channel": "whatsapp", "to": to, "ok": False, "error": "ongeldig gsm-nummer"}
-    template = send_messages.whatsapp_template(hotel_id, f"{data['kind']}_list", "nl")
+    template = send_messages.whatsapp_template(hotel_id, f"{data['kind']}_list", "en")
     if template:
         res = whatsapp.send_whatsapp_template(hotel_id, number, template, {
             "1": lists.day_text(data["day"]), "2": (f"{note} " if note else "") + describe(data, with_source=False),

@@ -3396,7 +3396,7 @@ function waFill(body, samples) { return String(body || "").replace(/\{\{\s*(\d+)
 function waBadge(st) { return `<span class="badge ${WA_BADGE[st] || "b-no"}">${esc(t("wa_st_" + st))}</span>`; }
 function waPreview(tp, x) {
   const btn = tp.button && x.button ? `<div style="border-top:1px solid #E3E6EB;margin-top:8px;padding-top:7px;text-align:center;font-weight:700;color:#3E4558">${IC('<path d="M9 6H6a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-3M14 4h6v6M20 4l-9 9"/>', 13)} ${esc(x.button)}</div>` : "";
-  const pdf = tp.media ? `<div class="row" style="gap:6px;padding:8px;margin-bottom:8px;border-radius:6px;background:#E9EAED;font-size:12.5px">${IC('<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/>', 14)} ${esc(waFill("{{" + (tp.vars.length + 1) + "}}", [...tp.samples, "breakfast-list.pdf"]).split("/").pop())}</div>` : "";
+  const pdf = tp.media ? `<div class="row" style="gap:6px;padding:8px;margin-bottom:8px;border-radius:6px;background:#E9EAED;font-size:12.5px">${IC('<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/>', 14)} ${esc(tp.media_sample)}</div>` : "";
   return `<div style="max-width:420px;background:#F4F5F8;border-radius:10px;padding:10px 12px">${pdf}<div style="white-space:pre-wrap;overflow-wrap:anywhere">${esc(waFill(x.body, tp.samples))}</div>${x.footer ? `<div class="small muted" style="margin-top:6px">${esc(x.footer)}</div>` : ""}${btn}</div>`;
 }
 function waLink(v) {

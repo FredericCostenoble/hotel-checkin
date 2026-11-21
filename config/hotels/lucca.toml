@@ -207,7 +207,7 @@ phone = false
 # Plaatsen in het sjabloon (processes/send_messages.py, WHATSAPP_VARIABLES):
 # confirmation en reminder {{1}} voornaam, {{2}} formulierlink vanaf het token (knop);
 # access_code {{1}} kamer, {{2}} pincode, {{3}} formulierlink vanaf het token (knop); room_change {{1}} kamer, {{2}} pincode;
-# breakfast_list en cleaning_list (alleen nl) {{1}} dag, {{2}} samenvatting, {{3}} pad van de pdf (document bovenaan).
+# breakfast_list en cleaning_list (alleen en) {{1}} dag, {{2}} samenvatting, {{3}} pad van de pdf (document bovenaan).
 # template_confirmation_nl = "HX..."
 
 [retention]

@@ -94,18 +94,18 @@ Variabelen: {{1}} nieuwe kamer (kort), {{2}} pincode.
 Niet als sjabloon: de bedankmail na vertrek (alleen per mail) en het automatische antwoord op een bericht van de gast
 (vrije tekst mag binnen 24 uur na zijn bericht, texts/<taal>.toml `[incoming]`).
 
-## Personeel (alleen nl)
+## Personeel (alleen en, zoals de lijsten zelf)
 
 Type **Media**: de pdf als document bovenaan. Media-URL: `https://<function app>/api/lists/{{3}}` (de pdf, met
 handtekening, 24 uur geldig; `processes/daily_lists.py`, `pdf_path`). In TST het adres van de TST-Function App.
 
 | Sjabloon | Tekst |
 |---|---|
-| breakfast_list | Ontbijtlijst voor {{1}}: {{2}}. Open de pdf voor de volledige lijst om af te drukken. |
-| cleaning_list | Schoonmaaklijst voor {{1}}: {{2}}. Open de pdf voor de volledige lijst met de opmerkingen. |
+| breakfast_list | Breakfast list for {{1}}: {{2}}. Open the PDF for the full list to print. |
+| cleaning_list | Cleaning list for {{1}}: {{2}}. Open the PDF for the full list with the remarks. |
 
-{{1}} de dag ("vrijdag 13/11/2026"), {{2}} kort wat erop staat ("12 personen in 6 kamers, 1 na te kijken" of
-"3 vertrek, 5 blijvers, 2 check in").
+{{1}} de dag ("Friday 13/11/2026"), {{2}} kort wat erop staat ("12 persons in 6 rooms, 1 to check" of
+"3 leave, 5 stay, 2 check in").
 
 ## Antwoorden op het nummer
 

@@ -108,13 +108,15 @@ def test_submit_cta_text_and_media_types():
     fake = FakeTwilio()
     wa.submit("lucca", "access_code", "en", "fred", client=fake.client())
     wa.submit("lucca", "room_change", "fr", "fred", client=fake.client())
-    wa.submit("lucca", "breakfast_list", "nl", "fred", client=fake.client())
+    wa.submit("lucca", "breakfast_list", "en", "fred", client=fake.client())
     cta, text, media = (c["types"] for c in fake.created)
     assert cta["twilio/call-to-action"]["actions"][0]["url"] == "https://checkin.hotellucca.be/?r={{3}}"
     assert "\n" in cta["twilio/call-to-action"]["body"]
     assert "twilio/text" in text
     assert media["twilio/media"]["media"] == ["https://func.example.net/api/lists/{{3}}"]
-    assert fake.created[2]["variables"]["3"].endswith(".pdf")
+    assert fake.created[2]["variables"] == {"1": "Friday 13/11/2026", "2": "12 persons in 6 rooms",
+                                            "3": "lucca/breakfast/2026-11-13/1763050000/a1b2c3/breakfast-list-2026-11-13.pdf"}
+    assert fake.created[2]["language"] == "en"
 
 
 def test_status_only_asked_while_waiting_and_approved_becomes_active():
