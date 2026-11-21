@@ -245,6 +245,27 @@ def admin_api(req: func.HttpRequest) -> func.HttpResponse:
             return _json(200, admin.workflow_preview(hotel, req.get_json()))
         except ValueError:
             return _json(400, {"error": "json"})
+    if what == "secrets":
+        # Pagina Technisch: geheimen in Key Vault, alleen met een rol op de Key Vault (admin/secrets.py)
+        from hotel_checkin.admin import secrets
+
+        level = secrets.access(req.headers.get("x-ms-client-principal-id", ""))
+        if not level:
+            return _json(403, {"error": "rights"})
+        if req.method == "GET" and req.params.get("name"):
+            value = secrets.reveal(hotel, req.params["name"])
+            return _json(200 if value is not None else 404, {"value": value})
+        if req.method == "GET":
+            return _json(200, {"access": level, "secrets": secrets.list_secrets(hotel)})
+        if req.method == "POST":
+            if level != "write":
+                return _json(403, {"error": "rights"})
+            try:
+                body = req.get_json()
+            except ValueError:
+                return _json(400, {"error": "json"})
+            ok = secrets.save(hotel, str(body.get("name", "")), str(body.get("value", "")), _admin_user(req) or "")
+            return _json(200 if ok else 400, {"ok": ok})
     if what == "settings":
         # Tabblad Hotel (instellingenpagina): lezen, wijzigen of terug naar het hotelbestand
         if req.method == "GET":

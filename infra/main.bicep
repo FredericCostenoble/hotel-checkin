@@ -232,6 +232,8 @@ var funcSettings = filter(
     APPLICATIONINSIGHTS_CONNECTION_STRING: appi.properties.ConnectionString
     APP_ENV: env
     KEY_VAULT_URL: kv.properties.vaultUri
+    // Monitor, pagina Technisch: rollen van de aangemelde gebruiker op deze Key Vault nagaan (admin/secrets.py)
+    KEY_VAULT_ID: kv.id
     STORAGE_TABLE_ENDPOINT: st.properties.primaryEndpoints.table
     MAIL_SENDER: mailSender
     // Threads voor gelijktijdige aanvragen (zie funcHttpConcurrency); de code wacht vooral op opslag en Key Vault
@@ -325,6 +327,28 @@ resource raKvFunc 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
   name: guid(kv.id, func.id, roles.kvSecretsUser)
   properties: {
     roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', roles.kvSecretsUser)
+    principalId: func.identity.principalId
+    principalType: 'ServicePrincipal'
+  }
+}
+
+// Monitor, pagina Technisch: geheimen wijzigen (alleen voor wie zelf een rol op de Key Vault heeft) en die rollen
+// lezen (Reader op de Key Vault).
+resource raKvFuncWrite 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  scope: kv
+  name: guid(kv.id, func.id, roles.kvSecretsOfficer)
+  properties: {
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', roles.kvSecretsOfficer)
+    principalId: func.identity.principalId
+    principalType: 'ServicePrincipal'
+  }
+}
+
+resource raKvFuncReader 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  scope: kv
+  name: guid(kv.id, func.id, 'reader')
+  properties: {
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', 'acdd72a7-3385-48ef-bd42-f606fba81ae7')
     principalId: func.identity.principalId
     principalType: 'ServicePrincipal'
   }
