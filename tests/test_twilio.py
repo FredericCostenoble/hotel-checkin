@@ -64,3 +64,28 @@ def test_whatsapp_text():
     captured: dict = {}
     send_whatsapp_text("lucca", "+32470000000", "Hoi", client=_client(201, captured))
     assert captured["form"]["Body"] == "Hoi"
+
+
+def test_public_urls_behind_proxy():
+    from hotel_checkin.messaging._twilio import public_urls
+
+    urls = public_urls("http://func-checkin-prd.azurewebsites.net:80/api/twilio/voice?h=lucca",
+                       {"X-Forwarded-Host": "monitor.hotellucca.be"})
+    assert "https://monitor.hotellucca.be/api/twilio/voice?h=lucca" in urls
+
+
+def test_signature_on_public_url(monkeypatch):
+    import base64
+    import hashlib
+    import hmac
+
+    from hotel_checkin.messaging import _twilio
+
+    monkeypatch.setattr(_twilio, "hotel_setting", lambda *a, **k: "tok")
+    public = "https://monitor.hotellucca.be/api/twilio/voice?h=lucca"
+    params = {"CallSid": "CA1", "From": "+32476287720"}
+    data = public + "".join(k + params[k] for k in sorted(params))
+    sig = base64.b64encode(hmac.new(b"tok", data.encode(), hashlib.sha1).digest()).decode()
+    urls = _twilio.public_urls("http://internal:80/api/twilio/voice?h=lucca", {"Host": "monitor.hotellucca.be"})
+    assert _twilio.valid_signature("lucca", urls, params, sig)
+    assert not _twilio.valid_signature("lucca", ["http://internal/api/twilio/voice?h=lucca"], params, sig)

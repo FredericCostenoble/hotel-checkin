@@ -108,12 +108,12 @@ def twilio_status(req: func.HttpRequest) -> func.HttpResponse:
     """Twilio meldt of een WhatsApp of sms afgeleverd is. Alleen met een geldige handtekening van Twilio."""
     from urllib.parse import parse_qsl
 
-    from hotel_checkin.messaging._twilio import valid_signature
+    from hotel_checkin.messaging._twilio import public_urls, valid_signature
     from hotel_checkin.processes import send_messages
 
     hotel, rid, mid = req.params.get("h", ""), req.params.get("r", ""), req.params.get("m", "")
     form = dict(parse_qsl(req.get_body().decode("utf-8", "replace")))
-    if hotel not in list_hotels() or not valid_signature(hotel, req.url, form, req.headers.get("X-Twilio-Signature", "")):
+    if hotel not in list_hotels() or not valid_signature(hotel, public_urls(req.url, dict(req.headers)), form, req.headers.get("X-Twilio-Signature", "")):
         return func.HttpResponse(status_code=403)
     status = form.get("MessageStatus", "")
     if status in ("delivered", "read", "undelivered", "failed"):
@@ -127,12 +127,12 @@ def twilio_incoming(req: func.HttpRequest) -> func.HttpResponse:
     Alleen met een geldige handtekening van Twilio. Antwoord aan Twilio: een leeg TwiML-antwoord."""
     from urllib.parse import parse_qsl
 
-    from hotel_checkin.messaging._twilio import valid_signature
+    from hotel_checkin.messaging._twilio import public_urls, valid_signature
     from hotel_checkin.processes import incoming
 
     hotel = req.params.get("h", "")
     form = dict(parse_qsl(req.get_body().decode("utf-8", "replace")))
-    if hotel not in list_hotels() or not valid_signature(hotel, req.url, form, req.headers.get("X-Twilio-Signature", "")):
+    if hotel not in list_hotels() or not valid_signature(hotel, public_urls(req.url, dict(req.headers)), form, req.headers.get("X-Twilio-Signature", "")):
         return func.HttpResponse(status_code=403)
     sender = form.get("From", "")
     channel = "whatsapp" if sender.startswith("whatsapp:") else "sms"
@@ -154,12 +154,12 @@ def twilio_voice(req: func.HttpRequest) -> func.HttpResponse:
     from urllib.parse import parse_qsl
 
     from hotel_checkin.messaging import voice
-    from hotel_checkin.messaging._twilio import valid_signature
+    from hotel_checkin.messaging._twilio import public_urls, valid_signature
     from hotel_checkin.processes import call_forward
 
     hotel = req.params.get("h", "")
     form = dict(parse_qsl(req.get_body().decode("utf-8", "replace")))
-    if hotel not in list_hotels() or not valid_signature(hotel, req.url, form, req.headers.get("X-Twilio-Signature", "")):
+    if hotel not in list_hotels() or not valid_signature(hotel, public_urls(req.url, dict(req.headers)), form, req.headers.get("X-Twilio-Signature", "")):
         return func.HttpResponse(status_code=403)
     return func.HttpResponse(voice.forward_twiml(call_forward.number(hotel)), mimetype="text/xml")
 

@@ -77,13 +77,45 @@ def send_message(
     return SendResult(channel=channel, to=guest, ok=False, error=error, delivered_to=real_to)
 
 
-def valid_signature(hotel_id: str, url: str, params: dict[str, str], signature: str) -> bool:
-    """Komt een oproep echt van Twilio? (X-Twilio-Signature: HMAC-SHA1 van adres + parameters)."""
+def public_urls(url: str, headers: dict[str, str] | None = None) -> list[str]:
+    """Mogelijke adressen zoals Twilio ze ondertekende. Achter Azure (eigen domein, proxy) ziet de Function App
+    soms een ander adres dan Twilio: intern http, een andere host of een poort. Het pad en de query blijven."""
+    from urllib.parse import urlsplit, urlunsplit
+
+    h = {k.lower(): v for k, v in (headers or {}).items()}
+    parts = urlsplit(url)
+    hosts = [parts.netloc]
+    for name in ("x-forwarded-host", "x-original-host", "disguised-host", "host"):
+        for value in (h.get(name) or "").split(","):
+            if value.strip():
+                hosts.append(value.strip())
+    out: list[str] = []
+    for host in hosts:
+        for netloc in (host, host.split(":")[0]):
+            for scheme in (parts.scheme, "https"):
+                candidate = urlunsplit((scheme, netloc, parts.path, parts.query, ""))
+                if candidate not in out:
+                    out.append(candidate)
+    return out
+
+
+def valid_signature(hotel_id: str, url: str | list[str], params: dict[str, str], signature: str) -> bool:
+    """Komt een oproep echt van Twilio? (X-Twilio-Signature: HMAC-SHA1 van adres + parameters).
+    url mag een lijst zijn (public_urls): geldig als één ervan klopt."""
     import base64
     import hashlib
     import hmac
+    import logging
 
-    token = hotel_setting(hotel_id, "TWILIO_AUTH_TOKEN")
-    data = url + "".join(k + params[k] for k in sorted(params))
-    expected = base64.b64encode(hmac.new(token.encode(), data.encode(), hashlib.sha1).digest()).decode()
-    return hmac.compare_digest(expected, signature or "")
+    token = hotel_setting(hotel_id, "TWILIO_AUTH_TOKEN", required=False) or ""
+    if not token:
+        logging.warning("Twilio-handtekening: geen TWILIO_AUTH_TOKEN voor %s", hotel_id)
+        return False
+    urls = [url] if isinstance(url, str) else list(url)
+    tail = "".join(k + params[k] for k in sorted(params))
+    for u in urls:
+        expected = base64.b64encode(hmac.new(token.encode(), (u + tail).encode(), hashlib.sha1).digest()).decode()
+        if hmac.compare_digest(expected, signature or ""):
+            return True
+    logging.warning("Twilio-handtekening ongeldig voor %s; geprobeerd: %s", hotel_id, ", ".join(urls))
+    return False
