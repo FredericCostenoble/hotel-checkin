@@ -378,6 +378,53 @@ Object.assign(T.en, {
   rb_done_m: (a, b) => `${a} of ${b} done`, rb_del_sel: "Delete selection", rp_search: "Looking for the cause", rp_test: "Ready to test", rp_solved: "Solved",
   gp_nowsuffix: "(now)", gp_wa: "WhatsApp", gp_sms: "SMS", gp_none: "Choose a guest in the list.", gp_stays_m: n => `${n} stays`,
 });
+// WhatsApp-sjablonen (instellingen, WhatsApp)
+Object.assign(T.nl, {
+  tab_wa: "WhatsApp", wa_sub: "Teksten van de WhatsApp-berichten. Elke nieuwe tekst moet eerst door Meta goedgekeurd worden.",
+  wa_how: "Zo werkt het", wa_how_text: "Wijzig de tekst, bewaar en dien in bij Meta. Tot Meta de nieuwe versie goedkeurt, blijft de vorige goedgekeurde versie verstuurd worden. Zonder goedgekeurde versie gaat het bericht per sms. De status wordt alleen gevraagd zolang Meta nog beslist.",
+  wa_overview: "Overzicht", wa_check: "Status vernieuwen", wa_all: n => `Alles indienen (${n})`, wa_all_none: "Alles ingediend",
+  wa_all_q: n => `${n} nieuwe of gewijzigde teksten bij Meta indienen?`, wa_submit: "Indienen bij Meta", wa_submit_q: "Deze tekst bij Meta indienen? De goedgekeurde versie blijft in gebruik tot Meta de nieuwe goedkeurt.",
+  wa_save: "Bewaren", wa_reset: "Herstellen", wa_reset_q: "De wijziging weggooien en terug naar de actieve tekst?",
+  wa_body: "Tekst", wa_button: "Knoptekst", wa_footer: "Voettekst (niet verplicht)", wa_preview: "Voorbeeld",
+  wa_button_help: p => `De knop opent ${p}... (de link van de gast komt er automatisch achter).`, wa_media_help: p => `De pdf komt bovenaan het bericht (${p || "adres van de Function App"}...).`,
+  wa_vars: "Plaatsen", wa_unsaved: "Niet bewaard.", wa_saved: "Bewaard.", wa_dlg_submit: "Indienen", wa_dlg_reset: "Herstellen",
+  wa_st_approved: "Goedgekeurd", wa_st_waiting: "Wacht op Meta", wa_st_changed: "Gewijzigd, niet ingediend", wa_st_new: "Nog niet ingediend", wa_st_rejected: "Afgekeurd", wa_st_error: "Fout",
+  wa_active: (v, d) => `In gebruik: versie ${v}, goedgekeurd ${d}.`, wa_none_active: "Nog geen goedgekeurde versie: dit bericht gaat per sms.",
+  wa_manual: sid => `In gebruik: sjabloon ${sid} uit de instellingen.`,
+  wa_pending: (v, d, who) => `Versie ${v} ingediend ${d}${who ? " door " + who : ""}.`, wa_checked: d => `Laatst nagekeken ${d}.`, wa_reason: r => `Reden van Meta: ${r}`,
+  wa_twilio: n => `Openen in Twilio (zoek op ${n})`, wa_replace: "Meta beslist nog over de ingediende versie. Een nieuwe versie indienen vervangt die; de goedgekeurde versie blijft in gebruik tot Meta de nieuwe goedkeurt.",
+  wa_changes: x => `Nieuw: ${x}.`, wa_no_changes: "Geen nieuwe beslissing van Meta.", wa_done: n => `${n} ingediend.`,
+  wa_t_confirmation: ["Bevestiging", "Meteen na de boeking, met knop naar het check-in-formulier."],
+  wa_t_reminder: ["Herinnering", "Een week voor aankomst, als het formulier nog niet ingevuld is."],
+  wa_t_access_code: ["Pincode", "Per kamer, met de code en een knop naar de reservatie (ook betalen)."],
+  wa_t_room_change: ["Kamerwissel", "Als de kamer wijzigt nadat de code verstuurd is."],
+  wa_t_breakfast_list: ["Ontbijtlijst (personeel)", "Met de lijst als pdf bovenaan."],
+  wa_t_cleaning_list: ["Schoonmaaklijst (personeel)", "Met de lijst als pdf bovenaan."],
+  wa_v: { voornaam: "voornaam", kamer_kort: "kamer", pincode: "pincode", dag: "dag", samenvatting: "samenvatting" },
+});
+Object.assign(T.en, {
+  tab_wa: "WhatsApp", wa_sub: "Texts of the WhatsApp messages. Every new text must first be approved by Meta.",
+  wa_how: "How it works", wa_how_text: "Change the text, save and submit to Meta. Until Meta approves the new version, the previous approved version keeps being sent. Without an approved version the message goes by SMS. The status is only asked while Meta has not decided yet.",
+  wa_overview: "Overview", wa_check: "Refresh status", wa_all: n => `Submit all (${n})`, wa_all_none: "All submitted",
+  wa_all_q: n => `Submit ${n} new or changed texts to Meta?`, wa_submit: "Submit to Meta", wa_submit_q: "Submit this text to Meta? The approved version stays in use until Meta approves the new one.",
+  wa_save: "Save", wa_reset: "Restore", wa_reset_q: "Discard the change and go back to the active text?",
+  wa_body: "Text", wa_button: "Button text", wa_footer: "Footer (optional)", wa_preview: "Preview",
+  wa_button_help: p => `The button opens ${p}... (the guest's link is added automatically).`, wa_media_help: p => `The PDF goes on top of the message (${p || "address of the Function App"}...).`,
+  wa_vars: "Placeholders", wa_unsaved: "Not saved.", wa_saved: "Saved.", wa_dlg_submit: "Submit", wa_dlg_reset: "Restore",
+  wa_st_approved: "Approved", wa_st_waiting: "Waiting for Meta", wa_st_changed: "Changed, not submitted", wa_st_new: "Not submitted yet", wa_st_rejected: "Rejected", wa_st_error: "Error",
+  wa_active: (v, d) => `In use: version ${v}, approved ${d}.`, wa_none_active: "No approved version yet: this message goes by SMS.",
+  wa_manual: sid => `In use: template ${sid} from the settings.`,
+  wa_pending: (v, d, who) => `Version ${v} submitted ${d}${who ? " by " + who : ""}.`, wa_checked: d => `Last checked ${d}.`, wa_reason: r => `Reason from Meta: ${r}`,
+  wa_twilio: n => `Open in Twilio (search for ${n})`, wa_replace: "Meta has not decided on the submitted version yet. Submitting a new version replaces it; the approved version stays in use until Meta approves the new one.",
+  wa_changes: x => `New: ${x}.`, wa_no_changes: "No new decision from Meta.", wa_done: n => `${n} submitted.`,
+  wa_t_confirmation: ["Confirmation", "Right after the booking, with a button to the check-in form."],
+  wa_t_reminder: ["Reminder", "One week before arrival, if the form is not filled in yet."],
+  wa_t_access_code: ["PIN code", "Per room, with the code and a button to the reservation (also paying)."],
+  wa_t_room_change: ["Room change", "When the room changes after the code was sent."],
+  wa_t_breakfast_list: ["Breakfast list (staff)", "With the list as a PDF on top."],
+  wa_t_cleaning_list: ["Cleaning list (staff)", "With the list as a PDF on top."],
+  wa_v: { voornaam: "first name", kamer_kort: "room", pincode: "PIN code", dag: "day", samenvatting: "summary" },
+});
 let lang = "nl";
 const t = (k, ...a) => { const v = T[lang][k]; return typeof v === "function" ? v(...a) : v; };
 const locale = () => (lang === "en" ? "en-GB" : "nl-BE");
@@ -533,7 +580,7 @@ function setLang(l) {
   if ($("#envname")) $("#envname").textContent = t("env_name_" + envNow) || "";
   if ($("#env-switch") && !$("#env-switch").hidden) $("#env-switch").textContent = t("env_to_" + (envNow === "tst" ? "prd" : "tst"));
   renderSwitches();
-  if (PAGE === "main") { render(); renderGuests(); LIST_KINDS.forEach(k => renderList(k)); } else { renderWorkflow(); renderSettings(); if (runsData) renderRuns(runsData); }
+  if (PAGE === "main") { render(); renderGuests(); LIST_KINDS.forEach(k => renderList(k)); } else { renderWorkflow(); renderSettings(); renderWhatsapp(); if (runsData) renderRuns(runsData); }
 }
 
 // Hoofdschakelaars van het gekozen hotel, altijd zichtbaar bovenaan (groen = aan, grijs = uit)
@@ -655,16 +702,18 @@ async function init() {
     };
     $("#run").onclick = runRobot;
     // Niet bewaarde wijzigingen in de workflow: waarschuwen bij het verlaten van de pagina
-    window.addEventListener("beforeunload", e => { if (wfDirty || hsDirty) { e.preventDefault(); e.returnValue = ""; } });
+    $("#wa-check").onclick = waCheck;
+    $("#wa-all").onclick = waSubmitAll;
+    window.addEventListener("beforeunload", e => { if (wfDirty || hsDirty || waDirty()) { e.preventDefault(); e.returnValue = ""; } });
   }
   load();
 }
 
 const PAGE = document.body.dataset.page || "main";
-const TABS = PAGE === "settings" ? ["hotel", "tech", "workflow", "robot"] : ["today", "res", "guests", "breakfast", "cleaning"];
+const TABS = PAGE === "settings" ? ["hotel", "tech", "workflow", "whatsapp", "robot"] : ["today", "res", "guests", "breakfast", "cleaning"];
 let current = TABS[0];
 function showTab(name, initial = false, leave = false) {
-  if (!leave && ((wfDirty && current === "workflow") || (hsDirty && HS_TABS.includes(current))) && name !== current) {
+  if (!leave && ((wfDirty && current === "workflow") || (hsDirty && HS_TABS.includes(current)) || (waDirty() && current === "whatsapp")) && name !== current) {
     if (location.hash.slice(1) !== current) history.replaceState(null, "", "#" + current);
     ask(t("wf_leave"), { ok: t("dlg_leave"), danger: true }).then(ok => {
       if (ok) { history.replaceState(null, "", "#" + name); showTab(name, initial, true); }
@@ -687,6 +736,7 @@ function showTab(name, initial = false, leave = false) {
   if ($("#tab-detail")) $("#tab-detail").hidden = true;
   if (LIST_KINDS.includes(name) && !initial) loadList(name);
   if (name === "today") loadTodayRuns();
+  if (name === "whatsapp" && !initial) loadWhatsapp();
   if (name === "guests") { if ($("#tab-guests")) $("#tab-guests").classList.remove("gdet"); loadGuestSync(); }
   if (location.hash.slice(1) !== name) history[initial ? "replaceState" : "pushState"](null, "", "#" + name);
 }
@@ -713,6 +763,7 @@ async function load() {
     loadWorkflow();
     loadSettings();
     loadRuns();
+    loadWhatsapp();
     return;
   }
   await loadReservations();
@@ -3314,6 +3365,171 @@ new MutationObserver(() => {
   clearTimeout(labelTimer);
   labelTimer = setTimeout(() => document.querySelectorAll("table").forEach(tb => { if (!tb.closest(".v2")) labelCells(tb); }), 50);
 }).observe(document.body, { childList: true, subtree: true, characterData: true });
+
+// ---------------------------------------------------------------- WhatsApp-sjablonen (instellingen, tabblad WhatsApp)
+// Per sjabloon en taal: tekst wijzigen, bewaren, indienen bij Meta; de status van wat nog wacht vraagt de server
+// (hoogstens een keer per minuut bij het openen, en elke 15 minuten in de achtergrond).
+let wa = null, waHotel = "", waEdit = {}, waNote = {};
+const waLang = {};
+const waDirty = () => Object.keys(waEdit).length > 0;
+const WA_BADGE = { approved: "b-ok", waiting: "b-info", changed: "b-warn", new: "b-no", rejected: "b-err", error: "b-err" };
+const waKey = (step, lg) => `${step}:${lg}`;
+async function loadWhatsapp(view) {
+  if (!$("#wa-list")) return;
+  const hotel = $("#hotel").value;
+  if (hotel !== waHotel) { waEdit = {}; waNote = {}; waHotel = hotel; }
+  if (view) wa = view;
+  else {
+    try { wa = await get(`/api/monitor/${hotel}/whatsapp`); }
+    catch (e) { $("#wa-state").className = "err"; $("#wa-state").textContent = `${t("load_error")} ${e.message}`; return; }
+  }
+  $("#wa-state").textContent = "";
+  renderWhatsapp();
+}
+function waText(tp, lg) { return waEdit[waKey(tp.step, lg.lang)] || lg.text; }
+function waFill(body, samples) { return String(body || "").replace(/\{\{\s*(\d+)\s*\}\}/g, (m, n) => samples[n - 1] ?? m); }
+function waBadge(st) { return `<span class="badge ${WA_BADGE[st] || "b-no"}">${esc(t("wa_st_" + st))}</span>`; }
+function waPreview(tp, x) {
+  const btn = tp.button && x.button ? `<div style="border-top:1px solid #E3E6EB;margin-top:8px;padding-top:7px;text-align:center;font-weight:700;color:#3E4558">${IC('<path d="M9 6H6a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-3M14 4h6v6M20 4l-9 9"/>', 13)} ${esc(x.button)}</div>` : "";
+  const pdf = tp.media ? `<div class="row" style="gap:6px;padding:8px;margin-bottom:8px;border-radius:6px;background:#E9EAED;font-size:12.5px">${IC('<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/>', 14)} ${esc(waFill("{{" + (tp.vars.length + 1) + "}}", [...tp.samples, "breakfast-list.pdf"]).split("/").pop())}</div>` : "";
+  return `<div style="max-width:420px;background:#F4F5F8;border-radius:10px;padding:10px 12px">${pdf}<div style="white-space:pre-wrap;overflow-wrap:anywhere">${esc(waFill(x.body, tp.samples))}</div>${x.footer ? `<div class="small muted" style="margin-top:6px">${esc(x.footer)}</div>` : ""}${btn}</div>`;
+}
+function waLink(v) {
+  // Icoon naar de Content Template Builder in Twilio, om na te kijken wat daar echt staat
+  return v && v.name ? ` <a href="${esc(wa.console_url)}" target="_blank" rel="noopener" title="${esc(t("wa_twilio", v.name))}" aria-label="${esc(t("wa_twilio", v.name))}" style="display:inline-flex;vertical-align:-2px;color:#4E5669">${IC('<path d="M14 4h6v6M20 4l-9 9"/><path d="M18 14v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4"/>', 14)}</a> <code class="small">${esc(v.name)}</code>` : "";
+}
+function waMeta(lg) {
+  const bits = [];
+  if (lg.active) bits.push(esc(t("wa_active", lg.active.version, stamp(lg.active.approved_at))) + waLink(lg.active));
+  else if (lg.manual_sid) bits.push(esc(t("wa_manual", lg.manual_sid)) + waLink({ name: lg.manual_sid }));
+  else bits.push(esc(t("wa_none_active")));
+  if (lg.pending) {
+    bits.push(esc(t("wa_pending", lg.pending.version, stamp(lg.pending.submitted_at), lg.pending.submitted_by || "")) + waLink(lg.pending)
+      + (lg.pending.status !== "error" && lg.pending.checked_at && lg.state === "waiting" ? " " + esc(t("wa_checked", stamp(lg.pending.checked_at))) : ""));
+  }
+  return bits.join("<br>");
+}
+function waCard(tp) {
+  const [title, help] = t("wa_t_" + tp.step);
+  const cur = waLang[tp.step] && tp.langs.some(l => l.lang === waLang[tp.step]) ? waLang[tp.step] : tp.langs[0].lang;
+  waLang[tp.step] = cur;
+  const lg = tp.langs.find(l => l.lang === cur), k = waKey(tp.step, cur), x = waText(tp, lg), dirty = !!waEdit[k];
+  const L = wa.limits, bodyMax = tp.button ? L.body_button : L.body, id = `wa-${tp.step}`;
+  const vars = tp.vars.map((v, n) => `<code>{{${n + 1}}}</code> ${esc((t("wa_v") || {})[v] || v)}`).join(" · ");
+  const seg = tp.langs.length > 1 ? `<div class="seg" role="radiogroup">${tp.langs.map(l => `<label class="${l.lang === cur ? "on" : ""}" data-wa-lang="${tp.step}:${l.lang}"><input type="radio" name="wal-${tp.step}" ${l.lang === cur ? "checked" : ""}>${l.lang.toUpperCase()} <span class="badge ${WA_BADGE[waEdit[waKey(tp.step, l.lang)] ? "changed" : l.state]}" style="padding:0 6px;min-width:0">&nbsp;</span></label>`).join("")}</div>` : "";
+  const st = dirty ? "changed" : lg.state;
+  const reason = lg.state === "rejected" && lg.pending && lg.pending.reason ? `<div class="note warn">${esc(t("wa_reason", lg.pending.reason))}</div>` : "";
+  const err = lg.state === "error" && lg.pending && lg.pending.error ? `<div class="note warn">${esc(lg.pending.error)}</div>` : "";
+  const errors = !dirty && lg.errors.length ? `<div class="note warn"><span>${lg.errors.map(esc).join("<br>")}</span></div>` : "";
+  const note = waNote[k] ? `<span class="small ${waNote[k].ok ? "muted" : "err"}">${esc(waNote[k].text)}</span>` : "";
+  const canSubmit = dirty || ["new", "changed", "error"].includes(lg.state);
+  const canReset = dirty || lg.edited || ["rejected", "error"].includes(lg.state);
+  return `<section class="card" id="wa-c-${tp.step}" data-wa="${tp.step}"><div class="ch"><h2 class="ct">${IC('<path d="M4 20l1.4-4.2A8 8 0 1 1 8.6 19z"/>')} ${esc(title)}</h2>${waBadge(st)}</div>
+    <div class="cb"><div class="help">${esc(help)} ${esc(t("wa_vars"))}: ${vars}</div>${seg}
+      <div class="help">${waMeta(lg)}</div>${reason}${err}<div class="note" id="${id}-replace" ${dirty && lg.state === "waiting" ? "" : "hidden"}><span>${esc(t("wa_replace"))}</span></div>
+      <div class="field"><label for="${id}-body">${esc(t("wa_body"))} <span class="muted small" id="${id}-n-body">${(x.body || "").length}/${bodyMax}</span></label><textarea class="input" id="${id}-body" data-wa-f="body" rows="5" style="padding:8px 10px;min-height:110px;font:inherit;line-height:1.45;resize:vertical">${esc(x.body || "")}</textarea></div>
+      ${tp.button ? `<div class="field"><label for="${id}-button">${esc(t("wa_button"))} <span class="muted small" id="${id}-n-button">${(x.button || "").length}/${L.button}</span></label><input class="input" id="${id}-button" data-wa-f="button" maxlength="${L.button}" value="${esc(x.button || "")}"><span class="help">${esc(t("wa_button_help", wa.button_prefix))}</span></div>` : ""}
+      ${tp.media ? `<div class="help">${esc(t("wa_media_help", wa.media_prefix))}</div>` : `<div class="field"><label for="${id}-footer">${esc(t("wa_footer"))} <span class="muted small" id="${id}-n-footer">${(x.footer || "").length}/${L.footer}</span></label><input class="input" id="${id}-footer" data-wa-f="footer" maxlength="${L.footer}" value="${esc(x.footer || "")}"></div>`}
+      <div class="field"><span class="lbl">${esc(t("wa_preview"))}</span><div id="${id}-pv">${waPreview(tp, x)}</div></div>${errors}
+      <div class="row" style="justify-content:space-between;border-top:1px solid #EEF0F3;padding-top:12px"><span class="who" id="${id}-state">${dirty ? esc(t("wa_unsaved")) : ""}${note}</span>
+        <div class="row"><button class="btn3" type="button" data-wa-act="reset" ${canReset ? "" : "hidden"}>${esc(t("wa_reset"))}</button><button class="btn2" type="button" data-wa-act="save" ${dirty ? "" : "disabled"}>${esc(t("wa_save"))}</button><button class="btn" type="button" data-wa-act="submit" ${canSubmit ? "" : "disabled"}>${esc(t("wa_submit"))}</button></div></div>
+    </div></section>`;
+}
+function renderWhatsapp() {
+  if (!wa || !$("#wa-list")) return;
+  $("#wa-sub2").textContent = `${hotelNow().name || ""} · ${(wa.env || "").toUpperCase()}`;
+  const all = wa.templates.flatMap(tp => tp.langs.map(l => ({ tp, l })));
+  const todo = all.filter(({ tp, l }) => ["new", "changed", "error"].includes(l.state) && !waEdit[waKey(tp.step, l.lang)]).length;
+  $("#wa-all").disabled = todo === 0;
+  $("#wa-all").lastElementChild.textContent = todo ? t("wa_all", todo) : t("wa_all_none");
+  $("#wa-check").hidden = !all.some(({ l }) => l.state === "waiting");
+  $("#wa-overview").innerHTML = `<table><tbody>${wa.templates.map(tp => `<tr><td style="font-weight:600">${esc(t("wa_t_" + tp.step)[0])}</td><td><div class="row" style="gap:4px;flex-wrap:wrap">${tp.langs.map(l => `<a href="#" class="badge ${WA_BADGE[waEdit[waKey(tp.step, l.lang)] ? "changed" : l.state]}" style="text-decoration:none" title="${esc(t("wa_st_" + (waEdit[waKey(tp.step, l.lang)] ? "changed" : l.state)))}" data-wa-go="${tp.step}:${l.lang}">${l.lang.toUpperCase()}</a>`).join("")}</div></td></tr>`).join("")}</tbody></table>
+    <div class="row" style="gap:6px;flex-wrap:wrap;margin-top:10px">${["approved", "waiting", "changed", "new", "rejected"].map(waBadge).join("")}</div>`;
+  $("#wa-list").innerHTML = wa.templates.map(waCard).join("");
+  waWire();
+}
+function waRefresh(step) {
+  // Na typen: alleen tellers, voorbeeld en knoppen bijwerken (de focus blijft in het veld)
+  const tp = wa.templates.find(x => x.step === step), lg = tp.langs.find(l => l.lang === waLang[step]), x = waText(tp, lg), id = `wa-${step}`;
+  ["body", "button", "footer"].forEach(f => { const n = $(`#${id}-n-${f}`); if (n) n.textContent = n.textContent.replace(/^\d+/, String((x[f] || "").length)); });
+  $(`#${id}-pv`).innerHTML = waPreview(tp, x);
+  const card = $(`#wa-c-${step}`);
+  card.querySelector('[data-wa-act="save"]').disabled = false;
+  card.querySelector('[data-wa-act="submit"]').disabled = false;
+  card.querySelector('[data-wa-act="reset"]').hidden = false;
+  card.querySelector(".ch .badge").outerHTML = waBadge("changed");
+  $(`#${id}-state`).textContent = t("wa_unsaved");
+  if (lg.state === "waiting") $(`#${id}-replace`).hidden = false;
+}
+function waWire() {
+  document.querySelectorAll("#wa-list [data-wa-lang]").forEach(l => l.onclick = e => {
+    e.preventDefault(); const [step, lg] = l.dataset.waLang.split(":"); waLang[step] = lg; renderWhatsapp();
+  });
+  document.querySelectorAll("#wa-overview [data-wa-go]").forEach(a => a.onclick = e => {
+    e.preventDefault(); const [step, lg] = a.dataset.waGo.split(":"); waLang[step] = lg; renderWhatsapp();
+    $(`#wa-c-${step}`).scrollIntoView({ behavior: "smooth", block: "start" });
+  });
+  document.querySelectorAll("#wa-list [data-wa-f]").forEach(el => el.oninput = () => {
+    const card = el.closest("[data-wa]"), step = card.dataset.wa, tp = wa.templates.find(x => x.step === step);
+    const lg = tp.langs.find(l => l.lang === waLang[step]), k = waKey(step, lg.lang);
+    waEdit[k] = { ...waText(tp, lg), [el.dataset.waF]: el.value };
+    delete waNote[k];
+    waRefresh(step);
+  });
+  document.querySelectorAll("#wa-list [data-wa-act]").forEach(b => b.onclick = () => waAction(b.closest("[data-wa]").dataset.wa, b.dataset.waAct, b));
+}
+async function waPost(params, body) {
+  const r = await apiFetch(API + `/api/monitor/${$("#hotel").value}/whatsapp?` + new URLSearchParams(params), {
+    method: "POST", headers: { "Content-Type": "application/json" }, body: body ? JSON.stringify(body) : "",
+  });
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(d.error || r.status);
+  return d;
+}
+async function waAction(step, act, btn) {
+  const tp = wa.templates.find(x => x.step === step), lg = tp.langs.find(l => l.lang === waLang[step]), k = waKey(step, lg.lang);
+  if (act === "submit" && !await ask(t("wa_submit_q"), { ok: t("wa_dlg_submit") })) return;
+  if (act === "reset" && !await ask(t("wa_reset_q"), { ok: t("wa_dlg_reset"), danger: true })) return;
+  btn.disabled = true;
+  try {
+    const d = await waPost({ action: act, step, lang: lg.lang }, act === "reset" ? null : waEdit[k] || null);
+    delete waEdit[k];
+    waNote[k] = act === "save" ? { ok: true, text: t("wa_saved") } : d.message ? { ok: d.ok, text: d.message } : null;
+    if (!waNote[k]) delete waNote[k];
+    await loadWhatsapp(d.view);
+  } catch (e) {
+    waNote[k] = { ok: false, text: `${t("load_error")} ${e.message}` };
+    renderWhatsapp();
+  }
+}
+async function waSubmitAll() {
+  const n = wa.templates.flatMap(tp => tp.langs).filter(l => ["new", "changed", "error"].includes(l.state)).length;
+  if (!n || !await ask(t("wa_all_q", n), { ok: t("wa_dlg_submit") })) return;
+  $("#wa-all").disabled = true;
+  try {
+    const d = await waPost({ action: "submit_all" });
+    const bad = d.results.filter(r => !r.ok);
+    await loadWhatsapp(d.view);
+    notice([t("wa_done", d.results.length - bad.length), ...bad.map(r => `${t("wa_t_" + r.step)[0]} ${r.lang.toUpperCase()}: ${r.message}`)].join("\n"));
+  } catch (e) { notice(`${t("load_error")} ${e.message}`); renderWhatsapp(); }
+}
+async function waCheck() {
+  $("#wa-check").disabled = true;
+  try {
+    const d = await waPost({ action: "check" });
+    await loadWhatsapp(d.view);
+    $("#wa-state").className = "small muted";
+    $("#wa-state").textContent = d.changes.length ? t("wa_changes", d.changes.join(", ")) : t("wa_no_changes");
+  } catch (e) { $("#wa-state").className = "err"; $("#wa-state").textContent = `${t("load_error")} ${e.message}`; }
+  $("#wa-check").disabled = false;
+}
+// Zolang iets wacht op Meta en het tabblad open staat: elke minuut opnieuw (niet tijdens het typen)
+setInterval(() => {
+  if (PAGE !== "settings" || current !== "whatsapp" || document.hidden || !wa) return;
+  if (!wa.templates.some(tp => tp.langs.some(l => l.state === "waiting"))) return;
+  if (document.activeElement && document.activeElement.closest && document.activeElement.closest("#wa-list")) return;
+  loadWhatsapp().catch(() => {});
+}, 60000);
 
 // Als laatste: alle functies en variabelen hierboven bestaan dan
 init().catch(e => { document.body.insertAdjacentHTML("beforeend", `<p class="err">${t("load_error")}: ${esc(e.message)}</p>`); });

@@ -112,6 +112,10 @@ class Handler(BaseHTTPRequestHandler):
                 only = [x for x in parse_qs(urlparse(self.path).query).get("only", [""])[0].split(",") if x] or None
                 ok, data = admin.settings_save(parts[2], body, "dev", only)
                 self._json(200 if ok else 400, data)
+        elif len(parts) == 4 and parts[3] == "whatsapp":
+            raw = self.rfile.read(int(self.headers.get("Content-Length", 0) or 0)) if method == "POST" else b""
+            status, data = admin.whatsapp(parts[2], method, self._params(), json.loads(raw) if raw else None, "dev")
+            self._json(status, data)
         elif len(parts) == 4 and parts[3] == "workflow":
             if method == "GET":
                 self._json(200, admin.workflow_view(parts[2]))

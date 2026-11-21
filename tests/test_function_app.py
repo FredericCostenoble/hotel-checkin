@@ -63,3 +63,23 @@ def test_admin_changes_need_monitor_header(monkeypatch):
     assert _fn(fa.admin_api)(_req("/api/monitor/lucca/runs?id=x", h, p, method="DELETE")).status_code == 403
     ok = _fn(fa.admin_api)(_req("/api/monitor/lucca/runs?id=x", h | {"x-monitor": "1"}, p, method="DELETE"))
     assert ok.status_code == 200
+
+
+def test_admin_whatsapp_templates(monkeypatch):
+    """Tabblad WhatsApp: lezen, tekst bewaren en herstellen (indienen zelf: test_whatsapp_templates.py)."""
+    import json
+
+    monkeypatch.setenv("ADMIN_AUTH", "easyauth")
+    h = {"x-ms-client-principal-name": "frederic@hotellucca.be", "x-monitor": "1"}
+    p = {"hotel": "lucca", "what": "whatsapp"}
+    r = _fn(fa.admin_api)(_req("/api/monitor/lucca/whatsapp", h, p))
+    assert r.status_code == 200 and len(json.loads(r.get_body())["templates"]) == 6
+    save = func.HttpRequest("POST", "/api/monitor/lucca/whatsapp", headers=h, route_params=p,
+                            params={"action": "save", "step": "room_change", "lang": "nl"},
+                            body=json.dumps({"body": "Kamer {{1}}, code {{2}} blijft."}).encode())
+    d = json.loads(_fn(fa.admin_api)(save).get_body())
+    rc = next(t for t in d["view"]["templates"] if t["step"] == "room_change")["langs"][0]
+    assert rc["edited"] and rc["state"] == "new"
+    bad = func.HttpRequest("POST", "/api/monitor/lucca/whatsapp", headers=h, route_params=p,
+                           params={"action": "reset", "step": "nope", "lang": "nl"}, body=b"")
+    assert _fn(fa.admin_api)(bad).status_code == 400

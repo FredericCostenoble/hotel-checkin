@@ -650,3 +650,32 @@ def workflow_preview(hotel_id: str, body: dict) -> dict:
         return {"error": "Niets aangevinkt voor dit tarief: deze mail gaat niet weg."}
     msg = templates.render(hotel_id, step.step, language, data, step.mail_content(), step.pay)
     return {"subject": msg.subject, "html": msg.html}
+
+
+def whatsapp(hotel_id: str, method: str, params: dict, body: dict | None, user: str) -> tuple[int, dict]:
+    """Tabblad WhatsApp (instellingen): GET = alle sjablonen; POST ?action=save|submit|reset&step=..&lang=..,
+    ?action=submit_all of ?action=check. Geeft (HTTP-status, antwoord)."""
+    from datetime import timedelta
+
+    from hotel_checkin.processes import whatsapp_templates as wa
+
+    if method == "GET":
+        return 200, wa.view(hotel_id)
+    action, step, lang = params.get("action", ""), params.get("step", ""), params.get("lang", "")
+    try:
+        if action == "submit_all":
+            return 200, wa.submit_all(hotel_id, user) | {"view": wa.view(hotel_id, refresh=False)}
+        if action == "check":
+            changes = wa.check(hotel_id, min_age=timedelta(0))
+            return 200, {"ok": True, "changes": changes, "view": wa.view(hotel_id, refresh=False)}
+        if action in ("save", "submit"):
+            if isinstance(body, dict):
+                wa.save_text(hotel_id, step, lang, body, user)
+            res = wa.submit(hotel_id, step, lang, user) if action == "submit" else {"ok": True, "message": ""}
+            return 200, res | {"view": wa.view(hotel_id, refresh=False)}
+        if action == "reset":
+            wa.reset_text(hotel_id, step, lang, user)
+            return 200, {"ok": True, "view": wa.view(hotel_id, refresh=False)}
+    except ValueError as exc:
+        return 400, {"error": str(exc)}
+    return 400, {"error": "action"}

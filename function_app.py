@@ -294,6 +294,14 @@ def admin_api(req: func.HttpRequest) -> func.HttpResponse:
                 return _json(400, {"error": "json"})
             ok, data = admin.workflow_save(hotel, body, _admin_user(req) or "")
             return _json(200 if ok else 400, data)
+    if what == "whatsapp":
+        # Tabblad WhatsApp: sjablonen lezen (met de status van wat nog wacht), tekst bewaren of herstellen, indienen
+        try:
+            body = req.get_json() if req.get_body() else None
+        except ValueError:
+            body = None
+        status, data = admin.whatsapp(hotel, req.method, dict(req.params), body, _admin_user(req) or "")
+        return _json(status, data)
     if what == "repair":
         # Lighthouse veranderd: wat er aan de hand is (GET) en, op TST, de geteste versie naar PRD zetten (POST)
         from hotel_checkin.processes import repair
@@ -509,9 +517,15 @@ def oversight(timer: func.TimerRequest) -> None:
     import logging
 
     from hotel_checkin.processes import oversight as process
+    from hotel_checkin.processes import whatsapp_templates
 
     for hotel_id in list_hotels():
         try:
             process.run(hotel_id)
         except Exception:
             logging.exception("%s: bewaking mislukt", hotel_id)
+        try:  # WhatsApp-sjablonen die nog wachten op Meta: status vragen (goedgekeurd = actief). Anders niets.
+            for change in whatsapp_templates.check(hotel_id):
+                logging.info("%s: WhatsApp-sjabloon %s", hotel_id, change)
+        except Exception:
+            logging.exception("%s: status van de WhatsApp-sjablonen niet opgevraagd", hotel_id)

@@ -314,7 +314,15 @@ def phone_enabled(hotel_id: str) -> bool:
 
 
 def whatsapp_template(hotel_id: str, step: str, language: str) -> str | None:
-    """Goedgekeurd WhatsApp-sjabloon (Twilio ContentSid, HX...) voor dit bericht en deze taal."""
+    """Goedgekeurd WhatsApp-sjabloon (Twilio ContentSid, HX...) voor dit bericht en deze taal: eerst de versie die in
+    de monitor ingediend en goedgekeurd werd (processes/whatsapp_templates.py), anders [whatsapp] in de instellingen.
+    Ontbreekt de taal, dan Engels."""
+    from hotel_checkin.processes import whatsapp_templates
+
+    for lg in (language, "en"):
+        sid = whatsapp_templates.active_sid(hotel_id, step, (lg or "").lower())
+        if sid:
+            return sid
     return hotel_setting(hotel_id, f"WHATSAPP_TEMPLATE_{step.upper()}_{language.upper()}", required=False, shared=False) \
         or hotel_setting(hotel_id, f"WHATSAPP_TEMPLATE_{step.upper()}_EN", required=False, shared=False)
 

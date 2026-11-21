@@ -1,9 +1,24 @@
 # WhatsApp-sjablonen (Twilio Content Templates, goed te keuren door Meta)
 
-Berichten die het hotel als eerste stuurt, moeten een goedgekeurd sjabloon gebruiken. Per sjabloon en taal een
-Content Template in Twilio (Content Template Builder), categorie **Utility**. De SID (HX...) komt in de instellingen
-van het hotel: `[whatsapp] template_<bericht>_<taal>`, bv. `template_confirmation_nl`. Ontbreekt een taal, dan het
-Engelse sjabloon; ontbreekt het sjabloon helemaal, dan gaat het bericht per sms (texts/<taal>.toml, `sms`).
+Berichten die het hotel als eerste stuurt, moeten een goedgekeurd sjabloon gebruiken, categorie **Utility**.
+
+## Beheer in de monitor (instellingen, WhatsApp)
+
+De teksten worden gewijzigd en ingediend in de monitor, niet meer met de hand in de Content Template Builder
+(`processes/whatsapp_templates.py`, bouwblok `messaging/content_templates.py`):
+
+- Standaardteksten per hotel: `config/whatsapp/<hotel_id>.toml`. Wat in de monitor gewijzigd wordt, staat in de
+  database (document `whatsapp_templates`), per omgeving apart.
+- Indienen maakt een nieuw sjabloon bij Twilio (naam `<hotel>_<omgeving>_<bericht>_<taal>_v<n>`) en dient het in bij
+  Meta. Een ingediend sjabloon kan niet meer gewijzigd worden: elke nieuwe tekst is een nieuwe versie.
+- Tot Meta een nieuwe versie goedkeurt, blijft de vorige goedgekeurde versie verstuurd worden. Zonder goedgekeurde
+  versie: de SID uit `[whatsapp] template_<bericht>_<taal>` in de instellingen, anders Engels, anders per sms.
+- Wacht er al een versie op Meta, dan kan toch een nieuwe ingediend worden: die vervangt de wachtende (die wordt bij
+  Twilio verwijderd).
+- De status wordt alleen gevraagd voor versies die nog wachten: elke 15 minuten (timer oversight) en bij het openen
+  van het tabblad (hoogstens een keer per minuut). Goedgekeurd of afgekeurd wordt niet meer opgevraagd.
+- Het icoontje naast de naam opent de Content Template Builder in Twilio (zoeken op de naam).
+- Knoptekst hoogstens 20 tekens (Twilio), voettekst hoogstens 60.
 
 Welke gegevens in welke plaats staan: `WHATSAPP_VARIABLES` in `processes/send_messages.py` (gasten) en
 `_send_phone` in `processes/daily_lists.py` (personeel).
