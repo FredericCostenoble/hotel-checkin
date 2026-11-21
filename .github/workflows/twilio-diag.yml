@@ -59,5 +59,5 @@ jobs:
           done
           echo "== Fouten (laatste 30 minuten)"
           az monitor app-insights query -g "$rg" --app "$app" -o tsv --offset 1h --analytics-query \
-            "union exceptions, (traces | where severityLevel >= 3) | where timestamp > ago(30m) | project timestamp, problemId, outerMessage, message | order by timestamp desc | take 15" \
+            "exceptions | where timestamp > ago(60m) | project timestamp, innermostType, innermostMessage, tostring(details[-1].parsedStack[-1]) | order by timestamp desc | take 10" \
             --query "tables[0].rows[]" || true
