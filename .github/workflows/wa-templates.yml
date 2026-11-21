@@ -29,5 +29,9 @@ jobs:
             [ -z "$tok" ] && tok=$(az keyvault secret show --vault-name "$kv" -n "${p}twilio-auth-token" --query value -o tsv 2>/dev/null || true)
           done
           echo "::add-mask::$tok"
-          curl -s -u "$sid:$tok" "https://content.twilio.com/v2/ContentAndApprovals?PageSize=200" \
-            | jq -r '.contents[] | [.friendly_name, .language, (.approval_requests.status // "-"), (.approval_requests.category // "-"), (.approval_requests.rejection_reason // "")] | @tsv'
+          curl -s -u "$sid:$tok" "https://content.twilio.com/v1/Content?PageSize=100" > list.json
+          jq -r '.contents[]? | [.sid, .friendly_name, .language] | @tsv' list.json | while IFS=$'\t' read -r csid name lang; do
+            a=$(curl -s -u "$sid:$tok" "https://content.twilio.com/v1/Content/$csid/ApprovalRequests")
+            echo "$name	$lang	$(jq -r '[.whatsapp.status // "-", .whatsapp.category // "-", .whatsapp.rejection_reason // ""] | @tsv' <<<"$a")"
+          done
+          jq -r 'if .contents then "aantal: \(.contents|length)" else . end' list.json | head -5
