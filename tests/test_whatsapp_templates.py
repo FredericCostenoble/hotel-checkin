@@ -80,14 +80,14 @@ def test_variables_match_send_messages():
 
 def test_validate_rules():
     v = wa.validate
-    assert v("room_change", {"body": "{{1}} is uw kamer, code {{2}} ok"}) == ["De tekst mag niet beginnen met een plaats ({{...}})."]
-    assert any("eindigen" in e for e in v("room_change", {"body": "Kamer {{1}}, code {{2}}"}))
-    assert any("na elkaar" in e for e in v("room_change", {"body": "Kamer {{1}} {{2}} tot straks"}))
-    assert any("ontbreekt" in e for e in v("room_change", {"body": "Kamer {{1}} tot straks"}))
-    assert any("Onbekende" in e for e in v("room_change", {"body": "Kamer {{1}} code {{2}} en {{3}} ok"}))
+    assert v("breakfast_list", {"body": "{{1}} list, {{2}} ok"}) == ["De tekst mag niet beginnen met een plaats ({{...}})."]
+    assert any("eindigen" in e for e in v("breakfast_list", {"body": "List {{1}}: {{2}}"}))
+    assert any("na elkaar" in e for e in v("breakfast_list", {"body": "List {{1}} {{2}} ok"}))
+    assert any("ontbreekt" in e for e in v("breakfast_list", {"body": "List {{1}} ok"}))
+    assert any("Onbekende" in e for e in v("room_change", {"body": "Kamer {{1}} en {{2}} ok"}))
     assert any("knoptekst is te lang" in e for e in v("confirmation", {"body": "Dag {{1}}, welkom.", "button": "x" * 21}))
     assert any("knoptekst ontbreekt" in e for e in v("confirmation", {"body": "Dag {{1}}, welkom."}))
-    assert any("geen knop" in e for e in v("room_change", {"body": "Kamer {{1}} code {{2}} ok", "button": "Ga"}))
+    assert any("geen knop" in e for e in v("room_change", {"body": "Kamer {{1}} ok", "button": "Ga"}))
 
 
 def test_submit_creates_content_with_button_and_footer():
@@ -110,12 +110,11 @@ def test_submit_cta_text_and_media_types():
     wa.submit("lucca", "room_change", "fr", "fred", client=fake.client())
     wa.submit("lucca", "breakfast_list", "en", "fred", client=fake.client())
     cta, text, media = (c["types"] for c in fake.created)
-    assert cta["twilio/call-to-action"]["actions"][0]["url"] == "https://checkin.hotellucca.be/?r={{3}}"
-    assert "\n" in cta["twilio/call-to-action"]["body"]
+    assert cta["twilio/call-to-action"]["actions"][0]["url"] == "https://checkin.hotellucca.be/?r={{2}}"
     assert "twilio/text" in text
     assert media["twilio/media"]["media"] == ["https://func.example.net/api/lists/{{3}}"]
     assert fake.created[2]["variables"] == {"1": "Friday 13/11/2026", "2": "12 persons in 6 rooms",
-                                            "3": "lucca/breakfast/2026-11-13/1763050000/a1b2c3/breakfast-list-2026-11-13.pdf"}
+                                            "3": "lucca/breakfast/2026-11-13/0/sample/breakfast-list-2026-11-13.pdf"}
     assert fake.created[2]["language"] == "en"
 
 
@@ -140,7 +139,7 @@ def test_new_version_keeps_old_active_until_approved():
     first = fake.created[0]["sid"]
     fake.status[first] = "approved"
     wa.check("lucca", client=fake.client(), min_age=timedelta(0))
-    wa.save_text("lucca", "room_change", "nl", {"body": "Nieuwe kamer {{1}}, uw code blijft {{2}} ok."}, "fred")
+    wa.save_text("lucca", "room_change", "nl", {"body": "Nieuwe kamer {{1}}, meer info in uw mail."}, "fred")
     assert _lang(wa.view("lucca", refresh=False), "room_change", "nl")["state"] == "changed"
     wa.submit("lucca", "room_change", "nl", "fred", client=fake.client())
     assert fake.created[1]["friendly_name"] == "lucca_prd_room_change_nl_v2"
@@ -169,9 +168,9 @@ def test_rejected_shows_reason_and_resubmit_replaces_it():
 
 
 def test_save_and_reset_text():
-    wa.save_text("lucca", "room_change", "en", {"body": "Room {{1}}, code {{2}} stays."}, "fred")
+    wa.save_text("lucca", "room_change", "en", {"body": "Room {{1}} is yours."}, "fred")
     lg = _lang(wa.view("lucca", refresh=False), "room_change", "en")
-    assert lg["edited"] and lg["text"]["body"] == "Room {{1}}, code {{2}} stays."
+    assert lg["edited"] and lg["text"]["body"] == "Room {{1}} is yours."
     wa.reset_text("lucca", "room_change", "en", "fred")
     lg = _lang(wa.view("lucca", refresh=False), "room_change", "en")
     assert not lg["edited"] and lg["text"] == lg["default"]
@@ -199,3 +198,31 @@ def test_build_types_card_without_button():
 def test_tst_names_differ(monkeypatch):
     monkeypatch.setenv("APP_ENV", "tst")
     assert wa.template_name("lucca", "confirmation", "nl", 3) == "lucca_tst_confirmation_nl_v3"
+
+
+def test_no_pin_code_in_templates():
+    """Meta keurt sjablonen met een (pin)code af als verificatie: geen code en niet de woorden in de standaardteksten."""
+    import re
+
+    for t in wa.view("lucca", refresh=False)["templates"]:
+        assert "pincode" not in t["vars"]
+        for lg in t["langs"]:
+            assert not re.search(r"\b(pin|code|pincode|PIN-Code)\b", lg["text"]["body"], re.IGNORECASE), (t["step"], lg["lang"])
+
+
+def test_sample_pdf_exists_for_meta():
+    """Meta haalt de voorbeeld-pdf op: die link moet een echte pdf geven, zonder gastgegevens."""
+    from hotel_checkin.processes import daily_lists
+
+    path = daily_lists.sample_pdf_path("lucca", "cleaning")
+    hotel, kind, day, expires, sig, _ = path.split("/")
+    name, pdf = daily_lists.pdf_for_link(hotel, kind, day, expires, sig)
+    assert pdf.startswith(b"%PDF") and name == "cleaning-list-2026-11-13.pdf"
+    assert daily_lists.pdf_for_link(hotel, kind, day, "0", "fake") is None
+
+
+def test_old_rejected_versions_dropped_once():
+    repo.set_config_doc("lucca", wa.DOC, {"access_code": {"nl": {"version": 1, "pending": {
+        "status": "rejected", "text": {"body": "Kamer {{1}}, code {{2}} ok", "button": "X"}}}}}, "x")
+    lg = _lang(wa.view("lucca", refresh=False), "access_code", "nl")
+    assert lg["pending"] is None and lg["text"] == lg["default"] and lg["errors"] == []

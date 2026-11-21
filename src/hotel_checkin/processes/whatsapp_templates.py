@@ -33,23 +33,24 @@ DOC = "whatsapp_templates"
 # Per bericht: de plaatsen in de tekst ({{1}}, {{2}}, ...) in volgorde, en of er een knop naar het check-in-formulier
 # (link) of een pdf bovenaan (media) bij hoort. De laatste plaats is dan het variabele einde van dat adres.
 # Moet overeenkomen met send_messages.WHATSAPP_VARIABLES en daily_lists._send_phone.
+# Geen pincode in WhatsApp: Meta keurt sjablonen met een code (of de woorden pincode/code) af als "categorie moet
+# Verificatie zijn" (afwijzingen van 21/11/2026). De code staat in de mail en in de app achter de knop.
 TEMPLATES: dict[str, dict] = {
     "confirmation": {"vars": ("voornaam",), "button": "checkin_suffix", "langs": ("nl", "fr", "en", "de")},
     "reminder": {"vars": ("voornaam",), "button": "checkin_suffix", "langs": ("nl", "fr", "en", "de")},
-    "access_code": {"vars": ("kamer_kort", "pincode"), "button": "checkin_suffix", "langs": ("nl", "fr", "en", "de")},
-    "room_change": {"vars": ("kamer_kort", "pincode"), "langs": ("nl", "fr", "en", "de")},
+    "access_code": {"vars": ("kamer_kort",), "button": "checkin_suffix", "langs": ("nl", "fr", "en", "de")},
+    "room_change": {"vars": ("kamer_kort",), "langs": ("nl", "fr", "en", "de")},
     # Lijsten voor het personeel: in het Engels, zoals de lijsten zelf (dag en samenvatting komen Engels uit
-    # daily_lists: lists.day_text en describe)
+    # daily_lists: lists.day_text en describe). De voorbeeld-pdf moet echt bestaan: Meta haalt ze op.
     "breakfast_list": {"vars": ("dag", "samenvatting"), "media": "pdf_pad", "langs": ("en",),
                        "samples": {"samenvatting": "12 persons in 6 rooms"}},
     "cleaning_list": {"vars": ("dag", "samenvatting"), "media": "pdf_pad", "langs": ("en",),
-                      "samples": {"samenvatting": "3 leave, 5 stay, 2 check in",
-                                  "pdf_pad": "lucca/cleaning/2026-11-13/1763050000/a1b2c3/cleaning-list-2026-11-13.pdf"}},
+                      "samples": {"samenvatting": "3 leave, 5 stay, 2 check in"}},
 }
 # Voorbeeldwaarden: Meta vraagt ze bij het goedkeuren (en de monitor toont er een voorbeeld mee)
 SAMPLES = {"voornaam": "Jan", "checkin_suffix": "a1b2c3d4&lang=nl", "kamer_kort": "16 verdiep 1", "pincode": "4821",
-           "dag": "Friday 13/11/2026", "samenvatting": "12 persons in 6 rooms",
-           "pdf_pad": "lucca/breakfast/2026-11-13/1763050000/a1b2c3/breakfast-list-2026-11-13.pdf"}
+           "dag": "Friday 13/11/2026", "samenvatting": "12 persons in 6 rooms"}
+REV = 2  # rev 2: pincode uit de sjablonen; afgekeurde versies van daarvoor worden eenmalig weggegooid (_migrate)
 
 BODY_MAX, BODY_MAX_BUTTON, BUTTON_MAX, FOOTER_MAX = 1024, 640, 20, 60
 CHECK_EVERY = timedelta(minutes=10)  # status van een wachtende versie hoogstens zo vaak opvragen (timer)
@@ -59,9 +60,14 @@ FIELDS = ("body", "button", "footer")
 CONSOLE_URL = "https://console.twilio.com/us1/develop/sms/content-template-builder"
 
 
-def samples_of(step: str) -> dict[str, str]:
-    """Voorbeeldwaarden voor dit bericht (eigen waarden van het bericht gaan voor)."""
-    return SAMPLES | TEMPLATES[step].get("samples", {})
+def samples_of(step: str, hotel_id: str = "lucca") -> dict[str, str]:
+    """Voorbeeldwaarden voor dit bericht (eigen waarden van het bericht gaan voor). De pdf: een echte voorbeeldlink."""
+    out = SAMPLES | TEMPLATES[step].get("samples", {})
+    if TEMPLATES[step].get("media"):
+        from hotel_checkin.processes import daily_lists
+
+        out["pdf_pad"] = daily_lists.sample_pdf_path(hotel_id, step.removesuffix("_list"))
+    return out
 
 
 def _now() -> datetime:
@@ -75,7 +81,21 @@ def _load(hotel_id: str) -> dict:
     from hotel_checkin.guests import repository
 
     doc = repository.get_config_doc(hotel_id, DOC)
-    return (doc or {}).get("value") or {}
+    return _migrate((doc or {}).get("value") or {})
+
+
+def _migrate(data: dict) -> dict:
+    """Eenmalig per omgeving: afgekeurde of mislukte versies van voor REV weggooien, zodat de nieuwe standaardtekst
+    getoond wordt (goedgekeurde en wachtende versies blijven). Wordt bewaard bij de volgende wijziging."""
+    if int(data.get("_rev") or 0) >= REV:
+        return data
+    for per in data.values():
+        if isinstance(per, dict):
+            for e in per.values():
+                if isinstance(e, dict) and e.get("pending", {}).get("status") in ("rejected", "error"):
+                    e.pop("pending")
+    data["_rev"] = REV
+    return data
 
 
 def _save(hotel_id: str, data: dict, user: str) -> None:
@@ -254,8 +274,8 @@ def view(hotel_id: str, refresh: bool = True) -> dict:
                 "manual_sid": manual if manual and not e.get("active") else "",
             })
         out.append({"step": step, "vars": list(spec["vars"]), "button": bool(spec.get("button")),
-                    "media": bool(spec.get("media")), "samples": [samples_of(step)[v] for v in spec["vars"]],
-                    "media_sample": samples_of(step)[spec["media"]].rsplit("/", 1)[-1] if spec.get("media") else "",
+                    "media": bool(spec.get("media")), "samples": [samples_of(step, hotel_id)[v] for v in spec["vars"]],
+                    "media_sample": samples_of(step, hotel_id)[spec["media"]].rsplit("/", 1)[-1] if spec.get("media") else "",
                     "langs": langs})
     return {"templates": out, "console_url": CONSOLE_URL, "button_prefix": button_prefix(hotel_id), "media_prefix": media_prefix() or "",
             "env": environment(), "limits": {"body": BODY_MAX, "body_button": BODY_MAX_BUTTON,
@@ -322,7 +342,7 @@ def submit(hotel_id: str, step: str, lang: str, user: str, client=None) -> dict:
     if tpl.get("media") and not spec.get("media"):
         return {"ok": False, "message": "Het adres van de pdf is alleen gekend in Azure (TST of PRD)."}
     n = len(tpl["vars"])
-    sample = samples_of(step)
+    sample = samples_of(step, hotel_id)
     samples = {str(i): sample[v] for i, v in enumerate(tpl["vars"], 1)}
     url = media = None
     if tpl.get("button"):

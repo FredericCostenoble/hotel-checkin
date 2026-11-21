@@ -303,8 +303,9 @@ MAX_ATTEMPTS = 3  # per stap en kanaal; daarna niet meer opnieuw (staat rood in 
 WHATSAPP_VARIABLES = {
     "confirmation": ("voornaam", "checkin_suffix"),
     "reminder": ("voornaam", "checkin_suffix"),
-    "access_code": ("kamer_kort", "pincode", "checkin_suffix"),  # per kamer, knop naar het formulier (betalen)
-    "room_change": ("kamer_kort", "pincode"),
+    # Geen pincode in WhatsApp (Meta keurt dat af): de code staat in de mail en in de app achter de knop
+    "access_code": ("kamer_kort", "checkin_suffix"),  # per kamer, knop naar het formulier (code, betalen)
+    "room_change": ("kamer_kort",),
 }
 
 

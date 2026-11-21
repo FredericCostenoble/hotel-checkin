@@ -4,70 +4,72 @@
 # processes/whatsapp_templates.py, TEMPLATES. De knop en de pdf krijgen hun adres automatisch.
 # Regels van Meta: niet beginnen of eindigen met een plaats, geen twee plaatsen na elkaar, knoptekst hoogstens
 # 20 tekens, voettekst hoogstens 60 tekens.
+# Geen pincode en niet de woorden pincode of code: Meta keurt dat af ("categorie moet Verificatie zijn", 21/11/2026).
+# De code staat in de mail en in de app achter de knop.
 
 [confirmation.nl]
-body = "Beste {{1}}, bedankt voor uw reservatie in Hotel Lucca. Vul voor uw aankomst uw check-in-gegevens in via de knop hieronder. Zo ontvangt u alle praktische info en uw persoonlijke pincode voor de ingang en uw kamer."
+body = "Beste {{1}}, bedankt voor uw reservatie in Hotel Lucca. Vul voor uw aankomst uw check-in-gegevens in via de knop hieronder. Zo ontvangt u op tijd alle praktische info voor uw verblijf."
 button = "Check-in invullen"
 footer = "Hotel Lucca, Naaldenstraat 30, Brugge"
 
 [confirmation.fr]
-body = "Bonjour {{1}}, merci pour votre réservation à l'Hotel Lucca. Avant votre arrivée, complétez vos données d'enregistrement via le bouton ci-dessous. Vous recevrez ainsi toutes les informations pratiques et votre code PIN personnel pour l'entrée et votre chambre."
+body = "Bonjour {{1}}, merci pour votre réservation à l'Hotel Lucca. Avant votre arrivée, complétez vos données d'enregistrement via le bouton ci-dessous. Vous recevrez ainsi à temps toutes les informations pratiques pour votre séjour."
 button = "Faire mon check-in"
 footer = "Hotel Lucca, Naaldenstraat 30, Brugge"
 
 [confirmation.en]
-body = "Dear {{1}}, thank you for your reservation at Hotel Lucca. Before you arrive, please complete your check-in details using the button below. You will then receive all practical information and your personal PIN code for the entrance and your room."
+body = "Dear {{1}}, thank you for your reservation at Hotel Lucca. Before you arrive, please complete your check-in details using the button below. You will then receive all practical information for your stay in good time."
 button = "Complete check-in"
 footer = "Hotel Lucca, Naaldenstraat 30, Brugge"
 
 [confirmation.de]
-body = "Guten Tag {{1}}, vielen Dank für Ihre Reservierung im Hotel Lucca. Bitte ergänzen Sie vor Ihrer Anreise Ihre Check-in-Daten über die Schaltfläche unten. So erhalten Sie alle praktischen Informationen und Ihren persönlichen PIN-Code für den Eingang und Ihr Zimmer."
+body = "Guten Tag {{1}}, vielen Dank für Ihre Reservierung im Hotel Lucca. Bitte ergänzen Sie vor Ihrer Anreise Ihre Check-in-Daten über die Schaltfläche unten. So erhalten Sie rechtzeitig alle praktischen Informationen für Ihren Aufenthalt."
 button = "Check-in ergänzen"
 footer = "Hotel Lucca, Naaldenstraat 30, Brugge"
 
 [reminder.nl]
-body = "Beste {{1}}, over een week bent u onze gast in Hotel Lucca. Kijk uw check-in-gegevens na of vul ze aan via de knop hieronder. Zo ontvangt u voor uw aankomst alle praktische info en uw persoonlijke pincode."
+body = "Beste {{1}}, over een week bent u onze gast in Hotel Lucca. Kijk uw check-in-gegevens na of vul ze aan via de knop hieronder. Zo ontvangt u voor uw aankomst alle praktische info."
 button = "Gegevens nakijken"
 
 [reminder.fr]
-body = "Bonjour {{1}}, dans une semaine vous serez notre hôte à l'Hotel Lucca. Vérifiez ou complétez vos données d'enregistrement via le bouton ci-dessous. Vous recevrez ainsi avant votre arrivée toutes les informations pratiques et votre code PIN personnel."
+body = "Bonjour {{1}}, dans une semaine vous serez notre hôte à l'Hotel Lucca. Vérifiez ou complétez vos données d'enregistrement via le bouton ci-dessous. Vous recevrez ainsi avant votre arrivée toutes les informations pratiques."
 button = "Vérifier mes données"
 
 [reminder.en]
-body = "Dear {{1}}, in one week you will be our guest at Hotel Lucca. Please check or complete your check-in details using the button below. You will then receive all practical information and your personal PIN code before you arrive."
+body = "Dear {{1}}, in one week you will be our guest at Hotel Lucca. Please check or complete your check-in details using the button below. You will then receive all practical information before you arrive."
 button = "Check my details"
 
 [reminder.de]
-body = "Guten Tag {{1}}, in einer Woche sind Sie unser Gast im Hotel Lucca. Bitte prüfen oder ergänzen Sie Ihre Check-in-Daten über die Schaltfläche unten. So erhalten Sie vor Ihrer Anreise alle praktischen Informationen und Ihren persönlichen PIN-Code."
+body = "Guten Tag {{1}}, in einer Woche sind Sie unser Gast im Hotel Lucca. Bitte prüfen oder ergänzen Sie Ihre Check-in-Daten über die Schaltfläche unten. So erhalten Sie vor Ihrer Anreise alle praktischen Informationen."
 button = "Daten prüfen"
 
 [access_code.nl]
-body = "Uw verblijf @ Hotel Lucca, kamer {{1}}, code: {{2}} ↵\nToets de code en daarna de pijltoets ↵ op elk klavier. Alle info staat in uw mail."
+body = "Uw kamer {{1}} in Hotel Lucca is klaar voor uw aankomst. Via de knop hieronder ziet u hoe u binnenkomt, met alle praktische info. Alles staat ook in uw mail."
 button = "Uw reservatie"
 
 [access_code.fr]
-body = "Votre séjour @ Hotel Lucca, chambre {{1}}, code : {{2}} ↵\nSaisissez le code puis la touche flèche ↵ sur chaque clavier. Toutes les informations se trouvent dans votre e-mail."
+body = "Votre chambre {{1}} à l'Hotel Lucca est prête pour votre arrivée. Le bouton ci-dessous vous indique comment entrer, avec toutes les informations pratiques. Tout se trouve aussi dans votre e-mail."
 button = "Votre réservation"
 
 [access_code.en]
-body = "Your stay @ Hotel Lucca, room {{1}}, code: {{2}} ↵\nEnter the code followed by the arrow key ↵ on each keypad. All information is in your email."
+body = "Your room {{1}} at Hotel Lucca is ready for your arrival. Use the button below to see how to get in, with all practical information. Everything is also in your email."
 button = "Your reservation"
 
 [access_code.de]
-body = "Ihr Aufenthalt @ Hotel Lucca, Zimmer {{1}}, Code: {{2}} ↵\nGeben Sie den Code und danach die Pfeiltaste ↵ an jedem Tastenfeld ein. Alle Informationen finden Sie in Ihrer E-Mail."
+body = "Ihr Zimmer {{1}} im Hotel Lucca ist für Ihre Anreise bereit. Über die Schaltfläche unten sehen Sie, wie Sie hineinkommen, mit allen praktischen Informationen. Alles steht auch in Ihrer E-Mail."
 button = "Ihre Reservierung"
 
 [room_change.nl]
-body = "Uw kamer in Hotel Lucca is gewijzigd: u verblijft nu in kamer {{1}}. Uw code blijft {{2}} ↵ Meer info in uw mail."
+body = "Uw kamer in Hotel Lucca is gewijzigd: u verblijft nu in kamer {{1}}. Meer info in uw mail."
 
 [room_change.fr]
-body = "Votre chambre à l'Hotel Lucca a changé : vous séjournez maintenant dans la chambre {{1}}. Votre code reste {{2}} ↵ Plus d'informations dans votre e-mail."
+body = "Votre chambre à l'Hotel Lucca a changé : vous séjournez maintenant dans la chambre {{1}}. Plus d'informations dans votre e-mail."
 
 [room_change.en]
-body = "Your room at Hotel Lucca has changed: you are now staying in room {{1}}. Your code remains {{2}} ↵ More information in your email."
+body = "Your room at Hotel Lucca has changed: you are now staying in room {{1}}. More information in your email."
 
 [room_change.de]
-body = "Ihr Zimmer im Hotel Lucca hat sich geändert: Sie wohnen jetzt in Zimmer {{1}}. Ihr Code bleibt {{2}} ↵ Weitere Informationen in Ihrer E-Mail."
+body = "Ihr Zimmer im Hotel Lucca hat sich geändert: Sie wohnen jetzt in Zimmer {{1}}. Weitere Informationen in Ihrer E-Mail."
 
 # Lijsten voor het personeel: in het Engels, zoals de lijsten zelf
 [breakfast_list.en]

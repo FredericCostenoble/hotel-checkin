@@ -637,6 +637,7 @@ def describe(data: dict, with_source: bool = True, lang: str = "en") -> str:
 # ---------------------------------------------------------------- versturen
 
 
+SAMPLE_SIG = "sample"  # voorbeeldlink voor Meta (sample_pdf_path): lege lijst zonder gastgegevens
 PDF_VALID = timedelta(hours=24)  # zo lang werkt de link naar de pdf (Twilio haalt ze meteen op bij het versturen)
 
 
@@ -667,6 +668,11 @@ def pdf_path(hotel_id: str, data: dict, now: datetime | None = None) -> str:
     return f"{hotel_id}/{data['kind']}/{data['day']}/{expires}/{sig}/{lists.pdf_name(data)}"
 
 
+def sample_pdf_path(hotel_id: str, kind: str) -> str:
+    """Voorbeeld van pdf_path dat echt een pdf geeft (lege lijst): Meta haalt die op bij het goedkeuren."""
+    return f"{hotel_id}/{kind}/2026-11-13/0/{SAMPLE_SIG}/{kind}-list-2026-11-13.pdf"
+
+
 def pdf_for_link(hotel_id: str, kind: str, day: str, expires: str, sig: str,
                  now: datetime | None = None) -> tuple[str, bytes] | None:
     """De pdf achter een link uit pdf_path, of None als de link niet klopt of vervallen is. Altijd de bewaarde lijst
@@ -675,6 +681,14 @@ def pdf_for_link(hotel_id: str, kind: str, day: str, expires: str, sig: str,
 
     if kind not in KINDS or not expires.isdigit():
         return None
+    if sig == SAMPLE_SIG and expires == "0":
+        # Voorbeeld voor Meta bij het goedkeuren van het WhatsApp-sjabloon: lege lijst, geen gastgegevens
+        try:
+            date.fromisoformat(day)
+        except ValueError:
+            return None
+        data = {"kind": kind, "day": day, "rows": [], "total": 0, "totals": {}}
+        return lists.pdf_name(data), lists.pdf(data, load_hotel(hotel_id)["hotel"]["naam"])
     if int(expires) < (now or datetime.now(UTC)).timestamp():
         return None
     try:
