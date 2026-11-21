@@ -18,7 +18,8 @@ De teksten worden gewijzigd en ingediend in de monitor, niet meer met de hand in
 - De status wordt alleen gevraagd voor versies die nog wachten: elke 15 minuten (timer oversight) en bij het openen
   van het tabblad (hoogstens een keer per minuut). Goedgekeurd of afgekeurd wordt niet meer opgevraagd.
 - Het icoontje naast de naam opent de Content Template Builder in Twilio (zoeken op de naam).
-- Knoptekst hoogstens 20 tekens (Twilio), voettekst hoogstens 60.
+- Knoptekst hoogstens 20 tekens (Twilio), voettekst hoogstens 60, titel hoogstens 60.
+- Titel (vet bovenaan): Twilio-type whatsapp/card. Niet bij de lijsten: daar staat de pdf bovenaan en dat kan niet samen.
 
 Welke gegevens in welke plaats staan: `WHATSAPP_VARIABLES` in `processes/send_messages.py` (gasten) en
 `_send_phone` in `processes/daily_lists.py` (personeel).

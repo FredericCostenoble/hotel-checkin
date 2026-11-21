@@ -385,7 +385,7 @@ Object.assign(T.nl, {
   wa_overview: "Overzicht", wa_check: "Status vernieuwen", wa_all: n => `Alles indienen (${n})`, wa_all_none: "Alles ingediend",
   wa_all_q: n => `${n} nieuwe of gewijzigde teksten bij Meta indienen?`, wa_submit: "Indienen bij Meta", wa_submit_q: "Deze tekst bij Meta indienen? De goedgekeurde versie blijft in gebruik tot Meta de nieuwe goedkeurt.",
   wa_save: "Bewaren", wa_reset: "Herstellen", wa_reset_q: "De wijziging weggooien en terug naar de actieve tekst?",
-  wa_body: "Tekst", wa_button: "Knoptekst", wa_footer: "Voettekst (niet verplicht)", wa_preview: "Voorbeeld",
+  wa_header: "Titel (vet bovenaan, niet verplicht)", wa_body: "Tekst", wa_button: "Knoptekst", wa_footer: "Voettekst (niet verplicht)", wa_preview: "Voorbeeld",
   wa_button_help: p => `De knop opent ${p}... (de link van de gast komt er automatisch achter).`, wa_media_help: p => `De pdf komt bovenaan het bericht (${p || "adres van de Function App"}...).`,
   wa_vars: "Plaatsen", wa_unsaved: "Niet bewaard.", wa_saved: "Bewaard.", wa_dlg_submit: "Indienen", wa_dlg_reset: "Herstellen",
   wa_st_approved: "Goedgekeurd", wa_st_waiting: "Wacht op Meta", wa_st_changed: "Gewijzigd, niet ingediend", wa_st_new: "Nog niet ingediend", wa_st_rejected: "Afgekeurd", wa_st_error: "Fout",
@@ -408,7 +408,7 @@ Object.assign(T.en, {
   wa_overview: "Overview", wa_check: "Refresh status", wa_all: n => `Submit all (${n})`, wa_all_none: "All submitted",
   wa_all_q: n => `Submit ${n} new or changed texts to Meta?`, wa_submit: "Submit to Meta", wa_submit_q: "Submit this text to Meta? The approved version stays in use until Meta approves the new one.",
   wa_save: "Save", wa_reset: "Restore", wa_reset_q: "Discard the change and go back to the active text?",
-  wa_body: "Text", wa_button: "Button text", wa_footer: "Footer (optional)", wa_preview: "Preview",
+  wa_header: "Title (bold on top, optional)", wa_body: "Text", wa_button: "Button text", wa_footer: "Footer (optional)", wa_preview: "Preview",
   wa_button_help: p => `The button opens ${p}... (the guest's link is added automatically).`, wa_media_help: p => `The PDF goes on top of the message (${p || "address of the Function App"}...).`,
   wa_vars: "Placeholders", wa_unsaved: "Not saved.", wa_saved: "Saved.", wa_dlg_submit: "Submit", wa_dlg_reset: "Restore",
   wa_st_approved: "Approved", wa_st_waiting: "Waiting for Meta", wa_st_changed: "Changed, not submitted", wa_st_new: "Not submitted yet", wa_st_rejected: "Rejected", wa_st_error: "Error",
@@ -3397,7 +3397,8 @@ function waBadge(st) { return `<span class="badge ${WA_BADGE[st] || "b-no"}">${e
 function waPreview(tp, x) {
   const btn = tp.button && x.button ? `<div style="border-top:1px solid #E3E6EB;margin-top:8px;padding-top:7px;text-align:center;font-weight:700;color:#3E4558">${IC('<path d="M9 6H6a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-3M14 4h6v6M20 4l-9 9"/>', 13)} ${esc(x.button)}</div>` : "";
   const pdf = tp.media ? `<div class="row" style="gap:6px;padding:8px;margin-bottom:8px;border-radius:6px;background:#E9EAED;font-size:12.5px">${IC('<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/>', 14)} ${esc(tp.media_sample)}</div>` : "";
-  return `<div style="max-width:420px;background:#F4F5F8;border-radius:10px;padding:10px 12px">${pdf}<div style="white-space:pre-wrap;overflow-wrap:anywhere">${esc(waFill(x.body, tp.samples))}</div>${x.footer ? `<div class="small muted" style="margin-top:6px">${esc(x.footer)}</div>` : ""}${btn}</div>`;
+  const head = x.header && !tp.media ? `<div style="font-weight:700;margin-bottom:4px">${esc(x.header)}</div>` : "";
+  return `<div style="max-width:420px;background:#F4F5F8;border-radius:10px;padding:10px 12px">${pdf}${head}<div style="white-space:pre-wrap;overflow-wrap:anywhere">${esc(waFill(x.body, tp.samples))}</div>${x.footer ? `<div class="small muted" style="margin-top:6px">${esc(x.footer)}</div>` : ""}${btn}</div>`;
 }
 function waLink(v) {
   // Icoon naar de Content Template Builder in Twilio, om na te kijken wat daar echt staat
@@ -3432,6 +3433,7 @@ function waCard(tp) {
   return `<section class="card" id="wa-c-${tp.step}" data-wa="${tp.step}"><div class="ch"><h2 class="ct">${IC('<path d="M4 20l1.4-4.2A8 8 0 1 1 8.6 19z"/>')} ${esc(title)}</h2>${waBadge(st)}</div>
     <div class="cb"><div class="help">${esc(help)} ${esc(t("wa_vars"))}: ${vars}</div>${seg}
       <div class="help">${waMeta(lg)}</div>${reason}${err}<div class="note" id="${id}-replace" ${dirty && lg.state === "waiting" ? "" : "hidden"}><span>${esc(t("wa_replace"))}</span></div>
+      ${tp.media ? "" : `<div class="field"><label for="${id}-header">${esc(t("wa_header"))} <span class="muted small" id="${id}-n-header">${(x.header || "").length}/${L.header}</span></label><input class="input" id="${id}-header" data-wa-f="header" maxlength="${L.header}" value="${esc(x.header || "")}"></div>`}
       <div class="field"><label for="${id}-body">${esc(t("wa_body"))} <span class="muted small" id="${id}-n-body">${(x.body || "").length}/${bodyMax}</span></label><textarea class="input" id="${id}-body" data-wa-f="body" rows="5" style="padding:8px 10px;min-height:110px;font:inherit;line-height:1.45;resize:vertical">${esc(x.body || "")}</textarea></div>
       ${tp.button ? `<div class="field"><label for="${id}-button">${esc(t("wa_button"))} <span class="muted small" id="${id}-n-button">${(x.button || "").length}/${L.button}</span></label><input class="input" id="${id}-button" data-wa-f="button" maxlength="${L.button}" value="${esc(x.button || "")}"><span class="help">${esc(t("wa_button_help", wa.button_prefix))}</span></div>` : ""}
       ${tp.media ? `<div class="help">${esc(t("wa_media_help", wa.media_prefix))}</div>` : `<div class="field"><label for="${id}-footer">${esc(t("wa_footer"))} <span class="muted small" id="${id}-n-footer">${(x.footer || "").length}/${L.footer}</span></label><input class="input" id="${id}-footer" data-wa-f="footer" maxlength="${L.footer}" value="${esc(x.footer || "")}"></div>`}
@@ -3456,7 +3458,7 @@ function renderWhatsapp() {
 function waRefresh(step) {
   // Na typen: alleen tellers, voorbeeld en knoppen bijwerken (de focus blijft in het veld)
   const tp = wa.templates.find(x => x.step === step), lg = tp.langs.find(l => l.lang === waLang[step]), x = waText(tp, lg), id = `wa-${step}`;
-  ["body", "button", "footer"].forEach(f => { const n = $(`#${id}-n-${f}`); if (n) n.textContent = n.textContent.replace(/^\d+/, String((x[f] || "").length)); });
+  ["header", "body", "button", "footer"].forEach(f => { const n = $(`#${id}-n-${f}`); if (n) n.textContent = n.textContent.replace(/^\d+/, String((x[f] || "").length)); });
   $(`#${id}-pv`).innerHTML = waPreview(tp, x);
   const card = $(`#wa-c-${step}`);
   card.querySelector('[data-wa-act="save"]').disabled = false;

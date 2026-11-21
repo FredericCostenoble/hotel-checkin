@@ -96,8 +96,9 @@ def test_submit_creates_content_with_button_and_footer():
     assert res["ok"], res
     c = fake.created[0]
     assert c["language"] == "nl" and c["friendly_name"] == "lucca_prd_confirmation_nl_v1"
-    card = c["types"]["twilio/card"]
-    assert card["subtitle"] == "Hotel Lucca, Naaldenstraat 30, Brugge"
+    card = c["types"]["whatsapp/card"]
+    assert card["header_text"] == "Uw reservatie in Hotel Lucca"
+    assert card["footer"] == "Hotel Lucca, Naaldenstraat 30, Brugge"
     assert card["actions"] == [{"type": "URL", "title": "Check-in invullen", "url": "https://checkin.hotellucca.be/?r={{2}}"}]
     assert c["variables"] == {"1": "Jan", "2": "a1b2c3d4&lang=nl"}
     assert fake.submitted[0]["name"] == "lucca_prd_confirmation_nl_v1" and fake.submitted[0]["category"] == "UTILITY"
@@ -110,8 +111,8 @@ def test_submit_cta_text_and_media_types():
     wa.submit("lucca", "room_change", "fr", "fred", client=fake.client())
     wa.submit("lucca", "breakfast_list", "en", "fred", client=fake.client())
     cta, text, media = (c["types"] for c in fake.created)
-    assert cta["twilio/call-to-action"]["actions"][0]["url"] == "https://checkin.hotellucca.be/?r={{2}}"
-    assert "twilio/text" in text
+    assert cta["whatsapp/card"]["actions"][0]["url"] == "https://checkin.hotellucca.be/?r={{2}}"
+    assert text == {"whatsapp/card": {"body": text["whatsapp/card"]["body"], "header_text": "Changement de chambre"}}
     assert media["twilio/media"]["media"] == ["https://func.example.net/api/lists/{{3}}"]
     assert fake.created[2]["variables"] == {"1": "Friday 13/11/2026", "2": "12 persons in 6 rooms",
                                             "3": "lucca/breakfast/2026-11-13/0/sample/breakfast-list-2026-11-13.pdf"}
@@ -226,3 +227,11 @@ def test_old_rejected_versions_dropped_once():
         "status": "rejected", "text": {"body": "Kamer {{1}}, code {{2}} ok", "button": "X"}}}}}, "x")
     lg = _lang(wa.view("lucca", refresh=False), "access_code", "nl")
     assert lg["pending"] is None and lg["text"] == lg["default"] and lg["errors"] == []
+
+
+def test_header_rules_and_types():
+    assert any("titel is te lang" in e for e in wa.validate("room_change", {"body": "Kamer {{1}} ok", "header": "x" * 61}))
+    assert any("geen titel" in e for e in wa.validate("breakfast_list", {"body": "List {{1}}: {{2}} ok", "header": "T"}))
+    assert content_templates.build_types("Hallo {{1}} ok", footer="Voet") == {
+        "twilio/card": {"title": "Hallo {{1}} ok", "subtitle": "Voet"}}
+    assert "twilio/call-to-action" in content_templates.build_types("Hallo {{1}} ok", "Ga", "https://x/{{2}}")

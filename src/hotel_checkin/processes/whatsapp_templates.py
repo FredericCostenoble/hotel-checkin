@@ -52,10 +52,10 @@ SAMPLES = {"voornaam": "Jan", "checkin_suffix": "a1b2c3d4&lang=nl", "kamer_kort"
            "dag": "Friday 13/11/2026", "samenvatting": "12 persons in 6 rooms"}
 REV = 2  # rev 2: pincode uit de sjablonen; afgekeurde versies van daarvoor worden eenmalig weggegooid (_migrate)
 
-BODY_MAX, BODY_MAX_BUTTON, BUTTON_MAX, FOOTER_MAX = 1024, 640, 20, 60
+BODY_MAX, BODY_MAX_BUTTON, BUTTON_MAX, FOOTER_MAX, HEADER_MAX = 1024, 640, 20, 60, 60
 CHECK_EVERY = timedelta(minutes=10)  # status van een wachtende versie hoogstens zo vaak opvragen (timer)
 CHECK_EVERY_MONITOR = timedelta(seconds=60)  # bij het openen van de monitor
-FIELDS = ("body", "button", "footer")
+FIELDS = ("header", "body", "button", "footer")
 # Content Template Builder in de Twilio Console (lijst met zoekvak; een link per sjabloon is niet gedocumenteerd)
 CONSOLE_URL = "https://console.twilio.com/us1/develop/sms/content-template-builder"
 
@@ -143,6 +143,7 @@ def validate(step: str, text: dict) -> list[str]:
     spec = TEMPLATES[step]
     n = len(spec["vars"])
     body, button, footer = text.get("body", ""), text.get("button", ""), text.get("footer", "")
+    header = text.get("header", "")
     errors: list[str] = []
     if not body:
         return ["De tekst is leeg."]
@@ -174,8 +175,12 @@ def validate(step: str, text: dict) -> list[str]:
             errors.append(f"De knoptekst is te lang ({len(button)} tekens, hoogstens {BUTTON_MAX}).")
     elif button:
         errors.append("Dit bericht heeft geen knop.")
-    if "{{" in button or "{{" in footer:
-        errors.append("Geen plaatsen ({{...}}) in de knop of de voettekst.")
+    if "{{" in button or "{{" in footer or "{{" in header:
+        errors.append("Geen plaatsen ({{...}}) in de titel, de knop of de voettekst.")
+    if len(header) > HEADER_MAX:
+        errors.append(f"De titel is te lang ({len(header)} tekens, hoogstens {HEADER_MAX}).")
+    if header and spec.get("media"):
+        errors.append("Een bericht met pdf heeft geen titel (de pdf staat bovenaan).")
     if len(footer) > FOOTER_MAX:
         errors.append(f"De voettekst is te lang ({len(footer)} tekens, hoogstens {FOOTER_MAX}).")
     if footer and spec.get("media"):
@@ -279,7 +284,7 @@ def view(hotel_id: str, refresh: bool = True) -> dict:
                     "langs": langs})
     return {"templates": out, "console_url": CONSOLE_URL, "button_prefix": button_prefix(hotel_id), "media_prefix": media_prefix() or "",
             "env": environment(), "limits": {"body": BODY_MAX, "body_button": BODY_MAX_BUTTON,
-                                             "button": BUTTON_MAX, "footer": FOOTER_MAX}}
+                                             "button": BUTTON_MAX, "footer": FOOTER_MAX, "header": HEADER_MAX}}
 
 
 def _public(v: dict | None) -> dict | None:
@@ -351,7 +356,7 @@ def submit(hotel_id: str, step: str, lang: str, user: str, client=None) -> dict:
     if tpl.get("media"):
         media = f"{spec['media']}{{{{{n + 1}}}}}"
         samples[str(n + 1)] = sample[tpl["media"]]
-    types = twilio.build_types(text["body"], text.get("button"), url, text.get("footer"), media)
+    types = twilio.build_types(text["body"], text.get("button"), url, text.get("footer"), media, text.get("header"))
     version = int(e.get("version") or 0) + 1
     name = template_name(hotel_id, step, lang, version)
     old = e.get("pending")

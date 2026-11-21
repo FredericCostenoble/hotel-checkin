@@ -26,15 +26,23 @@ class TemplateError(Exception):
 
 
 def build_types(body: str, button_title: str | None = None, button_url: str | None = None,
-                footer: str | None = None, media_url: str | None = None) -> dict:
+                footer: str | None = None, media_url: str | None = None, header: str | None = None) -> dict:
     """De inhoud van het sjabloon in de vorm van Twilio.
-    - met pdf of foto bovenaan: twilio/media
+    - met pdf of foto bovenaan: twilio/media (geen titel mogelijk)
+    - met titel: whatsapp/card (titel vet bovenaan, hoogstens 60 tekens; met voettekst en knop)
     - met knop en voettekst: twilio/card (de voettekst is bij WhatsApp de subtitle)
     - met knop: twilio/call-to-action
     - alleen tekst: twilio/text (met voettekst: twilio/card zonder knop)"""
     actions = [{"type": "URL", "title": button_title, "url": button_url}] if button_title and button_url else []
     if media_url:
         return {"twilio/media": {"body": body, "media": [media_url]}}
+    if header:
+        card = {"body": body, "header_text": header}
+        if footer:
+            card["footer"] = footer
+        if actions:
+            card["actions"] = actions
+        return {"whatsapp/card": card}
     if footer:
         card = {"title": body, "subtitle": footer}
         if actions:
