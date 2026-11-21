@@ -57,3 +57,7 @@ jobs:
               curl -s -o /dev/null -w "Twilio API met ${p}sleutels: %{http_code}\n" -u "$sid:$tok" "https://api.twilio.com/2010-04-01/Accounts/$sid.json"
             fi
           done
+          echo "== Fouten (laatste 30 minuten)"
+          az monitor app-insights query -g "$rg" --app "$app" -o tsv --offset 1h --analytics-query \
+            "union exceptions, (traces | where severityLevel >= 3) | where timestamp > ago(30m) | project timestamp, problemId, outerMessage, message | order by timestamp desc | take 15" \
+            --query "tables[0].rows[]" || true
