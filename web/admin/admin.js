@@ -710,6 +710,8 @@ async function init() {
 }
 
 const PAGE = document.body.dataset.page || "main";
+// De browser zet de scrollpositie niet terug bij wisselen van tabblad (vorige/volgende): dat doet showTab zelf
+if ("scrollRestoration" in history) history.scrollRestoration = "manual";
 const TABS = PAGE === "settings" ? ["hotel", "tech", "workflow", "whatsapp", "robot"] : ["today", "res", "guests", "breakfast", "cleaning"];
 let current = TABS[0];
 function showTab(name, initial = false, leave = false) {
@@ -720,6 +722,9 @@ function showTab(name, initial = false, leave = false) {
     });
     return;
   }
+  // Ander tabblad: altijd bovenaan beginnen. De scrollpositie onthouden gebeurt alleen bij lijst > detail > terug
+  // (detailBack, zet de positie daarna zelf terug).
+  if (name !== current && !initial) window.scrollTo(0, 0);
   current = name;
   document.querySelectorAll("nav button[data-tab]").forEach(x => { x.classList.toggle("active", x.dataset.tab === name); x.classList.toggle("on", x.classList.contains("lbtn-lists") ? LIST_KINDS.includes(name) : x.dataset.tab === name); });
   const mt = PAGE === "settings" ? "settings" : LIST_KINDS.includes(name) ? "lists" : name;
