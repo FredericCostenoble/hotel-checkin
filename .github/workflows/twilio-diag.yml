@@ -38,3 +38,10 @@ jobs:
           az monitor app-insights query -g "$rg" --app "$app" -o tsv --offset 3h --analytics-query \
             "requests | where timestamp > ago(3h) | summarize n=count() by name, resultCode | order by n desc | take 30" \
             --query "tables[0].rows[]" || true
+          echo "== Testaanvraag zonder geldige handtekening (verwacht 403 van onze code)"
+          curl -s -o /dev/null -w "%{http_code}\n" -X POST -d "CallSid=CAtest" "https://${{ inputs.environment == 'prd' && 'monitor.hotellucca.be' || 'monitor-tst.hotellucca.be' }}/api/twilio/voice?h=lucca" || true
+          sleep 90
+          echo "== Uitvoeringen en weigeringen (laatste 30 minuten)"
+          az monitor app-insights query -g "$rg" --app "$app" -o tsv --offset 1h --analytics-query \
+            "traces | where timestamp > ago(30m) | where message has 'handtekening' or message has 'twilio_voice' or message has 'AUTH_TOKEN' | project timestamp, severityLevel, message | order by timestamp desc | take 30" \
+            --query "tables[0].rows[]" || true
