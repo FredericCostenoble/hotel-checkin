@@ -1,0 +1,33 @@
+# Diagnose (alleen lezen) van de Twilio-webhooks: waarom een handtekening geweigerd wordt (403).
+# Leest de logging (Application Insights); geen secrets of gastgegevens in de uitvoer.
+name: Twilio diag
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        type: choice
+        options: [prd, tst]
+        default: prd
+permissions:
+  id-token: write
+  contents: read
+jobs:
+  diag:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    steps:
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      - run: |
+          rg="rg-checkin-${{ inputs.environment }}"
+          ws=$(az monitor log-analytics workspace list -g "$rg" --query "[0].customerId" -o tsv)
+          az config set extension.use_dynamic_install=yes_without_prompt >/dev/null 2>&1
+          echo "== Waarschuwingen over de Twilio-handtekening (laatste 2 uur)"
+          az monitor log-analytics query -w "$ws" -o table --analytics-query \
+            "AppTraces | where TimeGenerated > ago(2h) | where Message has 'Twilio' | project TimeGenerated, SeverityLevel, Message | order by TimeGenerated desc | take 20"
+          echo "== Aanvragen op /api/twilio (laatste 2 uur)"
+          az monitor log-analytics query -w "$ws" -o table --analytics-query \
+            "AppRequests | where TimeGenerated > ago(2h) | where Url has '/api/twilio' | project TimeGenerated, Url, ResultCode | order by TimeGenerated desc | take 20"
