@@ -384,7 +384,7 @@ Object.assign(T.nl, {
   wa_how: "Zo werkt het", wa_how_text: "Wijzig de tekst, bewaar en dien in bij Meta. Tot Meta de nieuwe versie goedkeurt, blijft de vorige goedgekeurde versie verstuurd worden. Zonder goedgekeurde versie gaat het bericht per sms. De status wordt alleen gevraagd zolang Meta nog beslist.",
   wa_overview: "Overzicht", wa_check: "Status vernieuwen", wa_all: n => `Alles indienen (${n})`, wa_all_none: "Alles ingediend",
   wa_all_q: n => `${n} nieuwe of gewijzigde teksten bij Meta indienen?`, wa_submit: "Indienen bij Meta", wa_submit_q: "Deze tekst bij Meta indienen? De goedgekeurde versie blijft in gebruik tot Meta de nieuwe goedkeurt.",
-  wa_save: "Bewaren", wa_reset: "Herstellen", wa_reset_q: "De wijziging weggooien en terug naar de actieve tekst?",
+  wa_save: "Bewaren", wa_reset: "Herstellen", wa_reset_q: "Terug naar de actieve tekst (of de standaardtekst als er nog geen goedgekeurde versie is)? Daarna kan je indienen.",
   wa_header: "Titel (vet bovenaan, niet verplicht)", wa_body: "Tekst", wa_button: "Knoptekst", wa_footer: "Voettekst (niet verplicht)", wa_preview: "Voorbeeld",
   wa_button_help: p => `De knop opent ${p}... (de link van de gast komt er automatisch achter).`, wa_media_help: p => `De pdf komt bovenaan het bericht (${p || "adres van de Function App"}...).`,
   wa_vars: "Plaatsen", wa_unsaved: "Niet bewaard.", wa_saved: "Bewaard.", wa_dlg_submit: "Indienen", wa_dlg_reset: "Herstellen",
@@ -407,7 +407,7 @@ Object.assign(T.en, {
   wa_how: "How it works", wa_how_text: "Change the text, save and submit to Meta. Until Meta approves the new version, the previous approved version keeps being sent. Without an approved version the message goes by SMS. The status is only asked while Meta has not decided yet.",
   wa_overview: "Overview", wa_check: "Refresh status", wa_all: n => `Submit all (${n})`, wa_all_none: "All submitted",
   wa_all_q: n => `Submit ${n} new or changed texts to Meta?`, wa_submit: "Submit to Meta", wa_submit_q: "Submit this text to Meta? The approved version stays in use until Meta approves the new one.",
-  wa_save: "Save", wa_reset: "Restore", wa_reset_q: "Discard the change and go back to the active text?",
+  wa_save: "Save", wa_reset: "Restore", wa_reset_q: "Back to the active text (or the default text if there is no approved version yet)? Then you can submit.",
   wa_header: "Title (bold on top, optional)", wa_body: "Text", wa_button: "Button text", wa_footer: "Footer (optional)", wa_preview: "Preview",
   wa_button_help: p => `The button opens ${p}... (the guest's link is added automatically).`, wa_media_help: p => `The PDF goes on top of the message (${p || "address of the Function App"}...).`,
   wa_vars: "Placeholders", wa_unsaved: "Not saved.", wa_saved: "Saved.", wa_dlg_submit: "Submit", wa_dlg_reset: "Restore",
@@ -3429,7 +3429,8 @@ function waCard(tp) {
   const errors = !dirty && lg.errors.length ? `<div class="note warn"><span>${lg.errors.map(esc).join("<br>")}</span></div>` : "";
   const note = waNote[k] ? `<span class="small ${waNote[k].ok ? "muted" : "err"}">${esc(waNote[k].text)}</span>` : "";
   const canSubmit = dirty || ["new", "changed", "error"].includes(lg.state);
-  const canReset = dirty || lg.edited || ["rejected", "error"].includes(lg.state);
+  const same = (a, b) => ["header", "body", "button", "footer"].every(f => (a[f] || "") === (b[f] || ""));
+  const canReset = dirty || lg.edited || ["rejected", "error"].includes(lg.state) || (lg.state === "waiting" && !lg.active && !same(lg.text, lg.default));
   return `<section class="card" id="wa-c-${tp.step}" data-wa="${tp.step}"><div class="ch"><h2 class="ct">${IC('<path d="M4 20l1.4-4.2A8 8 0 1 1 8.6 19z"/>')} ${esc(title)}</h2>${waBadge(st)}</div>
     <div class="cb"><div class="help">${esc(help)} ${esc(t("wa_vars"))}: ${vars}</div>${seg}
       <div class="help">${waMeta(lg)}</div>${reason}${err}<div class="note" id="${id}-replace" ${dirty && lg.state === "waiting" ? "" : "hidden"}><span>${esc(t("wa_replace"))}</span></div>

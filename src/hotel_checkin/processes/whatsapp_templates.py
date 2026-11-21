@@ -316,14 +316,19 @@ def save_text(hotel_id: str, step: str, lang: str, text: dict, user: str) -> Non
 
 
 def reset_text(hotel_id: str, step: str, lang: str, user: str) -> None:
-    """Wijziging weggooien: terug naar de ingediende tekst als Meta nog beslist, anders naar de actieve tekst (of de
-    standaard als er nog geen is). Een afgekeurde of mislukte versie verdwijnt dan uit de monitor."""
+    """Wijziging weggooien: terug naar de actieve tekst, of de standaard als er nog geen is (ook als er een versie met
+    een andere tekst wacht bij Meta; indienen vervangt die dan). Een afgekeurde of mislukte versie verdwijnt."""
     _known(step, lang)
     data = _load(hotel_id)
     e = _entry(data, step, lang)
     e.pop("text", None)
     if e.get("pending") and e["pending"].get("status") not in twilio.WAITING:
         e.pop("pending")
+    elif e.get("pending") and not e.get("active"):
+        # Wacht nog bij Meta, nog niets goedgekeurd: terug naar de standaardtekst (indienen vervangt de wachtende)
+        default = _clean(defaults(hotel_id).get(step, {}).get(lang))
+        if default != _clean(e["pending"].get("text")):
+            e["text"] = default
     _save(hotel_id, data, user)
 
 

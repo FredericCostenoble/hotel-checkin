@@ -236,3 +236,15 @@ def test_header_rules_and_types():
     assert content_templates.build_types("Hallo {{1}} ok", footer="Voet") == {
         "twilio/card": {"title": "Hallo {{1}} ok", "subtitle": "Voet"}}
     assert "twilio/call-to-action" in content_templates.build_types("Hallo {{1}} ok", "Ga", "https://x/{{2}}")
+
+
+def test_reset_waiting_old_text_goes_to_default():
+    fake = FakeTwilio()
+    wa.save_text("lucca", "reminder", "nl", {"body": "Beste {{1}}, uw pincode volgt.", "button": "Ga"}, "fred")
+    wa.submit("lucca", "reminder", "nl", "fred", client=fake.client())
+    assert _lang(wa.view("lucca", refresh=False), "reminder", "nl")["state"] == "waiting"
+    wa.reset_text("lucca", "reminder", "nl", "fred")
+    lg = _lang(wa.view("lucca", refresh=False), "reminder", "nl")
+    assert lg["text"] == lg["default"] and lg["state"] == "new"
+    wa.submit("lucca", "reminder", "nl", "fred", client=fake.client())
+    assert fake.created[1]["friendly_name"] == "lucca_prd_reminder_nl_v2" and fake.deleted == [fake.created[0]["sid"]]
