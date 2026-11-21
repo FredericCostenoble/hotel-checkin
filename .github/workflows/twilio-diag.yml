@@ -23,11 +23,14 @@ jobs:
           subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
       - run: |
           rg="rg-checkin-${{ inputs.environment }}"
-          ws=$(az monitor log-analytics workspace list -g "$rg" --query "[0].customerId" -o tsv)
-          az config set extension.use_dynamic_install=yes_without_prompt >/dev/null 2>&1
-          echo "== Waarschuwingen over de Twilio-handtekening (laatste 2 uur)"
-          az monitor log-analytics query -w "$ws" -o table --analytics-query \
-            "AppTraces | where TimeGenerated > ago(2h) | where Message has 'Twilio' | project TimeGenerated, SeverityLevel, Message | order by TimeGenerated desc | take 20"
-          echo "== Aanvragen op /api/twilio (laatste 2 uur)"
-          az monitor log-analytics query -w "$ws" -o table --analytics-query \
-            "AppRequests | where TimeGenerated > ago(2h) | where Url has '/api/twilio' | project TimeGenerated, Url, ResultCode | order by TimeGenerated desc | take 20"
+          az config set extension.use_dynamic_install=yes_without_prompt extension.dynamic_install_allow_preview=true >/dev/null 2>&1
+          app=$(az resource list -g "$rg" --resource-type Microsoft.Insights/components --query "[0].name" -o tsv)
+          echo "== Application Insights: $app"
+          echo "== Meldingen met 'Twilio' (laatste 3 uur)"
+          az monitor app-insights query -g "$rg" --app "$app" -o tsv --analytics-query \
+            "traces | where timestamp > ago(3h) | where message has 'Twilio' | project timestamp, message | order by timestamp desc | take 20" \
+            --query "tables[0].rows[]" || true
+          echo "== Aanvragen op /api/twilio (laatste 3 uur)"
+          az monitor app-insights query -g "$rg" --app "$app" -o tsv --analytics-query \
+            "requests | where timestamp > ago(3h) | where url has '/api/twilio' | project timestamp, url, resultCode | order by timestamp desc | take 20" \
+            --query "tables[0].rows[]" || true
