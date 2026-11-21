@@ -74,19 +74,23 @@ button = "Ihre Reservierung"
 
 [room_change.nl]
 header = "Kamerwissel"
-body = "Uw kamer in Hotel Lucca is gewijzigd: u verblijft nu in kamer {{1}}. Meer info in uw mail."
+body = "Uw kamer in Hotel Lucca is gewijzigd: u verblijft nu in kamer {{1}}. Via de knop hieronder ziet u hoe u binnenkomt en alle info voor uw verblijf."
+button = "Uw reservatie"
 
 [room_change.fr]
 header = "Changement de chambre"
-body = "Votre chambre à l'Hotel Lucca a changé : vous séjournez maintenant dans la chambre {{1}}. Plus d'informations dans votre e-mail."
+body = "Votre chambre à l'Hotel Lucca a changé : vous séjournez maintenant dans la chambre {{1}}. Le bouton ci-dessous vous indique comment entrer, avec toutes les informations pour votre séjour."
+button = "Votre réservation"
 
 [room_change.en]
 header = "Room change"
-body = "Your room at Hotel Lucca has changed: you are now staying in room {{1}}. More information in your email."
+body = "Your room at Hotel Lucca has changed: you are now staying in room {{1}}. Use the button below to see how to get in and all information for your stay."
+button = "Your reservation"
 
 [room_change.de]
 header = "Zimmerwechsel"
-body = "Ihr Zimmer im Hotel Lucca hat sich geändert: Sie wohnen jetzt in Zimmer {{1}}. Weitere Informationen in Ihrer E-Mail."
+body = "Ihr Zimmer im Hotel Lucca hat sich geändert: Sie wohnen jetzt in Zimmer {{1}}. Über die Schaltfläche unten sehen Sie, wie Sie hineinkommen, und alle Informationen für Ihren Aufenthalt."
+button = "Ihre Reservierung"
 
 # Lijsten voor het personeel: in het Engels, zoals de lijsten zelf
 [breakfast_list.en]

@@ -305,7 +305,7 @@ WHATSAPP_VARIABLES = {
     "reminder": ("voornaam", "checkin_suffix"),
     # Geen pincode in WhatsApp (Meta keurt dat af): de code staat in de mail en in de app achter de knop
     "access_code": ("kamer_kort", "checkin_suffix"),  # per kamer, knop naar het formulier (code, betalen)
-    "room_change": ("kamer_kort",),
+    "room_change": ("kamer_kort", "checkin_suffix"),  # knop naar de app (pincode staat daar)
 }
 
 

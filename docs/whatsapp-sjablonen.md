@@ -48,7 +48,7 @@ volstaat), met het TST-adres als vast begin.
 
 De teksten staan in `config/whatsapp/<hotel_id>.toml` en worden gewijzigd in de monitor. Plaatsen:
 confirmation en reminder {{1}} voornaam, {{2}} formulierlink vanaf het token (knop); access_code {{1}} kamer,
-{{2}} formulierlink vanaf het token (knop); room_change {{1}} kamer.
+{{2}} formulierlink vanaf het token (knop); room_change {{1}} kamer, {{2}} formulierlink vanaf het token (knop).
 
 Geen pincode in WhatsApp, en niet de woorden pincode of code: Meta keurde zulke sjablonen op 21/11/2026 af
 ("categorie moet Verificatie zijn", of zonder reden). De pincode staat in de code-mail en in de app achter de knop.

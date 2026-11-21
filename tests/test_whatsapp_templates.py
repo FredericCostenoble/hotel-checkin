@@ -87,7 +87,7 @@ def test_validate_rules():
     assert any("Onbekende" in e for e in v("room_change", {"body": "Kamer {{1}} en {{2}} ok"}))
     assert any("knoptekst is te lang" in e for e in v("confirmation", {"body": "Dag {{1}}, welkom.", "button": "x" * 21}))
     assert any("knoptekst ontbreekt" in e for e in v("confirmation", {"body": "Dag {{1}}, welkom."}))
-    assert any("geen knop" in e for e in v("room_change", {"body": "Kamer {{1}} ok", "button": "Ga"}))
+    assert any("geen knop" in e for e in v("breakfast_list", {"body": "List {{1}}: {{2}} ok", "button": "Ga"}))
 
 
 def test_submit_creates_content_with_button_and_footer():
@@ -112,7 +112,8 @@ def test_submit_cta_text_and_media_types():
     wa.submit("lucca", "breakfast_list", "en", "fred", client=fake.client())
     cta, text, media = (c["types"] for c in fake.created)
     assert cta["whatsapp/card"]["actions"][0]["url"] == "https://checkin.hotellucca.be/?r={{2}}"
-    assert text == {"whatsapp/card": {"body": text["whatsapp/card"]["body"], "header_text": "Changement de chambre"}}
+    assert text["whatsapp/card"]["header_text"] == "Changement de chambre"
+    assert text["whatsapp/card"]["actions"][0]["title"] == "Votre réservation"
     assert media["twilio/media"]["media"] == ["https://func.example.net/api/lists/{{3}}"]
     assert fake.created[2]["variables"] == {"1": "Friday 13/11/2026", "2": "12 persons in 6 rooms",
                                             "3": "lucca/breakfast/2026-11-13/0/sample/breakfast-list-2026-11-13.pdf"}
@@ -140,7 +141,7 @@ def test_new_version_keeps_old_active_until_approved():
     first = fake.created[0]["sid"]
     fake.status[first] = "approved"
     wa.check("lucca", client=fake.client(), min_age=timedelta(0))
-    wa.save_text("lucca", "room_change", "nl", {"body": "Nieuwe kamer {{1}}, meer info in uw mail."}, "fred")
+    wa.save_text("lucca", "room_change", "nl", {"body": "Nieuwe kamer {{1}}, meer info via de knop.", "button": "Uw reservatie"}, "fred")
     assert _lang(wa.view("lucca", refresh=False), "room_change", "nl")["state"] == "changed"
     wa.submit("lucca", "room_change", "nl", "fred", client=fake.client())
     assert fake.created[1]["friendly_name"] == "lucca_prd_room_change_nl_v2"
@@ -169,7 +170,7 @@ def test_rejected_shows_reason_and_resubmit_replaces_it():
 
 
 def test_save_and_reset_text():
-    wa.save_text("lucca", "room_change", "en", {"body": "Room {{1}} is yours."}, "fred")
+    wa.save_text("lucca", "room_change", "en", {"body": "Room {{1}} is yours.", "button": "Go"}, "fred")
     lg = _lang(wa.view("lucca", refresh=False), "room_change", "en")
     assert lg["edited"] and lg["text"]["body"] == "Room {{1}} is yours."
     wa.reset_text("lucca", "room_change", "en", "fred")
