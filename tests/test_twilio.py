@@ -89,3 +89,22 @@ def test_signature_on_public_url(monkeypatch):
     urls = _twilio.public_urls("http://internal:80/api/twilio/voice?h=lucca", {"Host": "monitor.hotellucca.be"})
     assert _twilio.valid_signature("lucca", urls, params, sig)
     assert not _twilio.valid_signature("lucca", ["http://internal/api/twilio/voice?h=lucca"], params, sig)
+
+
+def test_signature_needs_blank_values(monkeypatch):
+    """Twilio ondertekent ook lege velden (bv. CallerCity=); die mogen niet wegvallen bij het lezen."""
+    import base64
+    import hashlib
+    import hmac
+    from urllib.parse import parse_qsl
+
+    from hotel_checkin.messaging import _twilio
+
+    monkeypatch.setattr(_twilio, "hotel_setting", lambda *a, **k: "tok")
+    url = "https://monitor.hotellucca.be/api/twilio/voice?h=lucca"
+    body = "CallSid=CA1&CallerCity=&From=%2B32476287720"
+    params = dict(parse_qsl(body, keep_blank_values=True))
+    data = url + "".join(k + params[k] for k in sorted(params))
+    sig = base64.b64encode(hmac.new(b"tok", data.encode(), hashlib.sha1).digest()).decode()
+    assert _twilio.valid_signature("lucca", url, params, sig)
+    assert not _twilio.valid_signature("lucca", url, dict(parse_qsl(body)), sig)
