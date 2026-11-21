@@ -57,7 +57,7 @@ const T = {
     env_confirm_prd: "Overschakelen naar PRODUCTIE? Daar gaan berichten naar echte gasten.", env_confirm_tst: "Overschakelen naar de testomgeving (TST)?", pl_not_sent: "niet verstuurd", relay_hint: "Doorstuuradres van het boekingsplatform, geen eigen adres van de gast.", relay_kept: "Doorstuuradres van het boekingsplatform. Bewaard, maar het eigen adres uit het check-in-formulier gaat voor.", mg_test_addr: "testadres", mg_for: "bedoeld voor", tab_hotel: "Hotel",
     hs_func: "Dagelijks", hs_tech: "Technisch",
     sec_secrets: "Geheimen (Key Vault)", ks_help: "Sleutels en wachtwoorden van deze omgeving. Alleen zichtbaar met een rol op de Key Vault; wijzigen met Key Vault Secrets Officer. Een nieuwe waarde werkt binnen enkele minuten.",
-    ks_show: "Tonen", ks_hide: "Verbergen", ks_save: "Bewaren", ks_saved: "Bewaard", ks_failed: "Niet bewaard", ks_readonly: "Alleen bekijken (geen rol om te wijzigen)", ks_new: "nieuwe waarde", ks_hotel: "dit hotel", ks_shared: "alle hotels",
+    ks_show: "Tonen", ks_hide: "Verbergen", ks_save: "Bewaren", ks_saved: "Bewaard", ks_failed: "Niet bewaard", ks_readonly: "Alleen bekijken (geen rol om te wijzigen)", ks_new: "nieuwe waarde", ks_hotel: "dit hotel", ks_shared: "alle hotels", ks_portal: "Openen in de Azure Portal",
     hs_intro: "Gegevens en instellingen van het hotel. Standaard uit het hotelbestand; wat u hier wijzigt, gaat voor (alleen in deze omgeving).",
     hs_default: "standaard", hs_env: "In deze omgeving vastgelegd in Key Vault of de Function App: die waarde gaat voor.",
     hs_add: "Toevoegen", hs_key: "naam", hs_value: "waarde", hs_reset_confirm: "Alle instellingen terug naar het hotelbestand? Alle wijzigingen gaan verloren.",
@@ -152,7 +152,7 @@ const T = {
     env_confirm_prd: "Switch to PRODUCTION? Messages there go to real guests.", env_confirm_tst: "Switch to the test environment (TST)?", pl_not_sent: "not sent", relay_hint: "Relay address of the booking platform, not the guest's own address.", relay_kept: "Relay address of the booking platform. Kept, but the guest's own address from the check-in form takes precedence.", mg_test_addr: "test address", mg_for: "meant for", tab_hotel: "Hotel",
     hs_func: "Everyday", hs_tech: "Technical",
     sec_secrets: "Secrets (Key Vault)", ks_help: "Keys and passwords of this environment. Only visible with a role on the Key Vault; changing needs Key Vault Secrets Officer. A new value takes effect within a few minutes.",
-    ks_show: "Show", ks_hide: "Hide", ks_save: "Save", ks_saved: "Saved", ks_failed: "Not saved", ks_readonly: "View only (no role to change)", ks_new: "new value", ks_hotel: "this hotel", ks_shared: "all hotels",
+    ks_show: "Show", ks_hide: "Hide", ks_save: "Save", ks_saved: "Saved", ks_failed: "Not saved", ks_readonly: "View only (no role to change)", ks_new: "new value", ks_hotel: "this hotel", ks_shared: "all hotels", ks_portal: "Open in the Azure Portal",
     hs_intro: "Hotel details and settings. Default from the hotel file; what you change here takes precedence (in this environment only).",
     hs_default: "default", hs_env: "Set for this environment in Key Vault or the Function App: that value takes precedence.",
     hs_add: "Add", hs_key: "name", hs_value: "value", hs_reset_confirm: "Reset all settings to the hotel file? All changes will be lost.",
@@ -2775,6 +2775,7 @@ let hs = null, hsEdit = {}, hsDirty = false;
 // Waarden verborgen tot op het oogje geklikt wordt; nooit bewaard in het scherm na Verbergen.
 let ks = null, ksHotel = "";
 const EYE = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>';
+const EXT = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>';
 async function loadSecrets() {
   ksHotel = $("#hotel").value;
   const r = await apiFetch(`${API}/api/monitor/${ksHotel}/secrets`);
@@ -2789,6 +2790,7 @@ function renderSecrets() {
   const rows = ks.secrets.map((x, n) => `<div class="field" style="border-top:1px solid #EEF0F3;padding-top:10px">
       <label for="ks-${n}">${esc(x.name)} <span class="help" style="display:inline">· ${esc(t(x.hotel ? "ks_hotel" : "ks_shared"))}${x.updated ? " · " + esc(stamp(x.updated)) : ""}${x.updated_by ? " · " + esc(x.updated_by) : ""}</span></label>
       <div class="row" style="flex-wrap:nowrap;gap:6px"><input id="ks-${n}" class="input" type="password" autocomplete="off" data-ks="${esc(x.name)}" placeholder="••••••••" ${write ? "" : "readonly"} style="flex:1">
+      ${x.portal ? `<a class="ibtn" href="${esc(x.portal)}" target="_blank" rel="noopener" title="${esc(t("ks_portal"))}" aria-label="${esc(t("ks_portal"))}">${EXT}</a>` : ""}
       <button type="button" class="ibtn" data-ks-eye="${n}" title="${esc(t("ks_show"))}" aria-label="${esc(t("ks_show"))}">${EYE}</button>
       ${write ? `<button type="button" class="btn" data-ks-save="${n}" disabled>${esc(t("ks_save"))}</button>` : ""}</div></div>`).join("");
   box.insertAdjacentHTML("beforeend", `<section class="card" id="hs-secrets"><div class="ch"><h2 class="ct">${LOCK} ${esc(t("sec_secrets"))}</h2></div>

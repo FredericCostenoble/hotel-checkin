@@ -42,3 +42,9 @@ def test_no_access_without_user_or_vault(monkeypatch):
     monkeypatch.delenv("KEY_VAULT_ID", raising=False)
     assert secrets.access("") == ""
     assert secrets.access("oid") == ""
+
+
+def test_portal_link(monkeypatch):
+    monkeypatch.setenv("KEY_VAULT_URL", "https://kv-x.vault.azure.net/")
+    assert secrets.portal_link("twilio-auth-token") == (
+        "https://portal.azure.com/#asset/Microsoft_Azure_KeyVault/Secret/https://kv-x.vault.azure.net/secrets/twilio-auth-token")

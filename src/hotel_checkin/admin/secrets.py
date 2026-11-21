@@ -71,8 +71,14 @@ def list_secrets(hotel_id: str) -> list[dict]:
             continue
         out.append({"name": p.name, "updated": p.updated_on.astimezone(UTC).isoformat() if p.updated_on else "",
                     "updated_by": (p.tags or {}).get("updated_by", ""),
-                    "hotel": p.name.startswith(f"{hotel_id}-")})
+                    "hotel": p.name.startswith(f"{hotel_id}-"), "portal": portal_link(p.name)})
     return sorted(out, key=lambda s: (not s["hotel"], s["name"]))
+
+
+def portal_link(name: str) -> str:
+    """Link naar het geheim in de Azure Portal (daar is de werkelijke waarde en de geschiedenis te zien)."""
+    url = os.environ.get("KEY_VAULT_URL", "").rstrip("/")
+    return f"https://portal.azure.com/#asset/Microsoft_Azure_KeyVault/Secret/{url}/secrets/{name}" if url else ""
 
 
 def reveal(hotel_id: str, name: str) -> str | None:
