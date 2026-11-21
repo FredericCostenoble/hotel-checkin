@@ -45,3 +45,15 @@ jobs:
           az monitor app-insights query -g "$rg" --app "$app" -o tsv --offset 1h --analytics-query \
             "traces | where timestamp > ago(30m) | where message has 'handtekening' or message has 'twilio_voice' or message has 'AUTH_TOKEN' | project timestamp, severityLevel, message | order by timestamp desc | take 30" \
             --query "tables[0].rows[]" || true
+          echo "== Twilio-sleutels in Key Vault tegen de Twilio-API (alleen de HTTP-code)"
+          kv=$(az keyvault list -g "$rg" --query "[?!contains(name,'sess')].name | [0]" -o tsv)
+          echo "Key Vault: $kv"
+          for p in lucca- ""; do
+            sid=$(az keyvault secret show --vault-name "$kv" -n "${p}twilio-account-sid" --query value -o tsv 2>/dev/null || true)
+            tok=$(az keyvault secret show --vault-name "$kv" -n "${p}twilio-auth-token" --query value -o tsv 2>/dev/null || true)
+            [ -n "$tok" ] && echo "::add-mask::$tok"
+            echo "secret ${p}twilio-account-sid: ${sid:+aanwezig (${sid:0:6}...)}  ${p}twilio-auth-token: ${tok:+aanwezig}"
+            if [ -n "$sid" ] && [ -n "$tok" ]; then
+              curl -s -o /dev/null -w "Twilio API met ${p}sleutels: %{http_code}\n" -u "$sid:$tok" "https://api.twilio.com/2010-04-01/Accounts/$sid.json"
+            fi
+          done
