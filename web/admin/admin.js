@@ -393,6 +393,7 @@ Object.assign(T.nl, {
   wa_manual: sid => `In gebruik: sjabloon ${sid} uit de instellingen.`,
   wa_pending: (v, d, who) => `Versie ${v} ingediend ${d}${who ? " door " + who : ""}.`, wa_checked: d => `Laatst nagekeken ${d}.`, wa_reason: r => `Reden van Meta: ${r}`,
   wa_twilio: n => `Openen in Twilio (zoek op ${n})`, wa_replace: "Meta beslist nog over de ingediende versie. Een nieuwe versie indienen vervangt die; de goedgekeurde versie blijft in gebruik tot Meta de nieuwe goedkeurt.",
+  wa_defaults: n => `Nieuwe standaardteksten overnemen (${n})`, wa_defaults_q: n => `${n} teksten vervangen door de nieuwe standaardtekst? Daarna indienen; tot Meta ze goedkeurt blijven de huidige goedgekeurde versies verstuurd.`, wa_defaults_done: n => `${n} standaardteksten overgenomen. Klik nu op Alles indienen.`,
   wa_changes: x => `Nieuw: ${x}.`, wa_no_changes: "Geen nieuwe beslissing van Meta.", wa_done: n => `${n} ingediend.`,
   wa_t_confirmation: ["Bevestiging", "Meteen na de boeking, met knop naar het check-in-formulier."],
   wa_t_reminder: ["Herinnering", "Een week voor aankomst, als het formulier nog niet ingevuld is."],
@@ -416,6 +417,7 @@ Object.assign(T.en, {
   wa_manual: sid => `In use: template ${sid} from the settings.`,
   wa_pending: (v, d, who) => `Version ${v} submitted ${d}${who ? " by " + who : ""}.`, wa_checked: d => `Last checked ${d}.`, wa_reason: r => `Reason from Meta: ${r}`,
   wa_twilio: n => `Open in Twilio (search for ${n})`, wa_replace: "Meta has not decided on the submitted version yet. Submitting a new version replaces it; the approved version stays in use until Meta approves the new one.",
+  wa_defaults: n => `Take over new default texts (${n})`, wa_defaults_q: n => `Replace ${n} texts with the new default text? Then submit; until Meta approves them the current approved versions keep being sent.`, wa_defaults_done: n => `${n} default texts taken over. Now click Submit all.`,
   wa_changes: x => `New: ${x}.`, wa_no_changes: "No new decision from Meta.", wa_done: n => `${n} submitted.`,
   wa_t_confirmation: ["Confirmation", "Right after the booking, with a button to the check-in form."],
   wa_t_reminder: ["Reminder", "One week before arrival, if the form is not filled in yet."],
@@ -703,6 +705,7 @@ async function init() {
     $("#run").onclick = runRobot;
     // Niet bewaarde wijzigingen in de workflow: waarschuwen bij het verlaten van de pagina
     $("#wa-check").onclick = waCheck;
+    $("#wa-defaults").onclick = waUseDefaults;
     $("#wa-all").onclick = waSubmitAll;
     window.addEventListener("beforeunload", e => { if (wfDirty || hsDirty || waDirty()) { e.preventDefault(); e.returnValue = ""; } });
   }
@@ -3451,6 +3454,8 @@ function renderWhatsapp() {
   $("#wa-all").disabled = todo === 0;
   $("#wa-all").lastElementChild.textContent = todo ? t("wa_all", todo) : t("wa_all_none");
   $("#wa-check").hidden = !all.some(({ l }) => l.state === "waiting");
+  $("#wa-defaults").hidden = !wa.newer_defaults;
+  if (wa.newer_defaults) $("#wa-defaults").lastElementChild.textContent = t("wa_defaults", wa.newer_defaults);
   $("#wa-overview").innerHTML = `<table><tbody>${wa.templates.map(tp => `<tr><td style="font-weight:600">${esc(t("wa_t_" + tp.step)[0])}</td><td><div class="row" style="gap:4px;flex-wrap:wrap">${tp.langs.map(l => `<a href="#" class="badge ${WA_BADGE[waEdit[waKey(tp.step, l.lang)] ? "changed" : l.state]}" style="text-decoration:none" title="${esc(t("wa_st_" + (waEdit[waKey(tp.step, l.lang)] ? "changed" : l.state)))}" data-wa-go="${tp.step}:${l.lang}">${l.lang.toUpperCase()}</a>`).join("")}</div></td></tr>`).join("")}</tbody></table>
     <div class="row" style="gap:6px;flex-wrap:wrap;margin-top:10px">${["approved", "waiting", "changed", "new", "rejected"].map(waBadge).join("")}</div>`;
   $("#wa-list").innerHTML = wa.templates.map(waCard).join("");
@@ -3520,6 +3525,15 @@ async function waSubmitAll() {
     await loadWhatsapp(d.view);
     notice([t("wa_done", d.results.length - bad.length), ...bad.map(r => `${t("wa_t_" + r.step)[0]} ${r.lang.toUpperCase()}: ${r.message}`)].join("\n"));
   } catch (e) { notice(`${t("load_error")} ${e.message}`); renderWhatsapp(); }
+}
+async function waUseDefaults() {
+  if (!await ask(t("wa_defaults_q", wa.newer_defaults), { ok: t("wa_dlg_reset") })) return;
+  try {
+    const d = await waPost({ action: "use_defaults" });
+    await loadWhatsapp(d.view);
+    $("#wa-state").className = "small muted";
+    $("#wa-state").textContent = t("wa_defaults_done", d.count);
+  } catch (e) { $("#wa-state").className = "err"; $("#wa-state").textContent = `${t("load_error")} ${e.message}`; }
 }
 async function waCheck() {
   $("#wa-check").disabled = true;

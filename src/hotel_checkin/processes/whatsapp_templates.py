@@ -282,7 +282,8 @@ def view(hotel_id: str, refresh: bool = True) -> dict:
                     "media": bool(spec.get("media")), "samples": [samples_of(step, hotel_id)[v] for v in spec["vars"]],
                     "media_sample": samples_of(step, hotel_id)[spec["media"]].rsplit("/", 1)[-1] if spec.get("media") else "",
                     "langs": langs})
-    return {"templates": out, "console_url": CONSOLE_URL, "button_prefix": button_prefix(hotel_id), "media_prefix": media_prefix() or "",
+    newer = sum(default_differs(hotel_id, st, lg, data) for st, sp in TEMPLATES.items() for lg in sp["langs"])
+    return {"templates": out, "newer_defaults": newer, "console_url": CONSOLE_URL, "button_prefix": button_prefix(hotel_id), "media_prefix": media_prefix() or "",
             "env": environment(), "limits": {"body": BODY_MAX, "body_button": BODY_MAX_BUTTON,
                                              "button": BUTTON_MAX, "footer": FOOTER_MAX, "header": HEADER_MAX}}
 
@@ -392,6 +393,31 @@ def submit(hotel_id: str, step: str, lang: str, user: str, client=None) -> dict:
     if pending["status"] == "error":
         return {"ok": False, "message": pending["error"]}
     return {"ok": True, "message": f"Ingediend als {name}. Meta beslist meestal binnen enkele minuten tot een dag."}
+
+
+def default_differs(hotel_id: str, step: str, lang: str, data: dict) -> bool:
+    """De standaardtekst (bestand) verschilt van wat nu getoond wordt, en er is geen eigen wijziging in de monitor."""
+    e = data.get(step, {}).get(lang, {})
+    if "text" in e:
+        return False
+    default = _clean(defaults(hotel_id).get(step, {}).get(lang))
+    return bool(default) and default != current_text(hotel_id, step, lang, data)
+
+
+def use_defaults(hotel_id: str, user: str) -> int:
+    """De nieuwe standaardteksten overnemen waar de monitor nog een oudere tekst toont (niet waar zelf iets gewijzigd
+    is). Daarna gewoon indienen; tot Meta de nieuwe versie goedkeurt blijft de goedgekeurde verstuurd. Geeft het
+    aantal."""
+    data = _load(hotel_id)
+    n = 0
+    for step, spec in TEMPLATES.items():
+        for lang in spec["langs"]:
+            if default_differs(hotel_id, step, lang, data):
+                _entry(data, step, lang)["text"] = _clean(defaults(hotel_id)[step][lang])
+                n += 1
+    if n:
+        _save(hotel_id, data, user)
+    return n
 
 
 def submit_all(hotel_id: str, user: str, client=None) -> dict:

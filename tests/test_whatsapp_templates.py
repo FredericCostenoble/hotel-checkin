@@ -245,3 +245,17 @@ def test_reset_waiting_old_text_goes_to_default():
     assert lg["text"] == lg["default"] and lg["state"] == "new"
     wa.submit("lucca", "reminder", "nl", "fred", client=fake.client())
     assert fake.created[1]["friendly_name"] == "lucca_prd_reminder_nl_v2" and fake.deleted == [fake.created[0]["sid"]]
+
+
+def test_use_new_defaults_after_approval(monkeypatch):
+    fake = FakeTwilio()
+    wa.save_text("lucca", "room_change", "nl", {"body": "Oud {{1}} tekst.", "button": "Ga"}, "fred")
+    wa.submit("lucca", "room_change", "nl", "fred", client=fake.client())
+    fake.status[fake.created[0]["sid"]] = "approved"
+    wa.check("lucca", client=fake.client(), min_age=timedelta(0))
+    v = wa.view("lucca", refresh=False)
+    assert _lang(v, "room_change", "nl")["state"] == "approved" and v["newer_defaults"] == 1
+    assert wa.use_defaults("lucca", "fred") == 1
+    lg = _lang(wa.view("lucca", refresh=False), "room_change", "nl")
+    assert lg["state"] == "changed" and lg["text"] == lg["default"]
+    assert wa.view("lucca", refresh=False)["newer_defaults"] == 0

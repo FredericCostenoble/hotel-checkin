@@ -665,6 +665,8 @@ def whatsapp(hotel_id: str, method: str, params: dict, body: dict | None, user: 
     try:
         if action == "submit_all":
             return 200, wa.submit_all(hotel_id, user) | {"view": wa.view(hotel_id, refresh=False)}
+        if action == "use_defaults":
+            return 200, {"ok": True, "count": wa.use_defaults(hotel_id, user), "view": wa.view(hotel_id, refresh=False)}
         if action == "check":
             changes = wa.check(hotel_id, min_age=timedelta(0))
             return 200, {"ok": True, "changes": changes, "view": wa.view(hotel_id, refresh=False)}
