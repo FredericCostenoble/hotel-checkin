@@ -188,6 +188,8 @@ def view(hotel_id: str) -> dict:
     for name, values in default.items():
         if name.startswith("kamers."):
             continue  # uitzonderingen per kamer: één sectie, zie _room_section
+        if name == "whatsapp":
+            continue  # sjablonen: tabblad WhatsApp (processes/whatsapp_templates.py), niet meer met de hand
         free = name in hotels.FREE_SECTIONS
         now = current.get(name, {})
         keys = list(dict.fromkeys(list(values) + (list(now) if free else [])))
