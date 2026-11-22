@@ -59,8 +59,8 @@ confirmation en reminder {{1}} voornaam, {{2}} formulierlink vanaf het token (kn
 {{2}} formulierlink vanaf het token (knop); room_change {{1}} kamer, {{2}} formulierlink vanaf het token (knop).
 
 Nooit de pincode zelf (het getal) in WhatsApp: Meta keurde zulke sjablonen op 21/11/2026 af ("Category mismatch",
-moet Verificatie zijn). Het woord pincode mag wel: sjablonen met "uw persoonlijke pincode" zijn op 22/11/2026
-goedgekeurd. De pincode staat in de code-mail en in de app achter de knop.
+moet Verificatie zijn). Het woord pincode mag in het Nederlands (goedgekeurd 22/11/2026); in FR, EN en DE werd
+"PIN code" afgewezen, daar staat het er niet in. De pincode staat in de code-mail en in de app achter de knop.
 De sms (terugval) bevat de pincode wel.
 
 Niet als sjabloon: de bedankmail na vertrek (alleen per mail) en het automatische antwoord op een bericht van de gast

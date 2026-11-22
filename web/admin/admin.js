@@ -3437,7 +3437,7 @@ function waCard(tp) {
   const canSubmit = dirty || ["new", "changed", "error"].includes(lg.state);
   const same = (a, b) => ["header", "body", "button", "footer"].every(f => (a[f] || "") === (b[f] || ""));
   const canReset = dirty || lg.edited || ["rejected", "error"].includes(lg.state) || (lg.state === "waiting" && !lg.active && !same(lg.text, lg.default));
-  return `<section class="card" id="wa-c-${tp.step}" data-wa="${tp.step}"><div class="ch"><h2 class="ct">${IC('<path d="M4 20l1.4-4.2A8 8 0 1 1 8.6 19z"/>')} ${esc(title)}</h2>${waBadge(st)}</div>
+  return `<section class="card" id="wa-c-${tp.step}" data-wa="${tp.step}"><div class="ch"><h2 class="ct">${IC('<path d="M4 20l1.4-4.2A8 8 0 1 1 8.6 19z"/>')} ${esc(title)}</h2><span class="row" style="gap:6px"><span class="small muted">${esc(cur.toUpperCase())}</span>${waBadge(st)}</span></div>
     <div class="cb"><div class="help">${esc(help)} ${esc(t("wa_vars"))}: ${vars}</div>${seg}
       <div class="help">${waMeta(lg)}</div>${reason}${err}<div class="note" id="${id}-replace" ${dirty && lg.state === "waiting" ? "" : "hidden"}><span>${esc(t("wa_replace"))}</span></div>
       ${tp.media ? "" : `<div class="field"><label for="${id}-header">${esc(t("wa_header"))} <span class="muted small" id="${id}-n-header">${(x.header || "").length}/${L.header}</span></label><input class="input" id="${id}-header" data-wa-f="header" ${wa.shared_from ? "disabled" : ""} maxlength="${L.header}" value="${esc(x.header || "")}"></div>`}
