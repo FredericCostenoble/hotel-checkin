@@ -371,7 +371,11 @@ def admin_api(req: func.HttpRequest) -> func.HttpResponse:
                     note = str((req.get_json() or {}).get("note") or "")
                 except ValueError:
                     note = ""
-                return _json(200, daily_lists.send_saved(hotel, kind, day, by=_admin_user(req) or "", note=note))
+                channel = req.params.get("channel", "")  # leeg = alles, email of whatsapp = alleen dat kanaal
+                if channel not in ("", "email", "whatsapp"):
+                    return _json(400, {"error": "channel"})
+                return _json(200, daily_lists.send_saved(hotel, kind, day, by=_admin_user(req) or "", note=note,
+                                                         channel=channel))
             # Eerst leest de robot de reservaties van die dag in Lighthouse; daarna maakt de timer de lijst
             result = daily_lists.request(hotel, kind, day, by=_admin_user(req) or "", send_now=req.params.get("send") == "1")
             return _json(200, {"ok": True} | result)

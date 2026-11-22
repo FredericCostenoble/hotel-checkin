@@ -729,9 +729,10 @@ def _send_phone(hotel_id: str, data: dict, to: str, hotel_name: str, note: str =
     return {"channel": "sms", "to": to, "ok": res.ok, "error": res.error or ""}
 
 
-def send(hotel_id: str, data: dict, note: str = "") -> list[dict]:
+def send(hotel_id: str, data: dict, note: str = "", channel: str = "") -> list[dict]:
     """Naar alle ontvangers uit de instellingen. Geeft per ontvanger het resultaat.
-    note: vrije tekst bij manueel versturen (bovenaan de mail, voor de WhatsApp of de sms)."""
+    note: vrije tekst bij manueel versturen (bovenaan de mail, voor de WhatsApp of de sms).
+    channel: "email" of "whatsapp" = alleen dat kanaal (knop Versturen in de monitor), leeg = alles."""
     note = " ".join((note or "").split())[:500]
     from hotel_checkin.messaging import email
 
@@ -741,14 +742,14 @@ def send(hotel_id: str, data: dict, note: str = "") -> list[dict]:
     sender = hotel.get("verzending", {}).get("mail_afzender")
     now = datetime.now(UTC).isoformat()
     out: list[dict] = []
-    if cfg["email"]:
+    if cfg["email"] and channel in ("", "email"):
         body = lists.mail_html(data, name, ([note] if note else []) + [describe(data)[:1].upper() + describe(data)[1:] + "."])
         attachment = (lists.file_name(data, name), lists.xlsx(data, name))
         for to in cfg["email"]:
             res = email.send_email(to=to, subject=lists.subject(data, name), html_body=body, attachments=[attachment],
                                    sender=sender, hotel_id=hotel_id)
             out.append({"channel": "email", "to": to, "ok": res.ok, "error": res.error or "", "at": now})
-    for to in cfg["whatsapp"]:
+    for to in (cfg["whatsapp"] if channel in ("", "whatsapp") else []):
         try:
             out.append(_send_phone(hotel_id, data, to, name, note) | {"at": now})
         except Exception as exc:  # noqa: BLE001 - de andere ontvangers gaan gewoon door
@@ -804,7 +805,7 @@ def generate(hotel_id: str, kind: str, day: date, by: str = "", send_now: bool =
     return data
 
 
-def send_saved(hotel_id: str, kind: str, day: date, by: str = "", note: str = "") -> dict:
+def send_saved(hotel_id: str, kind: str, day: date, by: str = "", note: str = "", channel: str = "") -> dict:
     """Een bewaarde lijst (opnieuw) manueel versturen, zonder ze opnieuw te maken (knop Versturen in de monitor).
     Naar de ontvangers uit de instellingen, met een vrij bericht erbij. Komt bij de lijst en in het robotlog."""
     if kind not in KINDS:
@@ -813,7 +814,9 @@ def send_saved(hotel_id: str, kind: str, day: date, by: str = "", note: str = ""
     if not data:
         return {"ok": False, "error": "Deze lijst bestaat niet (meer)."}
     started = datetime.now(UTC)
-    sent = send(hotel_id, data, note)
+    if channel not in ("", "email", "whatsapp"):
+        raise ValueError(channel)
+    sent = send(hotel_id, data, note, channel)
     for x in sent:
         x |= {"by": by or "?", "manual": True}
     data["sent"] = sent + [x for x in data.get("sent", []) if x.get("manual")][:20]

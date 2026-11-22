@@ -627,3 +627,26 @@ def test_manual_day_is_today_plus_day_also_after_the_hour(setup):
     assert dl.manual_day("lucca", "breakfast", late) == date(2026, 11, 20)
     assert dl.manual_day("lucca", "cleaning", late) == date(2026, 11, 20)
     assert dl.next_day("lucca", "breakfast", late) == date(2026, 11, 21)  # volgende automatische lijst
+
+
+def test_send_saved_only_one_channel(setup, monkeypatch):
+    """Menu van de knop Versturen: alleen mail of alleen WhatsApp."""
+    from hotel_checkin.processes import send_messages
+
+    monkeypatch.setenv("TWILIO_AUTH_TOKEN", "token")
+    orig = dl.settings
+    monkeypatch.setattr(dl, "settings", lambda h, k: orig(h, k) | {"whatsapp": ["+32470123456"]})
+    monkeypatch.setattr(send_messages, "phone_enabled", lambda h: True)
+    monkeypatch.setattr(send_messages, "whatsapp_template", lambda h, s, lang: "HX" + s)
+    wa = []
+    monkeypatch.setattr("hotel_checkin.messaging.whatsapp.send_whatsapp_template",
+                        lambda h, to, sid, v, **k: wa.append(to) or SendResult(Channel.WHATSAPP, to, True))
+    _r("a", "20", DAY - timedelta(days=1), 2, rate="STANDARD RATE BREAKFAST INCL")
+    dl.generate("lucca", "breakfast", DAY)
+    mails = len(setup)
+    res = dl.send_saved("lucca", "breakfast", DAY, by="fred", channel="whatsapp")
+    assert res["ok"] and [s["channel"] for s in res["sent"]] == ["whatsapp"] and len(setup) == mails
+    res = dl.send_saved("lucca", "breakfast", DAY, by="fred", channel="email")
+    assert [s["channel"] for s in res["sent"]] == ["email"] and len(wa) == 1
+    with pytest.raises(ValueError):
+        dl.send_saved("lucca", "breakfast", DAY, channel="fax")

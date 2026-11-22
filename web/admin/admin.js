@@ -196,7 +196,7 @@ const T = {
 // Teksten van het ontwerp (Claude Design, canvas Beheerapp Hotel Lucca)
 Object.assign(T.nl, {
   m_arrives: d => `aankomst ${d}`, list_more: (n, tot) => `${n} van ${tot} getoond, scroll voor meer`, dlg_send: "Versturen",
-  ls_send: "Versturen", ls_title: "Lijst manueel versturen", ls_q: l => `Ben je zeker dat je de ${l} manueel wil versturen?`, ls_to: "Wordt verstuurd naar",
+  ls_send: "Versturen", ls_more: "Kies hoe je verstuurt", ls_ch_all: "Mail en WhatsApp", ls_ch_wa: "Alleen WhatsApp", ls_ch_mail: "Alleen mail", ls_title: "Lijst manueel versturen", ls_q: l => `Ben je zeker dat je de ${l} manueel wil versturen?`, ls_to: "Wordt verstuurd naar",
   ls_by_mail: "Mail", ls_by_wa: "WhatsApp (sms als WhatsApp niet lukt)", ls_wa_off: "WhatsApp en sms staan uit, wordt niet verstuurd", ls_no_to: "Er zijn geen ontvangers ingesteld voor deze lijst (instellingen, Hotel).",
   ls_past: d => `Let op: dit is geen lijst voor vandaag! Het is de lijst van ${d}.`, ls_already: (w, to) => `Deze lijst is al verstuurd op ${w} naar ${to}.`,
   ls_note: "Bericht (niet verplicht)", ls_note_ph: "Komt bovenaan de mail en in de WhatsApp of sms", ls_done: x => `Verstuurd: ${x}.`, ls_fail: x => `Niet (helemaal) gelukt: ${x}`,
@@ -288,7 +288,7 @@ Object.assign(T.nl, {
 });
 Object.assign(T.en, {
   m_arrives: d => `arriving ${d}`, list_more: (n, tot) => `${n} of ${tot} shown, scroll for more`, dlg_send: "Send",
-  ls_send: "Send", ls_title: "Send list manually", ls_q: l => `Are you sure you want to send the ${l} manually?`, ls_to: "Will be sent to",
+  ls_send: "Send", ls_more: "Choose how to send", ls_ch_all: "Mail and WhatsApp", ls_ch_wa: "Only WhatsApp", ls_ch_mail: "Only mail", ls_title: "Send list manually", ls_q: l => `Are you sure you want to send the ${l} manually?`, ls_to: "Will be sent to",
   ls_by_mail: "Mail", ls_by_wa: "WhatsApp (SMS if WhatsApp fails)", ls_wa_off: "WhatsApp and SMS are off, will not be sent", ls_no_to: "No recipients are set for this list (settings, Hotel).",
   ls_past: d => `Watch out: this is not a list for today! It is the list of ${d}.`, ls_already: (w, to) => `This list was already sent on ${w} to ${to}.`,
   ls_note: "Message (optional)", ls_note_ph: "Goes at the top of the mail and in the WhatsApp or SMS", ls_done: x => `Sent: ${x}.`, ls_fail: x => `Not (fully) sent: ${x}`,
@@ -2151,7 +2151,9 @@ async function saveWorkflow() {
   wf = d; wfDirty = false;
   $("#wf-state").className = "muted";
   $("#wf-state").textContent = t("wf_saved");
+  const y = window.scrollY;  // na bewaren blijven waar je was
   renderWorkflow();
+  window.scrollTo(0, y);
 }
 
 async function resetWorkflow() {
@@ -2352,12 +2354,13 @@ const HS_TEXT = {
    "ontbijtlijst.uur": ["Uur", "Elke dag om dit uur maken en versturen. Je kiest uit de vaste uren van de robot (instelling Robot: om de hoeveel minuten): de lijst gebruikt de robotrun van dat uur, dus geen extra run. Klaar na enkele minuten."],
    "ontbijtlijst.dag": ["Voor welke dag", "1 = morgen, 0 = vandaag."],
    "ontbijtlijst.email": ["Per mail naar", "Mail met de lijst en de Excel als bijlage. Meer adressen met een komma. Leeg = geen mail."],
-   "ontbijtlijst.whatsapp": ["Per WhatsApp naar", "Gsm-nummers (+32...), met een komma. WhatsApp met het sjabloon template_breakfast_list_nl (instellingen WhatsApp), anders per sms. Pas als WhatsApp en sms aan staan."],
+   "ontbijtlijst.whatsapp": ["Per WhatsApp naar", "Gsm-nummers (+32...), met een komma. WhatsApp met de lijst als pdf (sjabloon: tabblad WhatsApp), anders per sms. Pas als WhatsApp en sms aan staan."],
+   "ontbijtlijst.samen_tekst": ["Tekst bij meerdere kamers", "Eén reservatie met meer kamers: bij elke kamer de andere, {rooms} = de kamers. Leeg = niet vermelden."],
    "ontbijtlijst.woorden": ["Woorden voor opmerkingen", "Zinnen uit de opmerking of de folio van de reservatie met een van deze woorden komen bij de opmerkingen (bv. glutenvrij)."],
    "kuislijst.uur": ["Uur", "Elke dag om dit uur maken en versturen. Je kiest uit de vaste uren van de robot (instelling Robot: om de hoeveel minuten): de lijst gebruikt de robotrun van dat uur, dus geen extra run. Klaar na enkele minuten."],
    "kuislijst.dag": ["Voor welke dag", "1 = morgen, 0 = vandaag."],
    "kuislijst.email": ["Per mail naar", "Mail met de lijst en de Excel als bijlage. Meer adressen met een komma. Leeg = geen mail."],
-   "kuislijst.whatsapp": ["Per WhatsApp naar", "Gsm-nummers (+32...), met een komma. WhatsApp met het sjabloon template_cleaning_list_nl (instellingen WhatsApp), anders per sms. Pas als WhatsApp en sms aan staan."],
+   "kuislijst.whatsapp": ["Per WhatsApp naar", "Gsm-nummers (+32...), met een komma. WhatsApp met de lijst als pdf (sjabloon: tabblad WhatsApp), anders per sms. Pas als WhatsApp en sms aan staan."],
    "kuislijst.controle": ["Controle", "Functie bovenaan de lijst (Controle: ...), geen naam. Leeg = geen regel."],
    "kuislijst.extra_rijen": ["Vaste rijen onderaan", "Bv. TOILETTEN. Meer rijen met een komma."],
    "kuislijst.labels": ["Labels als opmerking", "Labels op het planbord in Lighthouse die bij de opmerkingen komen, bv. BABY BED. Meer labels met een komma."],
@@ -2682,12 +2685,13 @@ const HS_TEXT = {
    "ontbijtlijst.uur": ["Time", "Make and send every day at this time. You choose from the fixed times of the robot (setting Robot: every how many minutes): the list uses the robot run of that time, so no extra run. Ready after a few minutes."],
    "ontbijtlijst.dag": ["For which day", "1 = tomorrow, 0 = today."],
    "ontbijtlijst.email": ["By mail to", "Mail with the list and the Excel attached. More addresses separated by commas. Empty = no mail."],
-   "ontbijtlijst.whatsapp": ["By WhatsApp to", "Mobile numbers (+32...), separated by commas. WhatsApp with template template_breakfast_list_nl (settings WhatsApp), otherwise by SMS. Only when WhatsApp and SMS are on."],
+   "ontbijtlijst.whatsapp": ["By WhatsApp to", "Mobile numbers (+32...), separated by commas. WhatsApp with the list as a PDF (template: WhatsApp tab), otherwise by SMS. Only when WhatsApp and SMS are on."],
+   "ontbijtlijst.samen_tekst": ["Text for several rooms", "One reservation with several rooms: with each room the others, {rooms} = the rooms. Empty = not shown."],
    "ontbijtlijst.woorden": ["Words for remarks", "Sentences from the reservation remark or folio containing one of these words are added to the remarks (e.g. gluten free)."],
    "kuislijst.uur": ["Time", "Make and send every day at this time. You choose from the fixed times of the robot (setting Robot: every how many minutes): the list uses the robot run of that time, so no extra run. Ready after a few minutes."],
    "kuislijst.dag": ["For which day", "1 = tomorrow, 0 = today."],
    "kuislijst.email": ["By mail to", "Mail with the list and the Excel attached. More addresses separated by commas. Empty = no mail."],
-   "kuislijst.whatsapp": ["By WhatsApp to", "Mobile numbers (+32...), separated by commas. WhatsApp with template template_cleaning_list_nl (settings WhatsApp), otherwise by SMS. Only when WhatsApp and SMS are on."],
+   "kuislijst.whatsapp": ["By WhatsApp to", "Mobile numbers (+32...), separated by commas. WhatsApp with the list as a PDF (template: WhatsApp tab), otherwise by SMS. Only when WhatsApp and SMS are on."],
    "kuislijst.controle": ["Check", "Role at the top of the list (Controle: ...), not a name. Empty = no line."],
    "kuislijst.extra_rijen": ["Fixed rows at the bottom", "E.g. TOILETTEN. More rows separated by commas."],
    "kuislijst.labels": ["Labels as remarks", "Labels on the Lighthouse planboard that are added to the remarks, e.g. BABY BED. More labels separated by commas."],
@@ -3138,7 +3142,9 @@ async function saveSettings(only) {
   else { hsEdit = {}; hsDirty = false; }
   $("#hs-state").className = "muted";
   $("#hs-state").textContent = t("wf_saved");
+  const y = window.scrollY;  // na bewaren blijven waar je was (de pagina wordt opnieuw opgebouwd)
   renderSettings();
+  window.scrollTo(0, y);
   refreshSwitches();
 }
 
@@ -3147,7 +3153,9 @@ async function resetSettings() {
   hs = await get(`/api/monitor/${$("#hotel").value}/settings?action=reset`, { method: "POST" });
   hsEdit = {}; hsDirty = false;
   $("#hs-state").textContent = "";
+  const y = window.scrollY;
   renderSettings();
+  window.scrollTo(0, y);
   refreshSwitches();
 }
 
@@ -3248,7 +3256,12 @@ function renderList(kind) {
   $("#list-preview").innerHTML = x ? `<div class="row" style="justify-content:space-between"><div class="lbl">${esc(t("l_preview"))}</div><div class="row">
       <a class="btn2 sm" href="${API}/api/monitor/${hotel}/list-xlsx?kind=${sk}&day=${esc(sd)}">${DL}Excel</a>
       <a class="btn2 sm" href="${API}/api/monitor/${hotel}/list-pdf?kind=${sk}&day=${esc(sd)}">${DL}PDF</a>
-      <button class="btn sm" type="button" id="list-send-saved">${IC('<path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4z"/>', 14)}${esc(t("ls_send"))}</button>
+      <span style="position:relative;display:inline-flex"><button class="btn sm" type="button" id="list-send-saved" style="border-top-right-radius:0;border-bottom-right-radius:0">${IC('<path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4z"/>', 14)}${esc(t("ls_send"))}</button><button class="btn sm" type="button" id="list-send-more" aria-haspopup="true" aria-expanded="false" aria-label="${esc(t("ls_more"))}" style="border-top-left-radius:0;border-bottom-left-radius:0;border-left:1px solid rgba(255,255,255,.35);padding-left:8px;padding-right:8px">${IC('<path d="M6 9l6 6 6-6"/>', 14)}</button>
+        <div class="pop v2" id="list-send-menu" hidden style="position:absolute;right:0;top:calc(100% + 6px);z-index:20;min-width:190px;padding:6px;gap:2px">
+          <button class="btn3" type="button" data-send-ch="" style="justify-content:flex-start;text-align:left;width:100%;padding:8px 10px;text-decoration:none">${esc(t("ls_ch_all"))}</button>
+          <button class="btn3" type="button" data-send-ch="whatsapp" style="justify-content:flex-start;text-align:left;width:100%;padding:8px 10px;text-decoration:none">${esc(t("ls_ch_wa"))}</button>
+          <button class="btn3" type="button" data-send-ch="email" style="justify-content:flex-start;text-align:left;width:100%;padding:8px 10px;text-decoration:none">${esc(t("ls_ch_mail"))}</button>
+        </div></span>
       <button class="btn3" type="button" id="list-del" title="${esc(t("del"))}">${BIN}</button></div></div>
     <div class="row" style="justify-content:flex-end;margin-top:8px"><div class="seg v2" role="radiogroup" aria-label="Taal van de lijst">${["nl", "en"].map(l =>
       `<label class="${l === paperLang ? "on" : ""}" data-plang="${l}"><input type="radio" name="plang" ${l === paperLang ? "checked" : ""}>${l.toUpperCase()}</label>`).join("")}</div></div>
@@ -3262,7 +3275,17 @@ function renderList(kind) {
       try { localStorage.setItem("paperLang", paperLang); } catch (err) { /* alleen een voorkeur */ }
       renderList(listKind);
     });
-    $("#list-send-saved").onclick = () => sendSavedList(sk, sd, x);
+    $("#list-send-saved").onclick = () => sendSavedList(sk, sd, x, "");
+    const menu = $("#list-send-menu"), more = $("#list-send-more");
+    more.onclick = e => { e.stopPropagation(); menu.hidden = !menu.hidden; more.setAttribute("aria-expanded", String(!menu.hidden)); };
+    menu.querySelectorAll("[data-send-ch]").forEach(b => b.onclick = () => { menu.hidden = true; sendSavedList(sk, sd, x, b.dataset.sendCh); });
+    if (!window.lsMenuBound) {  // één keer: klik ernaast sluit het menu
+      window.lsMenuBound = true;
+      document.addEventListener("click", e => {
+        const m = $("#list-send-menu"), b = $("#list-send-more");
+        if (m && !e.target.closest("#list-send-menu, #list-send-more")) { m.hidden = true; if (b) b.setAttribute("aria-expanded", "false"); }
+      });
+    }
     $("#list-del").onclick = async () => {
       if (!await ask(t("dl_del_confirm", dayLong(sd)), { ok: t("dlg_delete"), danger: true })) return;
       await get(`/api/monitor/${hotel}/lists?kind=${sk}&day=${encodeURIComponent(sd)}&action=delete`, { method: "POST" });
@@ -3272,8 +3295,10 @@ function renderList(kind) {
 }
 
 // Knop Versturen: de bewaarde lijst manueel versturen. Popup met ontvangers, al verstuurd, voorbije dag en een bericht.
-async function sendSavedList(kind, day, x) {
-  const d = listData[kind] || { email: [], whatsapp: [] };
+async function sendSavedList(kind, day, x, channel = "") {
+  const all = listData[kind] || { email: [], whatsapp: [] };
+  // Keuze in het menu van de knop Versturen: alles, alleen WhatsApp of alleen mail
+  const d = { ...all, email: channel === "whatsapp" ? [] : all.email, whatsapp: channel === "email" ? [] : all.whatsapp };
   const now = new Date(), today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
   const to = [...d.email.map(a => `<li>${esc(t("ls_by_mail"))}: <b>${esc(a)}</b></li>`), ...d.whatsapp.map(a => `<li>${esc(t("ls_by_wa"))}: <b>${esc(a)}</b>${d.phone_on === false ? ` <span class="muted">(${esc(t("ls_wa_off"))})</span>` : ""}</li>`)];
   if (!to.length) { notice(t("ls_no_to")); return; }
@@ -3290,7 +3315,7 @@ async function sendSavedList(kind, day, x) {
   if (note === null) return;
   const state = $("#list-state");
   state.style.color = ""; state.textContent = t("dl_busy");
-  const r = await apiFetch(`${API}/api/monitor/${encodeURIComponent($("#hotel").value)}/lists?kind=${kind}&day=${encodeURIComponent(day)}&action=send`, {
+  const r = await apiFetch(`${API}/api/monitor/${encodeURIComponent($("#hotel").value)}/lists?kind=${kind}&day=${encodeURIComponent(day)}&action=send${channel ? "&channel=" + channel : ""}`, {
     method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ note }),
   }).then(x => x.json()).catch(e => ({ ok: false, error: String(e) }));
   state.textContent = "";
