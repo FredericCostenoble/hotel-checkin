@@ -1,0 +1,30 @@
+# Diagnose (alleen lezen): fouten van de laatste uren in Application Insights.
+name: Diag errors
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        type: choice
+        options: [prd, tst]
+        default: prd
+      hours:
+        default: "2"
+permissions:
+  id-token: write
+  contents: read
+jobs:
+  diag:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    steps:
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      - run: |
+          az extension add -n application-insights -y >/dev/null 2>&1 || true
+          rg="rg-checkin-${{ inputs.environment }}"
+          ai=$(az resource list -g "$rg" --resource-type microsoft.insights/components --query "[0].name" -o tsv)
+          q="union exceptions, (traces | where severityLevel >= 3) | where timestamp > ago(${{ inputs.hours }}h) | project timestamp, operation_Name, type, outerMessage, message, details=tostring(details[0].rawStack) | order by timestamp desc | take 15"
+          az monitor app-insights query -g "$rg" --app "$ai" --analytics-query "$q" -o json | jq -r '.tables[0].rows[] | map(tostring) | join(" | ")' | cut -c1-3000
