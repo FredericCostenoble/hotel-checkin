@@ -33,8 +33,8 @@ DOC = "whatsapp_templates"
 # Per bericht: de plaatsen in de tekst ({{1}}, {{2}}, ...) in volgorde, en of er een knop naar het check-in-formulier
 # (link) of een pdf bovenaan (media) bij hoort. De laatste plaats is dan het variabele einde van dat adres.
 # Moet overeenkomen met send_messages.WHATSAPP_VARIABLES en daily_lists._send_phone.
-# Geen pincode in WhatsApp: Meta keurt sjablonen met een code (of de woorden pincode/code) af als "categorie moet
-# Verificatie zijn" (afwijzingen van 21/11/2026). De code staat in de mail en in de app achter de knop.
+# Nooit de pincode zelf (het getal) in WhatsApp: Meta keurt dat af als "Category mismatch" (moet Verificatie zijn,
+# 21/11/2026). Het woord pincode mag wel (goedgekeurd 22/11/2026). De code staat in de mail en in de app achter de knop.
 TEMPLATES: dict[str, dict] = {
     "confirmation": {"vars": ("voornaam",), "button": "checkin_suffix", "langs": ("nl", "fr", "en", "de")},
     "reminder": {"vars": ("voornaam",), "button": "checkin_suffix", "langs": ("nl", "fr", "en", "de")},

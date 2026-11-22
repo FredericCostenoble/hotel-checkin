@@ -203,13 +203,10 @@ def test_tst_names_differ(monkeypatch):
 
 
 def test_no_pin_code_in_templates():
-    """Meta keurt sjablonen met een (pin)code af als verificatie: geen code en niet de woorden in de standaardteksten."""
-    import re
-
+    """Meta keurt sjablonen met de pincode zelf af als verificatie: de code is nooit een plaats in WhatsApp
+    (het woord pincode mag wel)."""
     for t in wa.view("lucca", refresh=False)["templates"]:
         assert "pincode" not in t["vars"]
-        for lg in t["langs"]:
-            assert not re.search(r"\b(pin|code|pincode|PIN-Code)\b", lg["text"]["body"], re.IGNORECASE), (t["step"], lg["lang"])
 
 
 def test_sample_pdf_exists_for_meta():

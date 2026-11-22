@@ -50,8 +50,9 @@ De teksten staan in `config/whatsapp/<hotel_id>.toml` en worden gewijzigd in de 
 confirmation en reminder {{1}} voornaam, {{2}} formulierlink vanaf het token (knop); access_code {{1}} kamer,
 {{2}} formulierlink vanaf het token (knop); room_change {{1}} kamer, {{2}} formulierlink vanaf het token (knop).
 
-Geen pincode in WhatsApp, en niet de woorden pincode of code: Meta keurde zulke sjablonen op 21/11/2026 af
-("categorie moet Verificatie zijn", of zonder reden). De pincode staat in de code-mail en in de app achter de knop.
+Nooit de pincode zelf (het getal) in WhatsApp: Meta keurde zulke sjablonen op 21/11/2026 af ("Category mismatch",
+moet Verificatie zijn). Het woord pincode mag wel: sjablonen met "uw persoonlijke pincode" zijn op 22/11/2026
+goedgekeurd. De pincode staat in de code-mail en in de app achter de knop.
 De sms (terugval) bevat de pincode wel.
 
 Niet als sjabloon: de bedankmail na vertrek (alleen per mail) en het automatische antwoord op een bericht van de gast
