@@ -650,3 +650,9 @@ def test_send_saved_only_one_channel(setup, monkeypatch):
     assert [s["channel"] for s in res["sent"]] == ["email"] and len(wa) == 1
     with pytest.raises(ValueError):
         dl.send_saved("lucca", "breakfast", DAY, channel="fax")
+
+
+def test_note_before_summary_gets_a_full_stop():
+    assert dl._with_note("je lijstje", "13 persons in 6 rooms") == "je lijstje. 13 persons in 6 rooms"
+    assert dl._with_note("Let op!", "13 persons") == "Let op! 13 persons"
+    assert dl._with_note("", "13 persons") == "13 persons"

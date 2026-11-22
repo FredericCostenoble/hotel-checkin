@@ -703,6 +703,14 @@ def pdf_for_link(hotel_id: str, kind: str, day: str, expires: str, sig: str,
     return lists.pdf_name(data), lists.pdf(data, name)
 
 
+def _with_note(note: str, text: str) -> str:
+    """Vrij bericht voor de samenvatting in de WhatsApp, met een punt ertussen als het bericht er geen heeft."""
+    note = (note or "").strip()
+    if not note:
+        return text
+    return f"{note}{'' if note[-1] in '.!?:' else '.'} {text}"
+
+
 def _send_phone(hotel_id: str, data: dict, to: str, hotel_name: str, note: str = "") -> dict:
     """WhatsApp met het goedgekeurde sjabloon (Engels, zoals de lijst: [whatsapp] template_breakfast_list_en / template_cleaning_list_en):
     de pdf als document bovenaan, {{1}} de dag, {{2}} kort wat erop staat, {{3}} pad van de pdf. Anders, of als dat
@@ -720,7 +728,7 @@ def _send_phone(hotel_id: str, data: dict, to: str, hotel_name: str, note: str =
     template = send_messages.whatsapp_template(hotel_id, f"{data['kind']}_list", "en")
     if template:
         res = whatsapp.send_whatsapp_template(hotel_id, number, template, {
-            "1": lists.day_text(data["day"]), "2": (f"{note} " if note else "") + describe(data, with_source=False),
+            "1": lists.day_text(data["day"]), "2": _with_note(note, describe(data, with_source=False)),
             "3": pdf_path(hotel_id, data)})
         if res.ok:
             return {"channel": "whatsapp", "to": to, "ok": True}
