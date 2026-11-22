@@ -259,3 +259,37 @@ def test_use_new_defaults_after_approval(monkeypatch):
     lg = _lang(wa.view("lucca", refresh=False), "room_change", "nl")
     assert lg["state"] == "changed" and lg["text"] == lg["default"]
     assert wa.view("lucca", refresh=False)["newer_defaults"] == 0
+
+
+def test_tst_uses_prd_templates(monkeypatch):
+    """TST dient niets in: het neemt de nieuwste goedgekeurde PRD-versie over (zelfde Twilio-account)."""
+    monkeypatch.setenv("APP_ENV", "tst")
+
+    def handler(req):
+        return httpx.Response(200, json={"contents": [
+            {"sid": "HXa", "friendly_name": "lucca_prd_access_code_nl_v1", "approval_requests": {"status": "approved"}},
+            {"sid": "HXb", "friendly_name": "lucca_prd_access_code_nl_v3", "approval_requests": {"status": "approved"}},
+            {"sid": "HXc", "friendly_name": "lucca_prd_access_code_nl_v4", "approval_requests": {"status": "pending"}},
+            {"sid": "HXd", "friendly_name": "lucca_tst_room_change_nl_v1", "approval_requests": {"status": "approved"}},
+            {"sid": "HXe", "friendly_name": "other_prd_access_code_nl_v9", "approval_requests": {"status": "approved"}},
+        ], "meta": {"next_page_url": None}})
+
+    client = httpx.Client(transport=httpx.MockTransport(handler))
+    assert wa.sync_shared("lucca", client=client, min_age=timedelta(0)) == ["lucca_prd_access_code_nl_v3 in gebruik"]
+    assert send_messages.whatsapp_template("lucca", "access_code", "nl") == "HXb"
+    assert send_messages.whatsapp_template("lucca", "room_change", "nl") is None
+    v = wa.view("lucca", refresh=False)
+    assert v["shared_from"] == "prd" and _lang(v, "access_code", "nl")["active"]["name"] == "lucca_prd_access_code_nl_v3"
+    with pytest.raises(ValueError):
+        wa.submit("lucca", "access_code", "nl", "fred")
+
+
+def test_tst_button_link_goes_via_prd_form(monkeypatch):
+    from hotel_checkin.messaging import templates
+
+    monkeypatch.setenv("APP_ENV", "tst")
+    monkeypatch.setenv("CHECKIN_FORM_URL", "https://checkin-tst.hotellucca.be/?r={token}")
+    assert templates.checkin_suffix("lucca", "tok", "fr") == "tok&lang=fr&env=tst"
+    monkeypatch.setenv("APP_ENV", "prd")
+    monkeypatch.delenv("CHECKIN_FORM_URL")
+    assert templates.checkin_suffix("lucca", "tok", "fr") == "tok&lang=fr"

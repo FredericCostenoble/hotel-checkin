@@ -29,6 +29,10 @@ from hotel_checkin.core.safety import environment
 from hotel_checkin.messaging import content_templates as twilio
 
 DOC = "whatsapp_templates"
+SHARED_DOC = "whatsapp_templates_prd"  # buiten PRD: de goedgekeurde PRD-sjablonen die deze omgeving gebruikt
+SOURCE_ENV = "prd"  # TST (en dev) gebruiken de sjablonen van PRD: niets apart indienen. De knop van een PRD-sjabloon
+# wijst naar het PRD-formulier; daarom zet templates.checkin_suffix in TST "&env=tst" achter de link, en stuurt het
+# PRD-formulier de gast door naar het TST-formulier (web/checkin/app.js).
 
 # Per bericht: de plaatsen in de tekst ({{1}}, {{2}}, ...) in volgorde, en of er een knop naar het check-in-formulier
 # (link) of een pdf bovenaan (media) bij hoort. De laatste plaats is dan het variabele einde van dat adres.
@@ -243,8 +247,55 @@ def state(hotel_id: str, step: str, lang: str, data: dict) -> str:
     return "changed" if active else "new"
 
 
+def shared() -> bool:
+    """Gebruikt deze omgeving de sjablonen van een andere (PRD)?"""
+    return environment() != SOURCE_ENV
+
+
+def _load_shared(hotel_id: str) -> dict:
+    from hotel_checkin.guests import repository
+
+    doc = repository.get_config_doc(hotel_id, SHARED_DOC)
+    return (doc or {}).get("value") or {}
+
+
+def sync_shared(hotel_id: str, client=None, min_age: timedelta = CHECK_EVERY) -> list[str]:
+    """Buiten PRD: de nieuwste goedgekeurde PRD-versie per bericht en taal opvragen bij Twilio (zelfde account) en
+    bewaren. Hoogstens om de min_age. Geeft wat veranderde."""
+    import re as _re
+
+    if not shared():
+        return []
+    data = _load_shared(hotel_id)
+    checked = data.get("_checked_at")
+    if checked and _now() - datetime.fromisoformat(checked) < min_age:
+        return []
+    found = twilio.approved(hotel_id, client=client)
+    pat = _re.compile(rf"^{_re.escape(hotel_id.lower())}_{SOURCE_ENV}_(.+)_([a-z]{{2}})_v(\d+)$")
+    best: dict = {}
+    for name, sid in found.items():
+        m = pat.match(name)
+        if not m or m.group(1) not in TEMPLATES or m.group(2) not in TEMPLATES[m.group(1)]["langs"]:
+            continue
+        step, lang, version = m.group(1), m.group(2), int(m.group(3))
+        cur = best.get(step, {}).get(lang)
+        if not cur or version > cur["version"]:
+            best.setdefault(step, {})[lang] = {"sid": sid, "name": name, "version": version}
+    changes = [f"{v['name']} in gebruik" for step, per in best.items() for lang, v in per.items()
+               if (data.get(step, {}).get(lang) or {}).get("sid") != v["sid"]]
+    from hotel_checkin.guests import repository
+
+    repository.set_config_doc(hotel_id, SHARED_DOC, best | {"_checked_at": _now().isoformat()}, "Twilio (PRD-sjablonen)")
+    return changes
+
+
 def active_sid(hotel_id: str, step: str, lang: str) -> str | None:
-    """SID van de goedgekeurde versie (wat verstuurd wordt), of None."""
+    """SID van de goedgekeurde versie (wat verstuurd wordt), of None. Buiten PRD: die van PRD."""
+    if shared():
+        try:
+            return (_load_shared(hotel_id).get(step, {}).get(lang) or {}).get("sid") or None
+        except Exception:  # noqa: BLE001 - geen opslag
+            return None
     try:
         a = _load(hotel_id).get(step, {}).get(lang, {}).get("active")
     except Exception:  # noqa: BLE001 - geen opslag: dan de SID uit de instellingen (send_messages)
@@ -255,6 +306,8 @@ def active_sid(hotel_id: str, step: str, lang: str) -> str | None:
 def view(hotel_id: str, refresh: bool = True) -> dict:
     """Alle sjablonen voor de monitor, met per taal de tekst, de toestand, de actieve en de ingediende versie.
     refresh: eerst de status vragen van versies die nog wachten (hoogstens een keer per minuut)."""
+    if shared():
+        return _view_shared(hotel_id, refresh)
     if refresh:
         try:
             check(hotel_id, min_age=CHECK_EVERY_MONITOR)
@@ -288,6 +341,34 @@ def view(hotel_id: str, refresh: bool = True) -> dict:
                                              "button": BUTTON_MAX, "footer": FOOTER_MAX, "header": HEADER_MAX}}
 
 
+def _view_shared(hotel_id: str, refresh: bool) -> dict:
+    """Buiten PRD: alleen tonen welke PRD-versie gebruikt wordt (niets wijzigen of indienen)."""
+    if refresh:
+        try:
+            sync_shared(hotel_id, min_age=CHECK_EVERY_MONITOR)
+        except Exception:  # Twilio niet bereikbaar: de bewaarde toestand tonen
+            logging.exception("%s: PRD-sjablonen niet opgevraagd", hotel_id)
+    data = _load_shared(hotel_id)
+    base = defaults(hotel_id)
+    out = []
+    for step, spec in TEMPLATES.items():
+        langs = []
+        for lang in spec["langs"]:
+            a = data.get(step, {}).get(lang)
+            text = _clean(base.get(step, {}).get(lang))
+            langs.append({"lang": lang, "text": text, "default": text, "edited": False,
+                          "state": "approved" if a else "new", "errors": [], "pending": None, "manual_sid": "",
+                          "active": a and {"sid": a["sid"], "name": a["name"], "version": a["version"], "text": text}})
+        out.append({"step": step, "vars": list(spec["vars"]), "button": bool(spec.get("button")),
+                    "media": bool(spec.get("media")), "samples": [samples_of(step, hotel_id)[v] for v in spec["vars"]],
+                    "media_sample": samples_of(step, hotel_id)[spec["media"]].rsplit("/", 1)[-1] if spec.get("media") else "",
+                    "langs": langs})
+    return {"templates": out, "shared_from": SOURCE_ENV, "checked_at": data.get("_checked_at", ""), "newer_defaults": 0,
+            "console_url": CONSOLE_URL, "button_prefix": button_prefix(hotel_id), "media_prefix": media_prefix() or "",
+            "env": environment(), "limits": {"body": BODY_MAX, "body_button": BODY_MAX_BUTTON, "button": BUTTON_MAX,
+                                             "footer": FOOTER_MAX, "header": HEADER_MAX}}
+
+
 def _public(v: dict | None) -> dict | None:
     if not v:
         return None
@@ -304,8 +385,14 @@ def _known(step: str, lang: str) -> None:
 # ---------------------------------------------------------------- wijzigen en indienen
 
 
+def _not_shared() -> None:
+    if shared():
+        raise ValueError("Deze omgeving gebruikt de sjablonen van PRD: wijzigen en indienen gebeurt in PRD")
+
+
 def save_text(hotel_id: str, step: str, lang: str, text: dict, user: str) -> None:
     """Tekst bewaren (nog niet indienen). Gelijk aan de actieve of de standaardtekst: niets apart bewaren."""
+    _not_shared()
     _known(step, lang)
     data = _load(hotel_id)
     e = _entry(data, step, lang)
@@ -336,6 +423,7 @@ def reset_text(hotel_id: str, step: str, lang: str, user: str) -> None:
 def submit(hotel_id: str, step: str, lang: str, user: str, client=None) -> dict:
     """De huidige tekst als nieuwe versie bij Twilio aanmaken en bij Meta indienen.
     Geeft {"ok": bool, "message": ...}. Een eerdere versie die nog niet goedgekeurd was, wordt vervangen."""
+    _not_shared()
     _known(step, lang)
     data = _load(hotel_id)
     e = _entry(data, step, lang)
@@ -408,6 +496,7 @@ def use_defaults(hotel_id: str, user: str) -> int:
     """De nieuwe standaardteksten overnemen waar de monitor nog een oudere tekst toont (niet waar zelf iets gewijzigd
     is). Daarna gewoon indienen; tot Meta de nieuwe versie goedkeurt blijft de goedgekeurde verstuurd. Geeft het
     aantal."""
+    _not_shared()
     data = _load(hotel_id)
     n = 0
     for step, spec in TEMPLATES.items():
@@ -423,6 +512,7 @@ def use_defaults(hotel_id: str, user: str) -> int:
 def submit_all(hotel_id: str, user: str, client=None) -> dict:
     """Alle nieuwe en gewijzigde teksten indienen (niet wat afgekeurd is en niet veranderde: dat wordt opnieuw
     afgekeurd). Geeft per sjabloon het resultaat."""
+    _not_shared()
     data = _load(hotel_id)
     results = []
     for step, spec in TEMPLATES.items():
@@ -434,7 +524,9 @@ def submit_all(hotel_id: str, user: str, client=None) -> dict:
 
 def check(hotel_id: str, client=None, min_age: timedelta = CHECK_EVERY) -> list[str]:
     """Status opvragen bij Meta, alleen voor versies die nog wachten en niet recent nagekeken werden.
-    Goedgekeurd: die versie wordt actief. Geeft wat veranderde (voor het log)."""
+    Goedgekeurd: die versie wordt actief. Geeft wat veranderde (voor het log). Buiten PRD: de PRD-sjablonen ophalen."""
+    if shared():
+        return sync_shared(hotel_id, client=client, min_age=min_age)
     data = _load(hotel_id)
     now = _now()
     todo = [(step, lang, e["pending"]) for step, per in data.items() if isinstance(per, dict)

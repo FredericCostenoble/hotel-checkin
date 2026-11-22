@@ -44,6 +44,14 @@ Lighthouse een betaallink maakte en er iets openstaat (`checkin/service.py`, `pa
 TST heeft een ander formulieradres (`CHECKIN_FORM_URL`) en een andere Function App: in TST eigen sjablonen (alleen NL
 volstaat), met het TST-adres als vast begin.
 
+## TST gebruikt de sjablonen van PRD
+
+In TST wordt niets ingediend. TST vraagt bij Twilio (zelfde account) de nieuwste goedgekeurde versie van elk
+`<hotel>_prd_...`-sjabloon op (elke 15 minuten en bij het openen van het tabblad) en verstuurt die. Het tabblad
+WhatsApp is er alleen-lezen. De knop van een PRD-sjabloon opent het PRD-formulier: in TST zet het systeem `&env=tst`
+achter de link, en het formulier stuurt de gast dan door naar hetzelfde adres met `-tst` achter het eerste deel
+(checkin.hotellucca.be naar checkin-tst.hotellucca.be; web/checkin/app.js).
+
 ## Gasten
 
 De teksten staan in `config/whatsapp/<hotel_id>.toml` en worden gewijzigd in de monitor. Plaatsen:

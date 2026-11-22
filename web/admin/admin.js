@@ -394,6 +394,7 @@ Object.assign(T.nl, {
   wa_pending: (v, d, who) => `Versie ${v} ingediend ${d}${who ? " door " + who : ""}.`, wa_checked: d => `Laatst nagekeken ${d}.`, wa_reason: r => `Reden van Meta: ${r}`,
   wa_twilio: n => `Openen in Twilio (zoek op ${n})`, wa_replace: "Meta beslist nog over de ingediende versie. Een nieuwe versie indienen vervangt die; de goedgekeurde versie blijft in gebruik tot Meta de nieuwe goedkeurt.",
   wa_defaults: n => `Nieuwe standaardteksten overnemen (${n})`, wa_defaults_q: n => `${n} teksten vervangen door de nieuwe standaardtekst? Daarna indienen; tot Meta ze goedkeurt blijven de huidige goedgekeurde versies verstuurd.`, wa_defaults_done: n => `${n} standaardteksten overgenomen. Klik nu op Alles indienen.`,
+  wa_shared: (env, d) => `Deze omgeving gebruikt de goedgekeurde sjablonen van ${env.toUpperCase()}: wijzigen en indienen gebeurt daar. De knop opent het ${env.toUpperCase()}-formulier, dat de gast doorstuurt naar het formulier van deze omgeving.${d ? " Laatst opgevraagd " + d + "." : ""}`,
   wa_changes: x => `Nieuw: ${x}.`, wa_no_changes: "Geen nieuwe beslissing van Meta.", wa_done: n => `${n} ingediend.`,
   wa_t_confirmation: ["Bevestiging", "Meteen na de boeking, met knop naar het check-in-formulier."],
   wa_t_reminder: ["Herinnering", "Een week voor aankomst, als het formulier nog niet ingevuld is."],
@@ -418,6 +419,7 @@ Object.assign(T.en, {
   wa_pending: (v, d, who) => `Version ${v} submitted ${d}${who ? " by " + who : ""}.`, wa_checked: d => `Last checked ${d}.`, wa_reason: r => `Reason from Meta: ${r}`,
   wa_twilio: n => `Open in Twilio (search for ${n})`, wa_replace: "Meta has not decided on the submitted version yet. Submitting a new version replaces it; the approved version stays in use until Meta approves the new one.",
   wa_defaults: n => `Take over new default texts (${n})`, wa_defaults_q: n => `Replace ${n} texts with the new default text? Then submit; until Meta approves them the current approved versions keep being sent.`, wa_defaults_done: n => `${n} default texts taken over. Now click Submit all.`,
+  wa_shared: (env, d) => `This environment uses the approved templates of ${env.toUpperCase()}: changing and submitting happens there. The button opens the ${env.toUpperCase()} form, which forwards the guest to the form of this environment.${d ? " Last checked " + d + "." : ""}`,
   wa_changes: x => `New: ${x}.`, wa_no_changes: "No new decision from Meta.", wa_done: n => `${n} submitted.`,
   wa_t_confirmation: ["Confirmation", "Right after the booking, with a button to the check-in form."],
   wa_t_reminder: ["Reminder", "One week before arrival, if the form is not filled in yet."],
@@ -3431,18 +3433,19 @@ function waCard(tp) {
   const err = lg.state === "error" && lg.pending && lg.pending.error ? `<div class="note warn">${esc(lg.pending.error)}</div>` : "";
   const errors = !dirty && lg.errors.length ? `<div class="note warn"><span>${lg.errors.map(esc).join("<br>")}</span></div>` : "";
   const note = waNote[k] ? `<span class="small ${waNote[k].ok ? "muted" : "err"}">${esc(waNote[k].text)}</span>` : "";
+  const ro = !!wa.shared_from;
   const canSubmit = dirty || ["new", "changed", "error"].includes(lg.state);
   const same = (a, b) => ["header", "body", "button", "footer"].every(f => (a[f] || "") === (b[f] || ""));
   const canReset = dirty || lg.edited || ["rejected", "error"].includes(lg.state) || (lg.state === "waiting" && !lg.active && !same(lg.text, lg.default));
   return `<section class="card" id="wa-c-${tp.step}" data-wa="${tp.step}"><div class="ch"><h2 class="ct">${IC('<path d="M4 20l1.4-4.2A8 8 0 1 1 8.6 19z"/>')} ${esc(title)}</h2>${waBadge(st)}</div>
     <div class="cb"><div class="help">${esc(help)} ${esc(t("wa_vars"))}: ${vars}</div>${seg}
       <div class="help">${waMeta(lg)}</div>${reason}${err}<div class="note" id="${id}-replace" ${dirty && lg.state === "waiting" ? "" : "hidden"}><span>${esc(t("wa_replace"))}</span></div>
-      ${tp.media ? "" : `<div class="field"><label for="${id}-header">${esc(t("wa_header"))} <span class="muted small" id="${id}-n-header">${(x.header || "").length}/${L.header}</span></label><input class="input" id="${id}-header" data-wa-f="header" maxlength="${L.header}" value="${esc(x.header || "")}"></div>`}
-      <div class="field"><label for="${id}-body">${esc(t("wa_body"))} <span class="muted small" id="${id}-n-body">${(x.body || "").length}/${bodyMax}</span></label><textarea class="input" id="${id}-body" data-wa-f="body" rows="5" style="padding:8px 10px;min-height:110px;font:inherit;line-height:1.45;resize:vertical">${esc(x.body || "")}</textarea></div>
-      ${tp.button ? `<div class="field"><label for="${id}-button">${esc(t("wa_button"))} <span class="muted small" id="${id}-n-button">${(x.button || "").length}/${L.button}</span></label><input class="input" id="${id}-button" data-wa-f="button" maxlength="${L.button}" value="${esc(x.button || "")}"><span class="help">${esc(t("wa_button_help", wa.button_prefix))}</span></div>` : ""}
-      ${tp.media ? `<div class="help">${esc(t("wa_media_help", wa.media_prefix))}</div>` : `<div class="field"><label for="${id}-footer">${esc(t("wa_footer"))} <span class="muted small" id="${id}-n-footer">${(x.footer || "").length}/${L.footer}</span></label><input class="input" id="${id}-footer" data-wa-f="footer" maxlength="${L.footer}" value="${esc(x.footer || "")}"></div>`}
+      ${tp.media ? "" : `<div class="field"><label for="${id}-header">${esc(t("wa_header"))} <span class="muted small" id="${id}-n-header">${(x.header || "").length}/${L.header}</span></label><input class="input" id="${id}-header" data-wa-f="header" ${wa.shared_from ? "disabled" : ""} maxlength="${L.header}" value="${esc(x.header || "")}"></div>`}
+      <div class="field"><label for="${id}-body">${esc(t("wa_body"))} <span class="muted small" id="${id}-n-body">${(x.body || "").length}/${bodyMax}</span></label><textarea class="input" id="${id}-body" data-wa-f="body" ${ro ? "disabled" : ""} rows="5" style="padding:8px 10px;min-height:110px;font:inherit;line-height:1.45;resize:vertical">${esc(x.body || "")}</textarea></div>
+      ${tp.button ? `<div class="field"><label for="${id}-button">${esc(t("wa_button"))} <span class="muted small" id="${id}-n-button">${(x.button || "").length}/${L.button}</span></label><input class="input" id="${id}-button" data-wa-f="button" ${ro ? "disabled" : ""} maxlength="${L.button}" value="${esc(x.button || "")}"><span class="help">${esc(t("wa_button_help", wa.button_prefix))}</span></div>` : ""}
+      ${tp.media ? `<div class="help">${esc(t("wa_media_help", wa.media_prefix))}</div>` : `<div class="field"><label for="${id}-footer">${esc(t("wa_footer"))} <span class="muted small" id="${id}-n-footer">${(x.footer || "").length}/${L.footer}</span></label><input class="input" id="${id}-footer" data-wa-f="footer" ${ro ? "disabled" : ""} maxlength="${L.footer}" value="${esc(x.footer || "")}"></div>`}
       <div class="field"><span class="lbl">${esc(t("wa_preview"))}</span><div id="${id}-pv">${waPreview(tp, x)}</div></div>${errors}
-      <div class="row" style="justify-content:space-between;border-top:1px solid #EEF0F3;padding-top:12px"><span class="who" id="${id}-state">${dirty ? esc(t("wa_unsaved")) : ""}${note}</span>
+      <div class="row" style="justify-content:space-between;border-top:1px solid #EEF0F3;padding-top:12px" ${ro ? "hidden" : ""}><span class="who" id="${id}-state">${dirty ? esc(t("wa_unsaved")) : ""}${note}</span>
         <div class="row"><button class="btn3" type="button" data-wa-act="reset" ${canReset ? "" : "hidden"}>${esc(t("wa_reset"))}</button><button class="btn2" type="button" data-wa-act="save" ${dirty ? "" : "disabled"}>${esc(t("wa_save"))}</button><button class="btn" type="button" data-wa-act="submit" ${canSubmit ? "" : "disabled"}>${esc(t("wa_submit"))}</button></div></div>
     </div></section>`;
 }
@@ -3453,8 +3456,11 @@ function renderWhatsapp() {
   const todo = all.filter(({ tp, l }) => ["new", "changed", "error"].includes(l.state) && !waEdit[waKey(tp.step, l.lang)]).length;
   $("#wa-all").disabled = todo === 0;
   $("#wa-all").lastElementChild.textContent = todo ? t("wa_all", todo) : t("wa_all_none");
-  $("#wa-check").hidden = !all.some(({ l }) => l.state === "waiting");
-  $("#wa-defaults").hidden = !wa.newer_defaults;
+  const ro = !!wa.shared_from;
+  $("#wa-all").hidden = ro;
+  if (ro) { $("#wa-state").className = "note"; $("#wa-state").textContent = t("wa_shared", wa.shared_from, wa.checked_at ? stamp(wa.checked_at) : ""); }
+  $("#wa-check").hidden = !ro && !all.some(({ l }) => l.state === "waiting");
+  $("#wa-defaults").hidden = ro || !wa.newer_defaults;
   if (wa.newer_defaults) $("#wa-defaults").lastElementChild.textContent = t("wa_defaults", wa.newer_defaults);
   $("#wa-overview").innerHTML = `<table><tbody>${wa.templates.map(tp => `<tr><td style="font-weight:600">${esc(t("wa_t_" + tp.step)[0])}</td><td><div class="row" style="gap:4px;flex-wrap:wrap">${tp.langs.map(l => `<a href="#" class="badge ${WA_BADGE[waEdit[waKey(tp.step, l.lang)] ? "changed" : l.state]}" style="text-decoration:none" title="${esc(t("wa_st_" + (waEdit[waKey(tp.step, l.lang)] ? "changed" : l.state)))}" data-wa-go="${tp.step}:${l.lang}">${l.lang.toUpperCase()}</a>`).join("")}</div></td></tr>`).join("")}</tbody></table>
     <div class="row" style="gap:6px;flex-wrap:wrap;margin-top:10px">${["approved", "waiting", "changed", "new", "rejected"].map(waBadge).join("")}</div>`;

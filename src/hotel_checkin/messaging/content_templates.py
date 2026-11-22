@@ -106,3 +106,22 @@ def delete(hotel_id: str, sid: str, client: httpx.Client | None = None) -> None:
     r = http.delete(f"{CONTENT_API}/{sid}", auth=_auth(hotel_id))
     if r.status_code not in (200, 204, 404):
         raise _error(r)
+
+
+def approved(hotel_id: str, client: httpx.Client | None = None) -> dict[str, str]:
+    """Alle sjablonen bij Twilio die Meta goedkeurde: {naam: SID}. Gebruikt door een omgeving die de sjablonen van een
+    andere omgeving overneemt (TST gebruikt die van PRD)."""
+    http = client or clients.http()
+    out: dict[str, str] = {}
+    url = "https://content.twilio.com/v2/ContentAndApprovals?PageSize=200"
+    while url:
+        r = http.get(url, auth=_auth(hotel_id))
+        if r.status_code != 200:
+            raise _error(r)
+        d = r.json()
+        for c in d.get("contents") or []:
+            ar = c.get("approval_requests") or {}
+            if str(ar.get("status") or "").lower() == "approved" and c.get("friendly_name") and c.get("sid"):
+                out[c["friendly_name"]] = c["sid"]
+        url = (d.get("meta") or {}).get("next_page_url")
+    return out

@@ -8,6 +8,17 @@
 const API = window.CHECKIN_API || "";
 (function () {
   const params = new URLSearchParams(location.search);
+  // Link uit een WhatsApp-bericht van TST: TST gebruikt de WhatsApp-sjablonen van PRD, waarvan de knop naar dit
+  // (PRD-)formulier wijst. Door naar het formulier van TST: zelfde adres met "-tst" achter het eerste deel
+  // (checkin.hotellucca.be -> checkin-tst.hotellucca.be). Nooit naar een ander domein.
+  if (params.get("env") === "tst" && !location.hostname.split(".")[0].endsWith("-tst") && location.hostname.includes(".")) {
+    const host = location.hostname.split(".");
+    host[0] += "-tst";
+    params.delete("env");
+    location.replace("https://" + host.join(".") + "/?" + params.toString());
+    return;
+  }
+  params.delete("env");
   const token = params.get("r") || "";
   let lang = (params.get("lang") || (navigator.language || "en").slice(0, 2)).toLowerCase();
   if (!I18N[lang]) lang = "en";

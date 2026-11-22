@@ -110,10 +110,17 @@ def _form_url(hotel_id: str) -> str:
 def checkin_suffix(hotel_id: str, token: str, language: str | None = None) -> str:
     """Deel van de formulierlink vanaf het token (bv. "abc123&lang=nl"), voor de knop in een WhatsApp-sjabloon.
     De knop in het sjabloon heeft het vaste begin van de link (bv. https://checkin.hotellucca.be/?r=), WhatsApp
-    zet dit deel erachter. Daarom heeft elke omgeving (TST, PRD) een eigen sjabloon als het adres verschilt."""
+    zet dit deel erachter.
+    In TST staat "&env=tst" achteraan: TST gebruikt de PRD-sjablonen (knop naar het PRD-formulier), en het
+    PRD-formulier stuurt de gast dan door naar het TST-formulier (web/checkin/app.js)."""
+    from hotel_checkin.core.safety import environment
+
     link = checkin_link(hotel_id, token, language)
     base = _form_url(hotel_id).split("{token}", 1)[0]
-    return link.removeprefix(base)
+    suffix = link.removeprefix(base)
+    if environment() == "tst":
+        suffix += ("&" if "?" in link else "?") + "env=tst"
+    return suffix
 
 
 MODULES = ("code", "reservation", "checkin_form", "checkin_form_done", "pay", "practical_info")  # volgorde in de mail: pincode altijd bovenaan
