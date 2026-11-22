@@ -82,10 +82,30 @@ def _now() -> datetime:
 
 
 def _load(hotel_id: str) -> dict:
+    """Alle sjablonen. Per bericht een eigen rij (whatsapp_templates_<bericht>): alles samen werd groter dan Azure in
+    één veld toelaat (64 KB). De rij whatsapp_templates zelf bewaart alleen de versie van de opslag (_rev); in een
+    oudere opslag staat daar nog alles samen (wordt bij het volgende bewaren gesplitst)."""
     from hotel_checkin.guests import repository
 
-    doc = repository.get_config_doc(hotel_id, DOC)
-    return _migrate((doc or {}).get("value") or {})
+    base = (repository.get_config_doc(hotel_id, DOC) or {}).get("value") or {}
+    if base.get("_split"):
+        data = {"_rev": base.get("_rev")}
+        for step in TEMPLATES:
+            doc = repository.get_config_doc(hotel_id, f"{DOC}_{step}")
+            if doc and doc.get("value"):
+                data[step] = doc["value"]
+    else:
+        data = base
+    return _migrate(data)
+
+
+def _save(hotel_id: str, data: dict, user: str) -> None:
+    from hotel_checkin.guests import repository
+
+    for step in TEMPLATES:
+        if isinstance(data.get(step), dict):
+            repository.set_config_doc(hotel_id, f"{DOC}_{step}", data[step], user)
+    repository.set_config_doc(hotel_id, DOC, {"_rev": data.get("_rev", REV), "_split": True}, user)
 
 
 def _migrate(data: dict) -> dict:
@@ -100,12 +120,6 @@ def _migrate(data: dict) -> dict:
                     e.pop("pending")
     data["_rev"] = REV
     return data
-
-
-def _save(hotel_id: str, data: dict, user: str) -> None:
-    from hotel_checkin.guests import repository
-
-    repository.set_config_doc(hotel_id, DOC, data, user)
 
 
 def _entry(data: dict, step: str, lang: str) -> dict:

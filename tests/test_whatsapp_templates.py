@@ -293,3 +293,27 @@ def test_tst_button_link_goes_via_prd_form(monkeypatch):
     monkeypatch.setenv("APP_ENV", "prd")
     monkeypatch.delenv("CHECKIN_FORM_URL")
     assert templates.checkin_suffix("lucca", "tok", "fr") == "tok&lang=fr"
+
+
+def test_storage_split_per_message_and_reads_old_format():
+    """Alles samen werd te groot voor één veld in Azure (64 KB): per bericht een rij. Oude opslag wordt nog gelezen."""
+    import json
+
+    repo.set_config_doc("lucca", wa.DOC, {"_rev": 2, "room_change": {"nl": {"text": {"body": "Kamer {{1}} oud.", "button": "Ga"}}}}, "x")
+    assert _lang(wa.view("lucca", refresh=False), "room_change", "nl")["text"]["body"] == "Kamer {{1}} oud."
+    wa.reset_text("lucca", "room_change", "nl", "fred")
+    assert repo.get_config_doc("lucca", wa.DOC)["value"] == {"_rev": 2, "_split": True}
+    assert "nl" in repo.get_config_doc("lucca", wa.DOC + "_room_change")["value"]
+    # Realistische toestand (actief + ingediend + tekst, alle talen): elke rij ruim onder 64 KB
+    fake = FakeTwilio()
+    wa.submit_all("lucca", "fred", client=fake.client())
+    for c in fake.created:
+        fake.status[c["sid"]] = "approved"
+    wa.check("lucca", client=fake.client(), min_age=timedelta(0))
+    for st in wa.TEMPLATES:
+        for lg in wa.TEMPLATES[st]["langs"]:
+            wa.save_text("lucca", st, lg, {**wa.current_text("lucca", st, lg), "footer": "x"}, "fred")
+    wa.submit_all("lucca", "fred", client=fake.client())
+    for st in wa.TEMPLATES:
+        size = len(json.dumps(repo.get_config_doc("lucca", f"{wa.DOC}_{st}")["value"]).encode("utf-16-le"))
+        assert size < 32_000, (st, size)
