@@ -289,8 +289,11 @@ def text(data: dict, hotel_name: str) -> str:
         if r.get("sep"):
             continue
         if data["kind"] == "breakfast":
-            lines.append(f"{r['room']}: {r['count'] if r.get('count') is not None else '?'}"
-                         + (f" {r['remark']}" if r.get("remark") else ""))
+            # zoals in de pdf: een lege kamer (geen ontbijt) niet vermelden; "?" alleen als het aantal na te kijken is
+            count = r.get("count") if r.get("count") is not None else ("?" if r.get("check") else "")
+            if count == "" and not r.get("remark"):
+                continue
+            lines.append(f"{r['room']}: " + " ".join(str(x) for x in (count, r.get("remark")) if x not in ("", None)))
         else:
             what = [w for k, w in (("leave", "leave"), ("stay", "stay"), ("checkin", "check in")) if r.get(k)]
             if what or r.get("remark"):

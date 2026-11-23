@@ -677,3 +677,12 @@ def test_make_and_send_only_one_channel(setup, monkeypatch):
     mails = len(setup)
     data = dl.generate("lucca", "breakfast", DAY, send_now=True, channel="sms")
     assert [s["channel"] for s in data["sent"]] == ["sms"] and texts == ["+32470123456"] and len(setup) == mails
+
+
+def test_breakfast_sms_text_skips_empty_rooms():
+    """Sms met de ontbijtlijst: zoals de pdf geen lege kamers, "?" alleen als het aantal na te kijken is."""
+    data = {"kind": "breakfast", "day": "2026-11-22", "total": 4, "rows": [
+        {"room": "20"}, {"room": "14", "count": 2, "remark": "together with room 32"},
+        {"room": "16", "check": True}, {"room": "21", "count": 2}, {"room": "5", "remark": "late"}]}
+    assert lists.text(data, "Hotel Lucca").split("\n")[1:] == [
+        "14: 2 together with room 32", "16: ?", "21: 2", "5: late", "Total: 4"]
