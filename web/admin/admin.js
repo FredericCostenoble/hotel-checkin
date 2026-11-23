@@ -82,7 +82,7 @@ const T = {
     g_channel: "Kanaal", g_rooms: "Kamers", g_relay: "doorstuuradres, niet voor marketing", g_form: "formulier",
     g_optout: "geen marketing", no_guests: "Nog geen gasten (klik op Synchroniseren)",
     m_title: n => `Mogelijke dubbels (${n})`, m_help: "Zelfde of bijna dezelfde naam in hetzelfde land. Nooit automatisch samengevoegd.",
-    m_same_name: "zelfde naam", m_same_contact: "zelfde e-mailadres of gsm-nummer, andere naam (partner of familie?)", m_extra_contact: "extra adres of nummer van de ene is dat van de andere (zelfde persoon of partner?)", m_similar_name: "bijna zelfde naam", m_merge: "Samenvoegen", m_different: "Andere persoon",
+    m_same_name: "zelfde naam", m_same_contact: "zelfde e-mailadres of gsm-nummer, andere naam (partner of familie?)", m_extra_contact: "extra adres of nummer van de ene is dat van de andere (zelfde persoon of partner?)", m_similar_name: "bijna zelfde naam", m_merge: "Samenvoegen", m_open_profile: "profiel openen", m_f_email: "E-mail", m_f_relay: "Doorstuuradres", m_f_phone: "Gsm", m_f_country: "Land, taal", m_f_channel: "Kanaal", m_f_stays: "Reservaties", m_f_res: "reservaties", m_f_st: "verblijven", m_f_rooms: "Kamers", m_different: "Andere persoon",
     m_confirm: "Deze twee gasten samenvoegen tot één?", reset: "Filter wissen",
     search: "Zoek op naam, nummer, e-mail", stay_from: "Verblijf van", stay_to: "tot", from_today: "Vanaf vandaag",
     c_arrival: "Aankomst", c_departure: "Vertrek", c_number: "Nummer", c_guest: "Gast", c_pers: "Pers.",
@@ -177,7 +177,7 @@ const T = {
     g_channel: "Channel", g_rooms: "Rooms", g_relay: "relay address, not for marketing", g_form: "form",
     g_optout: "no marketing", no_guests: "No guests yet (click Synchronize)",
     m_title: n => `Possible duplicates (${n})`, m_help: "Same or almost the same name in the same country. Never merged automatically.",
-    m_same_name: "same name", m_same_contact: "same e-mail or mobile number, different name (partner or family?)", m_extra_contact: "extra address or number of one is that of the other (same person or partner?)", m_similar_name: "similar name", m_merge: "Merge", m_different: "Different person",
+    m_same_name: "same name", m_same_contact: "same e-mail or mobile number, different name (partner or family?)", m_extra_contact: "extra address or number of one is that of the other (same person or partner?)", m_similar_name: "similar name", m_merge: "Merge", m_open_profile: "open profile", m_f_email: "E-mail", m_f_relay: "Relay address", m_f_phone: "Mobile", m_f_country: "Country, language", m_f_channel: "Channel", m_f_stays: "Reservations", m_f_res: "reservations", m_f_st: "stays", m_f_rooms: "Rooms", m_different: "Different person",
     m_confirm: "Merge these two guests into one?", reset: "Clear filter",
     search: "Search name, number, e-mail", stay_from: "Stay from", stay_to: "to", from_today: "From today",
     c_arrival: "Arrival", c_departure: "Departure", c_number: "Number", c_guest: "Guest", c_pers: "Pers.",
@@ -1643,8 +1643,25 @@ function renderMatches() {
       : [g.booked_source, g.booked_arrival ? t("m_arrives", dshort(g.booked_arrival) + " " + g.booked_arrival.slice(0, 4)) : ""]).filter(Boolean).join(", ");
     return `<b>${esc(g.name)}</b>${info ? ` (${esc(info)})` : ""}`;
   };
-  $("#matches").innerHTML = m.map(x => `<div class="note warn" style="flex-wrap:wrap"><div style="flex:1 1 280px">${who(guestById(x.a))} ${esc(t("m_and"))} ${who(guestById(x.b))}: ${esc(t("m_" + x.reason))}${x.contact ? ` (${esc(x.contact)})` : ""}</div>
+  // Openklappen: per gast de adressen, nummers en gegevens, zodat je kan beslissen voor je samenvoegt
+  const uniq = xs => [...new Set(xs.filter(Boolean).map(v => String(v)))];
+  const facts = (g, hit) => {
+    const mark = v => v.toLowerCase() === String(hit || "").toLowerCase() ? `<mark>${esc(v)}</mark>` : esc(v);
+    const line = (lbl, vals) => vals.length ? `<div><span class="muted">${esc(lbl)}:</span> ${vals.map(mark).join(", ")}</div>` : "";
+    const res = (g.reservations || []).length;
+    return `<div style="flex:1 1 240px;min-width:0"><div><b>${esc(g.name)}</b> <a href="#" data-open-guest="${esc(g.id)}">${esc(t("m_open_profile"))}</a></div>
+      ${line(t("m_f_email"), uniq([g.email, ...(g.known_emails || []), g.backup_email]))}
+      ${line(t("m_f_relay"), uniq(g.relay_emails || []))}
+      ${line(t("m_f_phone"), uniq([g.phone, ...(g.known_phones || []), g.backup_phone]))}
+      ${line(t("m_f_country"), uniq([g.country, g.language && g.language.toUpperCase()]))}
+      ${line(t("m_f_channel"), uniq((g.channels || []).map(c => `${c.name} (${c.count})`).concat(g.channels && g.channels.length ? [] : [g.booked_source])))}
+      ${line(t("m_f_stays"), uniq([`${res} ${t("m_f_res")}`, `${g.stays || 0} ${t("m_f_st")}`, g.first_stay && `${dshort(g.first_stay)} ${g.first_stay.slice(0, 4)}`, g.last_stay && `${dshort(g.last_stay)} ${g.last_stay.slice(0, 4)}`, g.booked_arrival && t("m_arrives", dshort(g.booked_arrival) + " " + g.booked_arrival.slice(0, 4))]))}
+      ${line(t("m_f_rooms"), uniq(g.rooms || []))}</div>`;
+  };
+  $("#matches").innerHTML = m.map(x => `<div class="note warn" style="flex-wrap:wrap"><details style="flex:1 1 280px"><summary style="cursor:pointer">${who(guestById(x.a))} ${esc(t("m_and"))} ${who(guestById(x.b))}: ${esc(t("m_" + x.reason))}${x.contact ? ` (${esc(x.contact)})` : ""}</summary>
+    <div class="row small" style="align-items:flex-start;gap:16px;margin-top:8px">${facts(guestById(x.a), x.contact)}${facts(guestById(x.b), x.contact)}</div></details>
     <div class="row"><button class="btn sm" type="button" data-act="merge" data-a="${esc(x.a)}" data-b="${esc(x.b)}">${esc(t("m_keep"))}</button><button class="btn2 sm" type="button" data-act="different" data-a="${esc(x.a)}" data-b="${esc(x.b)}">${esc(t("m_apart"))}</button></div></div>`).join("");
+  document.querySelectorAll("#matches [data-open-guest]").forEach(a => a.onclick = e => { e.preventDefault(); openGuest(a.dataset.openGuest); });
   document.querySelectorAll("#matches button").forEach(b => b.onclick = async () => {
     if (b.dataset.act === "merge" && !await ask(t("m_confirm"), { ok: t("m_keep") })) return;
     await get(`/api/monitor/${$("#hotel").value}/guests?action=${b.dataset.act}&a=${encodeURIComponent(b.dataset.a)}&b=${encodeURIComponent(b.dataset.b)}`, { method: "POST" });

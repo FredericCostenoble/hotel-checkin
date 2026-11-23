@@ -357,3 +357,15 @@ def test_robot_follows_the_ticks_per_address_and_merge_keeps_them():
     kept = gp.merge("lucca", g.guest_id, other.guest_id)
     assert kept.contact_prefs["email:jan@example.com"] is False  # bij de ene uit: uit
     assert kept.contact_prefs["email:jan2@example.com"] is False and kept.contact_prefs["email:abc@m.expediapartnercentral.com"]
+
+
+def test_shared_number_of_booking_site_is_not_a_reason():
+    """Het vaste nummer van Expedia (+61730836162) staat bij veel verschillende gasten: geen voorstel om samen te voegen."""
+    from hotel_checkin.guests import profiles
+    from hotel_checkin.processes import guest_profiles
+
+    for first, last in (("Cheryl", "Hall"), ("Paul", "Goldberg"), ("Amy", "Oshea")):
+        g = profiles.new_profile("lucca")
+        g.first_name, g.last_name, g.phone = first, last, "+61730836162"
+        profiles.save_profile(g)
+    assert not [m for m in guest_profiles.possible_matches("lucca") if m.get("contact") == "+61730836162"]

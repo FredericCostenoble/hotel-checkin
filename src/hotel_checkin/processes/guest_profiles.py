@@ -554,6 +554,9 @@ def _blocks(tokens: list[str]) -> set[str]:
     return {f"{sound(t)}|{sound(u)[:1]}" for t in tokens for u in tokens if t is not u and len(t) >= 3 and u}
 
 
+SHARED_NAMES = 3
+
+
 def possible_matches(hotel_id: str, limit: int = 50) -> list[dict]:
     """Paren die misschien dezelfde gast zijn, voor de monitor. Nooit automatisch samengevoegd.
 
@@ -587,6 +590,10 @@ def possible_matches(hotel_id: str, limit: int = 50) -> list[dict]:
             if v and (("@" not in v) or is_own_email(v)):
                 by_contact.setdefault(v, []).append(g)
     for value, group in by_contact.items():
+        # Een nummer of adres bij SHARED_NAMES of meer verschillende namen is geen gast maar van de boekingssite of
+        # een bureau (bv. het vaste nummer van Expedia, +61730836162): niet als reden om samen te voegen.
+        if len({canonical_name(g.first_name, g.last_name) for g in group}) >= SHARED_NAMES:
+            continue
         for i, a in enumerate(group):
             for b in group[i + 1:]:
                 both_own = value in contacts[a.guest_id] and value in contacts[b.guest_id]
