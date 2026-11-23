@@ -599,7 +599,7 @@ function renderSwitches() {
   el.hidden = !sw;
   if (mel) mel.hidden = !sw;
   if (!sw) return;
-  const items = [["reservaties", "sw_robot"], ["overschrijvingen", "sw_payout"], ["ontbijt_labels", "sw_breakfast"], ["ontbijtlijst", "sw_blist"], ["kuislijst", "sw_clist"], ["ontgrendelen", "sw_unlock"], ["berichten", "sw_messages"]];
+  const items = [["reservaties", "sw_robot"], ["overschrijvingen", "sw_payout"], ["ontbijt_labels", "sw_breakfast"], ["ontbijtlijst", "sw_blist"], ["kuislijst", "sw_clist"], ["berichten", "sw_messages"]];  // ontgrendelen (deuren via app): pas na Salto
   const html = items.map(([k, label]) => {
     const st = k === "berichten" && sw[k] === "selectie" ? "sel" : sw[k] && sw[k] !== "uit" ? "on" : "off";
     return `<a class="sw ${st}" href="settings.html#hotel" title="${esc(t("sw_go"))}"><span class="d d-${st}"></span>${esc(t(label))} <span class="st">${esc(t("sw_st_" + st))}</span></a>`;
@@ -3049,7 +3049,8 @@ function renderSettings() {
         return `<fieldset style="border:0;margin:0;padding:12px 0;border-top:1px solid #EEF0F3"><legend class="tn" style="font-weight:700;padding:0;margin-bottom:4px">${esc(hsText(sec.section, "berichten")[0])}</legend><div class="help" style="margin-bottom:8px">${esc(hsText(sec.section, "berichten")[1] || "")}</div>
           <div class="row" style="gap:8px;align-items:stretch">${opt("uit", "off", "#8A8F99")}${opt("selectie", "sel", "#C0640F")}${opt("aan", "on", "#2E7D4F")}</div></fieldset>`;
       })() : "";
-      body = cards + sec.fields.filter(f => f.key !== "berichten").map(f => {
+      // ontgrendelen (deuren via de gast-app) pas tonen als Salto klaar is; de waarde blijft bewaard
+      body = cards + sec.fields.filter(f => f.key !== "berichten" && f.key !== "ontgrendelen").map(f => {
         const id = i++, v = hsValue(sec, f), [lbl, hlp] = hsText(sec.section, f.key);
         const on = f.type === "bool" ? !!v : v && v !== "uit";
         return `<div class="toggle"><div class="tx"><label class="tn" for="hs-${id}">${esc(lbl)}</label>${hlp ? `<div class="help">${esc(hlp)}</div>` : ""}</div>
