@@ -691,8 +691,7 @@ async function init() {
     mkMore.onclick = e => { e.stopPropagation(); mkMenu.hidden = !mkMenu.hidden; mkMore.setAttribute("aria-expanded", String(!mkMenu.hidden)); };
     mkMenu.querySelectorAll("[data-make-ch]").forEach(b => b.onclick = () => { mkMenu.hidden = true; makeList(listKind, true, b.dataset.makeCh); });
     document.addEventListener("click", e => { if (!e.target.closest("#list-make-menu, #list-send-ch")) { mkMenu.hidden = true; mkMore.setAttribute("aria-expanded", "false"); } });
-    document.querySelectorAll("#tab-lists .seg label").forEach(l => l.onclick = e => { e.preventDefault(); showTab(l.dataset.kind); });
-    $("#list-filter").onchange = () => renderList(listKind);
+    document.querySelectorAll("#list-kind label").forEach(l => l.onclick = e => { e.preventDefault(); showTab(l.dataset.kind); });
   } else {
     document.querySelectorAll("#tab-robot .subtabs button").forEach(b => b.onclick = () => showSub(b.dataset.sub));
     $("#bin-all").innerHTML = BIN;
@@ -3210,7 +3209,8 @@ function sentBadge(x) {
 function renderList(kind) {
   const d = listData[kind];
   if (!$("#list-rows") || kind !== listKind) return;
-  document.querySelectorAll("#tab-lists .seg label").forEach(l => l.classList.toggle("on", l.dataset.kind === kind));
+  document.querySelectorAll("#list-kind label").forEach(l => l.classList.toggle("on", l.dataset.kind === kind));
+  if (listSel && !listSel.startsWith(kind + ":")) listSel = "";  // de keuze bovenaan geldt voor alles: maken, lijsten en voorbeeld
   const dayInput = $("#list-day");
   if (d && (dayInput.dataset.kind !== kind + $("#hotel").value)) { dayInput.value = listDay[kind] || d.manual_day || d.next_day; dayInput.dataset.kind = kind + $("#hotel").value; }
   dayInput.onchange = () => { listDay[listKind] = dayInput.value; };
@@ -3232,18 +3232,17 @@ function renderList(kind) {
       if (last) listSel = kind + ":" + last.day;
     }
   }
-  // Laatste lijsten van beide soorten samen, nieuwste eerst
-  const filter = $("#list-filter").value;
-  const all = LIST_KINDS.flatMap(k => (listData[k]?.records || []).map(x => ({ ...x, kind: k })))
-    .filter(x => !filter || x.kind === filter).sort((a, b) => String(b.generated_at).localeCompare(String(a.generated_at))).slice(0, 15);
+  // Laatste lijsten van de soort die bovenaan gekozen is, nieuwste eerst
+  const all = (listData[kind]?.records || []).map(x => ({ ...x, kind }))
+    .sort((a, b) => String(b.generated_at).localeCompare(String(a.generated_at))).slice(0, 15);
   if (!listSel && all.length) listSel = all[0].kind + ":" + all[0].day;
   $("#list-rows").innerHTML = all.map(x => {
     const key = x.kind + ":" + x.day, on = key === listSel;
-    return `<tr data-row="${esc(key)}" style="cursor:pointer${on ? ";background:#EEF0F5" : ""}"><td>${LICON[x.kind]} ${esc(t("tab_" + x.kind))}</td><td><b>${esc(dday(x.day))}</b></td><td class="small mono">${esc(dtime(x.generated_at))}</td>
+    return `<tr data-row="${esc(key)}" style="cursor:pointer${on ? ";background:#EEF0F5" : ""}"><td><b>${esc(dday(x.day))}</b></td><td class="small mono">${esc(dtime(x.generated_at))}</td>
       <td class="small">${esc(x.generated_by === "automatisch" ? t("dl_auto") : x.generated_by)}</td><td>${sentBadge(x)}</td>
       <td><div class="row" style="gap:6px;flex-wrap:nowrap"><button class="btn3" type="button" data-view="${esc(key)}">${esc(t(on ? "dl_hide" : "dl_view"))}</button>${x.generated_by !== "automatisch"  // zelf gemaakt: mag weg; lijsten van de robot niet
         ? `<button class="btn3" type="button" data-del="${esc(key)}" title="${esc(t("del"))}" aria-label="${esc(t("del"))}">${BIN}</button>` : ""}</div></td></tr>`;
-  }).join("") || `<tr><td colspan="6" class="muted">${esc(t("dl_none"))}</td></tr>`;
+  }).join("") || `<tr><td colspan="5" class="muted">${esc(t("dl_none"))}</td></tr>`;
   document.querySelectorAll("#list-rows button[data-view]").forEach(b => b.onclick = () => { listSel = listSel === b.dataset.view ? "" : b.dataset.view; renderList(listKind); });
   // Klik ergens op de rij: die lijst meteen tonen (nog eens klikken: verbergen)
   document.querySelectorAll("#list-rows tr[data-row]").forEach(tr => tr.onclick = e => {
