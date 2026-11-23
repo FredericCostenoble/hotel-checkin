@@ -1661,7 +1661,7 @@ function renderMatches() {
   $("#matches").innerHTML = m.map(x => `<div class="note warn" style="flex-wrap:wrap"><details style="flex:1 1 280px"><summary style="cursor:pointer">${who(guestById(x.a))} ${esc(t("m_and"))} ${who(guestById(x.b))}: ${esc(t("m_" + x.reason))}${x.contact ? ` (${esc(x.contact)})` : ""}</summary>
     <div class="row small" style="align-items:flex-start;gap:16px;margin-top:8px">${facts(guestById(x.a), x.contact)}${facts(guestById(x.b), x.contact)}</div>
     ${x.contact ? `<div class="row small" style="margin-top:8px;gap:8px">${x.shared_names ? `<span><b>${esc(t("m_shared_hint", x.contact, x.shared_names, (x.shared_channels || []).join(", ")))}</b></span>` : ""}<button class="btn2 sm" type="button" data-shared="${esc(x.contact)}">${esc(t("m_shared_btn"))}</button></div>` : ""}</details>
-    <div class="row"><button class="btn sm" type="button" data-act="merge" data-a="${esc(x.a)}" data-b="${esc(x.b)}">${esc(t("m_keep"))}</button><button class="btn2 sm" type="button" data-act="different" data-a="${esc(x.a)}" data-b="${esc(x.b)}">${esc(t("m_apart"))}</button></div></div>`).join("");
+    <div class="row"><button class="btn sm" type="button" data-act="merge" data-a="${esc(x.a)}" data-b="${esc(x.b)}">${esc(t("m_keep"))}</button><button class="btn2 sm" type="button" data-act="different" data-a="${esc(x.a)}" data-b="${esc(x.b)}" data-value="${esc(x.contact || "")}">${esc(t("m_apart"))}</button></div></div>`).join("");
   document.querySelectorAll("#matches [data-shared]").forEach(b => b.onclick = async () => {
     if (!await ask(t("m_shared_q", b.dataset.shared), { ok: t("m_shared_btn") })) return;
     await get(`/api/monitor/${$("#hotel").value}/guests?action=shared&value=${encodeURIComponent(b.dataset.shared)}`, { method: "POST" });
@@ -1670,7 +1670,7 @@ function renderMatches() {
   document.querySelectorAll("#matches [data-open-guest]").forEach(a => a.onclick = e => { e.preventDefault(); openGuest(a.dataset.openGuest); });
   document.querySelectorAll("#matches button").forEach(b => b.onclick = async () => {
     if (b.dataset.act === "merge" && !await ask(t("m_confirm"), { ok: t("m_keep") })) return;
-    await get(`/api/monitor/${$("#hotel").value}/guests?action=${b.dataset.act}&a=${encodeURIComponent(b.dataset.a)}&b=${encodeURIComponent(b.dataset.b)}`, { method: "POST" });
+    await get(`/api/monitor/${$("#hotel").value}/guests?action=${b.dataset.act}&a=${encodeURIComponent(b.dataset.a)}&b=${encodeURIComponent(b.dataset.b)}${b.dataset.value ? "&value=" + encodeURIComponent(b.dataset.value) : ""}`, { method: "POST" });
     loadGuests();
   });
 }

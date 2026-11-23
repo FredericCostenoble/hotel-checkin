@@ -373,3 +373,14 @@ def test_shared_number_of_booking_site_is_not_a_reason():
     assert m and all(x["shared_names"] == 3 for x in m)  # voorgesteld, met de vermelding: bij 3 namen
     profiles.mark_shared("lucca", "+61730836162")  # in de monitor: nummer van de boekingssite
     assert not [m for m in guest_profiles.possible_matches("lucca") if m.get("contact") == "+61730836162"]
+
+
+def test_three_times_kept_apart_makes_contact_shared():
+    """Drie keer Keep apart om hetzelfde nummer: dan is het van een boekingssite of bureau."""
+    from hotel_checkin.guests import profiles
+
+    profiles.mark_different("lucca", "g1", "g2", "+61730836162")
+    profiles.mark_different("lucca", "g3", "g4", "+61730836162")
+    assert "+61730836162" not in profiles.shared_contacts("lucca")
+    profiles.mark_different("lucca", "g5", "g6", "+61730836162")
+    assert "+61730836162" in profiles.shared_contacts("lucca")

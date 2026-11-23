@@ -95,10 +95,20 @@ def _pair_key(a: str, b: str) -> str:
     return "|".join(sorted((a, b)))
 
 
-def mark_different(hotel_id: str, a: str, b: str) -> None:
-    """Onthoud dat twee profielen niet dezelfde gast zijn (keuze in de monitor)."""
+SHARED_AFTER = 3
+
+
+def mark_different(hotel_id: str, a: str, b: str, contact: str = "") -> None:
+    """Onthoud dat twee profielen niet dezelfde gast zijn (keuze in de monitor). contact: het gedeelde nummer of
+    adres waarom ze voorgesteld werden. Werd hetzelfde nummer of adres SHARED_AFTER keer apart gehouden, dan is het
+    van een boekingssite of bureau (zoals mark_shared)."""
+    contact = contact.strip().lower()
     _table(T_PAIRS).upsert_entity({"PartitionKey": _key(hotel_id), "RowKey": _pair_key(a, b),
-                                   "decision": "different", "at": _now().isoformat()})
+                                   "decision": "different", "at": _now().isoformat(), "contact": contact})
+    if contact:
+        rows = _table(T_PAIRS).query_entities(f"PartitionKey eq '{_q(_key(hotel_id))}'")
+        if sum(1 for e in rows if e.get("decision") == "different" and e.get("contact") == contact) >= SHARED_AFTER:
+            mark_shared(hotel_id, contact)
 
 
 def different_pairs(hotel_id: str) -> set[str]:

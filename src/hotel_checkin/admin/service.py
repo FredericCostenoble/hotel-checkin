@@ -518,12 +518,12 @@ def set_marketing(hotel_id: str, email: str, on: bool) -> dict:
     return {"ok": True}
 
 
-def mark_guests_different(hotel_id: str, a: str, b: str) -> bool:
+def mark_guests_different(hotel_id: str, a: str, b: str, contact: str = "") -> bool:
     from hotel_checkin.guests import profiles
 
     if hotel_id not in list_hotels() or not a or not b:
         return False
-    profiles.mark_different(hotel_id, a, b)
+    profiles.mark_different(hotel_id, a, b, contact)
     return True
 
 

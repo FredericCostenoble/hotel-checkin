@@ -397,7 +397,7 @@ def admin_api(req: func.HttpRequest) -> func.HttpResponse:
         if req.params.get("action") == "merge":
             return _json(200, {"ok": admin.merge_guests(hotel, a, b)})
         if req.params.get("action") == "different":
-            return _json(200, {"ok": admin.mark_guests_different(hotel, a, b)})
+            return _json(200, {"ok": admin.mark_guests_different(hotel, a, b, req.params.get("value", ""))})
         if req.params.get("action") == "shared":
             # nummer of adres van een boekingssite of bureau: ?action=shared&value=+61730836162
             return _json(200, {"ok": admin.mark_shared_contact(hotel, req.params.get("value", ""))})
