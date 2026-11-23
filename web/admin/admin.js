@@ -3260,6 +3260,8 @@ function renderList(kind) {
   const [sk, sd] = listSel.split(":"), x = (listData[sk]?.records || []).find(r => r.day === sd);
   const hotel = encodeURIComponent($("#hotel").value);
   $("#list-preview").innerHTML = x ? `<div class="row" style="justify-content:space-between"><div class="lbl">${esc(t("l_preview"))}</div><div class="row">
+      <div class="seg v2" role="radiogroup" aria-label="Taal van de lijst">${["nl", "en"].map(l =>
+        `<label class="${l === paperLang ? "on" : ""}" data-plang="${l}" style="min-height:32px;padding:0 10px;font-size:13px"><input type="radio" name="plang" ${l === paperLang ? "checked" : ""}>${l.toUpperCase()}</label>`).join("")}</div>
       <a class="btn2 sm" href="${API}/api/monitor/${hotel}/list-xlsx?kind=${sk}&day=${esc(sd)}">${DL}Excel</a>
       <a class="btn2 sm" href="${API}/api/monitor/${hotel}/list-pdf?kind=${sk}&day=${esc(sd)}">${DL}PDF</a>
       <span style="position:relative;display:inline-flex"><button class="btn sm" type="button" id="list-send-saved" style="border-top-right-radius:0;border-bottom-right-radius:0">${IC('<path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4z"/>', 14)}${esc(t("ls_send"))}</button><button class="btn sm" type="button" id="list-send-more" aria-haspopup="true" aria-expanded="false" aria-label="${esc(t("ls_more"))}" style="border-top-left-radius:0;border-bottom-left-radius:0;border-left:1px solid rgba(255,255,255,.35);padding-left:8px;padding-right:8px">${IC('<path d="M6 9l6 6 6-6"/>', 14)}</button>
@@ -3270,8 +3272,6 @@ function renderList(kind) {
           <button class="btn3" type="button" data-send-ch="sms" style="justify-content:flex-start;text-align:left;width:100%;padding:8px 10px;text-decoration:none">${esc(t("ls_ch_sms"))}</button>
         </div></span>
       <button class="btn3" type="button" id="list-del" title="${esc(t("del"))}">${BIN}</button></div></div>
-    <div class="row" style="justify-content:flex-end;margin-top:8px"><div class="seg v2" role="radiogroup" aria-label="Taal van de lijst">${["nl", "en"].map(l =>
-      `<label class="${l === paperLang ? "on" : ""}" data-plang="${l}"><input type="radio" name="plang" ${l === paperLang ? "checked" : ""}>${l.toUpperCase()}</label>`).join("")}</div></div>
     <div class="paper" id="list-paper"><div class="row" style="justify-content:space-between;align-items:flex-start"><div><div class="lbl">${esc(hotelNow().name || "")}</div>
       <h2 style="font-size:20px;margin-top:2px">${esc(PAPER[paperLang][sk] + " " + new Date(sd + "T00:00").toLocaleDateString(PAPER[paperLang].loc, { weekday: "long", day: "2-digit", month: "2-digit", year: "numeric" }))}</h2><div class="small muted">${esc(PAPER[paperLang].made(dtime(x.generated_at), x.generated_by === "automatisch" ? PAPER[paperLang].auto : x.generated_by))}</div></div>
       <div style="text-align:right" class="small muted">${esc((paperLang === "nl" ? x.summary_nl : x.summary) || x.summary || "")}</div></div><div class="tbox" style="margin-top:14px">${(paperLang === "nl" ? x.html_nl : x.html) || x.html}</div></div>`
