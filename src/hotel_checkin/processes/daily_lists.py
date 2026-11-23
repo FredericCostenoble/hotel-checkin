@@ -711,10 +711,10 @@ def _with_note(note: str, text: str) -> str:
     return f"{note}{'' if note[-1] in '.!?:' else '.'} {text}"
 
 
-def _send_phone(hotel_id: str, data: dict, to: str, hotel_name: str, note: str = "") -> dict:
+def _send_phone(hotel_id: str, data: dict, to: str, hotel_name: str, note: str = "", sms_only: bool = False) -> dict:
     """WhatsApp met het goedgekeurde sjabloon (Engels, zoals de lijst: [whatsapp] template_breakfast_list_en / template_cleaning_list_en):
     de pdf als document bovenaan, {{1}} de dag, {{2}} kort wat erop staat, {{3}} pad van de pdf. Anders, of als dat
-    mislukt, per sms met de hele lijst."""
+    mislukt, per sms met de hele lijst. sms_only: meteen per sms (knop Versturen, Alleen sms)."""
     from hotel_checkin.checkin.service import normalize_phone
     from hotel_checkin.messaging import sms, whatsapp
     from hotel_checkin.processes import send_messages
@@ -725,7 +725,7 @@ def _send_phone(hotel_id: str, data: dict, to: str, hotel_name: str, note: str =
     number = normalize_phone(to)
     if not number:
         return {"channel": "whatsapp", "to": to, "ok": False, "error": "ongeldig gsm-nummer"}
-    template = send_messages.whatsapp_template(hotel_id, f"{data['kind']}_list", "en")
+    template = "" if sms_only else send_messages.whatsapp_template(hotel_id, f"{data['kind']}_list", "en")
     if template:
         res = whatsapp.send_whatsapp_template(hotel_id, number, template, {
             "1": lists.day_text(data["day"]), "2": _with_note(note, describe(data, with_source=False)),
@@ -740,7 +740,8 @@ def _send_phone(hotel_id: str, data: dict, to: str, hotel_name: str, note: str =
 def send(hotel_id: str, data: dict, note: str = "", channel: str = "") -> list[dict]:
     """Naar alle ontvangers uit de instellingen. Geeft per ontvanger het resultaat.
     note: vrije tekst bij manueel versturen (bovenaan de mail, voor de WhatsApp of de sms).
-    channel: "email" of "whatsapp" = alleen dat kanaal (knop Versturen in de monitor), leeg = alles."""
+    channel: "email", "whatsapp" of "sms" = alleen dat kanaal (knop Versturen in de monitor; sms gaat naar de
+    WhatsApp-nummers), leeg = alles."""
     note = " ".join((note or "").split())[:500]
     from hotel_checkin.messaging import email
 
@@ -757,9 +758,9 @@ def send(hotel_id: str, data: dict, note: str = "", channel: str = "") -> list[d
             res = email.send_email(to=to, subject=lists.subject(data, name), html_body=body, attachments=[attachment],
                                    sender=sender, hotel_id=hotel_id)
             out.append({"channel": "email", "to": to, "ok": res.ok, "error": res.error or "", "at": now})
-    for to in (cfg["whatsapp"] if channel in ("", "whatsapp") else []):
+    for to in (cfg["whatsapp"] if channel in ("", "whatsapp", "sms") else []):
         try:
-            out.append(_send_phone(hotel_id, data, to, name, note) | {"at": now})
+            out.append(_send_phone(hotel_id, data, to, name, note, sms_only=channel == "sms") | {"at": now})
         except Exception as exc:  # noqa: BLE001 - de andere ontvangers gaan gewoon door
             out.append({"channel": "whatsapp", "to": to, "ok": False, "error": f"{type(exc).__name__}: {exc}", "at": now})
     return out
@@ -822,7 +823,7 @@ def send_saved(hotel_id: str, kind: str, day: date, by: str = "", note: str = ""
     if not data:
         return {"ok": False, "error": "Deze lijst bestaat niet (meer)."}
     started = datetime.now(UTC)
-    if channel not in ("", "email", "whatsapp"):
+    if channel not in ("", "email", "whatsapp", "sms"):
         raise ValueError(channel)
     sent = send(hotel_id, data, note, channel)
     for x in sent:

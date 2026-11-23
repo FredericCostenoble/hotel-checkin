@@ -196,7 +196,7 @@ const T = {
 // Teksten van het ontwerp (Claude Design, canvas Beheerapp Hotel Lucca)
 Object.assign(T.nl, {
   m_arrives: d => `aankomst ${d}`, list_more: (n, tot) => `${n} van ${tot} getoond, scroll voor meer`, dlg_send: "Versturen",
-  ls_send: "Versturen", ls_more: "Kies hoe je verstuurt", ls_ch_all: "Mail en WhatsApp", ls_ch_wa: "Alleen WhatsApp", ls_ch_mail: "Alleen mail", ls_title: "Lijst manueel versturen", ls_q: l => `Ben je zeker dat je de ${l} manueel wil versturen?`, ls_to: "Wordt verstuurd naar",
+  ls_send: "Versturen", ls_more: "Kies hoe je verstuurt", ls_ch_all: "Mail en WhatsApp", ls_ch_wa: "Alleen WhatsApp", ls_ch_mail: "Alleen mail", ls_ch_sms: "Alleen sms", ls_by_sms: "Per sms", ls_title: "Lijst manueel versturen", ls_q: l => `Ben je zeker dat je de ${l} manueel wil versturen?`, ls_to: "Wordt verstuurd naar",
   ls_by_mail: "Mail", ls_by_wa: "WhatsApp (sms als WhatsApp niet lukt)", ls_wa_off: "WhatsApp en sms staan uit, wordt niet verstuurd", ls_no_to: "Er zijn geen ontvangers ingesteld voor deze lijst (instellingen, Hotel).",
   ls_past: d => `Let op: dit is geen lijst voor vandaag! Het is de lijst van ${d}.`, ls_already: (w, to) => `Deze lijst is al verstuurd op ${w} naar ${to}.`,
   ls_note: "Bericht (niet verplicht)", ls_note_ph: "Komt bovenaan de mail en in de WhatsApp of sms", ls_done: x => `Verstuurd: ${x}.`, ls_fail: x => `Niet (helemaal) gelukt: ${x}`,
@@ -288,7 +288,7 @@ Object.assign(T.nl, {
 });
 Object.assign(T.en, {
   m_arrives: d => `arriving ${d}`, list_more: (n, tot) => `${n} of ${tot} shown, scroll for more`, dlg_send: "Send",
-  ls_send: "Send", ls_more: "Choose how to send", ls_ch_all: "Mail and WhatsApp", ls_ch_wa: "Only WhatsApp", ls_ch_mail: "Only mail", ls_title: "Send list manually", ls_q: l => `Are you sure you want to send the ${l} manually?`, ls_to: "Will be sent to",
+  ls_send: "Send", ls_more: "Choose how to send", ls_ch_all: "Mail and WhatsApp", ls_ch_wa: "Only WhatsApp", ls_ch_mail: "Only mail", ls_ch_sms: "Only SMS", ls_by_sms: "By SMS", ls_title: "Send list manually", ls_q: l => `Are you sure you want to send the ${l} manually?`, ls_to: "Will be sent to",
   ls_by_mail: "Mail", ls_by_wa: "WhatsApp (SMS if WhatsApp fails)", ls_wa_off: "WhatsApp and SMS are off, will not be sent", ls_no_to: "No recipients are set for this list (settings, Hotel).",
   ls_past: d => `Watch out: this is not a list for today! It is the list of ${d}.`, ls_already: (w, to) => `This list was already sent on ${w} to ${to}.`,
   ls_note: "Message (optional)", ls_note_ph: "Goes at the top of the mail and in the WhatsApp or SMS", ls_done: x => `Sent: ${x}.`, ls_fail: x => `Not (fully) sent: ${x}`,
@@ -3261,6 +3261,7 @@ function renderList(kind) {
           <button class="btn3" type="button" data-send-ch="" style="justify-content:flex-start;text-align:left;width:100%;padding:8px 10px;text-decoration:none">${esc(t("ls_ch_all"))}</button>
           <button class="btn3" type="button" data-send-ch="whatsapp" style="justify-content:flex-start;text-align:left;width:100%;padding:8px 10px;text-decoration:none">${esc(t("ls_ch_wa"))}</button>
           <button class="btn3" type="button" data-send-ch="email" style="justify-content:flex-start;text-align:left;width:100%;padding:8px 10px;text-decoration:none">${esc(t("ls_ch_mail"))}</button>
+          <button class="btn3" type="button" data-send-ch="sms" style="justify-content:flex-start;text-align:left;width:100%;padding:8px 10px;text-decoration:none">${esc(t("ls_ch_sms"))}</button>
         </div></span>
       <button class="btn3" type="button" id="list-del" title="${esc(t("del"))}">${BIN}</button></div></div>
     <div class="row" style="justify-content:flex-end;margin-top:8px"><div class="seg v2" role="radiogroup" aria-label="Taal van de lijst">${["nl", "en"].map(l =>
@@ -3297,10 +3298,11 @@ function renderList(kind) {
 // Knop Versturen: de bewaarde lijst manueel versturen. Popup met ontvangers, al verstuurd, voorbije dag en een bericht.
 async function sendSavedList(kind, day, x, channel = "") {
   const all = listData[kind] || { email: [], whatsapp: [] };
-  // Keuze in het menu van de knop Versturen: alles, alleen WhatsApp of alleen mail
-  const d = { ...all, email: channel === "whatsapp" ? [] : all.email, whatsapp: channel === "email" ? [] : all.whatsapp };
+  // Keuze in het menu van de knop Versturen: alles, alleen WhatsApp, alleen mail of alleen sms (naar de WhatsApp-nummers)
+  const d = { ...all, email: channel === "whatsapp" || channel === "sms" ? [] : all.email, whatsapp: channel === "email" ? [] : all.whatsapp };
+  const byPhone = t(channel === "sms" ? "ls_by_sms" : "ls_by_wa");
   const now = new Date(), today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
-  const to = [...d.email.map(a => `<li>${esc(t("ls_by_mail"))}: <b>${esc(a)}</b></li>`), ...d.whatsapp.map(a => `<li>${esc(t("ls_by_wa"))}: <b>${esc(a)}</b>${d.phone_on === false ? ` <span class="muted">(${esc(t("ls_wa_off"))})</span>` : ""}</li>`)];
+  const to = [...d.email.map(a => `<li>${esc(t("ls_by_mail"))}: <b>${esc(a)}</b></li>`), ...d.whatsapp.map(a => `<li>${esc(byPhone)}: <b>${esc(a)}</b>${d.phone_on === false ? ` <span class="muted">(${esc(t("ls_wa_off"))})</span>` : ""}</li>`)];
   if (!to.length) { notice(t("ls_no_to")); return; }
   const warn = [];
   if (day < today) warn.push(`<div class="note err"><b>${esc(t("ls_past", dayLong(day)))}</b></div>`);

@@ -371,8 +371,8 @@ def admin_api(req: func.HttpRequest) -> func.HttpResponse:
                     note = str((req.get_json() or {}).get("note") or "")
                 except ValueError:
                     note = ""
-                channel = req.params.get("channel", "")  # leeg = alles, email of whatsapp = alleen dat kanaal
-                if channel not in ("", "email", "whatsapp"):
+                channel = req.params.get("channel", "")  # leeg = alles, email, whatsapp of sms = alleen dat kanaal
+                if channel not in ("", "email", "whatsapp", "sms"):
                     return _json(400, {"error": "channel"})
                 return _json(200, daily_lists.send_saved(hotel, kind, day, by=_admin_user(req) or "", note=note,
                                                          channel=channel))

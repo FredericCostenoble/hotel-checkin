@@ -630,7 +630,7 @@ def test_manual_day_is_today_plus_day_also_after_the_hour(setup):
 
 
 def test_send_saved_only_one_channel(setup, monkeypatch):
-    """Menu van de knop Versturen: alleen mail of alleen WhatsApp."""
+    """Menu van de knop Versturen: alleen mail, alleen WhatsApp of alleen sms (naar de WhatsApp-nummers)."""
     from hotel_checkin.processes import send_messages
 
     monkeypatch.setenv("TWILIO_AUTH_TOKEN", "token")
@@ -648,6 +648,11 @@ def test_send_saved_only_one_channel(setup, monkeypatch):
     assert res["ok"] and [s["channel"] for s in res["sent"]] == ["whatsapp"] and len(setup) == mails
     res = dl.send_saved("lucca", "breakfast", DAY, by="fred", channel="email")
     assert [s["channel"] for s in res["sent"]] == ["email"] and len(wa) == 1
+    texts = []
+    monkeypatch.setattr("hotel_checkin.messaging.sms.send_sms",
+                        lambda h, to, body, **k: texts.append(to) or SendResult(Channel.SMS, to, True))
+    res = dl.send_saved("lucca", "breakfast", DAY, by="fred", channel="sms")
+    assert [s["channel"] for s in res["sent"]] == ["sms"] and texts == ["+32470123456"] and len(wa) == 1
     with pytest.raises(ValueError):
         dl.send_saved("lucca", "breakfast", DAY, channel="fax")
 
