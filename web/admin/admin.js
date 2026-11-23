@@ -242,7 +242,7 @@ Object.assign(T.nl, {
   d_contact: "Contact", d_src: x => `bron: ${x}`, d_add: "Adres toevoegen", d_add_ph: "E-mailadres of gsm-nummer (+32...)", d_data: "Gegevens",
   d_k_chan: "Kanaal", d_k_flow: "Flow", d_k_rate: "Tarief", d_k_booked: "Geboekt op", d_k_added: "Toegevoegd", d_k_updated: "Bijgewerkt", d_nrf: "niet annuleerbaar", d_flex: "annuleerbaar",
   d_door: "Voordeur", d_moves: "Kamerwissel", d_pins_when: d => `Gemaakt bij Salto op ${d}.`, d_pins_when_pms: (a, b) => `Gemaakt bij Salto op ${a} en in Lighthouse gezet op ${b}.`, d_pins_in_pms: "In Lighthouse gezet.",
-  l_sub: "Ontbijt en schoonmaak", l_make_title: "Lijst maken", l_last: n => "Laatste lijsten", l_all: "Alle lijsten", l_c_list: "Lijst", l_c_made: "Gemaakt op", l_c_sent: "Verstuurd naar",
+  l_sub: "Ontbijt en schoonmaak", l_make_title: "Lijst maken", l_last: n => "Laatste lijsten", l_make_k: { breakfast: "Ontbijtlijst maken", cleaning: "Schoonmaaklijst maken" }, l_last_k: { breakfast: "Laatste ontbijtlijsten", cleaning: "Laatste schoonmaaklijsten" }, l_all: "Alle lijsten", l_c_list: "Lijst", l_c_made: "Gemaakt op", l_c_sent: "Verstuurd naar",
   l_preview: "Voorbeeld zoals geprint", l_title_breakfast: d => `Ontbijtlijst ${d}`, l_title_cleaning: d => `Schoonmaaklijst ${d}`, l_made_by: (w, b) => `gemaakt ${w} door ${b}`,
   l_sent: x => `Verstuurd: ${x}`, l_not_sent: "Niet verstuurd", l_none_sel: "Kies een lijst om te bekijken.", l_mail: n => `mail ${n}`, l_wa: n => `WhatsApp ${n}`, l_sms: n => `sms ${n}`, l_failed: "Mislukt",
   gc_uit: "Uit", gc_selectie: "Selectie", gc_aan: "Aan", gc_uit_help: "Er gaat niets naar gasten.", gc_selectie_help: "Alleen reservaties die je zelf aanzet. Om te testen.", gc_aan_help: "Alle reservaties, behalve wie je uitvinkt.",
@@ -334,7 +334,7 @@ Object.assign(T.en, {
   d_contact: "Contact", d_src: x => `source: ${x}`, d_add: "Add address", d_add_ph: "E-mail address or mobile number (+32...)", d_data: "Details",
   d_k_chan: "Channel", d_k_flow: "Flow", d_k_rate: "Rate", d_k_booked: "Booked on", d_k_added: "Added", d_k_updated: "Updated", d_nrf: "non-refundable", d_flex: "refundable",
   d_door: "Front door", d_moves: "Room change", d_pins_when: d => `Created at Salto on ${d}.`, d_pins_when_pms: (a, b) => `Created at Salto on ${a} and set in Lighthouse on ${b}.`, d_pins_in_pms: "Set in Lighthouse.",
-  l_sub: "Breakfast and cleaning", l_make_title: "Make a list", l_last: n => "Latest lists", l_all: "All lists", l_c_list: "List", l_c_made: "Made on", l_c_sent: "Sent to",
+  l_sub: "Breakfast and cleaning", l_make_title: "Make a list", l_last: n => "Latest lists", l_make_k: { breakfast: "Make a breakfast list", cleaning: "Make a cleaning list" }, l_last_k: { breakfast: "Latest breakfast lists", cleaning: "Latest cleaning lists" }, l_all: "All lists", l_c_list: "List", l_c_made: "Made on", l_c_sent: "Sent to",
   l_preview: "Preview as printed", l_title_breakfast: d => `Breakfast list ${d}`, l_title_cleaning: d => `Cleaning list ${d}`, l_made_by: (w, b) => `made ${w} by ${b}`,
   l_sent: x => `Sent: ${x}`, l_not_sent: "Not sent", l_none_sel: "Choose a list to view.", l_mail: n => `mail ${n}`, l_wa: n => `WhatsApp ${n}`, l_sms: n => `SMS ${n}`, l_failed: "Failed",
   gc_uit: "Off", gc_selectie: "Selection", gc_aan: "On", gc_uit_help: "Nothing goes to guests.", gc_selectie_help: "Only reservations you switch on yourself. For testing.", gc_aan_help: "All reservations, except the ones you untick.",
@@ -3211,6 +3211,9 @@ function renderList(kind) {
   const d = listData[kind];
   if (!$("#list-rows") || kind !== listKind) return;
   document.querySelectorAll("#list-kind label").forEach(l => l.classList.toggle("on", l.dataset.kind === kind));
+  // Titels zeggen welke soort lijst gekozen is (keuze bovenaan)
+  const mk = document.querySelector('#tab-lists [data-t="l_make_title"]'), la = document.querySelector('#tab-lists [data-t="l_last"]');
+  if (mk) mk.textContent = (T[lang] || T.en).l_make_k[kind]; if (la) la.textContent = (T[lang] || T.en).l_last_k[kind];
   if (listSel && !listSel.startsWith(kind + ":")) listSel = "";  // de keuze bovenaan geldt voor alles: maken, lijsten en voorbeeld
   const dayInput = $("#list-day");
   if (d && (dayInput.dataset.kind !== kind + $("#hotel").value)) { dayInput.value = listDay[kind] || d.manual_day || d.next_day; dayInput.dataset.kind = kind + $("#hotel").value; }
@@ -3261,8 +3264,8 @@ function renderList(kind) {
   const [sk, sd] = listSel.split(":"), x = (listData[sk]?.records || []).find(r => r.day === sd);
   const hotel = encodeURIComponent($("#hotel").value);
   $("#list-preview").innerHTML = x ? `<div class="row" style="justify-content:space-between"><div class="lbl">${esc(t("l_preview"))}</div><div class="row">
-      <div class="seg v2" role="radiogroup" aria-label="Taal van de lijst">${["nl", "en"].map(l =>
-        `<label class="${l === paperLang ? "on" : ""}" data-plang="${l}" style="min-height:32px;padding:0 10px;font-size:13px"><input type="radio" name="plang" ${l === paperLang ? "checked" : ""}>${l.toUpperCase()}</label>`).join("")}</div>
+      <div class="seg v2" role="radiogroup" aria-label="Taal van de lijst" style="height:32px;box-sizing:border-box">${["nl", "en"].map(l =>
+        `<label class="${l === paperLang ? "on" : ""}" data-plang="${l}" style="min-height:0;height:100%;padding:0 10px;font-size:13px"><input type="radio" name="plang" ${l === paperLang ? "checked" : ""}>${l.toUpperCase()}</label>`).join("")}</div>
       <a class="btn2 sm" href="${API}/api/monitor/${hotel}/list-xlsx?kind=${sk}&day=${esc(sd)}">${DL}Excel</a>
       <a class="btn2 sm" href="${API}/api/monitor/${hotel}/list-pdf?kind=${sk}&day=${esc(sd)}">${DL}PDF</a>
       <span style="position:relative;display:inline-flex"><button class="btn sm" type="button" id="list-send-saved" style="border-top-right-radius:0;border-bottom-right-radius:0">${IC('<path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4z"/>', 14)}${esc(t("ls_send"))}</button><button class="btn sm" type="button" id="list-send-more" aria-haspopup="true" aria-expanded="false" aria-label="${esc(t("ls_more"))}" style="border-top-left-radius:0;border-bottom-left-radius:0;border-left:1px solid rgba(255,255,255,.35);padding-left:8px;padding-right:8px">${IC('<path d="M6 9l6 6 6-6"/>', 14)}</button>
