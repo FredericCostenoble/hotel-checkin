@@ -106,5 +106,17 @@ def different_pairs(hotel_id: str) -> set[str]:
     return {e["RowKey"] for e in rows if e.get("decision") == "different"}
 
 
+def mark_shared(hotel_id: str, value: str) -> None:
+    """Onthoud dat een nummer of adres van een boekingssite of bureau is, niet van een gast (keuze in de monitor),
+    bv. het vaste nummer van Expedia. Nooit meer een reden om gasten samen te voegen."""
+    _table(T_PAIRS).upsert_entity({"PartitionKey": _key(hotel_id), "RowKey": "shared:" + value.strip().lower(),
+                                   "decision": "shared", "at": _now().isoformat()})
+
+
+def shared_contacts(hotel_id: str) -> set[str]:
+    rows = _table(T_PAIRS).query_entities(f"PartitionKey eq '{_q(_key(hotel_id))}'")
+    return {e["RowKey"].split(":", 1)[1] for e in rows if e.get("decision") == "shared"}
+
+
 def is_marked_different(pairs: set[str], a: str, b: str) -> bool:
     return _pair_key(a, b) in pairs

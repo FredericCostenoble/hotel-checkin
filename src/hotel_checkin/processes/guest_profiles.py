@@ -570,13 +570,14 @@ def possible_matches(hotel_id: str, limit: int = 50) -> list[dict]:
     seen: set[tuple[str, str]] = set()
     out: list[dict] = []
 
-    def add(a: GuestProfile, b: GuestProfile, reason: str, contact: str = "") -> bool:
+    def add(a: GuestProfile, b: GuestProfile, reason: str, contact: str = "", hint: dict | None = None) -> bool:
         """Voeg het paar toe als het nieuw is. True = de limiet is bereikt."""
         pair = tuple(sorted((a.guest_id, b.guest_id)))
         if a.guest_id == b.guest_id or pair in seen or profiles.is_marked_different(different, *pair):
             return False
         seen.add(pair)
-        out.append({"a": pair[0], "b": pair[1], "reason": reason, **({"contact": contact} if contact else {})})
+        out.append({"a": pair[0], "b": pair[1], "reason": reason, **({"contact": contact} if contact else {}),
+                    **(hint or {})})
         return len(out) >= limit
 
     # extra adres of nummer uit het formulier van de ene gast = adres of nummer van de andere:
@@ -589,15 +590,21 @@ def possible_matches(hotel_id: str, limit: int = 50) -> list[dict]:
         for v in contacts[g.guest_id] | extra:
             if v and (("@" not in v) or is_own_email(v)):
                 by_contact.setdefault(v, []).append(g)
+    shared = profiles.shared_contacts(hotel_id)
     for value, group in by_contact.items():
-        # Een nummer of adres bij SHARED_NAMES of meer verschillende namen is geen gast maar van de boekingssite of
-        # een bureau (bv. het vaste nummer van Expedia, +61730836162): niet als reden om samen te voegen.
-        if len({canonical_name(g.first_name, g.last_name) for g in group}) >= SHARED_NAMES:
+        # In de monitor aangeduid als nummer of adres van een boekingssite of bureau (bv. het vaste nummer van
+        # Expedia): geen reden om samen te voegen. Staat het bij SHARED_NAMES of meer namen, dan toont de monitor
+        # dat erbij (bij hoeveel gasten, via welke kanalen), maar beslissen doet de gebruiker: een gezin kan ook.
+        if value.lower() in shared:
             continue
+        names = {canonical_name(g.first_name, g.last_name) for g in group}
+        hint = {}
+        if len(names) >= SHARED_NAMES:
+            hint = {"shared_names": len(names), "shared_channels": sorted({c for g in group for c in g.channels})}
         for i, a in enumerate(group):
             for b in group[i + 1:]:
                 both_own = value in contacts[a.guest_id] and value in contacts[b.guest_id]
-                if add(a, b, "same_contact" if both_own else "extra_contact", value):
+                if add(a, b, "same_contact" if both_own else "extra_contact", value, hint):
                     return out
 
     pool = [g for g in all_profiles if g.first_name or g.last_name]

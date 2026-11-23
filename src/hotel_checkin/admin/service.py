@@ -392,6 +392,16 @@ def guests_page(hotel_id: str, q: str = "", sort: str = "last_stay", desc: bool 
     return out
 
 
+def mark_shared_contact(hotel_id: str, value: str) -> bool:
+    """Monitor: dit nummer of adres is van een boekingssite of bureau, nooit een reden om gasten samen te voegen."""
+    from hotel_checkin.guests import profiles
+
+    if hotel_id not in list_hotels() or not value.strip():
+        return False
+    profiles.mark_shared(hotel_id, value)
+    return True
+
+
 def merge_guests(hotel_id: str, keep: str, other: str) -> bool:
     from hotel_checkin.processes import guest_profiles
 

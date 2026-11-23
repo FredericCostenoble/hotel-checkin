@@ -360,7 +360,8 @@ def test_robot_follows_the_ticks_per_address_and_merge_keeps_them():
 
 
 def test_shared_number_of_booking_site_is_not_a_reason():
-    """Het vaste nummer van Expedia (+61730836162) staat bij veel verschillende gasten: geen voorstel om samen te voegen."""
+    """Het vaste nummer van Expedia (+61730836162) staat bij veel verschillende gasten: voorgesteld met die vermelding,
+    tot de gebruiker het aanduidt als nummer van de boekingssite (een gezin kan ook)."""
     from hotel_checkin.guests import profiles
     from hotel_checkin.processes import guest_profiles
 
@@ -368,4 +369,7 @@ def test_shared_number_of_booking_site_is_not_a_reason():
         g = profiles.new_profile("lucca")
         g.first_name, g.last_name, g.phone = first, last, "+61730836162"
         profiles.save_profile(g)
+    m = [m for m in guest_profiles.possible_matches("lucca") if m.get("contact") == "+61730836162"]
+    assert m and all(x["shared_names"] == 3 for x in m)  # voorgesteld, met de vermelding: bij 3 namen
+    profiles.mark_shared("lucca", "+61730836162")  # in de monitor: nummer van de boekingssite
     assert not [m for m in guest_profiles.possible_matches("lucca") if m.get("contact") == "+61730836162"]

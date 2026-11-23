@@ -82,7 +82,7 @@ const T = {
     g_channel: "Kanaal", g_rooms: "Kamers", g_relay: "doorstuuradres, niet voor marketing", g_form: "formulier",
     g_optout: "geen marketing", no_guests: "Nog geen gasten (klik op Synchroniseren)",
     m_title: n => `Mogelijke dubbels (${n})`, m_help: "Zelfde of bijna dezelfde naam in hetzelfde land. Nooit automatisch samengevoegd.",
-    m_same_name: "zelfde naam", m_same_contact: "zelfde e-mailadres of gsm-nummer, andere naam (partner of familie?)", m_extra_contact: "extra adres of nummer van de ene is dat van de andere (zelfde persoon of partner?)", m_similar_name: "bijna zelfde naam", m_merge: "Samenvoegen", m_open_profile: "profiel openen", m_f_email: "E-mail", m_f_relay: "Doorstuuradres", m_f_phone: "Gsm", m_f_country: "Land, taal", m_f_channel: "Kanaal", m_f_stays: "Reservaties", m_f_res: "reservaties", m_f_st: "verblijven", m_f_rooms: "Kamers", m_different: "Andere persoon",
+    m_same_name: "zelfde naam", m_same_contact: "zelfde e-mailadres of gsm-nummer, andere naam (partner of familie?)", m_extra_contact: "extra adres of nummer van de ene is dat van de andere (zelfde persoon of partner?)", m_similar_name: "bijna zelfde naam", m_merge: "Samenvoegen", m_shared_hint: (v, n, ch) => `${v} staat bij ${n} gasten met een andere naam${ch ? " (" + ch + ")" : ""}: misschien van de boekingssite of een bureau.`, m_shared_btn: "Nummer van boekingssite of bureau", m_shared_q: v => `${v} is van een boekingssite of bureau, niet van een gast? Het is dan nooit meer een reden om gasten samen te voegen.`, m_open_profile: "profiel openen", m_f_email: "E-mail", m_f_relay: "Doorstuuradres", m_f_phone: "Gsm", m_f_country: "Land, taal", m_f_channel: "Kanaal", m_f_stays: "Reservaties", m_f_res: "reservaties", m_f_st: "verblijven", m_f_rooms: "Kamers", m_different: "Andere persoon",
     m_confirm: "Deze twee gasten samenvoegen tot één?", reset: "Filter wissen",
     search: "Zoek op naam, nummer, e-mail", stay_from: "Verblijf van", stay_to: "tot", from_today: "Vanaf vandaag",
     c_arrival: "Aankomst", c_departure: "Vertrek", c_number: "Nummer", c_guest: "Gast", c_pers: "Pers.",
@@ -177,7 +177,7 @@ const T = {
     g_channel: "Channel", g_rooms: "Rooms", g_relay: "relay address, not for marketing", g_form: "form",
     g_optout: "no marketing", no_guests: "No guests yet (click Synchronize)",
     m_title: n => `Possible duplicates (${n})`, m_help: "Same or almost the same name in the same country. Never merged automatically.",
-    m_same_name: "same name", m_same_contact: "same e-mail or mobile number, different name (partner or family?)", m_extra_contact: "extra address or number of one is that of the other (same person or partner?)", m_similar_name: "similar name", m_merge: "Merge", m_open_profile: "open profile", m_f_email: "E-mail", m_f_relay: "Relay address", m_f_phone: "Mobile", m_f_country: "Country, language", m_f_channel: "Channel", m_f_stays: "Reservations", m_f_res: "reservations", m_f_st: "stays", m_f_rooms: "Rooms", m_different: "Different person",
+    m_same_name: "same name", m_same_contact: "same e-mail or mobile number, different name (partner or family?)", m_extra_contact: "extra address or number of one is that of the other (same person or partner?)", m_similar_name: "similar name", m_merge: "Merge", m_shared_hint: (v, n, ch) => `${v} appears with ${n} guests with a different name${ch ? " (" + ch + ")" : ""}: maybe from the booking site or an agency.`, m_shared_btn: "Number of booking site or agency", m_shared_q: v => `${v} belongs to a booking site or agency, not to a guest? It will then never again be a reason to merge guests.`, m_open_profile: "open profile", m_f_email: "E-mail", m_f_relay: "Relay address", m_f_phone: "Mobile", m_f_country: "Country, language", m_f_channel: "Channel", m_f_stays: "Reservations", m_f_res: "reservations", m_f_st: "stays", m_f_rooms: "Rooms", m_different: "Different person",
     m_confirm: "Merge these two guests into one?", reset: "Clear filter",
     search: "Search name, number, e-mail", stay_from: "Stay from", stay_to: "to", from_today: "From today",
     c_arrival: "Arrival", c_departure: "Departure", c_number: "Number", c_guest: "Guest", c_pers: "Pers.",
@@ -1659,8 +1659,14 @@ function renderMatches() {
       ${line(t("m_f_rooms"), uniq(g.rooms || []))}</div>`;
   };
   $("#matches").innerHTML = m.map(x => `<div class="note warn" style="flex-wrap:wrap"><details style="flex:1 1 280px"><summary style="cursor:pointer">${who(guestById(x.a))} ${esc(t("m_and"))} ${who(guestById(x.b))}: ${esc(t("m_" + x.reason))}${x.contact ? ` (${esc(x.contact)})` : ""}</summary>
-    <div class="row small" style="align-items:flex-start;gap:16px;margin-top:8px">${facts(guestById(x.a), x.contact)}${facts(guestById(x.b), x.contact)}</div></details>
+    <div class="row small" style="align-items:flex-start;gap:16px;margin-top:8px">${facts(guestById(x.a), x.contact)}${facts(guestById(x.b), x.contact)}</div>
+    ${x.contact ? `<div class="row small" style="margin-top:8px;gap:8px">${x.shared_names ? `<span><b>${esc(t("m_shared_hint", x.contact, x.shared_names, (x.shared_channels || []).join(", ")))}</b></span>` : ""}<button class="btn2 sm" type="button" data-shared="${esc(x.contact)}">${esc(t("m_shared_btn"))}</button></div>` : ""}</details>
     <div class="row"><button class="btn sm" type="button" data-act="merge" data-a="${esc(x.a)}" data-b="${esc(x.b)}">${esc(t("m_keep"))}</button><button class="btn2 sm" type="button" data-act="different" data-a="${esc(x.a)}" data-b="${esc(x.b)}">${esc(t("m_apart"))}</button></div></div>`).join("");
+  document.querySelectorAll("#matches [data-shared]").forEach(b => b.onclick = async () => {
+    if (!await ask(t("m_shared_q", b.dataset.shared), { ok: t("m_shared_btn") })) return;
+    await get(`/api/monitor/${$("#hotel").value}/guests?action=shared&value=${encodeURIComponent(b.dataset.shared)}`, { method: "POST" });
+    loadGuests();
+  });
   document.querySelectorAll("#matches [data-open-guest]").forEach(a => a.onclick = e => { e.preventDefault(); openGuest(a.dataset.openGuest); });
   document.querySelectorAll("#matches button").forEach(b => b.onclick = async () => {
     if (b.dataset.act === "merge" && !await ask(t("m_confirm"), { ok: t("m_keep") })) return;
