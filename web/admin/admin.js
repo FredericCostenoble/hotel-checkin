@@ -461,7 +461,7 @@ function dialog(text, { ok, cancel = true, danger = false, title = "", html = ""
         e.preventDefault(); b[(i + (e.shiftKey ? b.length - 1 : 1)) % b.length].focus();
       }
     };
-    back.addEventListener("click", e => { if (e.target === back) done(!cancel); });
+    // Klikken naast de popup sluit ze niet: alleen de knoppen in de popup (of Escape)
     back.querySelectorAll("button").forEach(b => b.onclick = () => done(b.dataset.v === "1"));
     document.addEventListener("keydown", key, true);
     document.body.appendChild(back);
@@ -676,7 +676,6 @@ async function init() {
     $("#g-search-reset").onclick = () => { $("#g-search").value = ""; gFilterChanged(); };
     $("#g-update").onclick = updateGuests;
     $("#msgs-close").onclick = () => { $("#msgs").hidden = true; };
-    $("#msgs").onclick = e => { if (e.target.id === "msgs") $("#msgs").hidden = true; };
     document.querySelectorAll("#g-head th[data-gsort]").forEach(th => th.onclick = () => gSortBy(th.dataset.gsort));
     $("#search").oninput = () => resFilterChanged(250);
     document.querySelectorAll("#res-head th[data-sort]").forEach(th => th.onclick = () => sortBy(th.dataset.sort));
@@ -704,7 +703,6 @@ async function init() {
     $("#wf-reset").onclick = resetWorkflow;
     $("#wf-cancel").onclick = () => location.reload();
     $("#pv-close").onclick = () => { $("#preview").hidden = true; };
-    $("#preview").onclick = e => { if (e.target.id === "preview") $("#preview").hidden = true; };
     $("#task").onchange = () => {
       taskFilter = $("#task").value;
       try { localStorage.setItem("monitor-task", taskFilter); } catch (e) { /* geen opslag */ }
