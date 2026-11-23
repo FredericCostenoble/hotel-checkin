@@ -577,6 +577,7 @@ function setLang(l) {
   store("lang", lang);
   document.documentElement.lang = lang;
   document.querySelectorAll("[data-t]").forEach(e => { e.textContent = t(e.dataset.t); });
+  const mkMore = document.getElementById("list-send-ch"); if (mkMore) mkMore.setAttribute("aria-label", t("ls_more"));
   document.querySelectorAll("[data-tp]").forEach(e => { e.placeholder = t(e.dataset.tp); });
   document.querySelectorAll("[data-tt]").forEach(e => { e.title = t(e.dataset.tt); });
   document.querySelectorAll("[data-lang]").forEach(b => { b.classList.toggle("active", b.dataset.lang === lang); b.classList.toggle("on", b.dataset.lang === lang); });
@@ -686,6 +687,11 @@ async function init() {
     watchMore("#res-more", () => { if (resNext != null && !resLoading) loadResPage(false); });
     $("#list-make").onclick = () => makeList(listKind, false);
     $("#list-send").onclick = () => makeList(listKind, true);
+    // Menu naast Maken en versturen: alles, alleen WhatsApp, alleen mail of alleen sms (zoals de knop Versturen)
+    const mkMenu = $("#list-make-menu"), mkMore = $("#list-send-ch");
+    mkMore.onclick = e => { e.stopPropagation(); mkMenu.hidden = !mkMenu.hidden; mkMore.setAttribute("aria-expanded", String(!mkMenu.hidden)); };
+    mkMenu.querySelectorAll("[data-make-ch]").forEach(b => b.onclick = () => { mkMenu.hidden = true; makeList(listKind, true, b.dataset.makeCh); });
+    document.addEventListener("click", e => { if (!e.target.closest("#list-make-menu, #list-send-ch")) { mkMenu.hidden = true; mkMore.setAttribute("aria-expanded", "false"); } });
     document.querySelectorAll("#tab-lists .seg label").forEach(l => l.onclick = e => { e.preventDefault(); showTab(l.dataset.kind); });
     $("#list-filter").onchange = () => renderList(listKind);
   } else {
@@ -3178,8 +3184,11 @@ async function loadList(kind) {
   renderList(listKind);
 }
 
-function recipients(d) {
-  return [...d.email, ...d.whatsapp.map(x => `${x} (${t("dl_wa")})`)].join(", ");
+// channel: leeg = alles, of alleen email, whatsapp of sms (sms gaat naar de WhatsApp-nummers)
+function recipients(d, channel = "") {
+  const mail = channel === "whatsapp" || channel === "sms" ? [] : d.email;
+  const phone = channel === "email" ? [] : d.whatsapp.map(x => `${x} (${channel === "sms" ? "sms" : t("dl_wa")})`);
+  return [...mail, ...phone].join(", ");
 }
 
 function sentCell(x) {
@@ -3326,17 +3335,17 @@ async function sendSavedList(kind, day, x, channel = "") {
   else notice(t("ls_fail", r.error || r.text || "?"));
 }
 
-async function makeList(kind, send) {
+async function makeList(kind, send, channel = "") {
   const day = $("#list-day").value;
   if (!day) return;
   const d = listData[kind];
-  if (send && !await ask(t("dl_confirm", dayLong(day), (d && recipients(d)) || t("dl_no_to")), { ok: t("dlg_send") })) return;
+  if (send && !await ask(t("dl_confirm", dayLong(day), (d && recipients(d, channel)) || t("dl_no_to")), { ok: t("dlg_send") })) return;
   const state = $("#list-state"), buttons = [$("#list-make"), $("#list-send")];
   buttons.forEach(b => { b.disabled = true; });
   state.style.color = "";
   state.textContent = t("dl_busy");
   try {
-    const r = await get(`/api/monitor/${$("#hotel").value}/lists?kind=${kind}&day=${day}${send ? "&send=1" : ""}`, { method: "POST" });
+    const r = await get(`/api/monitor/${$("#hotel").value}/lists?kind=${kind}&day=${day}${send ? "&send=1" : ""}${send && channel ? "&channel=" + channel : ""}`, { method: "POST" });
     if (r.requested) {  // de robot leest eerst Lighthouse; de lijst volgt
       await loadList(kind);
       if ((r.robot || "").startsWith("robot niet gestart")) { state.style.color = "#8B2E2E"; state.textContent = r.robot; }

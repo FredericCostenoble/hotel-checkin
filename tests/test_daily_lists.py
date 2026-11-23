@@ -661,3 +661,19 @@ def test_note_before_summary_gets_a_full_stop():
     assert dl._with_note("je lijstje", "13 persons in 6 rooms") == "je lijstje. 13 persons in 6 rooms"
     assert dl._with_note("Let op!", "13 persons") == "Let op! 13 persons"
     assert dl._with_note("", "13 persons") == "13 persons"
+
+
+def test_make_and_send_only_one_channel(setup, monkeypatch):
+    """Maken en versturen met het menu: het gekozen kanaal geldt ook voor het versturen na het maken."""
+    from hotel_checkin.processes import send_messages
+
+    orig = dl.settings
+    monkeypatch.setattr(dl, "settings", lambda h, k: orig(h, k) | {"whatsapp": ["+32470123456"]})
+    monkeypatch.setattr(send_messages, "phone_enabled", lambda h: True)
+    texts = []
+    monkeypatch.setattr("hotel_checkin.messaging.sms.send_sms",
+                        lambda h, to, body, **k: texts.append(to) or SendResult(Channel.SMS, to, True))
+    _r("a", "20", DAY - timedelta(days=1), 2, rate="STANDARD RATE BREAKFAST INCL")
+    mails = len(setup)
+    data = dl.generate("lucca", "breakfast", DAY, send_now=True, channel="sms")
+    assert [s["channel"] for s in data["sent"]] == ["sms"] and texts == ["+32470123456"] and len(setup) == mails

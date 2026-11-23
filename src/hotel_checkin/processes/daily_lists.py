@@ -789,8 +789,9 @@ def prune(hotel_id: str, kind: str, keep: int = KEEP) -> int:
 
 
 def generate(hotel_id: str, kind: str, day: date, by: str = "", send_now: bool = False, auto: bool = False,
-             fresh: str = "") -> dict:
-    """Lijst (opnieuw) maken voor die dag, bewaren en eventueel versturen. Eigen regel in het robotlog."""
+             fresh: str = "", channel: str = "") -> dict:
+    """Lijst (opnieuw) maken voor die dag, bewaren en eventueel versturen. Eigen regel in het robotlog.
+    channel: zoals bij send (knop Maken en versturen in de monitor), leeg = alles."""
     if kind not in KINDS:
         raise ValueError(kind)
     started = datetime.now(UTC)
@@ -801,7 +802,7 @@ def generate(hotel_id: str, kind: str, day: date, by: str = "", send_now: bool =
              "sent": old.get("sent", []), "sent_at": old.get("sent_at", "")}
     sent: list[dict] = []
     if send_now:
-        sent = send(hotel_id, data)
+        sent = send(hotel_id, data, channel=channel)
         data["sent"], data["sent_at"] = sent, data["generated_at"]
     guests.save_daily_list(hotel_id, kind, day.isoformat(), data)
     prune(hotel_id, kind)
@@ -938,7 +939,7 @@ def _start_robot(hotel_id: str, req: dict, now: datetime) -> str:
 
 
 def request(hotel_id: str, kind: str, day: date, by: str = "", send_now: bool = False, auto: bool = False,
-            now: datetime | None = None) -> dict:
+            now: datetime | None = None, channel: str = "") -> dict:
     """Een lijst vragen: de robot leest de reservaties van die dag en maakt de lijst; versturen alleen als gevraagd.
     Een nieuwe vraag voor dezelfde lijst vervangt de vorige (ook of ze verstuurd moet worden).
     Altijd via de robot (planbord en reservaties van die dag), ook met de schakelaar Reservaties uit of een
@@ -949,13 +950,14 @@ def request(hotel_id: str, kind: str, day: date, by: str = "", send_now: bool = 
         raise ValueError(kind)
     now = _now(now, hotel_id)
     if not cloud_robot.available():  # geen robot in de cloud (codespace, tests): meteen met wat er is
-        data = generate(hotel_id, kind, day, by=by, send_now=send_now, auto=auto)
+        data = generate(hotel_id, kind, day, by=by, send_now=send_now, auto=auto, channel=channel)
         return {"requested": False, "day": data["day"], "sent": data["sent"] if send_now else []}
     reqs = requests(hotel_id)
     key = f"{kind}:{day.isoformat()}"
     old = reqs.get(key, {})
     req = {"send": send_now or (auto and bool(old.get("send"))), "auto": auto, "by": by or "automatisch",
-           "at": now.isoformat(), "robot_at": None}  # een nieuwe vraag probeert de robot meteen te starten
+           "at": now.isoformat(), "robot_at": None,  # een nieuwe vraag probeert de robot meteen te starten
+           "channel": channel if send_now and not auto else ""}
     what = _start_robot(hotel_id, req, now)
     reqs[key] = req
     _save(hotel_id, REQUEST_STATE, reqs, now.date())
@@ -1036,13 +1038,13 @@ def robot_make(hotel_id: str, keys: list[str], now: datetime | None = None) -> l
     return done
 
 
-def send_stored(hotel_id: str, kind: str, day: date, auto: bool = False) -> list[dict]:
+def send_stored(hotel_id: str, kind: str, day: date, auto: bool = False, channel: str = "") -> list[dict]:
     """De bewaarde lijst versturen (Function App). Eigen regel in het robotlog."""
     started = datetime.now(UTC)
     data = guests.get_daily_list(hotel_id, kind, day.isoformat())
     if not data:
         raise RuntimeError("lijst niet gevonden")
-    sent = send(hotel_id, data)
+    sent = send(hotel_id, data, channel=channel)
     data["sent"], data["sent_at"] = sent, datetime.now(clock.tz(hotel_id)).isoformat(timespec="minutes")
     data["auto"] = data.get("auto") or auto
     guests.save_daily_list(hotel_id, kind, day.isoformat(), data)
@@ -1096,11 +1098,11 @@ def run(hotel_id: str, now: datetime | None = None) -> list[str]:
         try:
             if made is None:  # geen robot: met de bewaarde gegevens
                 generate(hotel_id, kind, day, by=req.get("by", ""), send_now=bool(req.get("send")),
-                         auto=bool(req.get("auto")),
+                         auto=bool(req.get("auto")), channel=req.get("channel", ""),
                          fresh=f"de robot maakte de lijst niet binnen {MAX_WAIT_MINUTES} minuten: gemaakt met de "
                                "gegevens die er waren")
             elif req.get("send"):
-                send_stored(hotel_id, kind, day, auto=bool(req.get("auto")))
+                send_stored(hotel_id, kind, day, auto=bool(req.get("auto")), channel=req.get("channel", ""))
             done.append(f"{kind} {day_iso}")
         except Exception as exc:
             logging.exception("%s: %s niet gemaakt of verstuurd", hotel_id, key)
