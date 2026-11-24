@@ -101,7 +101,7 @@ def test_cleaning_list(monkeypatch):
     assert r12["leave"] and r12["checkin"] and not r12["stay"]
     assert "3 pers." in r12["remark"] and "baby cot" in r12["remark"] and "Arrival" not in r12["remark"]
     r21 = _row(data, "21")
-    assert r21["stay"] and not r21["leave"] and "Romantische versiering" in r21["remark"]
+    assert r21["stay"] and not r21["leave"] and r21["remark"] == ""  # opmerkingen alleen bij een check in
     assert not any(_row(data, "24")[k] for k in ("leave", "stay", "checkin"))
     assert data["totals"] == {"leave": 1, "stay": 1, "checkin": 1}
     assert data["controle"] == "head of housekeeping" and data["extra_rows"] == ["TOILETTEN"]

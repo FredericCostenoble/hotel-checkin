@@ -14,8 +14,9 @@ bijgeboekte dag juist op de lijst komt. Kon hij de dagen niet lezen en is het on
 verblijf: de kamer komt in het geel, "nakijken". Meer kamers in één reservatie: de personen verdeeld over de kamers, met "together with room ...". Alle teksten op de lijsten in het Engels.
 
 Schoonmaaklijst voor dag D, per kamer: Leave (vertrek op D), Stay (aankomst voor D, vertrek na D), Check in (aankomst op D).
-Opmerkingen: zinnen uit de opmerking van de reservatie of lijnen van de folio met een van de woorden uit de
-instellingen ([kuislijst] woorden, bv. babybed, romantisch), en het aantal personen bij een check in.
+Opmerkingen alleen bij een check in (bij een stay ligt alles er al): zinnen uit de opmerking van de reservatie of
+lijnen van de folio met een van de woorden uit de instellingen ([kuislijst] woorden, bv. babybed, romantisch), en het
+aantal personen.
 
 Planbord: de robot leest bij elke gevraagde lijst het planbord van Lighthouse voor die dag (alleen lezen). Daarop is
 elke kamer een eigen blok met eigen aankomst, vertrek, aantal personen en labels, ook bij een groep met kamers op
@@ -474,8 +475,8 @@ def _cleaning_plan(day: date, reservations: list[Reservation], words: list[str],
             cur["leave"] = cur["leave"] or leave
             cur["stay"] = cur["stay"] or stay
             cur["checkin"] = cur["checkin"] or checkin
-            if not (stay or checkin):
-                continue  # wensen van wie vertrekt, gelden niet meer
+            if not checkin:
+                continue  # opmerkingen alleen bij een check in: bij een stay ligt alles er al (bv. romantische versiering)
             remark = []
             persons = _persons(x, r, st)
             if checkin and persons and twin.get("persons"):
@@ -538,8 +539,8 @@ def build_cleaning(hotel_id: str, day: date, reservations: list[Reservation], wo
             continue
         leave, checkin = r.departure == day, r.arrival == day
         stay = r.arrival < day < r.departure
-        found = wishes([r.internal_memo], wish_rules(hotel_id)) if (stay or checkin) else []  # alleen de interne memo
-        found += notes(_texts(r), words) if (stay or checkin) and cfg["notes"] else []
+        found = wishes([r.internal_memo], wish_rules(hotel_id)) if checkin else []  # alleen de interne memo
+        found += notes(_texts(r), words) if checkin and cfg["notes"] else []
         for room in r.rooms or ["?"]:
             cur = per_room.setdefault(room, {"leave": False, "stay": False, "checkin": False, "remark": "",
                                              "check": False})
