@@ -183,7 +183,8 @@ def handle(hotel_id: str, stored: Reservation, lh, today: date) -> tuple[str, st
 def check(r: Reservation, amount: float) -> str | None:
     """Mag dit bedrag geregistreerd worden? None = ja, anders de reden (voor de melding).
     - het bedrag = de kamerprijs in de folio (zonder toeristenbelasting en extra's);
-    - vermeldt Booking.com een geïnd bedrag, dan moet dat ook gelijk zijn;
+    - vermeldt Booking.com een geïnd bedrag, dan moet dat ook gelijk zijn (behalve 0 EUR bij een virtuele kaart:
+      dat zet Booking.com soms, terwijl het toch overschrijft);
     - het openstaande saldo is gekend en minstens dat bedrag (anders is er al iets betaald, bv. de virtuele
       kaart al aangerekend, of een vorige poging die toch gelukt is): nooit meer registreren dan wat open staat."""
     price = room_price(r)
@@ -192,6 +193,8 @@ def check(r: Reservation, amount: float) -> str | None:
     if abs(price - amount) > 0.01:
         return f"bedrag in de opmerking {amount:.2f} EUR, kamerprijs in de folio {price:.2f} EUR"
     collected = booking_collected(r.remarks)
+    if collected is not None and abs(collected) <= 0.01 and virtual_card(r.remarks):
+        collected = None  # Booking.com zet bij een virtuele kaart soms 0 EUR, terwijl het wel overschrijft
     if collected is not None and abs(collected - amount) > 0.01:
         return f"kamerprijs {amount:.2f} EUR, door Booking.com geïnd {collected:.2f} EUR"
     if r.open_amount is None:

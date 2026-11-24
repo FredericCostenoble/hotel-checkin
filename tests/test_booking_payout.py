@@ -147,6 +147,31 @@ def test_never_more_than_open_and_booking_amount_checked(monkeypatch):
     assert calls == []
 
 
+def test_virtual_card_zero_eur_still_registered(monkeypatch):
+    """Booking.com zet bij een virtuele kaart soms 0 EUR ('Payout type: Virtual credit card)0 EUR'), terwijl het
+    toch overschrijft: dan de kamerprijs registreren (CPB-4276-000824, 24/11)."""
+    monkeypatch.setenv("APP_ENV", "prd")
+    calls = []
+    remarks = ("ResGlobalInfo Booking.com PrePay:payment_on_Booking.com (Payout type: Virtual credit card)0 EUR"
+               "U heeft een virtuele creditcard\nAnnuleringsvoorwaarden : De gast betaalt de totaalprijs van de "
+               "reservering als hij/zij annuleert op elk moment.")
+    stored = repo.save_reservation(_r(remarks, 5, True))
+    detail = _r(remarks, 5, True)
+    monkeypatch.setattr(booking_payout.lighthouse, "get_reservation", lambda h, rid, lh, **k: detail)
+
+    def add(h, rid, method, amount, comment, lh, min_open=None):
+        calls.append((method, amount))
+        detail.transactions = ["Overschrijving", f"€ {amount}"]
+        return detail
+
+    monkeypatch.setattr(booking_payout.lighthouse, "add_payment", add)
+    assert booking_payout.handle("lucca", stored, None, date(2026, 11, 2))[0] == "registered"
+    assert calls == [("bank_transfer", 362.0)]
+    # een ander bedrag dan 0 dat niet klopt, blijft een probleem
+    assert "geïnd 300.00" in booking_payout.check(_r(VCC + "\nAlready collected by Booking.com: 300.00 EUR", 5, True),
+                                                   362.0)
+
+
 def test_flexible_rate_not_read_until_two_days(monkeypatch):
     cfg = __import__("hotel_checkin.core.workflow", fromlist=["config"]).config("lucca")
     monkeypatch.setenv("APP_ENV", "prd")
