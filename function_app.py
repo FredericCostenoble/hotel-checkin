@@ -64,6 +64,45 @@ def post_checkin(req: func.HttpRequest) -> func.HttpResponse:
     return _json(200 if ok else 400, {"ok": ok, "errors": errors})
 
 
+def _find_hotel(req: func.HttpRequest) -> str | None:
+    from hotel_checkin.core.hotels import list_hotels
+
+    h = req.route_params.get("hotel", "")
+    return h if h in list_hotels() else None
+
+
+@app.route(route="api/find/{hotel}", methods=["GET"], auth_level=func.AuthLevel.ANONYMOUS)
+def get_find(req: func.HttpRequest) -> func.HttpResponse:
+    """Pagina na de QR-code ter plaatse (web/checkin/find.html): hotelgegevens en de WhatsApp-link."""
+    from hotel_checkin.processes import find_stay
+
+    hotel = _find_hotel(req)
+    if not hotel:
+        return _json(404, {"error": "not_found"})
+    return _json(200, find_stay.page_info(hotel, (req.params.get("lang") or "en")[:2].lower()))
+
+
+@app.route(route="api/find/{hotel}", methods=["POST"], auth_level=func.AuthLevel.ANONYMOUS)
+def post_find(req: func.HttpRequest) -> func.HttpResponse:
+    """De gast vraagt de link naar zijn verblijfspagina opnieuw (processes/find_stay.py)."""
+    from hotel_checkin.processes import find_stay
+
+    hotel = _find_hotel(req)
+    if not hotel:
+        return _json(404, {"error": "not_found"})
+    try:
+        p = req.get_json()
+    except ValueError:
+        p = None
+    if not isinstance(p, dict):
+        return _json(400, {"status": "invalid"})
+    client = (req.headers.get("x-forwarded-for") or req.headers.get("x-client-ip") or "").split(",")[0].strip()
+    client = client.rsplit(":", 1)[0] if client.count(":") == 1 else client  # IPv4 met poort
+    res = find_stay.request(hotel, str(p.get("method", "")), str(p.get("value", "")), str(p.get("departure", "")),
+                            client=client)
+    return _json(429 if res["status"] == "limit" else 400 if res["status"] == "invalid" else 200, res)
+
+
 def _token_post(req: func.HttpRequest) -> tuple[str, dict]:
     try:
         p = req.get_json()

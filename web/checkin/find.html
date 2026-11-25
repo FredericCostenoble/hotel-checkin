@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#B4BCCC">
+<title>Hotel</title>
+<link rel="icon" id="favicon" type="image/svg+xml" href="favicon.svg">
+<link rel="stylesheet" href="style.css">
+</head>
+<!-- Pagina na de QR-code ter plaatse (aan de deur, in de kamer): de gast vraagt de link naar zijn verblijfspagina
+     opnieuw. Toont nooit iets van een reservatie; de link gaat alleen naar een adres of nummer uit de reservatie
+     (processes/find_stay.py). Adres: find.html?h=<hotel_id> -->
+<body>
+<div class="app">
+<header class="band">
+  <a id="logo-link" href="#" target="_blank" rel="noopener"><img id="logo" src="" alt=""></a>
+  <nav class="lang" aria-label="Language">
+    <button type="button" data-lang="nl">NL</button><button type="button" data-lang="fr">FR</button><button type="button" data-lang="en">EN</button><button type="button" data-lang="de">DE</button>
+  </nav>
+</header>
+
+<main class="cards">
+  <p id="loading" class="muted" data-t="loading"></p>
+
+  <section class="card" id="intro" hidden>
+    <p class="thanks" data-t="title"></p>
+    <p class="muted" data-t="intro"></p>
+  </section>
+
+  <section class="card" id="wa-card" hidden>
+    <h2 class="ct"><span data-t="wa_title"></span></h2>
+    <p data-t="wa_text"></p>
+    <a class="btn" id="wa-btn" href="#" target="_blank" rel="noopener"></a>
+  </section>
+
+  <section class="card" id="contact-card" hidden>
+    <h2 class="ct"><span data-t="contact_title"></span></h2>
+    <form id="contact-form" novalidate>
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <div class="field">
+          <label for="contact" data-t="contact_label"></label>
+          <input id="contact" class="input" type="text" inputmode="email" autocomplete="email" autocapitalize="off" spellcheck="false">
+          <p class="muted small" data-t="contact_hint"></p>
+        </div>
+        <button class="btn" type="submit" id="contact-btn" data-t="send"></button>
+        <div id="contact-result" class="note" hidden></div>
+      </div>
+    </form>
+  </section>
+
+  <section class="card" id="name-card" hidden>
+    <h2 class="ct"><span data-t="name_title"></span></h2>
+    <p class="muted" data-t="name_intro"></p>
+    <form id="name-form" novalidate>
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <div class="field">
+          <label for="last-name" data-t="last_name"></label>
+          <input id="last-name" class="input" type="text" autocomplete="family-name">
+        </div>
+        <div class="field">
+          <label for="departure" data-t="departure"></label>
+          <input id="departure" class="input" type="date">
+        </div>
+        <button class="btn" type="submit" id="name-btn" data-t="send"></button>
+        <div id="name-result" class="note" hidden></div>
+      </div>
+    </form>
+  </section>
+
+  <section class="card" id="help-card" hidden>
+    <p data-t="help"></p>
+    <a class="btn2" id="call-btn" href="#"></a>
+  </section>
+</main>
+</div>
+<script src="config.js"></script>
+<script src="find.js"></script>
+</body>
+</html>

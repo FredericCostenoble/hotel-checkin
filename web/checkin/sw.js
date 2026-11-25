@@ -1,7 +1,7 @@
 // Service worker van de gast-app: de pagina zelf (HTML, stijl, scripts) blijft op de gsm bewaard, zodat ze ook
 // zonder netwerk opent (bv. aan de deur). De gegevens (en de pincode) bewaart app.js zelf; de API gaat nooit via
 // deze cache. Eerst het netwerk, de bewaarde versie alleen als het netwerk niet antwoordt.
-const CACHE = "gastapp-v1";
+const CACHE = "gastapp-v2";
 const FILES = ["./", "index.html", "style.css", "app.js", "i18n.js", "countries.js", "config.js", "favicon.svg"];
 
 self.addEventListener("install", (e) => {

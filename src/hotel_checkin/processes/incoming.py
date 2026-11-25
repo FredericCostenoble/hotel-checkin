@@ -92,6 +92,14 @@ def handle(hotel_id: str, channel: str, number: str, body: str, media: int = 0, 
     from hotel_checkin.processes.send_messages import phone_enabled
 
     now = now or datetime.now(UTC)
+    # De vooraf ingevulde tekst van de QR-code ("Mijn verblijf"): de link terugsturen, niet doorsturen naar het hotel
+    from hotel_checkin.processes import find_stay
+
+    kw = find_stay.keyword_language(hotel_id, body) if phone_enabled(hotel_id) and not _staff(hotel_id, number) else None
+    if kw:
+        res = find_stay.reply_request(hotel_id, channel, number, kw, now=now)
+        return {"forwarded": False, "replied": res["replied"], "reservation": ",".join(res.get("reservations", [])),
+                "stay_link": res["status"]}
     r = _reservation(hotel_id, number, clock.today(hotel_id))
     mails = _mail(hotel_id, channel, number, body, media, r)
     out = {"forwarded": all(m.ok for m in mails), "replied": False, "reservation": r.reservation_id if r else ""}

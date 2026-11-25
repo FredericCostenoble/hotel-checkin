@@ -196,3 +196,13 @@ a.lnk { font-weight: 700; text-decoration: underline; text-underline-offset: 3px
 
 .foot { text-align: center; font-size: 13px; color: #565B66; padding: 0 16px 28px; line-height: 1.7; }
 .foot a { color: inherit; }
+
+/* Op het beginscherm zetten */
+.home-head { display: flex; gap: 14px; align-items: center; }
+.home-icon { width: 56px; height: 56px; border-radius: 13px; flex: none; box-shadow: 0 1px 3px rgba(43, 47, 56, .18); }
+.home-steps { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 10px; counter-reset: st; }
+.home-steps li { display: flex; gap: 12px; align-items: center; font-size: 16px; }
+.home-step-ic { flex: none; width: 38px; height: 38px; border-radius: 10px; background: #ECEEF3; color: var(--accd);
+  display: inline-flex; align-items: center; justify-content: center; }
+.linkbtn { background: none; border: 0; padding: 4px; font: inherit; font-size: 15px; color: #565B66; text-decoration: underline;
+  cursor: pointer; align-self: center; }

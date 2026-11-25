@@ -19,7 +19,8 @@ const API = window.CHECKIN_API || "";
     return;
   }
   params.delete("env");
-  const token = params.get("r") || "";
+  // Vanaf het beginscherm (Android) opent de app zonder ?r=: dan de laatst geopende verblijfspagina
+  const token = params.get("r") || (() => { try { return localStorage.getItem("gastapp:last") || ""; } catch (e) { return ""; } })();
   let lang = (params.get("lang") || (navigator.language || "en").slice(0, 2)).toLowerCase();
   if (!I18N[lang]) lang = "en";
   let langChosenByGuest = !!params.get("lang");
@@ -64,6 +65,9 @@ const API = window.CHECKIN_API || "";
     phone: (s) => svg('<path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"></path>', s),
     chat: (s) => svg('<path d="M21 12a8 8 0 0 1-11.6 7.1L4 20.5l1.4-5A8 8 0 1 1 21 12z"></path>', s),
     mail: (s) => svg('<rect x="3" y="5" width="18" height="14" rx="2"></rect><path d="M3 7l9 6 9-6"></path>', s),
+    share: (s) => svg('<path d="M12 3v12"></path><path d="M8 7l4-4 4 4"></path><path d="M6 11H5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-8a1 1 0 0 0-1-1h-1"></path>', s),
+    plus: (s) => svg('<rect x="4" y="4" width="16" height="16" rx="3"></rect><path d="M12 8v8M8 12h8"></path>', s),
+    dots: (s) => svg('<circle cx="12" cy="5" r="1.3"></circle><circle cx="12" cy="12" r="1.3"></circle><circle cx="12" cy="19" r="1.3"></circle>', s),
     lock: (s) => svg('<rect x="5" y="11" width="14" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path>', s || 24),
     arrow: () => svg('<path d="M5 12h14"></path><path d="M13 6l6 6-6 6"></path>', 26, 2.6),
     cup: (s) => svg('<path d="M4 9h13v5a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5z"></path><path d="M17 10h1.5a2.5 2.5 0 0 1 0 5H17"></path><path d="M8 3v3M12 3v3"></path>', s),
@@ -313,7 +317,68 @@ const API = window.CHECKIN_API || "";
   }
 
   // ------------------------------------------------------------ opbouw volgens de fase
-  const CARD_IDS = ["message-card", "intro-card", "after-card", "todo-card", "access-card", "contact-row", "details-card", "stay-card", "practical-card"];
+  const CARD_IDS = ["message-card", "intro-card", "after-card", "todo-card", "access-card", "home-card", "contact-row", "details-card", "stay-card", "practical-card"];
+
+  // ------------------------------------------------------------ op het beginscherm zetten
+  // Android (Chrome, Edge, Samsung): de knop vraagt het toestel om de app te installeren. iPhone en iPad: Apple laat
+  // dat niet toe vanuit een pagina, dus tonen we de drie tikken in Safari. Al op het beginscherm: geen kaart.
+  let installPrompt = null;
+  let homeHelp = false;
+  const ua = navigator.userAgent || "";
+  const isIos = /iPhone|iPad|iPod/.test(ua) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  const standalone = () => window.matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+  window.addEventListener("beforeinstallprompt", (e) => { e.preventDefault(); installPrompt = e; if (data) renderCards(); });
+  window.addEventListener("appinstalled", () => { installPrompt = null; store("gastapp:home", "1"); if (data) renderCards(); });
+
+  function homeWanted() {
+    return data && data.completed && (data.phase === "code" || data.phase === "stay") && !standalone()
+      && !stored("gastapp:home") && !stored("gastapp:home-no:" + token);
+  }
+
+  function homeHtml() {
+    const h = data.hotel;
+    const icon = h.app_icon ? `<img class="home-icon" src="${esc(h.app_icon)}" alt="" width="56" height="56">` : "";
+    let help = "";
+    if (homeHelp) {
+      const steps = isIos
+        ? [[I.share(20), t("home_ios_1")], [I.plus(20), t("home_ios_2")], [I.check(20), t("home_ios_3")]]
+        : [[I.dots(20), t("home_other_1")], [I.plus(20), t("home_other_2")]];
+      help = `<ol class="home-steps">${steps.map(([ic, s]) => `<li><span class="home-step-ic">${ic}</span><span>${esc(s)}</span></li>`).join("")}</ol>`;
+    }
+    return `<div class="home-head">${icon}<div><b>${esc(t("home_title"))}</b><div class="muted">${esc(t("home_text"))}</div></div></div>
+      ${homeHelp ? help : `<button class="btn" type="button" id="home-btn">${I.plus(22)}${esc(t("home_button"))}</button>`}
+      <button class="linkbtn" type="button" id="home-no">${esc(t(homeHelp ? "home_done" : "home_no"))}</button>`;
+  }
+
+  function wireHome() {
+    const b = $("home-btn");
+    if (b) b.addEventListener("click", async () => {
+      if (installPrompt) {
+        installPrompt.prompt();
+        const choice = await installPrompt.userChoice.catch(() => null);
+        installPrompt = null;
+        if (choice && choice.outcome === "accepted") store("gastapp:home", "1");
+      } else {
+        homeHelp = true;
+      }
+      renderCards();
+    });
+    const n = $("home-no");
+    if (n) n.addEventListener("click", () => { store("gastapp:home-no:" + token, "1"); renderCards(); });
+  }
+
+  function applyApp(h) {
+    // Icoon en naam op het beginscherm. Het manifest alleen voor Android: zonder manifest bewaart een iPhone de
+    // volledige link (met ?r=), en die is nodig omdat de app op een iPhone haar eigen opslag krijgt.
+    if (h.app_icon) $("touch-icon").href = h.app_icon;
+    $("app-title").content = h.name;
+    if (h.app_manifest && !isIos && !document.querySelector('link[rel="manifest"]')) {
+      const l = document.createElement("link");
+      l.rel = "manifest";
+      l.href = h.app_manifest;
+      document.head.appendChild(l);
+    }
+  }
 
   function place(order) {
     const cards = $("cards");
@@ -355,18 +420,21 @@ const API = window.CHECKIN_API || "";
       set("todo-card", todoHtml());
       set("stay-card", stayHtml());
       set("practical-card", practicalHtml());
-      order = ["access-card", "contact-row"].concat(payOpen() || payPending() ? ["todo-card"] : [], ["practical-card", "stay-card", "details-card"]);
+      if (homeWanted()) set("home-card", homeHtml());
+      order = ["access-card"].concat(homeWanted() ? ["home-card"] : [], ["contact-row"], payOpen() || payPending() ? ["todo-card"] : [], ["practical-card", "stay-card", "details-card"]);
     } else {
       set("intro-card", introHtml());
       set("todo-card", todoHtml());
       set("access-card", accessHtml());
       set("stay-card", stayHtml());
       set("practical-card", practicalHtml());
-      order = ["intro-card", "todo-card", "access-card", "details-card", "stay-card", "practical-card"];
+      if (homeWanted()) set("home-card", homeHtml());
+      order = ["intro-card", "todo-card", "access-card"].concat(homeWanted() ? ["home-card"] : [], ["details-card", "stay-card", "practical-card"]);
     }
     place(order);
     renderDetails();
     wireDynamic();
+    wireHome();
   }
 
   function renderDetails() {
@@ -585,7 +653,7 @@ const API = window.CHECKIN_API || "";
     if (res && res.ok) {
       data = await res.json();
       offline = false;
-      if (!data.demo) store(CACHE_KEY, JSON.stringify(data));  // zo blijft de code zichtbaar zonder netwerk
+      if (!data.demo) { store(CACHE_KEY, JSON.stringify(data)); store("gastapp:last", token); }  // ook zonder netwerk
     } else {
       const cached = stored(CACHE_KEY);
       if (!cached) { if (!data && !quiet) showMessage("notfound"); return; }
@@ -594,6 +662,7 @@ const API = window.CHECKIN_API || "";
     }
     if (data.pay && data.pay.paid && stored(PAY_KEY) && Date.now() - Number(stored(PAY_KEY)) > PAY_PENDING_MS) store(PAY_KEY, null);
     applyHotel(data.hotel);
+    applyApp(data.hotel);
     if (!langChosenByGuest && I18N[data.language]) lang = data.language;
     if (!formFilled) { fillForm(); formFilled = true; }
   }

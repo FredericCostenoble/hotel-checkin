@@ -329,3 +329,14 @@ link = "{betaal_link}"
 # Automatisch antwoord als een gast een WhatsApp of sms terugstuurt naar het nummer van de automatische berichten
 # (processes/incoming.py). Het bericht zelf gaat per mail naar het hotel ([twilio] doorsturen).
 antwoord = "{hotel_naam}: dit nummer verstuurt alleen automatische berichten. Uw bericht is doorgestuurd naar de receptie. Sneller antwoord krijgt u via WhatsApp op {twilio_contact_whatsapp} of telefonisch op {hotel_telefoon}."
+
+[find_stay]
+# Link naar de verblijfspagina op vraag van de gast ter plaatse (QR-code, processes/find_stay.py). {link} = de link.
+onderwerp = "Uw verblijfspagina in {hotel_naam}"
+mail = ["Beste {voornaam},", "U vroeg de link naar uw verblijfspagina. Daar vindt u uw pincode, opent u tijdens uw verblijf de deuren en vindt u alle praktische info.", "Vroeg u dit niet zelf? Dan hoeft u niets te doen."]
+knop = "Open mijn verblijfspagina"
+sms = "{hotel_naam}: uw verblijfspagina met uw pincode en alle info: {link}"
+# Vooraf ingevulde tekst als de gast via de QR-code een WhatsApp stuurt, en de antwoorden daarop (processes/incoming.py)
+whatsapp_tekst = "Mijn verblijf"
+whatsapp_gevonden = "Hallo {voornaam}, hier is uw verblijfspagina in {hotel_naam}, met uw pincode, de deuren en alle info: {link}"
+whatsapp_niet_gevonden = "{hotel_naam}: we vinden geen reservatie van vandaag of morgen met dit nummer. Gebruik de link in onze mail, of scan de QR-code opnieuw en kies e-mail of uw naam. Lukt het niet? Bel {hotel_telefoon}."

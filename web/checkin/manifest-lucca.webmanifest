@@ -1,0 +1,15 @@
+{
+  "name": "Hotel Lucca",
+  "short_name": "Hotel Lucca",
+  "id": "./?app=lucca",
+  "start_url": "./?app=lucca",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#F4F5F8",
+  "theme_color": "#B4BCCC",
+  "icons": [
+    {"src": "icons/lucca-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any"},
+    {"src": "icons/lucca-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any"},
+    {"src": "icons/lucca-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"}
+  ]
+}

@@ -2,6 +2,10 @@
 // Aanspreking zoals in de mails: u, vous, you, Sie.
 const I18N = {
   nl: {
+    home_title: "Op uw beginscherm", home_text: "Zet uw verblijfspagina als app op uw gsm. Zo opent u met één tik uw pincode en de deuren, ook zonder internet.",
+    home_button: "Zet op mijn beginscherm", home_no: "Niet nodig", home_done: "Klaar",
+    home_ios_1: "Tik op het deelicoon (vierkant met pijl omhoog), onderaan of bovenaan in Safari.", home_ios_2: "Scrol en kies \"Zet op beginscherm\".", home_ios_3: "Tik rechtsboven op \"Voeg toe\".",
+    home_other_1: "Open het menu van uw browser (de drie puntjes).", home_other_2: "Kies \"Toevoegen aan startscherm\" of \"App installeren\".",
     luggage: "U kunt uw bagage gratis bij ons achterlaten.", front_until: t => `Uw code opent de voordeur nog tot ${t} die dag, bv. om uw bagage op te halen.`,
     link_warning: "Geef deze link niet zomaar door: wie deze pagina heeft, kan uw pincode zien en tijdens uw verblijf uw kamer openen. Deel hem alleen met wie bij u verblijft.",
     lock_locked: "Slot vergrendeld", lock_unlocked: "Slot open", lock_offline: "Slot niet bereikbaar. Gebruik uw code.",
@@ -65,6 +69,10 @@ const I18N = {
     closed_title: "Verblijf afgelopen", closed_text: "Deze reservatie is afgelopen. Bedankt voor uw bezoek en graag tot een volgende keer.",
   },
   fr: {
+    home_title: "Sur votre écran d'accueil", home_text: "Placez votre page de séjour comme une app sur votre téléphone. Vous ouvrez ainsi votre code PIN et les portes d'un seul geste, même sans internet.",
+    home_button: "Ajouter à mon écran d'accueil", home_no: "Pas nécessaire", home_done: "Terminé",
+    home_ios_1: "Touchez l'icône de partage (carré avec une flèche vers le haut), en bas ou en haut dans Safari.", home_ios_2: "Faites défiler et choisissez \"Sur l'écran d'accueil\".", home_ios_3: "Touchez \"Ajouter\" en haut à droite.",
+    home_other_1: "Ouvrez le menu de votre navigateur (les trois points).", home_other_2: "Choisissez \"Ajouter à l'écran d'accueil\" ou \"Installer l'application\".",
     luggage: "Vous pouvez laisser vos bagages chez nous gratuitement.", front_until: t => `Votre code ouvre encore la porte d'entrée jusqu'à ${t} ce jour-là, par exemple pour récupérer vos bagages.`,
     link_warning: "Ne transmettez pas ce lien à n'importe qui : avec cette page, on peut voir votre code PIN et ouvrir votre chambre pendant votre séjour. Partagez-le uniquement avec les personnes qui séjournent avec vous.",
     lock_locked: "Serrure verrouillée", lock_unlocked: "Serrure ouverte", lock_offline: "Serrure injoignable. Utilisez votre code.",
@@ -128,6 +136,10 @@ const I18N = {
     closed_title: "Séjour terminé", closed_text: "Cette réservation est terminée. Merci pour votre visite et à une prochaine fois.",
   },
   en: {
+    home_title: "On your home screen", home_text: "Put your stay page on your phone as an app. Open your PIN code and the doors with one tap, even without internet.",
+    home_button: "Add to my home screen", home_no: "Not needed", home_done: "Done",
+    home_ios_1: "Tap the share icon (square with an arrow up), at the bottom or top of Safari.", home_ios_2: "Scroll and choose \"Add to Home Screen\".", home_ios_3: "Tap \"Add\" at the top right.",
+    home_other_1: "Open your browser menu (the three dots).", home_other_2: "Choose \"Add to Home screen\" or \"Install app\".",
     luggage: "You are welcome to leave your luggage with us free of charge.", front_until: t => `Your code still opens the front door until ${t} that day, for example to collect your luggage.`,
     link_warning: "Do not pass this link on to just anyone: with this page, someone can see your PIN code and open your room during your stay. Only share it with the people staying with you.",
     lock_locked: "Lock locked", lock_unlocked: "Lock open", lock_offline: "Lock not reachable. Use your code.",
@@ -191,6 +203,10 @@ const I18N = {
     closed_title: "Stay completed", closed_text: "This reservation has ended. Thank you for your visit, we hope to see you again.",
   },
   de: {
+    home_title: "Auf Ihrem Home-Bildschirm", home_text: "Legen Sie Ihre Aufenthaltsseite als App auf Ihr Handy. So öffnen Sie Ihren PIN-Code und die Türen mit einem Tipp, auch ohne Internet.",
+    home_button: "Zu meinem Home-Bildschirm", home_no: "Nicht nötig", home_done: "Fertig",
+    home_ios_1: "Tippen Sie auf das Teilen-Symbol (Quadrat mit Pfeil nach oben), unten oder oben in Safari.", home_ios_2: "Scrollen Sie und wählen Sie \"Zum Home-Bildschirm\".", home_ios_3: "Tippen Sie oben rechts auf \"Hinzufügen\".",
+    home_other_1: "Öffnen Sie das Menü Ihres Browsers (die drei Punkte).", home_other_2: "Wählen Sie \"Zum Startbildschirm hinzufügen\" oder \"App installieren\".",
     luggage: "Ihr Gepäck können Sie kostenlos bei uns lassen.", front_until: t => `Ihr Code öffnet die Haustür an diesem Tag noch bis ${t} Uhr, zum Beispiel um Ihr Gepäck abzuholen.`,
     link_warning: "Geben Sie diesen Link nicht einfach weiter: Mit dieser Seite kann man Ihren PIN-Code sehen und während Ihres Aufenthalts Ihr Zimmer öffnen. Teilen Sie ihn nur mit den Personen, die mit Ihnen wohnen.",
     lock_locked: "Schloss verriegelt", lock_unlocked: "Schloss offen", lock_offline: "Schloss nicht erreichbar. Nutzen Sie Ihren Code.",

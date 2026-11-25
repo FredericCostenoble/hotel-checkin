@@ -58,3 +58,15 @@ def send_whatsapp_text(
     )
     result.to = to
     return result
+
+
+def chat_link(hotel_id: str, text: str = "") -> str:
+    """Link die WhatsApp opent met een chat naar het nummer van de automatische berichten (wa.me), met text al
+    ingevuld. Leeg als er geen nummer is."""
+    import re
+    from urllib.parse import quote
+
+    number = re.sub(r"\D", "", str(hotel_setting(hotel_id, "TWILIO_WHATSAPP_FROM", required=False, shared=False) or ""))
+    if not number:
+        return ""
+    return f"https://wa.me/{number}" + (f"?text={quote(text)}" if text else "")

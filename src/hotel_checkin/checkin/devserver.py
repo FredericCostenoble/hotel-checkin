@@ -206,6 +206,13 @@ class Handler(BaseHTTPRequestHandler):
             return None
         if path.startswith("/monitor/"):
             return self._file(ADMIN_WEB, path[len("/monitor/"):])
+        if path.startswith("/api/find/"):
+            from urllib.parse import parse_qs, urlparse
+
+            from hotel_checkin.processes import find_stay
+
+            q = {k: v[0] for k, v in parse_qs(urlparse(self.path).query).items()}
+            return self._json(200, find_stay.page_info(path.rsplit("/", 1)[1], q.get("lang", "nl")))
         if path.startswith("/api/checkin/") and path.endswith("/doors"):
             return self._json(200, {"doors": service.door_status(path.split("/")[3]) or {}})
         if path.startswith("/api/checkin/"):
@@ -221,6 +228,16 @@ class Handler(BaseHTTPRequestHandler):
         path = self.path.split("?")[0]
         if self._admin_api("POST", path):
             return None
+        if path.startswith("/api/find/"):
+            from hotel_checkin.processes import find_stay
+
+            try:
+                p = json.loads(self.rfile.read(int(self.headers.get("Content-Length", 0))) or b"{}")
+            except ValueError:
+                p = {}
+            res = find_stay.request(path.rsplit("/", 1)[1], str(p.get("method", "")), str(p.get("value", "")),
+                                    str(p.get("departure", "")), client=self.client_address[0])
+            return self._json(429 if res["status"] == "limit" else 400 if res["status"] == "invalid" else 200, res)
         if not path.startswith("/api/checkin/"):
             return self._send(404, b"Not found", "text/plain")
         parts = path[len("/api/checkin/"):].split("/")
