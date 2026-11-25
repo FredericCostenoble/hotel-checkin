@@ -56,11 +56,17 @@ achter de link, en het formulier stuurt de gast dan door naar hetzelfde adres me
 
 De teksten staan in `config/whatsapp/<hotel_id>.toml` en worden gewijzigd in de monitor. Plaatsen:
 confirmation en reminder {{1}} voornaam, {{2}} formulierlink vanaf het token (knop); access_code {{1}} kamer,
-{{2}} formulierlink vanaf het token (knop); room_change {{1}} kamer, {{2}} formulierlink vanaf het token (knop).
+{{2}} pincode, {{3}} formulierlink vanaf het token (knop); room_change {{1}} kamer, {{2}} formulierlink vanaf het
+token (knop).
 
-Nooit de pincode zelf (het getal) in WhatsApp: Meta keurde zulke sjablonen op 21/11/2026 af ("Category mismatch",
-moet Verificatie zijn). Het woord pincode mag in het Nederlands (goedgekeurd 22/11/2026); in FR, EN en DE werd
-"PIN code" afgewezen, daar staat het er niet in. De pincode staat in de code-mail en in de app achter de knop.
+De pincode in WhatsApp: Meta keurt zo'n sjabloon eerst automatisch af ("Category mismatch", moet Verificatie zijn,
+21/11/2026). Na bezwaar in WhatsApp Manager werd het testsjabloon lucca_test_access_nl_v1 met de pincode wel
+goedgekeurd (25/11/2026). Daarom staat de pincode alleen in access_code, met het woord "code" (niet "PIN": "PIN code"
+werd in FR, EN en DE afgewezen). Werkwijze: indienen in de monitor, bij een afwijzing per taal bezwaar aantekenen
+in WhatsApp Manager. Tot de nieuwe versie goedgekeurd is, blijft de vorige (zonder pincode, met de knop) in gebruik.
+
+Nieuwe plaatsen komen altijd achteraan. Elke versie bewaart welke plaatsen ze heeft (bij TST: het aantal plaatsen
+van het PRD-sjabloon bij Twilio), zodat een oudere goedgekeurde versie juist ingevuld wordt.
 De sms (terugval) bevat de pincode wel.
 
 Niet als sjabloon: de bedankmail na vertrek (alleen per mail) en het automatische antwoord op een bericht van de gast

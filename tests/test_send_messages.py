@@ -133,7 +133,7 @@ def _all_whatsapp(monkeypatch):
 def test_confirmation_only_by_mail(setup, monkeypatch):
     """Kanalen per stap (workflow): de bevestiging alleen per mail, ook met een gsm-nummer."""
     monkeypatch.setattr(send_messages, "phone_enabled", lambda h: True)
-    monkeypatch.setattr(send_messages, "whatsapp_template", lambda h, s, lang: "HX123")
+    monkeypatch.setattr(send_messages, "whatsapp_choice", lambda h, s, lang: ("HX123", send_messages.WHATSAPP_VARIABLES[s]))
     calls = []
     monkeypatch.setattr(send_messages.whatsapp, "send_whatsapp_template", lambda *a, **k: calls.append(a))
     r = _res("c1")
@@ -150,7 +150,7 @@ def test_confirmation_only_by_mail(setup, monkeypatch):
 def test_phone_whatsapp_then_sms_fallback(setup, monkeypatch):
     _all_whatsapp(monkeypatch)
     monkeypatch.setattr(send_messages, "phone_enabled", lambda h: True)
-    monkeypatch.setattr(send_messages, "whatsapp_template", lambda h, s, lang: "HX123")
+    monkeypatch.setattr(send_messages, "whatsapp_choice", lambda h, s, lang: ("HX123", send_messages.WHATSAPP_VARIABLES[s]))
     calls = []
     monkeypatch.setattr(send_messages.whatsapp, "send_whatsapp_template",
                         lambda h, to, sid, variables, status_callback=None: calls.append(("wa", variables))
@@ -261,7 +261,7 @@ def test_muted_email_for_guest(setup):
 def test_backup_contacts_get_messages_and_resend(setup, monkeypatch):
     _all_whatsapp(monkeypatch)
     monkeypatch.setattr(send_messages, "phone_enabled", lambda h: True)
-    monkeypatch.setattr(send_messages, "whatsapp_template", lambda h, s, lang: None)
+    monkeypatch.setattr(send_messages, "whatsapp_choice", lambda h, s, lang: (None, ()))
     texts = []
     monkeypatch.setattr(send_messages.sms, "send_sms",
                         lambda h, to, text, status_callback=None: texts.append(to) or SendResult(Channel.SMS, to, True))

@@ -55,23 +55,27 @@ button = "Daten prüfen"
 
 [access_code.nl]
 header = "Uw verblijf in Hotel Lucca"
-body = "Uw kamer {{1}} in Hotel Lucca is klaar voor uw aankomst. Via de knop hieronder vindt u uw persoonlijke pincode en alles om binnen te komen, met alle praktische info. Alles staat ook in uw mail."
+body = "Kamer {{1}}. Uw code voor de ingang en uw kamer: {{2}}, daarna de pijltoets ↵ op elk klavier. Alle info via de knop hieronder en in uw mail."
 button = "Uw reservatie"
+footer = "Hotel Lucca, Naaldenstraat 30, Brugge"
 
 [access_code.fr]
 header = "Votre séjour à l'Hotel Lucca"
-body = "Votre chambre {{1}} à l'Hotel Lucca est prête pour votre arrivée. Le bouton ci-dessous vous indique comment entrer, avec toutes les informations pratiques. Tout se trouve aussi dans votre e-mail."
+body = "Chambre {{1}}. Votre code pour l'entrée et votre chambre : {{2}}, puis la touche flèche ↵ sur chaque clavier. Toutes les infos via le bouton ci-dessous et dans votre e-mail."
 button = "Votre réservation"
+footer = "Hotel Lucca, Naaldenstraat 30, Brugge"
 
 [access_code.en]
 header = "Your stay at Hotel Lucca"
-body = "Your room {{1}} at Hotel Lucca is ready for your arrival. Use the button below to see how to get in, with all practical information. Everything is also in your email."
+body = "Room {{1}}. Your code for the entrance and your room: {{2}}, followed by the arrow key ↵ on each keypad. All details via the button below and in your email."
 button = "Your reservation"
+footer = "Hotel Lucca, Naaldenstraat 30, Brugge"
 
 [access_code.de]
 header = "Ihr Aufenthalt im Hotel Lucca"
-body = "Ihr Zimmer {{1}} im Hotel Lucca ist für Ihre Anreise bereit. Über die Schaltfläche unten sehen Sie, wie Sie hineinkommen, mit allen praktischen Informationen. Alles steht auch in Ihrer E-Mail."
+body = "Zimmer {{1}}. Ihr Code für den Eingang und Ihr Zimmer: {{2}}, danach die Pfeiltaste ↵ an jedem Tastenfeld. Alle Infos über die Schaltfläche unten und in Ihrer E-Mail."
 button = "Ihre Reservierung"
+footer = "Hotel Lucca, Naaldenstraat 30, Brugge"
 
 [room_change.nl]
 header = "Kamerwissel"

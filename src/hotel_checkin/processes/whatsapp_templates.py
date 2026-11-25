@@ -36,13 +36,15 @@ SOURCE_ENV = "prd"  # TST (en dev) gebruiken de sjablonen van PRD: niets apart i
 
 # Per bericht: de plaatsen in de tekst ({{1}}, {{2}}, ...) in volgorde, en of er een knop naar het check-in-formulier
 # (link) of een pdf bovenaan (media) bij hoort. De laatste plaats is dan het variabele einde van dat adres.
-# Moet overeenkomen met send_messages.WHATSAPP_VARIABLES en daily_lists._send_phone.
-# Nooit de pincode zelf (het getal) in WhatsApp: Meta keurt dat af als "Category mismatch" (moet Verificatie zijn,
-# 21/11/2026). Het woord pincode mag wel (goedgekeurd 22/11/2026). De code staat in de mail en in de app achter de knop.
+# Nieuwe plaatsen komen altijd achteraan in vars: een oudere goedgekeurde versie gebruikt dan de eerste plaatsen
+# (var_names). Elke versie bewaart welke plaatsen ze heeft; daarmee worden de waarden ingevuld bij het versturen.
+# De pincode zelf: Meta keurt die eerst af als "Category mismatch" (moet Verificatie zijn, 21/11/2026), maar na bezwaar
+# werd een sjabloon met de pincode goedgekeurd (lucca_test_access_nl_v1, 25/11/2026). Daarom staat ze in access_code;
+# tot die versie goedgekeurd is, blijft de vorige (zonder pincode) in gebruik.
 TEMPLATES: dict[str, dict] = {
     "confirmation": {"vars": ("voornaam",), "button": "checkin_suffix", "langs": ("nl", "fr", "en", "de")},
     "reminder": {"vars": ("voornaam",), "button": "checkin_suffix", "langs": ("nl", "fr", "en", "de")},
-    "access_code": {"vars": ("kamer_kort",), "button": "checkin_suffix", "langs": ("nl", "fr", "en", "de")},
+    "access_code": {"vars": ("kamer_kort", "pincode"), "button": "checkin_suffix", "langs": ("nl", "fr", "en", "de")},
     "room_change": {"vars": ("kamer_kort",), "button": "checkin_suffix", "langs": ("nl", "fr", "en", "de")},
     # Lijsten voor het personeel: in het Engels, zoals de lijsten zelf (dag en samenvatting komen Engels uit
     # daily_lists: lists.day_text en describe). De voorbeeld-pdf moet echt bestaan: Meta haalt ze op.
@@ -52,7 +54,7 @@ TEMPLATES: dict[str, dict] = {
                       "samples": {"samenvatting": "3 leave, 5 stay, 2 check in"}},
 }
 # Voorbeeldwaarden: Meta vraagt ze bij het goedkeuren (en de monitor toont er een voorbeeld mee)
-SAMPLES = {"voornaam": "Jan", "checkin_suffix": "a1b2c3d4&lang=nl", "kamer_kort": "16 verdiep 1", "pincode": "4821",
+SAMPLES = {"voornaam": "Jan", "checkin_suffix": "a1b2c3d4&lang=nl", "kamer_kort": "16 verdiep 1", "pincode": "3453",
            "dag": "Friday 13/11/2026", "samenvatting": "12 persons in 6 rooms"}
 REV = 2  # rev 2: pincode uit de sjablonen; afgekeurde versies van daarvoor worden eenmalig weggegooid (_migrate)
 
@@ -234,6 +236,21 @@ def spec_of(hotel_id: str, step: str, text: dict) -> dict:
     return out
 
 
+def var_names(step: str, count: int | None = None, body: str | None = None) -> tuple[str, ...]:
+    """Welke waarden in welke plaats van een versie van dit bericht: de eerste plaatsen van vars, dan de knop of pdf.
+    count = aantal plaatsen van die versie (Twilio), of body = haar tekst. Niets gekend: de huidige plaatsen."""
+    spec = TEMPLATES[step]
+    extra = spec.get("button") or spec.get("media")
+    if count is not None:
+        n = count - (1 if extra else 0)
+    elif body is not None:
+        n = len(set(re.findall(r"\{\{\s*(\d+)\s*\}\}", body)))
+    else:
+        n = len(spec["vars"])
+    n = max(0, min(n, len(spec["vars"])))
+    return tuple(spec["vars"][:n]) + ((extra,) if extra else ())
+
+
 def template_name(hotel_id: str, step: str, lang: str, version: int) -> str:
     """Naam bij Meta: uniek per WhatsApp-account (hotel, omgeving, bericht, taal, versie)."""
     raw = f"{hotel_id}_{environment()}_{step}_{lang}_v{version}".lower()
@@ -282,19 +299,24 @@ def sync_shared(hotel_id: str, client=None, min_age: timedelta = CHECK_EVERY) ->
         return []
     data = _load_shared(hotel_id)
     checked = data.get("_checked_at")
-    if checked and _now() - datetime.fromisoformat(checked) < min_age:
+    # Versies van voor het bewaren van het aantal plaatsen: meteen opnieuw ophalen
+    complete = all("variables" in v for per in data.values() if isinstance(per, dict) for v in per.values()
+                   if isinstance(v, dict))
+    if checked and complete and _now() - datetime.fromisoformat(checked) < min_age:
         return []
     found = twilio.approved(hotel_id, client=client)
     pat = _re.compile(rf"^{_re.escape(hotel_id.lower())}_{SOURCE_ENV}_(.+)_([a-z]{{2}})_v(\d+)$")
     best: dict = {}
-    for name, sid in found.items():
+    for name, info in found.items():
+        sid = info["sid"]
         m = pat.match(name)
         if not m or m.group(1) not in TEMPLATES or m.group(2) not in TEMPLATES[m.group(1)]["langs"]:
             continue
         step, lang, version = m.group(1), m.group(2), int(m.group(3))
         cur = best.get(step, {}).get(lang)
         if not cur or version > cur["version"]:
-            best.setdefault(step, {})[lang] = {"sid": sid, "name": name, "version": version}
+            best.setdefault(step, {})[lang] = {"sid": sid, "name": name, "version": version,
+                                               "variables": info.get("variables")}
     changes = [f"{v['name']} in gebruik" for step, per in best.items() for lang, v in per.items()
                if (data.get(step, {}).get(lang) or {}).get("sid") != v["sid"]]
     from hotel_checkin.guests import repository
@@ -303,18 +325,30 @@ def sync_shared(hotel_id: str, client=None, min_age: timedelta = CHECK_EVERY) ->
     return changes
 
 
-def active_sid(hotel_id: str, step: str, lang: str) -> str | None:
-    """SID van de goedgekeurde versie (wat verstuurd wordt), of None. Buiten PRD: die van PRD."""
-    if shared():
-        try:
-            return (_load_shared(hotel_id).get(step, {}).get(lang) or {}).get("sid") or None
-        except Exception:  # noqa: BLE001 - geen opslag
-            return None
+def active(hotel_id: str, step: str, lang: str) -> tuple[str, tuple[str, ...]] | None:
+    """De goedgekeurde versie (wat verstuurd wordt): (SID, waarden per plaats), of None. Buiten PRD: die van PRD."""
     try:
-        a = _load(hotel_id).get(step, {}).get(lang, {}).get("active")
+        if shared():
+            a = _load_shared(hotel_id).get(step, {}).get(lang) or {}
+        else:
+            a = _load(hotel_id).get(step, {}).get(lang, {}).get("active") or {}
     except Exception:  # noqa: BLE001 - geen opslag: dan de SID uit de instellingen (send_messages)
         return None
-    return (a or {}).get("sid") or None
+    if not a.get("sid"):
+        return None
+    if a.get("vars"):
+        names = tuple(a["vars"])
+    elif a.get("variables") is not None or shared():
+        names = var_names(step, count=a.get("variables"))
+    else:  # versie van voor de bewaarde plaatsen: afleiden uit haar tekst
+        names = var_names(step, body=((a.get("text") or {}).get("body")))
+    return a["sid"], names
+
+
+def active_sid(hotel_id: str, step: str, lang: str) -> str | None:
+    """SID van de goedgekeurde versie, of None."""
+    a = active(hotel_id, step, lang)
+    return a[0] if a else None
 
 
 def view(hotel_id: str, refresh: bool = True) -> dict:
@@ -477,7 +511,7 @@ def submit(hotel_id: str, step: str, lang: str, user: str, client=None) -> dict:
         _save(hotel_id, data, user)
         return {"ok": False, "message": f"Aanmaken bij Twilio mislukt: {exc}"}
     pending = {"sid": sid, "spec": spec, "text": text, "version": version, "name": name, "status": "received",
-               "submitted_at": _now().isoformat(), "submitted_by": user}
+               "vars": list(var_names(step)), "submitted_at": _now().isoformat(), "submitted_by": user}
     e["version"] = version
     try:
         res = twilio.submit_whatsapp(hotel_id, sid, name, client=client)
@@ -565,8 +599,8 @@ def check(hotel_id: str, client=None, min_age: timedelta = CHECK_EVERY) -> list[
             continue  # intussen vervangen
         p |= {"status": res["status"] or p.get("status"), "reason": res["reason"], "checked_at": now.isoformat()}
         if res["status"] == "approved":
-            e["active"] = {k: p.get(k) for k in ("sid", "name", "version", "spec", "text", "submitted_at",
-                                                  "submitted_by")} | {"approved_at": now.isoformat()}
+            e["active"] = {k: p.get(k) for k in ("sid", "name", "version", "spec", "text", "vars",
+                                                  "submitted_at", "submitted_by")} | {"approved_at": now.isoformat()}
             e.pop("pending", None)
             changes.append(f"{p['name']} goedgekeurd")
         elif res["status"] not in twilio.WAITING:

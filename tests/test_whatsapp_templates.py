@@ -72,10 +72,16 @@ def test_default_texts_are_valid():
 
 
 def test_variables_match_send_messages():
-    """Zelfde plaatsen als bij het versturen (de knop of pdf is de laatste plaats)."""
+    """De oude sjablonen (instellingen) hebben de eerste plaatsen van nu, met de knop als laatste plaats."""
     for step, names in send_messages.WHATSAPP_VARIABLES.items():
-        spec = wa.TEMPLATES[step]
-        assert (*spec["vars"], spec["button"]) == names if spec.get("button") else spec["vars"] == names
+        assert wa.var_names(step, count=len(names)) == names
+
+
+def test_var_names_of_older_versions():
+    assert wa.var_names("access_code") == ("kamer_kort", "pincode", "checkin_suffix")
+    assert wa.var_names("access_code", count=2) == ("kamer_kort", "checkin_suffix")
+    assert wa.var_names("access_code", body="Uw kamer {{1}} is klaar.") == ("kamer_kort", "checkin_suffix")
+    assert wa.var_names("breakfast_list", count=3) == ("dag", "samenvatting", "pdf_pad")
 
 
 def test_validate_rules():
@@ -111,7 +117,9 @@ def test_submit_cta_text_and_media_types():
     wa.submit("lucca", "room_change", "fr", "fred", client=fake.client())
     wa.submit("lucca", "breakfast_list", "en", "fred", client=fake.client())
     cta, text, media = (c["types"] for c in fake.created)
-    assert cta["whatsapp/card"]["actions"][0]["url"] == "https://checkin.hotellucca.be/?r={{2}}"
+    assert cta["whatsapp/card"]["actions"][0]["url"] == "https://checkin.hotellucca.be/?r={{3}}"
+    assert cta["whatsapp/card"]["footer"] == "Hotel Lucca, Naaldenstraat 30, Brugge"
+    assert fake.created[0]["variables"] == {"1": "16 verdiep 1", "2": "3453", "3": "a1b2c3d4&lang=nl"}
     assert text["whatsapp/card"]["header_text"] == "Changement de chambre"
     assert text["whatsapp/card"]["actions"][0]["title"] == "Votre réservation"
     assert media["twilio/media"]["media"] == ["https://func.example.net/api/lists/{{3}}"]
@@ -202,11 +210,29 @@ def test_tst_names_differ(monkeypatch):
     assert wa.template_name("lucca", "confirmation", "nl", 3) == "lucca_tst_confirmation_nl_v3"
 
 
-def test_no_pin_code_in_templates():
-    """Meta keurt sjablonen met de pincode zelf af als verificatie: de code is nooit een plaats in WhatsApp
-    (het woord pincode mag wel)."""
+def test_pin_code_only_in_access_code():
+    """De pincode alleen in het bericht met de toegang (goedgekeurd na bezwaar), nergens anders."""
     for t in wa.view("lucca", refresh=False)["templates"]:
-        assert "pincode" not in t["vars"]
+        assert ("pincode" in t["vars"]) == (t["step"] == "access_code"), t["step"]
+
+
+def test_old_active_version_keeps_its_own_variables():
+    """Tot de versie met pincode goedgekeurd is, gaat de vorige (zonder pincode) uit, met haar eigen plaatsen."""
+    data = {"access_code": {"nl": {"version": 1, "active": {"sid": "HXold", "name": "lucca_prd_access_code_nl_v1",
+                                                            "text": {"body": "Uw kamer {{1}} is klaar."}}}}}
+    wa._save("lucca", data, "test")
+    assert send_messages.whatsapp_choice("lucca", "access_code", "nl") == ("HXold", ("kamer_kort", "checkin_suffix"))
+    v = wa.view("lucca", refresh=False)
+    assert _lang(v, "access_code", "nl")["errors"]  # de oude tekst mist de pincode: eerst de nieuwe overnemen
+    assert v["newer_defaults"] >= 1
+    wa.use_defaults("lucca", "fred")
+    fake = FakeTwilio()
+    assert wa.submit("lucca", "access_code", "nl", "fred", client=fake.client())["ok"]
+    assert send_messages.whatsapp_choice("lucca", "access_code", "nl")[0] == "HXold"
+    fake.status[fake.created[0]["sid"]] = "approved"
+    wa.check("lucca", client=fake.client(), min_age=timedelta(0))
+    assert send_messages.whatsapp_choice("lucca", "access_code", "nl") == (
+        fake.created[0]["sid"], ("kamer_kort", "pincode", "checkin_suffix"))
 
 
 def test_sample_pdf_exists_for_meta():
@@ -268,7 +294,8 @@ def test_tst_uses_prd_templates(monkeypatch):
     def handler(req):
         return httpx.Response(200, json={"contents": [
             {"sid": "HXa", "friendly_name": "lucca_prd_access_code_nl_v1", "approval_requests": {"status": "approved"}},
-            {"sid": "HXb", "friendly_name": "lucca_prd_access_code_nl_v3", "approval_requests": {"status": "approved"}},
+            {"sid": "HXb", "friendly_name": "lucca_prd_access_code_nl_v3", "approval_requests": {"status": "approved"},
+             "variables": {"1": "16", "2": "a1b2"}},
             {"sid": "HXc", "friendly_name": "lucca_prd_access_code_nl_v4", "approval_requests": {"status": "pending"}},
             {"sid": "HXd", "friendly_name": "lucca_tst_room_change_nl_v1", "approval_requests": {"status": "approved"}},
             {"sid": "HXe", "friendly_name": "other_prd_access_code_nl_v9", "approval_requests": {"status": "approved"}},
@@ -276,7 +303,7 @@ def test_tst_uses_prd_templates(monkeypatch):
 
     client = httpx.Client(transport=httpx.MockTransport(handler))
     assert wa.sync_shared("lucca", client=client, min_age=timedelta(0)) == ["lucca_prd_access_code_nl_v3 in gebruik"]
-    assert send_messages.whatsapp_template("lucca", "access_code", "nl") == "HXb"
+    assert send_messages.whatsapp_choice("lucca", "access_code", "nl") == ("HXb", ("kamer_kort", "checkin_suffix"))
     assert send_messages.whatsapp_template("lucca", "room_change", "nl") is None
     v = wa.view("lucca", refresh=False)
     assert v["shared_from"] == "prd" and _lang(v, "access_code", "nl")["active"]["name"] == "lucca_prd_access_code_nl_v3"

@@ -300,10 +300,11 @@ MAX_ATTEMPTS = 3  # per stap en kanaal; daarna niet meer opnieuw (staat rood in 
 # WhatsApp-sjabloon: welke gegevens in welke plaats ({{1}}, {{2}}, ...), per berichttype
 # checkin_suffix: het deel van de formulierlink na het vaste begin, voor de knop van het sjabloon
 # (zie docs/whatsapp-sjablonen.md voor de teksten).
+# Plaatsen van de sjablonen uit [whatsapp] in de instellingen (oude manier, zonder pincode). Sjablonen uit de monitor
+# bewaren zelf welke plaatsen ze hebben (whatsapp_templates.active).
 WHATSAPP_VARIABLES = {
     "confirmation": ("voornaam", "checkin_suffix"),
     "reminder": ("voornaam", "checkin_suffix"),
-    # Geen pincode in WhatsApp (Meta keurt dat af): de code staat in de mail en in de app achter de knop
     "access_code": ("kamer_kort", "checkin_suffix"),  # per kamer, knop naar het formulier (code, betalen)
     "room_change": ("kamer_kort", "checkin_suffix"),  # knop naar de app (pincode staat daar)
 }
@@ -314,18 +315,24 @@ def phone_enabled(hotel_id: str) -> bool:
     return str(hotel_setting(hotel_id, "MESSAGING_PHONE", default="false", shared=False)).lower() == "true"
 
 
-def whatsapp_template(hotel_id: str, step: str, language: str) -> str | None:
-    """Goedgekeurd WhatsApp-sjabloon (Twilio ContentSid, HX...) voor dit bericht en deze taal: eerst de versie die in
-    de monitor ingediend en goedgekeurd werd (processes/whatsapp_templates.py), anders [whatsapp] in de instellingen.
-    Ontbreekt de taal, dan Engels."""
+def whatsapp_choice(hotel_id: str, step: str, language: str) -> tuple[str | None, tuple[str, ...]]:
+    """Goedgekeurd WhatsApp-sjabloon (Twilio ContentSid, HX...) voor dit bericht en deze taal, met de waarden per
+    plaats: eerst de versie die in de monitor ingediend en goedgekeurd werd (processes/whatsapp_templates.py), anders
+    [whatsapp] in de instellingen. Ontbreekt de taal, dan Engels."""
     from hotel_checkin.processes import whatsapp_templates
 
     for lg in (language, "en"):
-        sid = whatsapp_templates.active_sid(hotel_id, step, (lg or "").lower())
-        if sid:
-            return sid
-    return hotel_setting(hotel_id, f"WHATSAPP_TEMPLATE_{step.upper()}_{language.upper()}", required=False, shared=False) \
+        a = whatsapp_templates.active(hotel_id, step, (lg or "").lower())
+        if a:
+            return a
+    sid = hotel_setting(hotel_id, f"WHATSAPP_TEMPLATE_{step.upper()}_{language.upper()}", required=False, shared=False) \
         or hotel_setting(hotel_id, f"WHATSAPP_TEMPLATE_{step.upper()}_EN", required=False, shared=False)
+    return sid, WHATSAPP_VARIABLES.get(step, ())
+
+
+def whatsapp_template(hotel_id: str, step: str, language: str) -> str | None:
+    """Alleen de SID van whatsapp_choice."""
+    return whatsapp_choice(hotel_id, step, language)[0]
 
 
 def status_url(hotel_id: str, reservation_id: str, message_id: str) -> str | None:
@@ -519,12 +526,12 @@ def deliver(hotel_id: str, step: workflow.Step, r: Reservation, cfg: dict,
     if not phones or not phone_enabled(hotel_id):
         return out
     msg, data = _rendered(hotel_id, step, r, cfg, extra)
-    template = whatsapp_template(hotel_id, step.step, r.guest.language)
+    template, names = whatsapp_choice(hotel_id, step.step, r.guest.language)
     lang = normalize_language(r.guest.language)
     values = {**data, "checkin_link": templates.checkin_link(hotel_id, r.token or "", lang),
               "checkin_suffix": templates.checkin_suffix(hotel_id, r.token or "", lang)}
     for room, text, vals in phone_messages(hotel_id, step, r, msg.sms, values):
-        variables = {str(i): str(vals.get(k, "")) for i, k in enumerate(WHATSAPP_VARIABLES.get(step.step, ()), 1)}
+        variables = {str(i): str(vals.get(k, "")) for i, k in enumerate(names, 1)}
         for to in phones:
             if not only and (done("whatsapp", to, room) or done("sms", to, room)):
                 continue

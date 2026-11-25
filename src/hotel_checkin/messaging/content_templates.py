@@ -9,6 +9,9 @@ Twilio-account: zelfde instellingen als sms en WhatsApp (TWILIO_ACCOUNT_SID, TWI
 
 from __future__ import annotations
 
+import json
+import re
+
 import httpx
 
 from hotel_checkin.core import clients
@@ -108,11 +111,23 @@ def delete(hotel_id: str, sid: str, client: httpx.Client | None = None) -> None:
         raise _error(r)
 
 
-def approved(hotel_id: str, client: httpx.Client | None = None) -> dict[str, str]:
-    """Alle sjablonen bij Twilio die Meta goedkeurde: {naam: SID}. Gebruikt door een omgeving die de sjablonen van een
-    andere omgeving overneemt (TST gebruikt die van PRD)."""
+def _count_variables(content: dict) -> int | None:
+    """Aantal plaatsen ({{1}}, {{2}}, ...) van een sjabloon: uit de voorbeeldwaarden, anders uit de tekst en de knop."""
+    v = content.get("variables")
+    if isinstance(v, dict) and v:
+        return len(v)
+    types = content.get("types")
+    if not isinstance(types, dict):
+        return None
+    return len(set(re.findall(r"\{\{\s*(\d+)\s*\}\}", json.dumps(types))))
+
+
+def approved(hotel_id: str, client: httpx.Client | None = None) -> dict[str, dict]:
+    """Alle sjablonen bij Twilio die Meta goedkeurde: {naam: {"sid": ..., "variables": aantal plaatsen}}. Gebruikt
+    door een omgeving die de sjablonen van een andere omgeving overneemt (TST gebruikt die van PRD).
+    variables is None als Twilio ze niet meegeeft."""
     http = client or clients.http()
-    out: dict[str, str] = {}
+    out: dict[str, dict] = {}
     url = "https://content.twilio.com/v2/ContentAndApprovals?PageSize=200"
     while url:
         r = http.get(url, auth=_auth(hotel_id))
@@ -122,6 +137,6 @@ def approved(hotel_id: str, client: httpx.Client | None = None) -> dict[str, str
         for c in d.get("contents") or []:
             ar = c.get("approval_requests") or {}
             if str(ar.get("status") or "").lower() == "approved" and c.get("friendly_name") and c.get("sid"):
-                out[c["friendly_name"]] = c["sid"]
+                out[c["friendly_name"]] = {"sid": c["sid"], "variables": _count_variables(c)}
         url = (d.get("meta") or {}).get("next_page_url")
     return out
