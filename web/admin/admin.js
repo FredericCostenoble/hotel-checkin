@@ -387,7 +387,7 @@ Object.assign(T.en, {
 // WhatsApp-sjablonen (instellingen, WhatsApp)
 Object.assign(T.nl, {
   tab_wa: "WhatsApp", wa_sub: "Teksten van de WhatsApp-berichten. Elke nieuwe tekst moet eerst door Meta goedgekeurd worden.",
-  wa_how: "Zo werkt het", wa_how_text: "Wijzig de tekst, bewaar en dien in bij Meta. Tot Meta de nieuwe versie goedkeurt, blijft de vorige goedgekeurde versie verstuurd worden. Zonder goedgekeurde versie gaat het bericht per sms. De status wordt alleen gevraagd zolang Meta nog beslist.",
+  wa_how: "Zo werkt het", wa_how_text: "Wijzig de tekst, bewaar en dien in bij Meta. Tot Meta de nieuwe versie goedkeurt, blijft de vorige goedgekeurde versie verstuurd worden. Zonder goedgekeurde versie in die taal gaat de Engelse, en anders een sms. De status wordt gevraagd zolang Meta nog beslist; afgewezen versies nog elk uur, want na een bezwaar kan Meta ze alsnog goedkeuren.",
   wa_overview: "Overzicht", wa_check: "Status vernieuwen", wa_all: n => `Alles indienen (${n})`, wa_all_none: "Alles ingediend",
   wa_all_q: n => `${n} nieuwe of gewijzigde teksten bij Meta indienen?`, wa_submit: "Indienen bij Meta", wa_submit_q: "Deze tekst bij Meta indienen? De goedgekeurde versie blijft in gebruik tot Meta de nieuwe goedkeurt.",
   wa_save: "Bewaren", wa_reset: "Herstellen", wa_reset_q: "Terug naar de actieve tekst (of de standaardtekst als er nog geen goedgekeurde versie is)? Daarna kan je indienen.",
@@ -412,7 +412,7 @@ Object.assign(T.nl, {
 });
 Object.assign(T.en, {
   tab_wa: "WhatsApp", wa_sub: "Texts of the WhatsApp messages. Every new text must first be approved by Meta.",
-  wa_how: "How it works", wa_how_text: "Change the text, save and submit to Meta. Until Meta approves the new version, the previous approved version keeps being sent. Without an approved version the message goes by SMS. The status is only asked while Meta has not decided yet.",
+  wa_how: "How it works", wa_how_text: "Change the text, save and submit to Meta. Until Meta approves the new version, the previous approved version keeps being sent. Without an approved version in that language the English one is sent, otherwise an SMS. The status is asked while Meta has not decided yet; rejected versions still every hour, since Meta can approve them after an appeal.",
   wa_overview: "Overview", wa_check: "Refresh status", wa_all: n => `Submit all (${n})`, wa_all_none: "All submitted",
   wa_all_q: n => `Submit ${n} new or changed texts to Meta?`, wa_submit: "Submit to Meta", wa_submit_q: "Submit this text to Meta? The approved version stays in use until Meta approves the new one.",
   wa_save: "Save", wa_reset: "Restore", wa_reset_q: "Back to the active text (or the default text if there is no approved version yet)? Then you can submit.",
@@ -3537,7 +3537,7 @@ function renderWhatsapp() {
   $("#wa-check").hidden = !ro && !all.some(({ l }) => l.state === "waiting");
   $("#wa-defaults").hidden = ro || !wa.newer_defaults;
   if (wa.newer_defaults) $("#wa-defaults").lastElementChild.textContent = t("wa_defaults", wa.newer_defaults);
-  $("#wa-overview").innerHTML = `<table><tbody>${wa.templates.map(tp => `<tr><td style="font-weight:600">${esc(t("wa_t_" + tp.step)[0])}</td><td><div class="row" style="gap:4px;flex-wrap:wrap">${tp.langs.map(l => `<a href="#" class="badge ${WA_BADGE[waEdit[waKey(tp.step, l.lang)] ? "changed" : l.state]}" style="text-decoration:none" title="${esc(t("wa_st_" + (waEdit[waKey(tp.step, l.lang)] ? "changed" : l.state)))}" data-wa-go="${tp.step}:${l.lang}">${l.lang.toUpperCase()}</a>`).join("")}</div></td></tr>`).join("")}</tbody></table>
+  $("#wa-overview").innerHTML = `<table><tbody>${wa.templates.map(tp => `<tr><td style="font-weight:600">${esc(t("wa_t_" + tp.step)[0])}</td><td><div class="row" style="gap:4px;flex-wrap:nowrap">${tp.langs.map(l => `<a href="#" class="badge ${WA_BADGE[waEdit[waKey(tp.step, l.lang)] ? "changed" : l.state]}" style="text-decoration:none" title="${esc(t("wa_st_" + (waEdit[waKey(tp.step, l.lang)] ? "changed" : l.state)))}" data-wa-go="${tp.step}:${l.lang}">${l.lang.toUpperCase()}</a>`).join("")}</div></td></tr>`).join("")}</tbody></table>
     <div class="row" style="gap:6px;flex-wrap:wrap;margin-top:10px">${["approved", "waiting", "changed", "new", "rejected"].map(waBadge).join("")}</div>`;
   $("#wa-list").innerHTML = wa.templates.map(waCard).join("");
   waWire();
