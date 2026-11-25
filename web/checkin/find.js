@@ -6,7 +6,7 @@
   const T = {
     nl: {
       loading: "Even geduld...", title: "Uw verblijfspagina",
-      intro: "Hier ontvangt u opnieuw de link naar uw verblijfspagina, met uw pincode en alle info. We sturen hem alleen naar een e-mailadres of gsm-nummer dat in uw reservatie staat.",
+      intro: "Hier ontvangt u opnieuw de link naar uw verblijfspagina, met alle info over uw verblijf. We sturen hem alleen naar een e-mailadres of gsm-nummer dat in uw reservatie staat.",
       wa_title: "Via WhatsApp", wa_text: "Het snelst: stuur het voorbereide bericht. U krijgt meteen uw link terug, als uw nummer in uw reservatie staat.", wa_btn: "Open WhatsApp",
       contact_title: "Via e-mail of gsm", contact_label: "Uw e-mailadres of gsm-nummer",
       contact_hint: "Gsm-nummer met landcode, bv. +44 7700 900123.", send: "Stuur mijn link",
@@ -24,7 +24,7 @@
     },
     fr: {
       loading: "Un instant...", title: "Votre page de séjour",
-      intro: "Recevez à nouveau le lien vers votre page de séjour, avec votre code PIN et toutes les infos. Nous l'envoyons uniquement à une adresse e-mail ou un numéro de portable de votre réservation.",
+      intro: "Recevez à nouveau le lien vers votre page de séjour, avec toutes les infos sur votre séjour. Nous l'envoyons uniquement à une adresse e-mail ou un numéro de portable de votre réservation.",
       wa_title: "Par WhatsApp", wa_text: "Le plus rapide : envoyez le message préparé. Vous recevez aussitôt votre lien, si votre numéro figure dans votre réservation.", wa_btn: "Ouvrir WhatsApp",
       contact_title: "Par e-mail ou portable", contact_label: "Votre adresse e-mail ou numéro de portable",
       contact_hint: "Numéro avec indicatif du pays, p. ex. +33 6 12 34 56 78.", send: "Envoyer mon lien",
@@ -42,7 +42,7 @@
     },
     en: {
       loading: "One moment...", title: "Your stay page",
-      intro: "Get the link to your stay page again, with your PIN code and all info. We only send it to an email address or mobile number from your booking.",
+      intro: "Get the link to your stay page again, with all information about your stay. We only send it to an email address or mobile number from your booking.",
       wa_title: "Via WhatsApp", wa_text: "Fastest: send the prepared message. You get your link back right away, if your number is in your booking.", wa_btn: "Open WhatsApp",
       contact_title: "Via email or mobile", contact_label: "Your email address or mobile number",
       contact_hint: "Mobile number with country code, e.g. +44 7700 900123.", send: "Send my link",
@@ -60,7 +60,7 @@
     },
     de: {
       loading: "Einen Moment...", title: "Ihre Aufenthaltsseite",
-      intro: "Erhalten Sie den Link zu Ihrer Aufenthaltsseite erneut, mit PIN-Code und allen Infos. Wir senden ihn nur an eine E-Mail-Adresse oder Handynummer aus Ihrer Buchung.",
+      intro: "Erhalten Sie den Link zu Ihrer Aufenthaltsseite erneut, mit allen Infos zu Ihrem Aufenthalt. Wir senden ihn nur an eine E-Mail-Adresse oder Handynummer aus Ihrer Buchung.",
       wa_title: "Per WhatsApp", wa_text: "Am schnellsten: Senden Sie die vorbereitete Nachricht. Sie erhalten sofort Ihren Link, wenn Ihre Nummer in Ihrer Buchung steht.", wa_btn: "WhatsApp öffnen",
       contact_title: "Per E-Mail oder Handy", contact_label: "Ihre E-Mail-Adresse oder Handynummer",
       contact_hint: "Handynummer mit Ländervorwahl, z. B. +49 151 23456789.", send: "Meinen Link senden",
