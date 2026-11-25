@@ -357,3 +357,21 @@ def test_saved_text_equal_to_approved_version_still_gets_new_default():
     assert wa.use_defaults("lucca", "fred") >= 1
     after = wa._load("lucca")["access_code"]
     assert "{{2}}" in after["nl"]["text"]["body"] and after["fr"]["text"]["body"] == "Eigen tekst {{1}} {{2}}."
+
+
+def test_rejected_version_rechecked_hourly_for_appeal():
+    """Na een bezwaar kan Meta een afgekeurde versie alsnog goedkeuren: die wordt elk uur opnieuw opgevraagd."""
+    fake = FakeTwilio()
+    wa.submit("lucca", "room_change", "de", "fred", client=fake.client())
+    sid = fake.created[0]["sid"]
+    fake.status[sid] = "rejected"
+    assert wa.check("lucca", client=fake.client(), min_age=timedelta(0))  # afgekeurd: gemeld
+    n = fake.status_calls
+    assert wa.check("lucca", client=fake.client(), min_age=timedelta(0)) == []
+    assert fake.status_calls == n  # niet meteen opnieuw
+    data = wa._load("lucca")
+    data["room_change"]["de"]["pending"]["checked_at"] = (wa._now() - timedelta(hours=2)).isoformat()
+    wa._save("lucca", data, "test")
+    fake.status[sid] = "approved"
+    assert wa.check("lucca", client=fake.client(), min_age=timedelta(0)) == [data["room_change"]["de"]["pending"]["name"] + " goedgekeurd"]
+    assert send_messages.whatsapp_template("lucca", "room_change", "de") == sid

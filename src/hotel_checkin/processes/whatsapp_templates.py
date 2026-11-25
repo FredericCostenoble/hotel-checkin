@@ -61,6 +61,10 @@ REV = 2  # rev 2: pincode uit de sjablonen; afgekeurde versies van daarvoor word
 BODY_MAX, BODY_MAX_BUTTON, BUTTON_MAX, FOOTER_MAX, HEADER_MAX = 1024, 640, 20, 60, 60
 CHECK_EVERY = timedelta(minutes=10)  # status van een wachtende versie hoogstens zo vaak opvragen (timer)
 CHECK_EVERY_MONITOR = timedelta(seconds=60)  # bij het openen van de monitor
+# Afgekeurd: na een bezwaar in Business Support Home kan Meta de versie alsnog goedkeuren. Daarom ook afgekeurde
+# versies blijven opvragen, minder vaak, tot 30 dagen na het indienen.
+CHECK_REJECTED_EVERY = timedelta(hours=1)
+CHECK_REJECTED_DAYS = timedelta(days=30)
 FIELDS = ("header", "body", "button", "footer")
 # Content Template Builder in de Twilio Console (lijst met zoekvak; een link per sjabloon is niet gedocumenteerd)
 CONSOLE_URL = "https://console.twilio.com/us1/develop/sms/content-template-builder"
@@ -574,17 +578,28 @@ def submit_all(hotel_id: str, user: str, client=None) -> dict:
 
 
 def check(hotel_id: str, client=None, min_age: timedelta = CHECK_EVERY) -> list[str]:
-    """Status opvragen bij Meta, alleen voor versies die nog wachten en niet recent nagekeken werden.
-    Goedgekeurd: die versie wordt actief. Geeft wat veranderde (voor het log). Buiten PRD: de PRD-sjablonen ophalen."""
+    """Status opvragen bij Meta, alleen voor versies die nog wachten (of afgekeurd zijn, voor een bezwaar) en niet
+    recent nagekeken werden. Goedgekeurd: die versie wordt actief. Geeft wat veranderde (voor het log).
+    Buiten PRD: de PRD-sjablonen ophalen."""
     if shared():
         return sync_shared(hotel_id, client=client, min_age=min_age)
     data = _load(hotel_id)
     now = _now()
+
+    def due(p: dict) -> bool:
+        if not p.get("sid"):
+            return False
+        age = now - datetime.fromisoformat(p["checked_at"]) if p.get("checked_at") else None
+        if p.get("status") in twilio.WAITING:
+            return age is None or age >= min_age
+        if p.get("status") == "rejected":
+            sent = p.get("submitted_at")
+            recent = not sent or now - datetime.fromisoformat(sent) < CHECK_REJECTED_DAYS
+            return recent and (age is None or age >= max(min_age, CHECK_REJECTED_EVERY))
+        return False
+
     todo = [(step, lang, e["pending"]) for step, per in data.items() if isinstance(per, dict)
-            for lang, e in per.items() if isinstance(e, dict) and e.get("pending")
-            and e["pending"].get("sid") and e["pending"].get("status") in twilio.WAITING
-            and (not e["pending"].get("checked_at")
-                 or now - datetime.fromisoformat(e["pending"]["checked_at"]) >= min_age)]
+            for lang, e in per.items() if isinstance(e, dict) and e.get("pending") and due(e["pending"])]
     if not todo:
         return []
     changes = []
@@ -600,13 +615,14 @@ def check(hotel_id: str, client=None, min_age: timedelta = CHECK_EVERY) -> list[
         p = e.get("pending")
         if not p or p.get("sid") != sid:
             continue  # intussen vervangen
+        before = p.get("status")
         p |= {"status": res["status"] or p.get("status"), "reason": res["reason"], "checked_at": now.isoformat()}
         if res["status"] == "approved":
             e["active"] = {k: p.get(k) for k in ("sid", "name", "version", "spec", "text", "vars",
                                                   "submitted_at", "submitted_by")} | {"approved_at": now.isoformat()}
             e.pop("pending", None)
             changes.append(f"{p['name']} goedgekeurd")
-        elif res["status"] not in twilio.WAITING:
+        elif res["status"] not in twilio.WAITING and res["status"] != before:
             changes.append(f"{p['name']}: {res['status']}" + (f" ({res['reason']})" if res["reason"] else ""))
     _save(hotel_id, data, "Meta (status)")
     return changes
