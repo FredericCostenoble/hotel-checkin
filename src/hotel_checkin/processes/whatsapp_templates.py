@@ -532,10 +532,13 @@ def submit(hotel_id: str, step: str, lang: str, user: str, client=None) -> dict:
 
 
 def default_differs(hotel_id: str, step: str, lang: str, data: dict) -> bool:
-    """De standaardtekst (bestand) verschilt van wat nu getoond wordt, en er is geen eigen wijziging in de monitor."""
+    """De standaardtekst (bestand) verschilt van wat nu getoond wordt, en er is geen eigen wijziging in de monitor.
+    Een bewaarde tekst die gelijk is aan de goedgekeurde of ingediende versie is geen eigen wijziging."""
     e = data.get(step, {}).get(lang, {})
     if "text" in e:
-        return False
+        versions = [_clean((e.get(k) or {}).get("text")) for k in ("active", "pending")]
+        if _clean(e["text"]) not in [v for v in versions if v]:
+            return False
     default = _clean(defaults(hotel_id).get(step, {}).get(lang))
     return bool(default) and default != current_text(hotel_id, step, lang, data)
 

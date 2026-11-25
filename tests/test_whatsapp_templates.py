@@ -344,3 +344,16 @@ def test_storage_split_per_message_and_reads_old_format():
     for st in wa.TEMPLATES:
         size = len(json.dumps(repo.get_config_doc("lucca", f"{wa.DOC}_{st}")["value"]).encode("utf-16-le"))
         assert size < 32_000, (st, size)
+
+
+def test_saved_text_equal_to_approved_version_still_gets_new_default():
+    """Een in de monitor bewaarde tekst die niet verschilt van de goedgekeurde versie, krijgt de nieuwe standaardtekst."""
+    old = {"header": "Uw verblijf in Hotel Lucca", "body": "Uw kamer {{1}} is klaar.", "button": "Uw reservatie"}
+    data = {"access_code": {"nl": {"version": 1, "text": dict(old),
+                                   "active": {"sid": "HXold", "name": "lucca_prd_access_code_nl_v1", "text": dict(old)}},
+                            "fr": {"version": 1, "text": {"body": "Eigen tekst {{1}} {{2}}.", "button": "X"},
+                                   "active": {"sid": "HXfr", "name": "lucca_prd_access_code_fr_v1", "text": dict(old)}}}}
+    wa._save("lucca", data, "test")
+    assert wa.use_defaults("lucca", "fred") >= 1
+    after = wa._load("lucca")["access_code"]
+    assert "{{2}}" in after["nl"]["text"]["body"] and after["fr"]["text"]["body"] == "Eigen tekst {{1}} {{2}}."
