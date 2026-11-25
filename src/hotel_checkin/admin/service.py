@@ -155,6 +155,10 @@ def reservations(hotel_id: str, only: list | None = None, msgs_by_res: dict | No
                                      "phones": list(dict.fromkeys(p for p in [g.phone, g.backup_phone, *g.known_phones] if p))}
                         for g in all_profiles}
     phone = send_messages.phone_enabled(hotel_id)
+    try:
+        visits = repo.visits_for_hotel(hotel_id)
+    except Exception:  # noqa: BLE001 - zonder bezoeken toont de monitor gewoon niets
+        visits = {}
     from hotel_checkin.pms.lighthouse_browser import base_url
     lighthouse = base_url(hotel_id) + "/Customer/Reservations/Detail/"
     cfg, ready = workflow.config(hotel_id), send_messages.ready_steps(hotel_id)
@@ -224,6 +228,9 @@ def reservations(hotel_id: str, only: list | None = None, msgs_by_res: dict | No
             "messages_on": send_messages.for_reservation(hotel_id, r, chosen),  # krijgt automatische berichten
             "messages_pick": "on" if r.reservation_id in chosen["on"] else "off" if r.reservation_id in chosen["off"] else "",
             "stairs_memo_at": r.stairs_memo_at.isoformat() if r.stairs_memo_at else "",
+            "visit": {k: visits[r.reservation_id].get(k) or "" for k in ("first_at", "last_at", "count", "codes_first_at",
+                                                                          "codes_last_at")}
+            if r.reservation_id in visits else None,
             "guest_id": r.guest_id or "",
             "guest_stays": earlier_stays(r) if r.guest_id else 0,
             "added_at": r.created_at.isoformat() if r.created_at else "",

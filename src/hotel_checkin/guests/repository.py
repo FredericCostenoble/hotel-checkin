@@ -47,6 +47,7 @@ T_STATE = "RobotState"  # kleine toestand per hotel, bv. tot waar de mailbox gel
 T_FORMS = "CheckinForms"  # elke indiening van het check-in-formulier, nooit overschreven (vangnet)
 T_LISTS = "DailyLists"  # ontbijtlijst en kuislijst per dag (alleen de laatste 15 per soort)
 T_EVIDENCE = "PmsEvidence"  # zelftest Lighthouse: de pagina's die niet meer klopten (bewijs om te herstellen)
+T_VISITS = "PageVisits"  # wanneer de gast zijn verblijfspagina opende (per reservatie), voor de monitor
 
 _client_factory = None  # alleen voor tests: functie die een tabelnaam krijgt en een tabel teruggeeft
 
@@ -931,3 +932,34 @@ def use_memory_store() -> None:
     global _client_factory
     tables: dict[str, MemoryTable] = {}
     _client_factory = lambda name: tables.setdefault(name, MemoryTable())
+
+
+# ---------------------------------------------------------------- bezoeken aan de verblijfspagina
+
+VISIT_GAP = timedelta(minutes=30)  # binnen dit halfuur telt opnieuw openen als hetzelfde bezoek
+
+
+def record_visit(hotel_id: str, reservation_id: str, codes_shown: bool) -> dict:
+    """De gast opende zijn verblijfspagina (via de link in de mail of WhatsApp, of opnieuw vanuit de app).
+    Bewaart eerste en laatste keer, het aantal bezoeken en wanneer de pincode voor het eerst en laatst getoond werd."""
+    table = _table(T_VISITS)
+    now = _now()
+    try:
+        e = dict(table.get_entity(_key(hotel_id), _key(reservation_id)))
+    except Exception:  # noqa: BLE001 - eerste bezoek
+        e = {"PartitionKey": _key(hotel_id), "RowKey": _key(reservation_id), "reservation_id": reservation_id,
+             "first_at": now.isoformat(), "count": 0}
+    last = e.get("last_at")
+    if not last or now - datetime.fromisoformat(last) >= VISIT_GAP:
+        e["count"] = int(e.get("count") or 0) + 1
+    e["last_at"] = now.isoformat()
+    if codes_shown:
+        e.setdefault("codes_first_at", now.isoformat())
+        e["codes_last_at"] = now.isoformat()
+    table.upsert_entity(e)
+    return e
+
+
+def visits_for_hotel(hotel_id: str) -> dict[str, dict]:
+    """Bezoeken aan de verblijfspagina per reservatie, in één query. Voor de monitor."""
+    return {e["reservation_id"]: dict(e) for e in _table(T_VISITS).query_entities(f"PartitionKey eq '{_q(_key(hotel_id))}'")}

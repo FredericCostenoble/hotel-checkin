@@ -10,6 +10,7 @@ contactgegevens; reservatiegegevens worden alleen-lezen getoond.
 
 from __future__ import annotations
 
+import logging
 import re
 from datetime import date, datetime, timedelta
 
@@ -253,10 +254,11 @@ def _demo(token: str, now: datetime) -> dict | None:
     }
 
 
-def form_data(token: str, today: date | None = None, now: datetime | None = None) -> dict | None:
+def form_data(token: str, today: date | None = None, now: datetime | None = None, visit: bool = False) -> dict | None:
     """Alles voor de gast-app. None als het token onbekend is. state: open, cancelled of closed; phase: before,
     code, stay of after (zie phase). Wat de gast nog niet mag zien (de pincode voor hij zijn gegevens invulde of
-    zolang de kamer niet betaald is), staat er niet in."""
+    zolang de kamer niet betaald is), staat er niet in.
+    visit: de gast opende de pagina (niet het automatisch verversen); wordt bijgehouden voor de monitor."""
     if token.startswith(DEMO_PREFIX):
         hotel_id = token[len(DEMO_PREFIX):].partition(".")[0]
         from hotel_checkin.core.hotels import list_hotels
@@ -283,6 +285,12 @@ def form_data(token: str, today: date | None = None, now: datetime | None = None
     # Doorstuuradres van Booking.com, Expedia, ... niet voorstellen: de gast vult zijn eigen adres in
     shown = email if is_own_email(email) else ""
     completed = r.checkin_completed_at is not None
+    access = _access(r.hotel_id, r, completed, now, ph) if state == "open" else None
+    if visit:
+        try:
+            repo.record_visit(r.hotel_id, r.reservation_id, bool(access and access["codes"]))
+        except Exception:  # de pagina moet altijd laden
+            logging.warning("%s: bezoek aan de verblijfspagina niet bewaard", r.hotel_id, exc_info=True)
     return {
         "state": state,
         "phase": ph,
@@ -308,7 +316,7 @@ def form_data(token: str, today: date | None = None, now: datetime | None = None
         "stairs": stairs_question(r.hotel_id, r.room_type, list(r.room_names.values())),
         "stairs_help": bool(r.stairs_help),
         "pay": pay_info(r) if state == "open" else None,
-        "access": _access(r.hotel_id, r, completed, now, ph) if state == "open" else None,
+        "access": access,
     }
 
 

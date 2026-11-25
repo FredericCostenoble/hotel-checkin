@@ -209,7 +209,7 @@ class Handler(BaseHTTPRequestHandler):
         if path.startswith("/api/checkin/") and path.endswith("/doors"):
             return self._json(200, {"doors": service.door_status(path.split("/")[3]) or {}})
         if path.startswith("/api/checkin/"):
-            data = service.form_data(path.rsplit("/", 1)[1])
+            data = service.form_data(path.rsplit("/", 1)[1], visit="v=1" in self.path)
             return self._json(200, data) if data else self._json(404, {"error": "not_found"})
         return self._file(WEB, path.lstrip("/"))
 

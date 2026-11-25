@@ -48,7 +48,7 @@ def _json(status: int, obj) -> func.HttpResponse:
 
 @app.route(route="api/checkin/{token}", methods=["GET"], auth_level=func.AuthLevel.ANONYMOUS)
 def get_checkin(req: func.HttpRequest) -> func.HttpResponse:
-    data = checkin.form_data(req.route_params.get("token", ""))
+    data = checkin.form_data(req.route_params.get("token", ""), visit=req.params.get("v") == "1")
     return _json(200, data) if data else _json(404, {"error": "not_found"})
 
 

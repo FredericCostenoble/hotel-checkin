@@ -214,3 +214,30 @@ def test_checkin_suffix(monkeypatch):
     assert templates.checkin_suffix("lucca", "abc", "fr") == "abc&lang=fr"
     monkeypatch.setenv("CHECKIN_FORM_URL", "https://test.example/form?r={token}")
     assert templates.checkin_suffix("lucca", "abc") == "abc"
+
+
+def test_visits_recorded_with_code_seen(monkeypatch):
+    """Openen van de verblijfspagina wordt bijgehouden (niet bij automatisch verversen), en wanneer de code getoond werd."""
+    from datetime import UTC, datetime, timedelta
+
+    _save()
+    r = repo.get_reservation("lucca", "R1")
+    r.rooms, r.paid = ["16"], True
+    r.access_codes = [{"room": "16", "pin": "2242", "user_id": "u", "group_id": "g"}]
+    repo.save_reservation(r)
+    now = _at(date(2098, 12, 30), 10)
+    service.form_data("tok", now=now)  # verversen: geen bezoek
+    assert repo.visits_for_hotel("lucca") == {}
+    clock = [datetime(2098, 12, 30, 9, 0, tzinfo=UTC)]
+    monkeypatch.setattr(repo, "_now", lambda: clock[0])
+    service.form_data("tok", now=now, visit=True)
+    v = repo.visits_for_hotel("lucca")["R1"]
+    assert v["count"] == 1 and "codes_first_at" not in v  # gegevens nog niet ingevuld: code niet getoond
+    clock[0] += timedelta(minutes=10)
+    service.form_data("tok", now=now, visit=True)
+    assert repo.visits_for_hotel("lucca")["R1"]["count"] == 1  # zelfde bezoek
+    assert service.submit("tok", {"email": "anna@example.com", "language": "nl"})[0]
+    clock[0] += timedelta(hours=2)
+    service.form_data("tok", now=now, visit=True)
+    v = repo.visits_for_hotel("lucca")["R1"]
+    assert v["count"] == 2 and v["codes_first_at"] == clock[0].isoformat()

@@ -574,11 +574,12 @@ const API = window.CHECKIN_API || "";
     $("f-email").href = "mailto:" + h.email;
   }
 
-  async function load(quiet) {
+  // visit: de gast opent de pagina (of keert terug naar de app); niet bij het automatisch verversen
+  async function load(quiet, visit) {
     if (!token) return showMessage("notfound");
     let res = null;
     try {
-      res = await fetch(API + "/api/checkin/" + encodeURIComponent(token), { cache: "no-store" });
+      res = await fetch(API + "/api/checkin/" + encodeURIComponent(token) + (visit ? "?v=1" : ""), { cache: "no-store" });
     } catch (e) { res = null; }
     if (res && res.status === 404) { store(CACHE_KEY, null); data = null; return showMessage("notfound"); }
     if (res && res.ok) {
@@ -612,12 +613,12 @@ const API = window.CHECKIN_API || "";
     if (payPending() || ticks % 5 === 0) load(true).then(renderCards).then(loadDoors);
     else { renderCards(); loadDoors(); }  // tijden van de schuifknoppen, toestand van de sloten
   }, 60 * 1000);
-  document.addEventListener("visibilitychange", () => { if (!document.hidden && data && !editing) load(true).then(renderCards); });
+  document.addEventListener("visibilitychange", () => { if (!document.hidden && data && !editing) load(true, true).then(renderCards); });
 
   if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost")) {
     navigator.serviceWorker.register("sw.js").catch(() => {});
   }
 
   render();
-  load().then(render).then(loadDoors);
+  load(false, true).then(render).then(loadDoors);
 })();

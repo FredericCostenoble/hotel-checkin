@@ -279,6 +279,9 @@ Object.assign(T.nl, {
   ev_event: "Gebeurtenis", ev_reply: "Antwoord", ev_all: "Alles", ev_msgs: "Alleen berichten", ev_events: "Alleen gebeurtenissen", ev_ok: "Gelukt", ev_lh: "Lighthouse", ev_recv: "Ontvangen",
   ev_booked: "Reservatie gemaakt in Lighthouse", ev_added: "Reservatie gelezen door de robot", ev_payout: "Overschrijving Booking.com geregistreerd", ev_payreq: "Betaalverzoek gemaakt in Lighthouse",
   ev_bf: "Label ONTBIJT gezet in Lighthouse", ev_stairs: "Regel in de interne memo: moeilijk ter been", ev_stairs_lbl: "Label NIET VERPLAATSEN gezet in Lighthouse",
+  ev_visit_first: "Gast opende zijn verblijfspagina voor het eerst", ev_visit_last: n => `Gast opende zijn verblijfspagina (laatste keer, ${n}× in totaal)`,
+  ev_codes_seen: "Gast zag zijn pincode voor het eerst op de verblijfspagina", d_seen: (a, b) => `Gezien door de gast: ${a}${b ? `, laatst ${b}` : ""}`,
+  d_not_seen: "Nog niet gezien door de gast op de verblijfspagina.",
   ev_move: (a, b) => `Kamerwissel in Lighthouse: ${a} (was ${b})`, ev_form: "Formulier ingevuld in de gast-app", ev_contact: "Contactgegevens gelezen in Lighthouse",
   ev_codes: "Pincodes gemaakt bij Salto", ev_codes_lh: "Code en status KLAAR OM IN TE CHECKEN gezet in Lighthouse",
   g_synced: d => `laatst gesynchroniseerd ${d}`, g_back: "Gasten", s_back: "Instellingen", hs_sec_reset_confirm: s => `De sectie "${s}" terugzetten naar de standaardwaarden uit het hotelbestand?`,
@@ -371,6 +374,9 @@ Object.assign(T.en, {
   ev_event: "Event", ev_reply: "Reply", ev_all: "All", ev_msgs: "Messages only", ev_events: "Events only", ev_ok: "Succeeded", ev_lh: "Lighthouse", ev_recv: "Received",
   ev_booked: "Reservation made in Lighthouse", ev_added: "Reservation read by the robot", ev_payout: "Booking.com payout registered", ev_payreq: "Payment request created in Lighthouse",
   ev_bf: "Label ONTBIJT set in Lighthouse", ev_stairs: "Line in the internal memo: difficulty with stairs", ev_stairs_lbl: "Label NIET VERPLAATSEN set in Lighthouse",
+  ev_visit_first: "Guest opened the stay page for the first time", ev_visit_last: n => `Guest opened the stay page (last time, ${n}× in total)`,
+  ev_codes_seen: "Guest first saw the PIN code on the stay page", d_seen: (a, b) => `Seen by the guest: ${a}${b ? `, last ${b}` : ""}`,
+  d_not_seen: "Not seen by the guest on the stay page yet.",
   ev_move: (a, b) => `Room change in Lighthouse: ${a} (was ${b})`, ev_form: "Form filled in in the guest app", ev_contact: "Contact details read in Lighthouse",
   ev_codes: "PIN codes created at Salto", ev_codes_lh: "Code and status READY TO CHECK IN set in Lighthouse",
   g_synced: d => `last synchronized ${d}`, g_back: "Guests", s_back: "Settings", hs_sec_reset_confirm: s => `Reset the section "${s}" to the defaults from the hotel file?`,
@@ -1160,6 +1166,12 @@ function renderDetail() {
   ev(r.breakfast_labeled_at, t("ev_bf"), false);
   ev(r.stairs_memo_at, t("ev_stairs"), false);
   ev(r.stairs_label_at, t("ev_stairs_lbl"), false);
+  const vis = r.visit;
+  if (vis) {
+    ev(vis.first_at, t("ev_visit_first"), false);
+    if (vis.last_at && vis.last_at !== vis.first_at) ev(vis.last_at, t("ev_visit_last", vis.count), false);
+    ev(vis.codes_first_at, t("ev_codes_seen"), false);
+  }
   (r.room_moves || []).forEach(m => ev(m.at, t("ev_move", [].concat(m.to || []).join(" + "), [].concat(m.from || []).join(" + "))));
   // Pincodes: per tijdstip (minuut) samen, met de kamers erbij
   const byMin = {};
@@ -1174,6 +1186,9 @@ function renderDetail() {
   const codes = r.access_codes || [];
   const pins = codes.length ? `<section class="card"><div class="ch"><h2 class="ct">${IC(P.key)} ${esc(t("d_pins"))}</h2><span class="badge b-ok">${IC(P.check, 14, 2.4)}${esc(t("d_made"))}</span></div><div class="cb">
     ${codes.map((c, i) => `<div class="li"><div class="lt"><b>${esc(/^\d+$/.test(c.room) ? t("r_room", c.room) : !c.room || /voordeur|front|door/i.test(c.room) ? t("d_door") : c.room)}</b>${i === 0 && r.access_valid_from ? `<div class="small muted">${esc(t("d_valid", dtime(r.access_valid_from), dtime(r.access_valid_until)))}</div>` : ""}</div><span class="code">${esc(c.pin)}<span class="enter">&#8629;</span></span></div>`).join("")}
+    <div class="small" style="margin-top:6px">${r.visit && r.visit.codes_first_at
+      ? `<span class="badge b-ok">${IC(P.eye, 14, 2.4)}${esc(t("d_seen", dtime(r.visit.codes_first_at), r.visit.codes_last_at !== r.visit.codes_first_at ? dtime(r.visit.codes_last_at) : ""))}</span>`
+      : `<span class="badge b-no">${esc(t("d_not_seen"))}</span>`}</div>
     <div class="small muted">${esc(pinsNote(r))}</div></div></section>` : "";
   const open = r.open_amount != null && r.open_amount > 0;
   const roomPay = r.payout_registered_at ? t("d_paid_payout", dshort(r.payout_registered_at)) : r.paid === true ? t("d_paid") : r.paid === false ? t("d_unpaid") : t("d_unknown");
