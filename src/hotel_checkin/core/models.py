@@ -15,12 +15,12 @@ class ReservationStatus(str, Enum):
 
 
 def normalize_language(code: str | None) -> str:
-    """Taal voor berichten en formulier: nl, fr of de als die meegegeven is, anders altijd en.
+    """Taal voor berichten en formulier: nl, fr, de of es als die meegegeven is, anders altijd en.
 
     Varianten zoals "nl-BE", "FR" of "de_DE" worden herkend.
     """
     base = (code or "").strip().lower().replace("_", "-").split("-")[0]
-    return base if base in ("nl", "fr", "de") else "en"
+    return base if base in ("nl", "fr", "de", "es") else "en"
 
 
 class Channel(str, Enum):

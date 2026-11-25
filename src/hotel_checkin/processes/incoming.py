@@ -24,7 +24,8 @@ from hotel_checkin.guests import repository as guests
 
 REPLY_EVERY = timedelta(hours=12)
 REPLY_STATE = "incoming_reply:{number}"
-COUNTRY_LANGUAGE = {"+32": "nl", "+31": "nl", "+33": "fr", "+49": "de", "+43": "de"}  # als de reservatie onbekend is
+COUNTRY_LANGUAGE = {"+32": "nl", "+31": "nl", "+33": "fr", "+49": "de", "+43": "de", "+34": "es", "+52": "es",
+                    "+54": "es", "+56": "es", "+57": "es", "+51": "es", "+58": "es", "+593": "es", "+598": "es"}  # als de reservatie onbekend is
 
 
 def _reservation(hotel_id: str, number: str, today: date) -> Reservation | None:

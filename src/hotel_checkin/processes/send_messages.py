@@ -155,6 +155,7 @@ CITY_TAX_UNIT_TEXT = {
     "fr": {"person_night": "{bedrag} par personne et par nuit", "person_stay": "{bedrag} par personne et par séjour"},
     "en": {"person_night": "{bedrag} per person per night", "person_stay": "{bedrag} per person per stay"},
     "de": {"person_night": "{bedrag} pro Person und Nacht", "person_stay": "{bedrag} pro Person und Aufenthalt"},
+    "es": {"person_night": "{bedrag} por persona y noche", "person_stay": "{bedrag} por persona y estancia"},
 }
 
 

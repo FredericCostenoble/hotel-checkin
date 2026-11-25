@@ -75,7 +75,7 @@ def test_opt_out_is_case_insensitive():
         ("nl", "nl"), ("NL-nl", "nl"), ("nl_BE", "nl"),
         ("FR", "fr"), ("fr-CA", "fr"), ("FR-ch", "fr"), ("Fr", "fr"), ("fr-BE", "fr"),
         ("de-DE", "de"), ("de-AT", "de"), ("DE-ch", "de"),
-        ("en", "en"), ("EN-us", "en"), ("it", "en"), ("es-ES", "en"), ("", "en"), (None, "en"),
+        ("en", "en"), ("EN-us", "en"), ("it", "en"), ("es-ES", "es"), ("", "en"), (None, "en"),
     ],
 )
 def test_language_rule(given, stored):

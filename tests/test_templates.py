@@ -42,7 +42,7 @@ def test_missing_field_stays_visible():
 
 
 def test_unknown_language_falls_back_to_english():
-    r = render("lucca", "confirmation", "es", sample_data("en"))
+    r = render("lucca", "confirmation", "it", sample_data("en"))
     assert r.subject.startswith("Your stay")
 
 
@@ -129,3 +129,14 @@ def test_wifi_per_room_or_shared(monkeypatch):
     assert templates.wifi_line({"wifi": {"per_kamer": False, "naam": "Gasten"}}, common, shared) == \
         "Wifi: Gasten, wachtwoord geheim"
     assert templates.wifi_line({"wifi": {"per_kamer": False, "naam": ""}}, common, {}) == ""
+
+
+def test_spanish_mail_and_dates():
+    from datetime import date, datetime
+
+    from hotel_checkin.messaging.templates import format_date, format_moment
+
+    r = render("lucca", "confirmation", "es", sample_data("es"))
+    assert r.subject.startswith("Su estancia en Hotel Lucca") and "Estimado/a Anna" in r.html
+    assert format_date(date(2026, 11, 14), "es") == "sábado, 14 de noviembre de 2026"
+    assert format_moment(datetime(2026, 11, 14, 14, 0), "es") == "14 de noviembre, 14:00"

@@ -169,7 +169,7 @@ def test_rejected_shows_reason_and_resubmit_replaces_it():
     assert lg["state"] == "rejected" and lg["pending"]["reason"] == "te vaag"
     res = wa.submit_all("lucca", "fred", client=fake.client())  # de andere nieuwe sjablonen wel
     assert ("confirmation", "fr") not in [(r["step"], r["lang"]) for r in res["results"]]  # afgekeurd, ongewijzigd
-    assert len(res["results"]) == 17 and res["ok"]  # 4 x 4 voor gasten + 2 voor het personeel, min 1
+    assert len(res["results"]) == 21 and res["ok"]  # 4 x 5 voor gasten + 2 voor het personeel, min 1
     wa.save_text("lucca", "confirmation", "fr", {"body": "Bonjour {{1}}, merci pour votre réservation.",
                                                   "button": "Mon check-in"}, "fred")
     wa.submit("lucca", "confirmation", "fr", "fred", client=fake.client())

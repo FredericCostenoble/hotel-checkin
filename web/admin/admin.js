@@ -2131,7 +2131,7 @@ async function showPreview(step, rate) {
   pvStep = step; pvRate = rate || pvRate;
   $("#preview").hidden = false;
   $("#pv-title").textContent = `${t("wf_example")}: ${t("step_" + step.step)} (${t("flow_" + wfFlow)}, ${t("rate_" + pvRate)})`;
-  $("#pv-langs").innerHTML = ["nl", "fr", "en", "de"].map(l => `<button type="button" data-l="${l}" class="${l === pvLang ? "active" : ""}">${l.toUpperCase()}</button>`).join("");
+  $("#pv-langs").innerHTML = ["nl", "fr", "en", "de", "es"].map(l => `<button type="button" data-l="${l}" class="${l === pvLang ? "active" : ""}">${l.toUpperCase()}</button>`).join("");
   document.querySelectorAll("#pv-langs button").forEach(b => b.onclick = () => { pvLang = b.dataset.l; showPreview(pvStep); });
   const r = await apiFetch(API + `/api/monitor/${$("#hotel").value}/preview`, {
     method: "POST", headers: { "Content-Type": "application/json" },

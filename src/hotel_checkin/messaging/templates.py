@@ -28,7 +28,7 @@ from functools import lru_cache
 from pathlib import Path
 
 TEXTS_DIR = Path(__file__).parent / "texts"
-LANGUAGES = ("nl", "fr", "en", "de")
+LANGUAGES = ("nl", "fr", "en", "de", "es")
 FALLBACK_LANGUAGE = "en"
 EMAIL_MESSAGES = ("confirmation", "reminder", "access_code", "thank_you", "room_change")
 # payment_request: vroeger een aparte mail na vertrek, nu het onderdeel betaalknop van de bedankmail
@@ -452,6 +452,9 @@ SAMPLE = {
     "de": {"aankomst": "Freitag, 14. November 2026", "vertrek": "Sonntag, 16. November 2026",
            "kamertype": "Superior Double", "code_geldig_van": "14. November, 14:00 Uhr",
            "code_geldig_tot": "16. November, 11:00 Uhr"},
+    "es": {"aankomst": "viernes, 14 de noviembre de 2026", "vertrek": "domingo, 16 de noviembre de 2026",
+           "kamertype": "Superior Double", "code_geldig_van": "14 de noviembre, 14:00",
+           "code_geldig_tot": "16 de noviembre, 11:00"},
 }
 
 
@@ -489,7 +492,7 @@ if __name__ == "__main__":
         hotel = args[i + 1]
         del args[i : i + 2]
     if len(args) not in (1, 2):
-        sys.exit("Gebruik: python -m hotel_checkin.messaging.templates <ontvanger> [nl,fr,en,de] [--hotel id]")
+        sys.exit("Gebruik: python -m hotel_checkin.messaging.templates <ontvanger> [nl,fr,en,de,es] [--hotel id]")
     languages = args[1].split(",") if len(args) == 2 else list(LANGUAGES)
     cfg = load_hotel_config(hotel)
     for lang in languages:
@@ -510,6 +513,7 @@ _DAYS = {
     "fr": ["lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche"],
     "en": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
     "de": ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"],
+    "es": ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"],
 }
 _MONTHS = {
     "nl": ["januari", "februari", "maart", "april", "mei", "juni", "juli", "augustus", "september",
@@ -520,6 +524,8 @@ _MONTHS = {
            "October", "November", "December"],
     "de": ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September",
            "Oktober", "November", "Dezember"],
+    "es": ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre",
+           "octubre", "noviembre", "diciembre"],
 }
 
 
@@ -529,6 +535,8 @@ def format_date(d, language: str) -> str:
     day, month = _DAYS[lang][d.weekday()], _MONTHS[lang][d.month - 1]
     if lang == "de":
         return f"{day}, {d.day}. {month} {d.year}"
+    if lang == "es":
+        return f"{day}, {d.day} de {month} de {d.year}"
     if lang == "en":
         return f"{day} {d.day} {month} {d.year}"
     return f"{day} {d.day} {month} {d.year}"
@@ -546,4 +554,6 @@ def format_moment(dt, language: str) -> str:
         return f"{dt.day} {month}, {h}{f':{dt.minute:02d}' if dt.minute else ''} {'am' if dt.hour < 12 else 'pm'}"
     if lang == "de":
         return f"{dt.day}. {month}, {dt.hour:02d}:{dt.minute:02d} Uhr"
+    if lang == "es":
+        return f"{dt.day} de {month}, {dt.hour:02d}:{dt.minute:02d}"
     return f"{dt.day} {month}, {dt.hour:02d}:{dt.minute:02d}"

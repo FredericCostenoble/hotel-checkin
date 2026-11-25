@@ -143,7 +143,7 @@ def _with_current(options: tuple, current) -> list:
 
 ROOM_BASE = (("verdieping", "text"), ("lijst", "text"), ("twin", "bool"))
 ROOM_TEXTS = ("naam", "kort", "toegang")
-ROOM_LANGS = ("nl", "fr", "en", "de")
+ROOM_LANGS = ("nl", "fr", "en", "de", "es")
 
 
 def _room_template(file_rooms: dict[str, dict]) -> list[dict]:

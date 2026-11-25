@@ -76,6 +76,24 @@
       invalid: "Bitte prüfen Sie Ihre Eingabe.", error: "Etwas ist schiefgelaufen. Versuchen Sie es erneut, oder rufen Sie die Rezeption an.",
       help: "Klappt es nicht? Rufen Sie die Rezeption an.", call: n => `${n} anrufen`, unknown: "Diese Seite gibt es nicht.",
     },
+    es: {
+      loading: "Un momento...", title: "Su página de estancia",
+      intro: "Reciba de nuevo el enlace a su página de estancia, con toda la información sobre su estancia. Solo lo enviamos a un correo electrónico o número de móvil de su reserva.",
+      wa_title: "Por WhatsApp", wa_text: "Lo más rápido: envíe el mensaje preparado. Recibirá su enlace al instante, si su número figura en su reserva.", wa_btn: "Abrir WhatsApp",
+      contact_title: "Por correo o móvil", contact_label: "Su correo electrónico o número de móvil",
+      contact_hint: "Número con prefijo del país, p. ej. +34 612 345 678.", send: "Enviar mi enlace",
+      name_title: "No sé qué dirección figura en mi reserva",
+      name_intro: "Por ejemplo, porque reservó a través de Booking.com o Expedia. Indique su apellido y su fecha de salida.",
+      last_name: "Apellido", pick_date: "Elija una fecha", departure: "Fecha de salida",
+      ok: "Si esta dirección o este número corresponde a una reserva de hoy o de mañana, recibirá el enlace en unos minutos. Revise también su carpeta de spam.",
+      sent: "Hemos enviado el enlace a:", to_email: s => `correo a ${s}`, to_sms: s => `SMS al ${s}`,
+      to_platform: p => `un mensaje a través de ${p}: mire en la app de ${p} o en el correo con el que reservó`,
+      sent_none: "Hemos encontrado su reserva, pero no contiene ninguna dirección ni número. Llame a recepción.",
+      not_found: "No encontramos ninguna reserva de hoy o de mañana con este apellido y esta fecha de salida. Revise la ortografía o llame a recepción.",
+      limit: "Demasiados intentos. Vuelva a intentarlo dentro de una hora o llame a recepción.",
+      invalid: "Revise lo que ha introducido.", error: "Algo ha salido mal. Vuelva a intentarlo o llame a recepción.",
+      help: "¿No funciona? Llame a recepción.", call: n => `Llamar al ${n}`, unknown: "Esta página no existe.",
+    },
   };
   const API = window.CHECKIN_API || "";
   const params = new URLSearchParams(location.search);
@@ -101,7 +119,7 @@
 
   // Vertrekdatum als keuzelijst (vandaag tot 30 dagen verder), voluit in de taal van de gast
   function fillDates() {
-    const sel = $("departure"), keep = sel.value, locale = { nl: "nl-BE", fr: "fr-BE", en: "en-GB", de: "de-DE" }[lang];
+    const sel = $("departure"), keep = sel.value, locale = { nl: "nl-BE", fr: "fr-BE", en: "en-GB", de: "de-DE", es: "es-ES" }[lang];
     const fmt = new Intl.DateTimeFormat(locale, { weekday: "long", day: "numeric", month: "long" });
     const iso = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
     let html = `<option value="">${esc(t("pick_date"))}</option>`;

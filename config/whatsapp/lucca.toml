@@ -98,6 +98,28 @@ body = "Ihr Zimmer im Hotel Lucca hat sich geändert: Sie wohnen jetzt in Zimmer
 button = "Ihre Reservierung"
 
 # Lijsten voor het personeel: in het Engels, zoals de lijsten zelf
+[confirmation.es]
+header = "Su reserva en el Hotel Lucca"
+body = "Estimado/a {{1}}, gracias por su reserva en el Hotel Lucca. Antes de su llegada, complete sus datos de check-in con el botón de abajo. Así recibirá a tiempo toda la información práctica para su estancia."
+button = "Completar check-in"
+footer = "Hotel Lucca, Naaldenstraat 30, Brugge"
+
+[reminder.es]
+header = "Su estancia en el Hotel Lucca"
+body = "Estimado/a {{1}}, dentro de una semana será nuestro huésped en el Hotel Lucca. Revise o complete sus datos de check-in con el botón de abajo. Así recibirá toda la información práctica antes de su llegada."
+button = "Revisar mis datos"
+
+[access_code.es]
+header = "Su estancia en el Hotel Lucca"
+body = "Habitación {{1}}. Su código para la entrada y su habitación: {{2}}, después la tecla de flecha ↵ en cada teclado. Todos los detalles con el botón de abajo y en su correo."
+button = "Su reserva"
+footer = "Hotel Lucca, Naaldenstraat 30, Brugge"
+
+[room_change.es]
+header = "Cambio de habitación"
+body = "Su habitación en el Hotel Lucca ha cambiado: ahora se aloja en la habitación {{1}}. Con el botón de abajo verá cómo entrar y toda la información para su estancia."
+button = "Su reserva"
+
 [breakfast_list.en]
 body = "Breakfast list for {{1}}: {{2}}. Open the PDF for the full list to print."
 

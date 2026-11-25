@@ -37,6 +37,7 @@ website_nl = "https://hotellucca.be/nl/hotel-brugge-centrum/"
 website_fr = "https://hotellucca.be/fr/hotel-bruges-centre/"
 website_en = "https://hotellucca.be/en/hotel-bruges-city-centre/"
 website_de = "https://hotellucca.be/de/hotel-bruegge-zentrum/"
+website_es = ""   # geen Spaanse versie van de website: de website hierboven
 logo_url = "https://hotellucca.be/wp-content/uploads/2025/06/Logo-website-hotel-lucca.png"
 # Icoon van de gast-app (tabblad en beginscherm van de gsm), zoals op de website. Leeg = standaardicoon.
 favicon_url = "https://hotellucca.be/wp-content/uploads/2025/06/cropped-favicon-192x192.png"
@@ -253,14 +254,17 @@ naam_nl = "historische suite"
 naam_fr = "suite historique"
 naam_en = "historic suite"
 naam_de = "historische Suite"
+naam_es = "suite histórica"
 kort_nl = "eigen ingang Kuipersstraat"
 kort_fr = "entrée propre Kuipersstraat"
 kort_en = "own entrance Kuipersstraat"
 kort_de = "eigener Eingang Kuipersstraat"
+kort_es = "entrada propia Kuipersstraat"
 toegang_nl = "Uw suite heeft een eigen ingang: u gaat niet via de voordeur van het hotel. Sta met uw gezicht naar de voordeur van het hotel en ga naar links, de Kuipersstraat in. De deur is naast de garagepoort; het klavier voor uw pincode hangt naast de deur."
 toegang_fr = "Votre suite a sa propre entrée : vous ne passez pas par la porte d'entrée de l'hôtel. Face à la porte d'entrée de l'hôtel, tournez à gauche dans la Kuipersstraat. La porte se trouve à côté de la porte de garage ; le clavier pour votre code PIN est à côté de la porte."
 toegang_en = "Your suite has its own entrance: you do not use the front door of the hotel. Facing the hotel's front door, turn left into Kuipersstraat. The door is next to the garage door; the keypad for your PIN code is next to the door."
 toegang_de = "Ihre Suite hat einen eigenen Eingang: Sie gehen nicht durch die Haustür des Hotels. Stellen Sie sich mit Blick auf die Haustür des Hotels und gehen Sie nach links in die Kuipersstraat. Die Tür ist neben dem Garagentor; das Tastenfeld für Ihren PIN-Code hängt neben der Tür."
+toegang_es = "Su suite tiene entrada propia: no pasa por la puerta principal del hotel. De frente a la puerta principal del hotel, gire a la izquierda hacia la Kuipersstraat. La puerta está junto a la puerta del garaje; el teclado para su código PIN está al lado de la puerta."
 
 [kamers.20]
 # Appartement in het gebouw rechts naast het hotel, met een eigen klavier; niet op de 2e verdieping.
@@ -270,14 +274,17 @@ naam_nl = "appartement naast het hotel"
 naam_fr = "appartement à côté de l'hôtel"
 naam_en = "apartment next to the hotel"
 naam_de = "Apartment neben dem Hotel"
+naam_es = "apartamento junto al hotel"
 kort_nl = "appartement rechts naast het hotel"
 kort_fr = "appartement à droite de l'hôtel"
 kort_en = "apartment right next to the hotel"
 kort_de = "Apartment rechts neben dem Hotel"
+kort_es = "apartamento a la derecha del hotel"
 toegang_nl = "Uw appartement is in het gebouw rechts naast het hotel: u gaat niet via de voordeur van het hotel. Sta met uw gezicht naar de voordeur van het hotel; het gebouw rechts ervan heeft een eigen klavier voor uw pincode."
 toegang_fr = "Votre appartement se trouve dans le bâtiment à droite de l'hôtel : vous ne passez pas par la porte d'entrée de l'hôtel. Face à la porte d'entrée de l'hôtel, le bâtiment à sa droite a son propre clavier pour votre code PIN."
 toegang_en = "Your apartment is in the building to the right of the hotel: you do not use the front door of the hotel. Facing the hotel's front door, the building to its right has its own keypad for your PIN code."
 toegang_de = "Ihr Apartment befindet sich im Gebäude rechts neben dem Hotel: Sie gehen nicht durch die Haustür des Hotels. Mit Blick auf die Haustür des Hotels hat das Gebäude rechts davon ein eigenes Tastenfeld für Ihren PIN-Code."
+toegang_es = "Su apartamento está en el edificio a la derecha del hotel: no pasa por la puerta principal del hotel. De frente a la puerta principal del hotel, el edificio de la derecha tiene su propio teclado para su código PIN."
 
 [kamers.16]
 # Twin kamer: standaard opgemaakt met 2 aparte bedden. Staat het label DOUBLE OPMAKEN op de reservatie, dan komt dat bij
@@ -299,10 +306,12 @@ trappen_vraag_nl = "Een van de gasten kan moeilijk trappen lopen"
 trappen_vraag_fr = "L'un des clients a des difficultés à monter les escaliers"
 trappen_vraag_en = "One of the guests has difficulty climbing stairs"
 trappen_vraag_de = "Einer der Gäste hat Schwierigkeiten beim Treppensteigen"
+trappen_vraag_es = "Uno de los huéspedes tiene dificultades para subir escaleras"
 trappen_uitleg_nl = "Hotel Lucca is gevestigd in een middeleeuws pand zonder lift. Kan een van de gasten moeilijk trappen lopen, dan proberen wij u een kamer op een lagere verdieping te geven. Dat is enkel mogelijk als er bij uw aankomst nog een geschikte kamer vrij is."
 trappen_uitleg_fr = "L'Hôtel Lucca est situé dans un bâtiment médiéval sans ascenseur. Si l'un des clients éprouve des difficultés à monter les escaliers, nous essaierons de vous attribuer une chambre à un étage inférieur. Cela n'est possible que si une chambre adaptée est encore libre à votre arrivée."
 trappen_uitleg_en = "Hotel Lucca is housed in a medieval building without a lift. If one of the guests has difficulty climbing stairs, we will try to give you a room on a lower floor. This is only possible if a suitable room is still available on your arrival."
 trappen_uitleg_de = "Das Hotel Lucca befindet sich in einem mittelalterlichen Gebäude ohne Aufzug. Hat einer der Gäste Schwierigkeiten beim Treppensteigen, versuchen wir, Ihnen ein Zimmer in einem unteren Stockwerk zu geben. Dies ist nur möglich, wenn bei Ihrer Ankunft noch ein geeignetes Zimmer frei ist."
+trappen_uitleg_es = "El Hotel Lucca está en un edificio medieval sin ascensor. Si uno de los huéspedes tiene dificultades para subir escaleras, intentaremos darle una habitación en una planta más baja. Solo es posible si a su llegada todavía queda libre una habitación adecuada."
 trappen_niet_bij = ["apartment", "appartement", "suite"]
 trappen_memo = "Moeilijk ter been (check-in-formulier): lagere verdieping indien vrij"
 # Ligt de gast (al) op een lage verdieping (hoogstens trappen_label_verdieping), dan zet de robot dit label op het planbord,
@@ -317,6 +326,7 @@ url_nl = "https://hotellucca.be/nl/privacy-policy-nl/"
 url_fr = "https://hotellucca.be/fr/privacy-policy-fr/"
 url_en = "https://hotellucca.be/en/privacy-policy/"
 url_de = "https://hotellucca.be/de/privacy-policy-de/"
+url_es = "https://hotellucca.be/en/privacy-policy/"   # nog geen Spaanse versie: de Engelse
 
 [kleuren]
 accent = "#B4BCCC"        # grijsblauw van het logo

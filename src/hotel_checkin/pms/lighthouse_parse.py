@@ -27,6 +27,9 @@ COUNTRY_LANGUAGE = {
     "NL": "nl", "BE": "nl", "SR": "nl",
     "FR": "fr", "LU": "fr", "MC": "fr",
     "DE": "de", "AT": "de", "LI": "de", "CH": "de",
+    "ES": "es", "AD": "es", "MX": "es", "AR": "es", "CO": "es", "CL": "es", "PE": "es", "VE": "es", "EC": "es",
+    "UY": "es", "PY": "es", "BO": "es", "CR": "es", "PA": "es", "DO": "es", "CU": "es", "GT": "es", "HN": "es",
+    "NI": "es", "SV": "es", "PR": "es",
 }
 
 _UUID = re.compile(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}", re.IGNORECASE)

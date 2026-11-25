@@ -1,0 +1,338 @@
+# Textos de los mensajes para huéspedes, español (trato de usted). Misma estructura que nl.toml.
+
+[algemeen]
+# Wifi in de praktische info ({wifi_regel}): per kamer een eigen netwerk (QR-code) of één netwerk voor iedereen,
+# volgens [wifi] per_kamer in het hotelbestand
+wifi_per_kamer = "Wi-Fi: cada habitación tiene su propia red Wi-Fi privada. Escanee el código QR de su habitación para conectarse."
+wifi_gedeeld = "Wi-Fi: {wifi_naam}, contraseña {wifi_wachtwoord}"
+# Meer kamers: één code per kamer (code-mail)
+codes_titel = "Sus códigos PIN personales"
+codes_uitleg = "Cada código abre la puerta principal y esa habitación, del {code_geldig_van} al {code_geldig_tot}. Pulse siempre la tecla de flecha ↵ después del código."
+kamer_code = "Habitación {kamer}, {wat}"   # {wat} = verdieping of naam van de kamer
+verdieping = "planta {n}"
+verdieping_kort = "planta {n}"
+eigen_ingang = "Atención: entrada propia"   # titel boven de uitleg voor een kamer met een eigen ingang
+meerdere_kamers = "{aantal} habitaciones: {kamers}"   # kamer in de reservatiegegevens bij meer dan één kamer
+team = "El equipo de {hotel_naam}"
+voettekst = "Recibe este correo porque tiene una reserva en {hotel_naam}."
+
+[confirmation]
+onderwerp = "Su estancia en {hotel_naam}, del {aankomst} al {vertrek}"
+voorvertoning = "Gracias por su reserva. Haga su check-in online en su página de estancia."
+aanhef = "Estimado/a {voornaam}:"
+afsluiting = "Hasta pronto,"
+sms = "{hotel_naam}: estimado/a {voornaam}, gracias por su reserva. Haga su check-in online en su página de estancia, donde más adelante también encontrará su código PIN: {checkin_link}"
+
+[[confirmation.blokken]]
+type = "text"
+alineas = ["Gracias por su reserva en {hotel_naam}. Será un placer recibirle en el corazón de Brujas."]
+
+[[confirmation.blokken]]
+module = "reservation"
+type = "details"
+titel = "Su reserva"
+rijen = [["Llegada", "{aankomst}"], ["Salida", "{vertrek}"], ["Habitación", "{kamertype}"], ["Número de reserva", "{reservatienummer}"]]
+
+[[confirmation.blokken]]
+module = "checkin_form"
+type = "text"
+titel = "Su página de estancia"
+alineas = ["Todo lo necesario para su estancia está en una página personal. Empiece allí con su check-in online, solo le llevará unos minutos. Después encontrará lo que queda por pagar, su código PIN para la puerta principal y su habitación, y durante su estancia abrirá allí las puertas."]
+
+[[confirmation.blokken]]
+module = "checkin_form"
+type = "button"
+tekst = "Ir a mi página de estancia"
+link = "{checkin_link}"
+
+[[confirmation.blokken]]
+type = "text"
+alineas = ["Nuestra recepción está abierta todos los días de {receptie_van} a {receptie_tot}."]
+
+[reminder]
+onderwerp = "Falta una semana para su estancia en {hotel_naam}"
+voorvertoning = "Haga su check-in online y reciba su código PIN personal."
+aanhef = "Estimado/a {voornaam}:"
+afsluiting = "Hasta la semana que viene,"
+sms = "{hotel_naam}: estimado/a {voornaam}, dentro de una semana será nuestro huésped. Haga ahora su check-in online en su página de estancia: {checkin_link}"
+
+[[reminder.blokken]]
+type = "text"
+alineas = ["Dentro de una semana le damos la bienvenida en {hotel_naam}. Todavía no ha hecho su check-in online."]
+
+[[reminder.blokken]]
+module = "reservation"
+type = "details"
+titel = "Su reserva"
+rijen = [["Llegada", "{aankomst}"], ["Salida", "{vertrek}"], ["Número de reserva", "{reservatienummer}"]]
+
+[[reminder.blokken]]
+module = "checkin_form"
+type = "text"
+alineas = ["Hágalo ahora en su página de estancia, solo le llevará unos minutos. Así recibirá su código PIN personal antes de su llegada."]
+
+[[reminder.blokken]]
+module = "checkin_form"
+type = "button"
+tekst = "Hacer el check-in online"
+link = "{checkin_link}"
+
+[access_code]
+onderwerp = "Su código PIN e información práctica para {hotel_naam}"
+voorvertoning = "Su código PIN personal y todo lo que necesita para su estancia."
+aanhef = "Estimado/a {voornaam}:"
+afsluiting = "Hasta pronto,"
+sms = "{hotel_naam}: estimado/a {voornaam}, ¡hasta pronto! Su código PIN para la puerta principal y la habitación {kamernummer}: {pincode}, después la tecla de flecha. Válido del {code_geldig_van} al {code_geldig_tot}. Todos los detalles están en su correo."
+# Sms en WhatsApp met de code: één bericht per kamer
+sms_kamer = "Su estancia @ {hotel_naam}, habitación {kamer_kort}, código: {pincode} ↵"
+
+[[access_code.blokken]]
+type = "text"
+alineas = ["Su estancia se acerca. A continuación encontrará su código PIN personal."]
+
+[[access_code.blokken]]
+module = "code"
+type = "highlight"
+titel = "Su código PIN personal"
+waarde = "{pincode} ↵"
+alineas = ["Este código abre la puerta principal y la puerta de su habitación del {code_geldig_van} al {code_geldig_tot}.", "Pulse siempre la tecla de flecha ↵ después del código.", "Su habitación: {kamernummer}"]
+
+[[access_code.blokken]]
+module = "practical_info"
+type = "list"
+titel = "Llegada"
+items = [
+  "Dirección: {hotel_adres}",
+  "El check-in es posible a partir de las {receptie_van}. La recepción está abierta hasta las {receptie_tot}. Si llega más tarde, vaya directamente a su habitación con su código PIN.",
+  "Introduzca su código PIN en el teclado de la puerta principal y pulse después la tecla de flecha ↵. Haga lo mismo en la puerta de su habitación.",
+  "Nuestro hotel no tiene ascensor. Si necesita ayuda con su equipaje, pregunte en recepción.",
+  "Aparcamiento: el hotel no tiene aparcamiento propio. El aparcamiento {parking_naam} está a {parking_minuten} minutos a pie.",
+]
+
+[[access_code.blokken]]
+module = "practical_info"
+type = "text"
+titel = "Salida"
+alineas = ["El check-out es hasta las {checkout_tot}. Puede dejar su equipaje con nosotros sin coste. Ese día su código sigue abriendo la puerta principal hasta las {checkout_voordeur_tot}, por ejemplo para recoger su equipaje."]
+
+[[access_code.blokken]]
+module = "practical_info"
+type = "text"
+alineas = ["El desayuno, el Wi-Fi y todo lo relativo a su estancia están en su página de estancia. Durante su estancia también abre allí la puerta principal y su habitación."]
+
+[[access_code.blokken]]
+type = "button"
+tekst = "Ver mi estancia"
+link = "{checkin_link}"
+
+[[access_code.blokken]]
+type = "text"
+alineas = ["Comparta este correo y el enlace a su página de estancia solo con las personas que se alojan con usted: con su código PIN y esa página se puede abrir su habitación."]
+
+[[access_code.blokken]]
+type = "text"
+alineas = ["¿Alguna pregunta? Llámenos al {hotel_telefoon} o responda simplemente a este correo."]
+
+[at_the_door]
+sms = "{hotel_naam}: ¡bienvenido/a, {voornaam}! Introduzca {pincode} seguido de la tecla de flecha en el teclado de la entrada y de la habitación {kamernummer}. ¿Algún problema? Llame al {nood_nummer}."
+
+
+[room_change]
+# Kamerwissel na de code-mail (bv. probleem in de badkamer): zelfde code, andere kamer
+onderwerp = "Su habitación en {hotel_naam} ha cambiado"
+voorvertoning = "Nueva habitación, mismo código PIN."
+aanhef = "Estimado/a {voornaam}:"
+afsluiting = "Saludos cordiales,"
+sms = "{hotel_naam}: su habitación ha cambiado, ahora se aloja en la habitación {kamer_kort}. Su código sigue siendo {pincode} ↵"
+
+[[room_change.blokken]]
+type = "text"
+alineas = ["Su habitación ha cambiado: ahora se aloja en {nieuwe_kamer}, en lugar de la habitación {oude_kamer}.", "Su código PIN sigue siendo el mismo: {pincode} ↵. Ahora abre la puerta de su nueva habitación."]
+
+[[room_change.blokken]]   # alleen als de nieuwe kamer een eigen ingang heeft ([kamers.<nummer>] toegang_...)
+type = "text"
+alleen_als = "toegang"
+titel = "{eigen_ingang_titel}"
+alineas = ["{toegang}"]
+
+[[room_change.blokken]]
+type = "text"
+alineas = ["Si tiene alguna pregunta, llámenos al {hotel_telefoon}."]
+
+[thank_you]
+onderwerp = "Gracias por su estancia en {hotel_naam}"
+voorvertoning = "Gracias, y esperamos volver a verle."
+aanhef = "Estimado/a {voornaam}:"
+afsluiting = "Saludos cordiales,"
+sms = "{hotel_naam}: estimado/a {voornaam}, gracias por su estancia. ¡Esperamos volver a verle!"
+
+[[thank_you.blokken]]
+type = "text"
+alineas = ["Muchas gracias por alojarse en {hotel_naam}. Esperamos que haya disfrutado de Brujas y de su habitación.", "Será un placer volver a recibirle. Reserve directamente en nuestra web y tendrá siempre el mejor precio."]
+
+[[thank_you.blokken]]   # onderdeel betaalknop (tabblad Workflow): alleen als er na vertrek nog iets openstaat
+module = "pay"
+type = "text"
+titel = "Pago"
+alineas = ["Al revisar su factura vimos que todavía queda pendiente {openstaand_bedrag}. Puede pagarlo de forma segura en línea a continuación."]
+
+[[thank_you.blokken]]
+module = "pay"
+type = "prices"
+totaal = "Total"
+betaald = "Ya pagado"
+open = "Pendiente de pago"
+
+[[thank_you.blokken]]
+module = "pay"
+type = "button"
+tekst = "Pagar ahora ({openstaand_bedrag})"
+link = "{betaal_link}"
+
+[[thank_you.blokken]]
+module = "pay"
+type = "text"
+alineas = ["¿Alguna pregunta sobre la factura? Responda simplemente a este correo o llámenos al {hotel_telefoon}."]
+
+[[thank_you.blokken]]   # review vragen; alleen als het adres ingevuld is (Instellingen > Hotel > Reviews)
+type = "text"
+titel = "Su opinión"
+alineas = ["¿Ha disfrutado de su estancia? Una breve reseña nos ayuda mucho y ayuda a otros viajeros a elegir. Solo le llevará un minuto."]
+alleen_als = "reviews_google_url"
+
+[[thank_you.blokken]]
+type = "button"
+tekst = "Escribir una reseña en Google"
+link = "{reviews_google_url}"
+alleen_als = "reviews_google_url"
+
+[[thank_you.blokken]]
+type = "button"
+tekst = "O en otro sitio"
+link = "{reviews_other_url}"
+alleen_als = "reviews_other_url"
+
+[payment_request]
+onderwerp = "Importe pendiente de su estancia en {hotel_naam}"
+voorvertoning = "Queda un importe pendiente de su estancia."
+aanhef = "Estimado/a {voornaam}:"
+afsluiting = "Saludos cordiales,"
+sms = "{hotel_naam}: estimado/a {voornaam}, queda pendiente {openstaand_bedrag} de su estancia. Más información en su correo."
+
+[[payment_request.blokken]]
+type = "text"
+alineas = ["Gracias por alojarse en {hotel_naam}. Al revisar su factura vimos que todavía queda un importe pendiente."]
+
+[[payment_request.blokken]]
+type = "text"
+alineas = ["¿Alguna pregunta sobre la factura? Responda simplemente a este correo o llámenos al {hotel_telefoon}."]
+
+# Bouwstenen die een stap kan meekrijgen als ze niet in de eigen tekst staan (tabblad Workflow,
+# inhoud van de mail). module = ... in een blok hierboven: dat blok hoort bij die bouwsteen.
+
+[[modules.reservation]]
+type = "details"
+titel = "Su reserva"
+rijen = [[
+  "Llegada",
+  "{aankomst}",
+], [
+  "Salida",
+  "{vertrek}",
+], [
+  "Habitación",
+  "{kamertype}",
+], [
+  "Número de reserva",
+  "{reservatienummer}",
+]]
+
+[[modules.checkin_form]]
+type = "text"
+titel = "Su página de estancia"
+alineas = ["Todo lo necesario para su estancia está en una página personal. Empiece allí con su check-in online, solo le llevará unos minutos. Después encontrará lo que queda por pagar, su código PIN para la puerta principal y su habitación, y durante su estancia abrirá allí las puertas."]
+
+[[modules.checkin_form]]
+type = "button"
+tekst = "Ir a mi página de estancia"
+link = "{checkin_link}"
+
+[[modules.checkin_form_done]]   # formulier al ingevuld: knop naar de verblijfspagina
+type = "text"
+titel = "Check-in online"
+alineas = ["Su check-in online está hecho. Todo lo relativo a su estancia está en su página de estancia."]
+
+[[modules.checkin_form_done]]
+type = "button"
+tekst = "Ver mi estancia"
+link = "{checkin_link}"
+
+[[modules.code]]
+type = "highlight"
+titel = "Su código PIN personal"
+waarde = "{pincode} ↵"
+alineas = [
+  "Este código abre la puerta principal y la puerta de su habitación del {code_geldig_van} al {code_geldig_tot}.", "Pulse siempre la tecla de flecha ↵ después del código.",
+  "Su habitación: {kamernummer}",
+]
+
+[[modules.practical_info]]
+type = "list"
+titel = "Llegada"
+items = [
+  "Dirección: {hotel_adres}",
+  "El check-in es posible a partir de las {receptie_van}. La recepción está abierta hasta las {receptie_tot}. Si llega más tarde, vaya directamente a su habitación con su código PIN.",
+  "Introduzca su código PIN en el teclado de la puerta principal y pulse después la tecla de flecha ↵. Haga lo mismo en la puerta de su habitación.",
+  "Nuestro hotel no tiene ascensor. Si necesita ayuda con su equipaje, pregunte en recepción.",
+  "Aparcamiento: el hotel no tiene aparcamiento propio. El aparcamiento {parking_naam} está a {parking_minuten} minutos a pie.",
+]
+
+[[modules.practical_info]]
+type = "text"
+titel = "Salida"
+alineas = ["El check-out es hasta las {checkout_tot}. Puede dejar su equipaje con nosotros sin coste. Ese día su código sigue abriendo la puerta principal hasta las {checkout_voordeur_tot}, por ejemplo para recoger su equipaje."]
+
+[[modules.practical_info]]
+type = "text"
+alineas = ["El desayuno, el Wi-Fi y todo lo relativo a su estancia están en su página de estancia. Durante su estancia también abre allí la puerta principal y su habitación."]
+
+[[modules.pay_open_amount]]
+type = "text"
+titel = "Pago"
+alineas = ["Queda pendiente un importe de {openstaand_bedrag} de su estancia. Puede pagarlo ahora de forma segura en línea, así no tendrá que pensar en ello a su llegada."]
+
+[[modules.pay_open_amount]]
+type = "prices"
+totaal = "Total"
+betaald = "Ya pagado"
+open = "Pendiente de pago"
+
+[[modules.pay_open_amount]]
+type = "button"
+tekst = "Pagar ahora ({openstaand_bedrag})"
+link = "{betaal_link}"
+
+[[modules.pay_city_tax]]
+type = "text"
+titel = "Tasa turística"
+alineas = ["La ciudad de Brujas cobra una tasa turística de {toeristenbelasting_tarief}. Para su estancia son {toeristenbelasting}. No está incluida en el precio que pagó a través de {kanaal}. Puede pagarla ahora de forma segura en línea."]
+
+[[modules.pay_city_tax]]
+type = "button"
+tekst = "Pagar la tasa turística ({toeristenbelasting})"
+link = "{betaal_link}"
+
+
+[incoming]
+# Automatisch antwoord als een gast een WhatsApp of sms terugstuurt naar het nummer van de automatische berichten
+# (processes/incoming.py). Het bericht zelf gaat per mail naar het hotel ([twilio] doorsturen).
+antwoord = "{hotel_naam}: este número solo envía mensajes automáticos. Su mensaje se ha reenviado a recepción. Para una respuesta más rápida, escríbanos por WhatsApp al {twilio_contact_whatsapp} o llame al {hotel_telefoon}."
+
+[find_stay]
+onderwerp = "Su página de estancia en {hotel_naam}"
+mail = ["Estimado/a {voornaam}:", "Ha pedido el enlace a su página de estancia. Allí encontrará su código PIN, abrirá las puertas durante su estancia y tendrá toda la información práctica.", "¿No lo ha pedido usted? Entonces no tiene que hacer nada."]
+knop = "Abrir mi página de estancia"
+sms = "{hotel_naam}: su página de estancia con su código PIN y toda la información: {link}"
+whatsapp_tekst = "Mi estancia"
+whatsapp_gevonden = "Hola {voornaam}, aquí tiene su página de estancia en {hotel_naam}, con su código PIN, las puertas y toda la información: {link}"
+whatsapp_niet_gevonden = "{hotel_naam}: no encontramos ninguna reserva de hoy o mañana con este número. Use el enlace de nuestro correo, o escanee de nuevo el código QR y elija el correo o su nombre. ¿No funciona? Llame al {hotel_telefoon}."

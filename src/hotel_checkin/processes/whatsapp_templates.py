@@ -42,10 +42,10 @@ SOURCE_ENV = "prd"  # TST (en dev) gebruiken de sjablonen van PRD: niets apart i
 # werd een sjabloon met de pincode goedgekeurd (lucca_test_access_nl_v1, 25/11/2026). Daarom staat ze in access_code;
 # tot die versie goedgekeurd is, blijft de vorige (zonder pincode) in gebruik.
 TEMPLATES: dict[str, dict] = {
-    "confirmation": {"vars": ("voornaam",), "button": "checkin_suffix", "langs": ("nl", "fr", "en", "de")},
-    "reminder": {"vars": ("voornaam",), "button": "checkin_suffix", "langs": ("nl", "fr", "en", "de")},
-    "access_code": {"vars": ("kamer_kort", "pincode"), "button": "checkin_suffix", "langs": ("nl", "fr", "en", "de")},
-    "room_change": {"vars": ("kamer_kort",), "button": "checkin_suffix", "langs": ("nl", "fr", "en", "de")},
+    "confirmation": {"vars": ("voornaam",), "button": "checkin_suffix", "langs": ("nl", "fr", "en", "de", "es")},
+    "reminder": {"vars": ("voornaam",), "button": "checkin_suffix", "langs": ("nl", "fr", "en", "de", "es")},
+    "access_code": {"vars": ("kamer_kort", "pincode"), "button": "checkin_suffix", "langs": ("nl", "fr", "en", "de", "es")},
+    "room_change": {"vars": ("kamer_kort",), "button": "checkin_suffix", "langs": ("nl", "fr", "en", "de", "es")},
     # Lijsten voor het personeel: in het Engels, zoals de lijsten zelf (dag en samenvatting komen Engels uit
     # daily_lists: lists.day_text en describe). De voorbeeld-pdf moet echt bestaan: Meta haalt ze op.
     "breakfast_list": {"vars": ("dag", "samenvatting"), "media": "pdf_pad", "langs": ("en",),
