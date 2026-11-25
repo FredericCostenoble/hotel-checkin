@@ -152,6 +152,24 @@
     ask({ method: "name", value: n, departure: d }, $("name-result"), $("name-btn"));
   });
   document.querySelectorAll(".lang button").forEach((b) => b.addEventListener("click", () => { lang = b.dataset.lang; render(); load(); }));
+
+  // Opende de gast zijn verblijfspagina al eens in deze browser (de app bewaart dan de laatste link), en loopt dat
+  // verblijf nog: meteen daarheen, zonder iets te vragen. Anders (ander toestel, andere browser, verblijf voorbij)
+  // gewoon deze pagina.
+  async function known() {
+    let last = "";
+    try { last = localStorage.getItem("gastapp:last") || ""; } catch (e) { last = ""; }
+    if (!last || params.get("ask") === "1") return false;
+    try {
+      const res = await fetch(API + "/api/checkin/" + encodeURIComponent(last), { cache: "no-store" });
+      if (!res.ok) return false;
+      const d = await res.json();
+      if (d.state !== "open" || d.phase === "after") return false;
+    } catch (e) { return false; }
+    location.replace("./?r=" + encodeURIComponent(last) + (params.get("lang") ? "&lang=" + encodeURIComponent(lang) : ""));
+    return true;
+  }
+
   render();
-  load();
+  known().then((gone) => { if (!gone) load(); });
 })();
