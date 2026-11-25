@@ -2425,8 +2425,7 @@ const HS_TEXT = {
    "kuislijst.labels_twin": ["Labels alleen op een twin kamer", "Bv. DOUBLE OPMAKEN: komt alleen bij de opmerkingen van een twin kamer (in het hotelbestand: [kamers.<nummer>] twin)."],
    "kuislijst.labels_memo": ["Labels met interne memo", "Bv. SPECIAAL VERZOEK: de interne memo van de reservatie komt bij de opmerkingen."],
    "kuislijst.woorden": ["Woorden voor opmerkingen", "Zinnen uit de opmerking of de folio van de reservatie met een van deze woorden komen bij de opmerkingen (bv. babybed, romantisch)."],
-   "kamers.lijst_volgorde": ["Kamers op de ontbijt- en schoonmaaklijst", "In deze volgorde, met een komma; - = lege rij (nieuwe verdieping). Naast het nummer komt de omschrijving uit Lighthouse."],
-   "kamers.niet_op_lijst": ["Kamers niet op de lijsten", "Bv. buiten dienst of nog niet in gebruik, met een komma. Ze komen nooit op de ontbijt- en schoonmaaklijst, ook niet als ze op het planbord staan."],
+   "kamers.lijst_volgorde": ["Kamers op de ontbijt- en schoonmaaklijst", "In deze volgorde, met een komma; - = lege rij (nieuwe verdieping). Naast het nummer komt de omschrijving uit Lighthouse. Een kamer die hier niet in staat (bv. nog buiten dienst), komt alleen achteraan op een dag met een reservatie."],
    "kamers.20.lijst": ["Naam op de lijsten", "Eigen naam in plaats van het nummer op de ontbijt- en schoonmaaklijst (bv. App). Leeg = het nummer."],
    "schakelaars.berichten": [
     "Gastcommunicatie",
@@ -2757,8 +2756,7 @@ const HS_TEXT = {
    "kuislijst.labels_twin": ["Labels only on a twin room", "E.g. DOUBLE OPMAKEN: only added to the remarks of a twin room (hotel file: [kamers.<number>] twin)."],
    "kuislijst.labels_memo": ["Labels with internal memo", "E.g. SPECIAAL VERZOEK: the internal memo of the reservation is added to the remarks."],
    "kuislijst.woorden": ["Words for remarks", "Sentences from the reservation remark or folio containing one of these words are added to the remarks (e.g. baby cot, romantic)."],
-   "kamers.lijst_volgorde": ["Rooms on the breakfast and cleaning list", "In this order, separated by commas; - = empty row (new floor). The description from Lighthouse is shown next to the number."],
-   "kamers.niet_op_lijst": ["Rooms not on the lists", "E.g. out of service or not in use yet, separated by commas. They never appear on the breakfast and cleaning list, even when they are on the planboard."],
+   "kamers.lijst_volgorde": ["Rooms on the breakfast and cleaning list", "In this order, separated by commas; - = empty row (new floor). The description from Lighthouse is shown next to the number. A room not in here (e.g. still out of service) only appears at the end on a day with a reservation."],
    "kamers.20.lijst": ["Name on the lists", "Own name instead of the number on the breakfast and cleaning list (e.g. App). Empty = the number."],
    "schakelaars.berichten": [
     "Guest communication",

@@ -169,20 +169,14 @@ def describe_room(text: str) -> str:
     return text.capitalize() if text.isupper() else text
 
 
-def hidden_rooms(hotel_id: str) -> set[str]:
-    """Kamers die (nog) niet in gebruik zijn ([kamers] niet_op_lijst), bv. nieuwe kamers die al in Lighthouse staan
-    maar buiten dienst. Ze komen alleen op een lijst als er die dag een echte reservatie op staat."""
-    return set(_list(load_hotel(hotel_id).get("kamers", {}).get("niet_op_lijst")))
-
-
 def _layout(hotel_id: str, rooms_used: list[str], booked: set[str] | None = None) -> list[str]:
-    """Kamers in de volgorde van de instellingen; kamers die daar niet in staan, erachter (gesorteerd).
-    Kamers uit [kamers] niet_op_lijst alleen als er die dag een reservatie op staat (booked), dus niet voor
-    buiten dienst."""
-    hidden = hidden_rooms(hotel_id) - (booked if booked is not None else set(rooms_used))
-    order = [r for r in room_order(hotel_id) if r not in hidden]
+    """Kamers in de volgorde van de instellingen ([kamers] lijst_volgorde). Een kamer die daar niet in staat (bv. een
+    nieuwe kamer die al in Lighthouse staat maar nog buiten dienst is), komt erachter, alleen als er die dag een
+    reservatie op staat (booked): nooit voor buiten dienst, maar een gast blijft nooit van de lijst."""
+    order = room_order(hotel_id)
     known = {r for r in order if r != SEPARATOR}
-    extra = sorted((r for r in rooms_used if r not in known and r not in hidden), key=lambda x: (len(x), x))
+    booked = set(rooms_used) if booked is None else booked
+    extra = sorted((r for r in rooms_used if r not in known and r in booked), key=lambda x: (len(x), x))
     if not order:
         return extra
     return order + ([SEPARATOR, *extra] if extra else [])
@@ -568,7 +562,8 @@ def build_cleaning(hotel_id: str, day: date, reservations: list[Reservation], wo
             cur["remark"] = "; ".join(x for x in (cur["remark"], *remark) if x)
     d = day.isoformat()
     booked = ({x.get("room") or "?" for x in stays if x["arrival"] <= d <= x["departure"]} if stays is not None
-              else {room for r in reservations if _active(r) and r.arrival <= day <= r.departure for room in r.rooms})
+              else {room for r in reservations if _active(r) and r.arrival <= day <= r.departure
+                    for room in (r.rooms or ["?"])})
     rows = _rows(hotel_id, _layout(hotel_id, list(per_room), booked), per_room,
                  {"leave": False, "stay": False, "checkin": False, "remark": "", "check": False},
                  room_catalog(hotel_id, reservations))

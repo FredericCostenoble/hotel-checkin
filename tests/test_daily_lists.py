@@ -688,15 +688,14 @@ def test_breakfast_sms_text_skips_empty_rooms():
         "14: 2 together with room 32", "16: ?", "21: 2", "5: late", "Total: 4"]
 
 
-def test_rooms_not_in_use_stay_off_the_lists_unless_booked(monkeypatch):
-    """[kamers] niet_op_lijst (nieuwe kamers, buiten dienst): niet op de lijst, ook niet na Out of order; wel als er
-    die dag een echte reservatie op staat (bv. volgende zomer)."""
+def test_rooms_not_in_the_order_only_when_booked():
+    """Een kamer buiten [kamers] lijst_volgorde (nieuwe kamer, buiten dienst): niet op de lijst, ook niet na Out of
+    order; wel als er die dag een reservatie op staat (bv. volgende zomer)."""
     from hotel_checkin.processes import daily_lists as dl
 
-    monkeypatch.setattr(dl, "hidden_rooms", lambda h: {"10", "17"})
-    assert "10" not in dl._layout("lucca", ["10", "11"], booked={"11"})
-    assert "10" in dl._layout("lucca", ["10", "11"], booked={"10", "11"})
-    day = date(2026, 11, 26)
-    off = [{"room": "17", "date": "2026-11-25"}]
-    out = dl.build_cleaning("lucca", day, [], [], stays=[], out_of_order=off)
-    assert all(r.get("room") != "17" for r in out["rows"])
+    assert "17" not in dl._layout("lucca", ["17", "11"], booked={"11"})
+    assert "17" in dl._layout("lucca", ["17", "11"], booked={"17", "11"})
+    out = dl.build_cleaning("lucca", date(2026, 11, 26), [], [], stays=[],
+                            out_of_order=[{"room": "17", "date": "2026-11-25"}, {"room": "34", "date": "2026-11-25"}])
+    rooms = [r.get("room") for r in out["rows"]]
+    assert "17" not in rooms and "34" in rooms
