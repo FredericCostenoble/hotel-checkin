@@ -40,7 +40,7 @@ button = "Gegevens nakijken"
 
 [reminder.fr]
 header = "Votre séjour à l'Hotel Lucca"
-body = "Bonjour {{1}}, dans une semaine vous serez notre hôte à l'Hotel Lucca. Vérifiez ou complétez vos données d'enregistrement via le bouton ci-dessous. Vous recevrez ainsi avant votre arrivée toutes les informations pratiques."
+body = "Bonjour {{1}}, dans une semaine vous serez notre hôte à l'Hotel Lucca. Vérifiez ou complétez vos données d'enregistrement via le bouton ci-dessous. Vous recevrez ainsi avant votre arrivée toutes les informations pratiques et votre code PIN personnel."
 button = "Vérifier mes données"
 
 [reminder.en]
