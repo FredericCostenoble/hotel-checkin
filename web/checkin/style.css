@@ -206,3 +206,9 @@ a.lnk { font-weight: 700; text-decoration: underline; text-underline-offset: 3px
   display: inline-flex; align-items: center; justify-content: center; }
 .linkbtn { background: none; border: 0; padding: 4px; font: inherit; font-size: 15px; color: #565B66; text-decoration: underline;
   cursor: pointer; align-self: center; }
+
+/* Keuzelijst met pijltje, ook buiten .field > select (pagina na de QR-code) */
+select.input {
+  -webkit-appearance: none; appearance: none; padding-right: 44px;
+  background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%232B2F38' stroke-width='1.6'/%3E%3C/svg%3E") no-repeat right 16px center;
+}

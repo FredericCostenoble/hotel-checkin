@@ -12,7 +12,7 @@
       contact_hint: "Gsm-nummer met landcode, bv. +44 7700 900123.", send: "Stuur mijn link",
       name_title: "Ik weet niet welk adres in mijn reservatie staat",
       name_intro: "Bv. omdat u via Booking.com of Expedia boekte. Vul uw familienaam en uw vertrekdatum in.",
-      last_name: "Familienaam", departure: "Vertrekdatum",
+      last_name: "Familienaam", pick_date: "Kies een datum", departure: "Vertrekdatum",
       ok: "Hoort dit adres of nummer bij een reservatie van vandaag of morgen, dan ontvangt u binnen enkele minuten de link. Kijk ook in uw spam.",
       sent: "We stuurden de link naar:", to_email: s => `e-mail naar ${s}`, to_sms: s => `sms naar ${s}`,
       to_platform: p => `een bericht via ${p}: kijk in de app van ${p} of in de mailbox waarmee u boekte`,
@@ -30,7 +30,7 @@
       contact_hint: "Numéro avec indicatif du pays, p. ex. +33 6 12 34 56 78.", send: "Envoyer mon lien",
       name_title: "Je ne sais pas quelle adresse figure dans ma réservation",
       name_intro: "Par exemple parce que vous avez réservé via Booking.com ou Expedia. Indiquez votre nom de famille et votre date de départ.",
-      last_name: "Nom de famille", departure: "Date de départ",
+      last_name: "Nom de famille", pick_date: "Choisissez une date", departure: "Date de départ",
       ok: "Si cette adresse ou ce numéro correspond à une réservation d'aujourd'hui ou de demain, vous recevez le lien dans quelques minutes. Vérifiez aussi vos spams.",
       sent: "Nous avons envoyé le lien à :", to_email: s => `e-mail à ${s}`, to_sms: s => `SMS au ${s}`,
       to_platform: p => `un message via ${p} : regardez dans l'app ${p} ou dans la boîte mail utilisée pour réserver`,
@@ -48,7 +48,7 @@
       contact_hint: "Mobile number with country code, e.g. +44 7700 900123.", send: "Send my link",
       name_title: "I don't know which address is in my booking",
       name_intro: "For example because you booked via Booking.com or Expedia. Enter your last name and your departure date.",
-      last_name: "Last name", departure: "Departure date",
+      last_name: "Last name", pick_date: "Choose a date", departure: "Departure date",
       ok: "If this address or number belongs to a booking for today or tomorrow, you will receive the link within a few minutes. Also check your spam.",
       sent: "We sent the link to:", to_email: s => `email to ${s}`, to_sms: s => `text message to ${s}`,
       to_platform: p => `a message via ${p}: check the ${p} app or the mailbox you booked with`,
@@ -66,7 +66,7 @@
       contact_hint: "Handynummer mit Ländervorwahl, z. B. +49 151 23456789.", send: "Meinen Link senden",
       name_title: "Ich weiß nicht, welche Adresse in meiner Buchung steht",
       name_intro: "Zum Beispiel, weil Sie über Booking.com oder Expedia gebucht haben. Geben Sie Ihren Nachnamen und Ihr Abreisedatum ein.",
-      last_name: "Nachname", departure: "Abreisedatum",
+      last_name: "Nachname", pick_date: "Datum wählen", departure: "Abreisedatum",
       ok: "Gehört diese Adresse oder Nummer zu einer Buchung von heute oder morgen, erhalten Sie den Link in wenigen Minuten. Prüfen Sie auch Ihren Spam-Ordner.",
       sent: "Wir haben den Link gesendet an:", to_email: s => `E-Mail an ${s}`, to_sms: s => `SMS an ${s}`,
       to_platform: p => `eine Nachricht über ${p}: Schauen Sie in die App von ${p} oder in das Postfach, mit dem Sie gebucht haben`,
@@ -95,7 +95,23 @@
     const h = info.hotel;
     document.title = h.name;
     $("wa-btn").textContent = t("wa_btn");
+    fillDates();
     $("call-btn").textContent = t("call", h.phone);
+  }
+
+  // Vertrekdatum als keuzelijst (vandaag tot 30 dagen verder), voluit in de taal van de gast
+  function fillDates() {
+    const sel = $("departure"), keep = sel.value, locale = { nl: "nl-BE", fr: "fr-BE", en: "en-GB", de: "de-DE" }[lang];
+    const fmt = new Intl.DateTimeFormat(locale, { weekday: "long", day: "numeric", month: "long" });
+    const iso = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    let html = `<option value="">${esc(t("pick_date"))}</option>`;
+    const d = new Date();
+    for (let i = 0; i <= 30; i++) {
+      html += `<option value="${iso(d)}">${esc(fmt.format(d))}</option>`;
+      d.setDate(d.getDate() + 1);
+    }
+    sel.innerHTML = html;
+    sel.value = keep;
   }
 
   async function load() {
