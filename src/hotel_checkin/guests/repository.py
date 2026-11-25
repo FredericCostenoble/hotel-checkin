@@ -541,12 +541,16 @@ def log_message(hotel_id: str, reservation_id: str, message_type: str, result: S
 
 def update_message_status(hotel_id: str, reservation_id: str, message_id: str, status: str,
                           error: str = "") -> dict | None:
-    """Status van Twilio (delivered, read, undelivered, failed). Mislukt = ok wordt False."""
+    """Status van Twilio (delivered, read, undelivered, failed). Mislukt = ok wordt False.
+    Twilio meldt niet altijd in volgorde: een latere "delivered" overschrijft "read" niet."""
     table = _table(T_MESSAGES)
     try:
         e = dict(table.get_entity(_msg_pk(hotel_id, reservation_id), message_id))
     except Exception:  # noqa: BLE001 - onbekend bericht
         return None
+    rank = {"accepted": 0, "queued": 1, "sending": 2, "sent": 3, "delivered": 4, "read": 5}
+    if status in rank and rank.get(e.get("status", ""), -1) > rank[status]:
+        return e
     e["status"] = status
     if status in ("undelivered", "failed"):
         e["ok"] = False

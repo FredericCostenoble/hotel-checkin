@@ -264,3 +264,11 @@ def test_robot_log_has_container_start_and_azure_run():
     assert runs["nieuwe_reservaties"]["execution"] == "job-checkin-robot-tst-abc12"
     assert runs["nieuwe_reservaties"]["process_started_at"]
     assert "execution" not in runs["berichten"]
+
+
+def test_read_status_not_overwritten_by_late_delivered():
+    """Twilio meldt niet altijd in volgorde: gelezen blijft gelezen; mislukt overschrijft wel."""
+    mid = repo.log_message("lucca", "R-9", "access_code", SendResult(Channel.WHATSAPP, "+32470000000", True))
+    repo.update_message_status("lucca", "R-9", mid, "read")
+    assert repo.update_message_status("lucca", "R-9", mid, "delivered")["status"] == "read"
+    assert repo.update_message_status("lucca", "R-9", mid, "sent")["status"] == "read"
