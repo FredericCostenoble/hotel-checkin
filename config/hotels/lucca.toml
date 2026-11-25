@@ -245,6 +245,10 @@ verdieping_regel = "eerste_cijfer"   # eerste_cijfer of geen (geen verdieping to
 # Kamers op de ontbijt- en schoonmaaklijst, in deze volgorde; "-" = lege rij (nieuwe verdieping). Naast het nummer komt de
 # omschrijving uit Lighthouse. Een eigen naam in plaats van het nummer: lijst = "..." in [kamers.<nummer>].
 lijst_volgorde = ["20", "2", "-", "11", "12", "14", "15", "16", "-", "21", "22", "23", "24", "25", "-", "30", "31", "32", "33", "34"]
+# Kamers die nog niet op de ontbijt- en schoonmaaklijst komen, ook niet als ze op het planbord staan. 10, 17 en 18:
+# nieuwe kamers voor de winter van 2026, al in Lighthouse maar buiten dienst (vraag van Seppe, 25/11/2026).
+# Weghalen zodra ze in gebruik komen, en dan ook in lijst_volgorde zetten.
+niet_op_lijst = ["10", "17", "18"]
 
 [kamers.2]
 # Historische suite op de benedenverdieping, met een eigen ingang om de hoek (Kuipersstraat), niet via de voordeur.
