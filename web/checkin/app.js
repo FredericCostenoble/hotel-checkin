@@ -335,7 +335,7 @@ const API = window.CHECKIN_API || "";
     || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);  // iPad die zich als Mac voordoet
 
   function homeWanted() {
-    return data && mobile() && data.completed && (data.phase === "code" || data.phase === "stay") && !standalone()
+    return data && mobile() && data.state === "open" && data.phase !== "after" && !standalone()
       && !stored("gastapp:home") && !stored("gastapp:home-no:" + token);
   }
 
@@ -417,7 +417,8 @@ const API = window.CHECKIN_API || "";
       set("intro-card", introHtml());
       set("stay-card", stayHtml());
       set("practical-card", practicalHtml());
-      order = ["intro-card", "details-card", "stay-card", "practical-card"];
+      if (homeWanted()) set("home-card", homeHtml());
+      order = ["intro-card", "details-card"].concat(homeWanted() ? ["home-card"] : [], ["stay-card", "practical-card"]);
     } else if (data.phase === "stay") {
       set("access-card", accessHtml());
       set("contact-row", contactButtons());
