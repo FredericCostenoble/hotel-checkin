@@ -114,7 +114,7 @@
     document.title = h.name;
     $("wa-btn").textContent = t("wa_btn");
     fillDates();
-    $("call-btn").textContent = t("call", h.phone);
+    setCall();
   }
 
   // Vertrekdatum als keuzelijst (vandaag tot 30 dagen verder), voluit in de taal van de gast
@@ -132,6 +132,20 @@
     sel.value = keep;
   }
 
+  // Het nummer om te bellen hangt af van het uur (receptie, avond, anders de gsm van het hotel): de server kiest het.
+  const callNo = () => (info && (info.call || info.hotel.phone)) || "";
+  const tel = (n) => "tel:" + n.replace(/\s/g, "");
+  function setCall() {
+    $("call-btn").textContent = t("call", callNo());
+    $("call-btn").href = tel(callNo());
+  }
+  async function refreshCall() {
+    try {
+      const res = await fetch(API + "/api/find/" + encodeURIComponent(hotel) + "?lang=" + lang, { cache: "no-store" });
+      if (res.ok) { const d = await res.json(); if (d.call) info.call = d.call; setCall(); }
+    } catch (e) { /* oud nummer blijft staan */ }
+  }
+
   async function load() {
     let res = null;
     try { res = await fetch(API + "/api/find/" + encodeURIComponent(hotel) + "?lang=" + lang, { cache: "no-store" }); } catch (e) { res = null; }
@@ -145,7 +159,6 @@
     root.setProperty("--bg", h.colors.achtergrond);
     $("logo").src = h.logo_url; $("logo").alt = h.name; $("logo-link").href = h.website;
     if (h.favicon_url) { $("favicon").removeAttribute("type"); $("favicon").href = h.favicon_url; }
-    $("call-btn").href = "tel:" + h.phone.replace(/\s/g, "");
     $("wa-btn").href = info.whatsapp || "#";
     ["intro", "contact-card", "name-card", "help-card"].forEach((id) => ($(id).hidden = false));
     $("wa-card").hidden = !info.whatsapp;
@@ -160,16 +173,19 @@
       data = await res.json();
     } catch (e) { data = null; }
     btn.disabled = false;
+    await refreshCall();
     out.hidden = false;
     out.classList.toggle("warn", !data || data.status !== "ok" && data.status !== "sent" || data.status === "sent" && !data.to.length);
-    if (!data) { out.textContent = t("error"); return; }
+    const withCall = (k) => { out.innerHTML = `${esc(t(k))} <a href="${esc(tel(callNo()))}"><b>${esc(callNo())}</b></a>`; };
+    if (!data) { withCall("error"); return; }
     if (data.status === "sent") {
-      if (!data.to.length) { out.textContent = t("sent_none"); return; }
+      if (!data.to.length) { withCall("sent_none"); return; }
       out.innerHTML = `<div><b>${esc(t("sent"))}</b><ul style="margin:6px 0 0;padding-left:20px">${data.to.map((x) =>
         `<li>${esc(x.platform ? t("to_platform", x.platform) : t(x.channel === "email" ? "to_email" : "to_sms", x.shown))}</li>`).join("")}</ul></div>`;
       return;
     }
-    out.textContent = t(["ok", "not_found", "limit", "invalid"].includes(data.status) ? data.status : "error");
+    const k = ["ok", "not_found", "limit", "invalid"].includes(data.status) ? data.status : "error";
+    if (k === "ok" || k === "invalid") out.textContent = t(k); else withCall(k);
   }
 
   $("contact-form").addEventListener("submit", (e) => {

@@ -107,3 +107,10 @@ def test_whatsapp_keyword_replies_with_link_also_for_platform_number(sent):
     assert out["stay_link"] == "not_found" and "geen reservatie" in sent["wa"][1][1]
     # Een gewone vraag gaat zoals vroeger naar het hotel
     assert incoming.handle("lucca", "whatsapp", "+44770090012", "Is er parking?", now=NOW)["forwarded"]
+
+
+def test_page_info_call_number_follows_forwarding(monkeypatch):
+    from hotel_checkin.processes import call_forward
+
+    monkeypatch.setattr(call_forward, "number", lambda hotel_id, now=None: "+32 50 34 20 67")
+    assert find_stay.page_info("lucca", "nl")["call"] == "+32 50 34 20 67"

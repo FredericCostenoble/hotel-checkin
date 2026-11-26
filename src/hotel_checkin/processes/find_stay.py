@@ -309,11 +309,14 @@ def reply_request(hotel_id: str, channel: str, number: str, language: str, now: 
 
 
 def page_info(hotel_id: str, language: str) -> dict:
-    """Wat de pagina na de QR-code nodig heeft: hotel (logo, kleuren, telefoon) en de WhatsApp-link."""
+    """Wat de pagina na de QR-code nodig heeft: hotel (logo, kleuren, telefoon), de WhatsApp-link en het nummer
+    om nu te bellen (zelfde regel als het doorschakelen: receptie tijdens de receptie-uren, 's avonds het noodnummer,
+    anders de gsm van het hotel)."""
     from hotel_checkin.checkin.service import hotel_info
+    from hotel_checkin.processes import call_forward
     from hotel_checkin.messaging import whatsapp
     from hotel_checkin.processes.send_messages import phone_enabled
 
     t, _ = _texts(hotel_id, language)
     wa = whatsapp.chat_link(hotel_id, t["whatsapp_tekst"]) if phone_enabled(hotel_id) else ""
-    return {"hotel": hotel_info(hotel_id, language), "whatsapp": wa}
+    return {"hotel": hotel_info(hotel_id, language), "whatsapp": wa, "call": call_forward.number(hotel_id)}
