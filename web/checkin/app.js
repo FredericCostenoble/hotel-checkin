@@ -123,19 +123,32 @@ const API = window.CHECKIN_API || "";
       <div class="meta">${I.person()}<span>${esc(people)}</span></div>`;
   }
 
-  function stepsHtml() {
+  // De vier stappen van het verblijf, met de kaart waar de gast ze terugvindt (nummer in de titel van die kaart).
+  function stepList() {
     const a = data.access || {};
     const pay = data.pay;
     const steps = [];
-    steps.push([t("step_checkin"), data.completed ? "done" : "now", data.completed ? t("st_done") : t("st_todo")]);
-    if (pay && pay.paid) steps.push([t("step_pay"), "done", t("st_done")]);
-    else if (payOpen()) steps.push([t("step_pay"), data.completed ? "now" : "", data.completed ? t("st_todo") : t("st_later")]);
-    else steps.push([t("step_pay"), "", t("st_later")]);
+    steps.push([t("step_checkin"), data.completed ? "done" : "now", data.completed ? t("st_done") : t("st_todo"), "details-card"]);
+    if (pay && pay.paid) steps.push([t("step_pay"), "done", t("st_done"), "todo-card"]);
+    else if (payOpen()) steps.push([t("step_pay"), data.completed ? "now" : "", data.completed ? t("st_todo") : t("st_later"), "todo-card"]);
+    else steps.push([t("step_pay"), "", t("st_later"), "todo-card"]);
     const codes = (a.codes || []).length;
-    steps.push([t("step_code"), codes ? "done" : "", codes ? t("st_done") : a.code_date && a.code_date > todayIso() ? t("st_from", fmtDay(a.code_date)) : t("st_later")]);
-    steps.push([t("step_doors"), "", t("st_from", fmtDay(data.arrival))]);
-    return `<ol class="steps">${steps.map(([label, cls, status], i) =>
-      `<li class="${cls}"><span class="num">${cls === "done" ? I.check(16) : i + 1}</span><span class="sl">${esc(label)}</span><span class="ss">${esc(status)}</span></li>`).join("")}</ol>`;
+    steps.push([t("step_code"), codes ? "done" : "", codes ? t("st_done") : a.code_date && a.code_date > todayIso() ? t("st_from", fmtDay(a.code_date)) : t("st_later"), "access-card"]);
+    steps.push([t("step_doors"), "", t("st_from", fmtDay(data.arrival)), "access-card"]);
+    return steps;
+  }
+
+  const stepNum = (cls, i) => `<span class="num ${cls}">${cls === "done" ? I.check(16) : i + 1}</span>`;
+
+  // Nummer in het rondje voor de titel van een kaart, zelfde stand als in de opsomming bovenaan.
+  function cardNum(i) {
+    const st = stepList()[i];
+    return st ? stepNum(st[1], i) : "";
+  }
+
+  function stepsHtml() {
+    return `<ol class="steps">${stepList().map(([label, cls, status, target], i) =>
+      `<li class="${cls}"><a class="jump" href="#${target}" data-jump="${target}">${stepNum(cls, i)}<span class="sl">${esc(label)}</span><span class="ss">${esc(status)}</span></a></li>`).join("")}</ol>`;
   }
 
   function warningHtml() {
@@ -146,8 +159,9 @@ const API = window.CHECKIN_API || "";
     return `<h2 class="ct"><span>${esc(t("intro_title"))}</span></h2>
       <p>${esc(t(data.completed ? "intro_done" : "intro_new"))}</p>
       ${stepsHtml()}
+      <div class="keep">${homeWanted() ? `<div id="home-card-in" class="home-in">${homeHtml()}</div>` : ""}
       <p class="muted">${esc(t("intro_keep"))}</p>
-      ${warningHtml()}`;
+      ${warningHtml()}</div>`;
   }
 
   function payItemHtml() {
@@ -184,7 +198,7 @@ const API = window.CHECKIN_API || "";
       rest = note(I.clock(), esc(t("code_on", fmtDay(a.code_date))));
     }
     const head = open ? badge("b-todo", I.chev(), t("n_open", open)) : badge("b-ok", I.check(), t("all_ok"));
-    return `<h2 class="ct"><span>${esc(t("card_todo"))}</span>${head}</h2>${item}${rest}`;
+    return `<h2 class="ct"><span class="ct-l">${cardNum(1)}<span>${esc(t("card_todo"))}</span></span>${head}</h2>${item}${rest}`;
   }
 
   function sliderHtml(door, label) {
@@ -266,7 +280,7 @@ const API = window.CHECKIN_API || "";
     const howto = (a.codes || []).length
       ? `<div class="howto"><div class="keypad" aria-hidden="true">${[1, 2, 3, 4, 5, 6, 7, 8, 9, "", 0].map((k) => `<span>${k}</span>`).join("")}<span class="go">↵</span></div><div style="font-size:15px"><b>${esc(t("howto_title"))}</b><br>${esc(t("howto_text"))}</div></div>`
       : "";
-    return `<h2 class="ct"><span>${esc(t("card_access"))}</span></h2>${tiles}${howto}${(a.codes || []).length ? warningHtml() : ""}`;
+    return `<h2 class="ct"><span class="ct-l">${cardNum(2)}<span>${esc(t("card_access"))}</span></span></h2>${tiles}${howto}${(a.codes || []).length ? warningHtml() : ""}`;
   }
 
   function contactButtons() {
@@ -354,6 +368,14 @@ const API = window.CHECKIN_API || "";
       <button class="linkbtn" type="button" id="home-no">${esc(t(homeHelp ? "home_done" : "home_no"))}</button>`;
   }
 
+  document.addEventListener("click", (e) => {
+    const a = e.target.closest && e.target.closest("a.jump");
+    if (!a) return;
+    e.preventDefault();
+    const el = $(a.dataset.jump);
+    if (el && !el.hidden) el.scrollIntoView({ behavior: "smooth", block: "start" });
+  });
+
   function wireHome() {
     const b = $("home-btn");
     if (b) b.addEventListener("click", async () => {
@@ -417,8 +439,7 @@ const API = window.CHECKIN_API || "";
       set("intro-card", introHtml());
       set("stay-card", stayHtml());
       set("practical-card", practicalHtml());
-      if (homeWanted()) set("home-card", homeHtml());
-      order = ["intro-card", "details-card"].concat(homeWanted() ? ["home-card"] : [], ["stay-card", "practical-card"]);
+      order = ["intro-card", "details-card", "stay-card", "practical-card"];
     } else if (data.phase === "stay") {
       set("access-card", accessHtml());
       set("contact-row", contactButtons());
@@ -433,8 +454,7 @@ const API = window.CHECKIN_API || "";
       set("access-card", accessHtml());
       set("stay-card", stayHtml());
       set("practical-card", practicalHtml());
-      if (homeWanted()) set("home-card", homeHtml());
-      order = ["intro-card", "todo-card", "access-card"].concat(homeWanted() ? ["home-card"] : [], ["details-card", "stay-card", "practical-card"]);
+      order = ["intro-card", "todo-card", "access-card", "details-card", "stay-card", "practical-card"];
     }
     place(order);
     renderDetails();
@@ -447,6 +467,7 @@ const API = window.CHECKIN_API || "";
     const open = !data.completed || editing;
     $("form").hidden = !open;
     $("details-summary").hidden = open;
+    $("details-num").innerHTML = cardNum(0);
     $("details-badge").innerHTML = data.completed ? badge("b-ok", I.check(), t("details_done")) : badge("b-todo", I.chev(), t("badge_todo"));
     $("form-intro").textContent = data.completed ? t("form_intro_again") : t("start_here");
     if (!open) detailsSummary();

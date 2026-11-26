@@ -77,13 +77,21 @@ p { margin: 0; }
 
 /* Uitleg over de gast-app en de stappen */
 .steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.steps li a.jump { display: flex; align-items: center; gap: 12px; flex: 1; color: inherit; text-decoration: none; }
+.steps li a.jump .sl { text-decoration: underline; text-decoration-color: #C9CDD6; text-underline-offset: 3px; }
 .steps li { display: flex; align-items: center; gap: 12px; }
-.steps .num {
+.steps .num, .ct-l .num {
   flex: none; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
   font-weight: 700; font-size: 15px; background: #ECEEF3; color: var(--accd);
 }
-.steps li.done .num { background: #E2EFE6; color: #245A3A; }
-.steps li.now .num { background: var(--accd); color: #fff; }
+.steps li.done .num, .ct-l .num.done { background: #E2EFE6; color: #245A3A; }
+.steps li.now .num, .ct-l .num.now { background: var(--accd); color: #fff; }
+.ct-l { display: flex; align-items: center; gap: 10px; }
+.ct-l .num { width: 26px; height: 26px; font-size: 13px; letter-spacing: 0; }
+#details-num:empty { display: none; }
+.card { scroll-margin-top: 12px; }
+.keep { display: flex; flex-direction: column; gap: 10px; }
+.home-in { border: 1px solid #E3E6EC; border-radius: 12px; padding: 14px; display: flex; flex-direction: column; gap: 12px; }
 .steps .sl { flex: 1; font-weight: 600; }
 .steps .ss { font-size: 14px; color: #565B66; white-space: nowrap; }
 
