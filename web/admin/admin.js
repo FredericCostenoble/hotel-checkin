@@ -3534,7 +3534,7 @@ function renderWhatsapp() {
   const ro = !!wa.shared_from;
   $("#wa-all").hidden = ro;
   if (ro) { $("#wa-state").className = "note"; $("#wa-state").textContent = t("wa_shared", wa.shared_from, wa.checked_at ? stamp(wa.checked_at) : ""); }
-  $("#wa-check").hidden = !ro && !all.some(({ l }) => l.state === "waiting");
+  $("#wa-check").hidden = !ro && !all.some(({ l }) => l.state === "waiting" || l.state === "rejected");
   $("#wa-defaults").hidden = ro || !wa.newer_defaults;
   if (wa.newer_defaults) $("#wa-defaults").lastElementChild.textContent = t("wa_defaults", wa.newer_defaults);
   $("#wa-overview").innerHTML = `<table><tbody>${wa.templates.map(tp => `<tr><td style="font-weight:600">${esc(t("wa_t_" + tp.step)[0])}</td><td><div class="row" style="gap:4px;flex-wrap:nowrap">${tp.langs.map(l => `<a href="#" class="badge ${WA_BADGE[waEdit[waKey(tp.step, l.lang)] ? "changed" : l.state]}" style="text-decoration:none" title="${esc(t("wa_st_" + (waEdit[waKey(tp.step, l.lang)] ? "changed" : l.state)))}" data-wa-go="${tp.step}:${l.lang}">${l.lang.toUpperCase()}</a>`).join("")}</div></td></tr>`).join("")}</tbody></table>
