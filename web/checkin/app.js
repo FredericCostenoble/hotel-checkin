@@ -148,7 +148,10 @@ const API = window.CHECKIN_API || "";
 
   function stepsHtml() {
     return `<ol class="steps">${stepList().map(([label, cls, status, target], i) =>
-      `<li class="${cls}"><a class="jump" href="#${target}" data-jump="${target}">${stepNum(cls, i)}<span class="sl">${esc(label)}</span><span class="ss">${esc(status)}</span></a></li>`).join("")}</ol>`;
+      // Alleen een link als dat deel al op de pagina staat: voor de online check-in is dat alleen "uw gegevens".
+      (target === "details-card" || data.completed)
+        ? `<li class="${cls}"><a class="jump" href="#${target}" data-jump="${target}">${stepNum(cls, i)}<span class="sl">${esc(label)}</span><span class="ss">${esc(status)}</span></a></li>`
+        : `<li class="${cls}">${stepNum(cls, i)}<span class="sl">${esc(label)}</span><span class="ss">${esc(status)}</span></li>`).join("")}</ol>`;
   }
 
   function warningHtml() {
