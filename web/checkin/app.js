@@ -330,8 +330,12 @@ const API = window.CHECKIN_API || "";
   window.addEventListener("beforeinstallprompt", (e) => { e.preventDefault(); installPrompt = e; if (data) renderCards(); });
   window.addEventListener("appinstalled", () => { installPrompt = null; store("gastapp:home", "1"); if (data) renderCards(); });
 
+  // Alleen op een gsm of tablet: op een laptop heeft een icoon op het beginscherm geen zin.
+  const mobile = () => /Android|iPhone|iPad|iPod|Mobi/i.test(navigator.userAgent)
+    || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);  // iPad die zich als Mac voordoet
+
   function homeWanted() {
-    return data && data.completed && (data.phase === "code" || data.phase === "stay") && !standalone()
+    return data && mobile() && data.completed && (data.phase === "code" || data.phase === "stay") && !standalone()
       && !stored("gastapp:home") && !stored("gastapp:home-no:" + token);
   }
 
