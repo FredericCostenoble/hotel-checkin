@@ -595,7 +595,8 @@ def check(hotel_id: str, client=None, min_age: timedelta = CHECK_EVERY) -> list[
         if p.get("status") == "rejected":
             sent = p.get("submitted_at")
             recent = not sent or now - datetime.fromisoformat(sent) < CHECK_REJECTED_DAYS
-            return recent and (age is None or age >= max(min_age, CHECK_REJECTED_EVERY))
+            wait = min_age if not min_age else max(min_age, CHECK_REJECTED_EVERY)  # knop in de monitor: meteen
+            return recent and (age is None or age >= wait)
         return False
 
     todo = [(step, lang, e["pending"]) for step, per in data.items() if isinstance(per, dict)

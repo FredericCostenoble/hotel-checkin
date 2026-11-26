@@ -375,3 +375,14 @@ def test_rejected_version_rechecked_hourly_for_appeal():
     fake.status[sid] = "approved"
     assert wa.check("lucca", client=fake.client(), min_age=timedelta(0)) == [data["room_change"]["de"]["pending"]["name"] + " goedgekeurd"]
     assert send_messages.whatsapp_template("lucca", "room_change", "de") == sid
+
+
+def test_refresh_button_also_rechecks_rejected_right_away():
+    fake = FakeTwilio()
+    wa.submit("lucca", "room_change", "fr", "fred", client=fake.client())
+    sid = fake.created[0]["sid"]
+    fake.status[sid] = "rejected"
+    wa.check("lucca", client=fake.client(), min_age=timedelta(0))
+    fake.status[sid] = "approved"
+    assert wa.check("lucca", client=fake.client(), min_age=timedelta(0))  # knop: niet een uur wachten
+    assert send_messages.whatsapp_template("lucca", "room_change", "fr") == sid
