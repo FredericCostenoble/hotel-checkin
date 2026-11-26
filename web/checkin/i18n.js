@@ -2,7 +2,7 @@
 // Aanspreking zoals in de mails: u, vous, you, Sie.
 const I18N = {
   nl: {
-    home_title: "Op uw beginscherm", home_text: "Zet uw verblijfspagina als app op uw gsm. Zo heeft u met één tik alle info over uw verblijf, uw pincode zodra die klaar is en tijdens uw verblijf de deuren.",
+    home_title: "Op uw beginscherm", home_text: "Zet uw verblijfspagina als app op uw gsm. Zo blijft u op de hoogte, krijgt u uw kamernummer, vindt u uw pincode gemakkelijk terug (ook zonder internet) en opent u er tijdens uw verblijf zelfs de deuren mee.",
     home_button: "Zet op mijn beginscherm", home_no: "Niet nodig", home_done: "Klaar",
     home_ios_1: "Tik op het deelicoon (vierkant met pijl omhoog), onderaan of bovenaan in Safari.", home_ios_2: "Scrol en kies \"Zet op beginscherm\".", home_ios_3: "Tik rechtsboven op \"Voeg toe\".",
     home_other_1: "Open het menu van uw browser (de drie puntjes).", home_other_2: "Kies \"Toevoegen aan startscherm\" of \"App installeren\".",
@@ -69,7 +69,7 @@ const I18N = {
     closed_title: "Verblijf afgelopen", closed_text: "Deze reservatie is afgelopen. Bedankt voor uw bezoek en graag tot een volgende keer.",
   },
   fr: {
-    home_title: "Sur votre écran d'accueil", home_text: "Placez votre page de séjour comme une app sur votre téléphone. Vous avez ainsi d'un seul geste toutes les infos sur votre séjour, votre code PIN dès qu'il est prêt et, pendant votre séjour, les portes.",
+    home_title: "Sur votre écran d'accueil", home_text: "Placez votre page de séjour comme une app sur votre téléphone. Vous restez ainsi informé, recevez votre numéro de chambre, retrouvez facilement votre code PIN (même sans internet) et ouvrez même les portes pendant votre séjour.",
     home_button: "Ajouter à mon écran d'accueil", home_no: "Pas nécessaire", home_done: "Terminé",
     home_ios_1: "Touchez l'icône de partage (carré avec une flèche vers le haut), en bas ou en haut dans Safari.", home_ios_2: "Faites défiler et choisissez \"Sur l'écran d'accueil\".", home_ios_3: "Touchez \"Ajouter\" en haut à droite.",
     home_other_1: "Ouvrez le menu de votre navigateur (les trois points).", home_other_2: "Choisissez \"Ajouter à l'écran d'accueil\" ou \"Installer l'application\".",
@@ -136,7 +136,7 @@ const I18N = {
     closed_title: "Séjour terminé", closed_text: "Cette réservation est terminée. Merci pour votre visite et à une prochaine fois.",
   },
   en: {
-    home_title: "On your home screen", home_text: "Put your stay page on your phone as an app. One tap gives you all information about your stay, your PIN code as soon as it is ready and, during your stay, the doors.",
+    home_title: "On your home screen", home_text: "Put your stay page on your phone as an app. You stay up to date, get your room number, easily find your PIN code (even without internet) and can even open the doors with it during your stay.",
     home_button: "Add to my home screen", home_no: "Not needed", home_done: "Done",
     home_ios_1: "Tap the share icon (square with an arrow up), at the bottom or top of Safari.", home_ios_2: "Scroll and choose \"Add to Home Screen\".", home_ios_3: "Tap \"Add\" at the top right.",
     home_other_1: "Open your browser menu (the three dots).", home_other_2: "Choose \"Add to Home screen\" or \"Install app\".",
@@ -203,7 +203,7 @@ const I18N = {
     closed_title: "Stay completed", closed_text: "This reservation has ended. Thank you for your visit, we hope to see you again.",
   },
   de: {
-    home_title: "Auf Ihrem Home-Bildschirm", home_text: "Legen Sie Ihre Aufenthaltsseite als App auf Ihr Handy. Mit einem Tipp haben Sie alle Infos zu Ihrem Aufenthalt, Ihren PIN-Code, sobald er bereit ist, und während Ihres Aufenthalts die Türen.",
+    home_title: "Auf Ihrem Home-Bildschirm", home_text: "Legen Sie Ihre Aufenthaltsseite als App auf Ihr Handy. So bleiben Sie auf dem Laufenden, erhalten Ihre Zimmernummer, finden Ihren PIN-Code leicht wieder (auch ohne Internet) und öffnen während Ihres Aufenthalts sogar die Türen damit.",
     home_button: "Zu meinem Home-Bildschirm", home_no: "Nicht nötig", home_done: "Fertig",
     home_ios_1: "Tippen Sie auf das Teilen-Symbol (Quadrat mit Pfeil nach oben), unten oder oben in Safari.", home_ios_2: "Scrollen Sie und wählen Sie \"Zum Home-Bildschirm\".", home_ios_3: "Tippen Sie oben rechts auf \"Hinzufügen\".",
     home_other_1: "Öffnen Sie das Menü Ihres Browsers (die drei Punkte).", home_other_2: "Wählen Sie \"Zum Startbildschirm hinzufügen\" oder \"App installieren\".",
@@ -270,7 +270,7 @@ const I18N = {
     closed_title: "Aufenthalt beendet", closed_text: "Diese Reservierung ist abgelaufen. Danke für Ihren Besuch, wir freuen uns auf ein Wiedersehen.",
   },
   es: {
-    home_title: "En su pantalla de inicio", home_text: "Ponga su página de estancia como app en su móvil. Con un solo toque tendrá toda la información sobre su estancia, su código PIN en cuanto esté listo y, durante su estancia, las puertas.",
+    home_title: "En su pantalla de inicio", home_text: "Ponga su página de estancia como app en su móvil. Así estará al tanto, recibirá su número de habitación, encontrará fácilmente su código PIN (incluso sin internet) e incluso abrirá las puertas durante su estancia.",
     home_button: "Añadir a mi pantalla de inicio", home_no: "No es necesario", home_done: "Listo",
     home_ios_1: "Toque el icono de compartir (cuadrado con una flecha hacia arriba), abajo o arriba en Safari.", home_ios_2: "Desplácese y elija \"Añadir a pantalla de inicio\".", home_ios_3: "Toque \"Añadir\" arriba a la derecha.",
     home_other_1: "Abra el menú de su navegador (los tres puntos).", home_other_2: "Elija \"Añadir a pantalla de inicio\" o \"Instalar aplicación\".",
