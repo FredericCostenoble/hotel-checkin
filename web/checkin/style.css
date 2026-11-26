@@ -92,6 +92,11 @@ p { margin: 0; }
 .card { scroll-margin-top: 12px; }
 .keep { display: flex; flex-direction: column; gap: 10px; }
 .home-in { border: 1px solid #E3E6EC; border-radius: 12px; padding: 14px; display: flex; flex-direction: column; gap: 12px; }
+.keep-title { font-size: 18px; }
+.keep-text { margin: 0; }
+.keep-warn { font-size: 14px; padding: 10px 12px; }
+.fav-keys { text-align: center; font-size: 16px; padding: 10px; background: #F4F5F8; border-radius: 10px; }
+.fav-keys kbd { font: inherit; font-weight: 700; padding: 2px 8px; border: 1px solid #C9CDD6; border-bottom-width: 2px; border-radius: 6px; background: #fff; }
 .steps .sl { flex: 1; font-weight: 600; }
 .steps .ss { font-size: 14px; color: #565B66; white-space: nowrap; }
 

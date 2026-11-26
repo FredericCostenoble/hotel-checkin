@@ -2,6 +2,7 @@
 // Aanspreking zoals in de mails: u, vous, you, Sie.
 const I18N = {
   nl: {
+    keep_title: "Bewaar deze pagina", keep_text: "Hier vindt u alles voor uw verblijf: uw kamernummer, uw pincode (ook zonder internet) en tijdens uw verblijf opent u hier de deuren.", keep_how_home: "Zet ze op uw beginscherm, dan heeft u alles met één tik.", keep_how_fav: "Bewaar ze bij uw favorieten, dan vindt u ze altijd terug.", keep_link: "De link staat ook in elke mail en elk bericht van ons.", keep_warn: "Deel deze link alleen met wie bij u verblijft: wie hem heeft, ziet uw pincode en kan uw kamer openen.", fav_button: "Bewaar bij mijn favorieten", fav_keys_before: "Druk nu op",
     home_title: "Op uw beginscherm", home_text: "Zet uw verblijfspagina als app op uw gsm. Zo blijft u op de hoogte, krijgt u uw kamernummer, vindt u uw pincode gemakkelijk terug (ook zonder internet) en opent u er tijdens uw verblijf zelfs de deuren mee.",
     home_button: "Zet op mijn beginscherm", home_no: "Niet nodig", home_done: "Klaar",
     home_ios_1: "Tik op het deelicoon (vierkant met pijl omhoog), onderaan of bovenaan in Safari.", home_ios_2: "Scrol en kies \"Zet op beginscherm\".", home_ios_3: "Tik rechtsboven op \"Voeg toe\".",
@@ -69,6 +70,7 @@ const I18N = {
     closed_title: "Verblijf afgelopen", closed_text: "Deze reservatie is afgelopen. Bedankt voor uw bezoek en graag tot een volgende keer.",
   },
   fr: {
+    keep_title: "Gardez cette page", keep_text: "Vous y trouvez tout pour votre séjour : votre numéro de chambre, votre code PIN (même sans internet) et, pendant votre séjour, vous ouvrez les portes ici.", keep_how_home: "Placez-la sur votre écran d'accueil pour tout avoir d'un seul geste.", keep_how_fav: "Ajoutez-la à vos favoris pour la retrouver à tout moment.", keep_link: "Le lien figure aussi dans chacun de nos e-mails et messages.", keep_warn: "Partagez ce lien uniquement avec les personnes qui séjournent avec vous : avec lui, on voit votre code PIN et on peut ouvrir votre chambre.", fav_button: "Ajouter à mes favoris", fav_keys_before: "Appuyez maintenant sur",
     home_title: "Sur votre écran d'accueil", home_text: "Placez votre page de séjour comme une app sur votre téléphone. Vous restez ainsi informé, recevez votre numéro de chambre, retrouvez facilement votre code PIN (même sans internet) et ouvrez même les portes pendant votre séjour.",
     home_button: "Ajouter à mon écran d'accueil", home_no: "Pas nécessaire", home_done: "Terminé",
     home_ios_1: "Touchez l'icône de partage (carré avec une flèche vers le haut), en bas ou en haut dans Safari.", home_ios_2: "Faites défiler et choisissez \"Sur l'écran d'accueil\".", home_ios_3: "Touchez \"Ajouter\" en haut à droite.",
@@ -136,6 +138,7 @@ const I18N = {
     closed_title: "Séjour terminé", closed_text: "Cette réservation est terminée. Merci pour votre visite et à une prochaine fois.",
   },
   en: {
+    keep_title: "Keep this page", keep_text: "Here you find everything for your stay: your room number, your PIN code (even without internet) and, during your stay, you open the doors here.", keep_how_home: "Put it on your home screen to have everything in one tap.", keep_how_fav: "Add it to your bookmarks so you can always find it again.", keep_link: "The link is also in every email and message from us.", keep_warn: "Only share this link with the people staying with you: anyone who has it sees your PIN code and can open your room.", fav_button: "Add to my bookmarks", fav_keys_before: "Now press",
     home_title: "On your home screen", home_text: "Put your stay page on your phone as an app. You stay up to date, get your room number, easily find your PIN code (even without internet) and can even open the doors with it during your stay.",
     home_button: "Add to my home screen", home_no: "Not needed", home_done: "Done",
     home_ios_1: "Tap the share icon (square with an arrow up), at the bottom or top of Safari.", home_ios_2: "Scroll and choose \"Add to Home Screen\".", home_ios_3: "Tap \"Add\" at the top right.",
@@ -203,6 +206,7 @@ const I18N = {
     closed_title: "Stay completed", closed_text: "This reservation has ended. Thank you for your visit, we hope to see you again.",
   },
   de: {
+    keep_title: "Bewahren Sie diese Seite auf", keep_text: "Hier finden Sie alles für Ihren Aufenthalt: Ihre Zimmernummer, Ihren PIN-Code (auch ohne Internet) und während Ihres Aufenthalts öffnen Sie hier die Türen.", keep_how_home: "Legen Sie sie auf Ihren Home-Bildschirm, dann haben Sie alles mit einem Tipp.", keep_how_fav: "Speichern Sie sie als Lesezeichen, dann finden Sie sie immer wieder.", keep_link: "Der Link steht auch in jeder E-Mail und Nachricht von uns.", keep_warn: "Teilen Sie diesen Link nur mit Ihren Mitreisenden: Wer ihn hat, sieht Ihren PIN-Code und kann Ihr Zimmer öffnen.", fav_button: "Als Lesezeichen speichern", fav_keys_before: "Drücken Sie jetzt",
     home_title: "Auf Ihrem Home-Bildschirm", home_text: "Legen Sie Ihre Aufenthaltsseite als App auf Ihr Handy. So bleiben Sie auf dem Laufenden, erhalten Ihre Zimmernummer, finden Ihren PIN-Code leicht wieder (auch ohne Internet) und öffnen während Ihres Aufenthalts sogar die Türen damit.",
     home_button: "Zu meinem Home-Bildschirm", home_no: "Nicht nötig", home_done: "Fertig",
     home_ios_1: "Tippen Sie auf das Teilen-Symbol (Quadrat mit Pfeil nach oben), unten oder oben in Safari.", home_ios_2: "Scrollen Sie und wählen Sie \"Zum Home-Bildschirm\".", home_ios_3: "Tippen Sie oben rechts auf \"Hinzufügen\".",
@@ -270,6 +274,7 @@ const I18N = {
     closed_title: "Aufenthalt beendet", closed_text: "Diese Reservierung ist abgelaufen. Danke für Ihren Besuch, wir freuen uns auf ein Wiedersehen.",
   },
   es: {
+    keep_title: "Guarde esta página", keep_text: "Aquí encontrará todo para su estancia: su número de habitación, su código PIN (incluso sin internet) y, durante su estancia, abrirá aquí las puertas.", keep_how_home: "Póngala en su pantalla de inicio y lo tendrá todo con un solo toque.", keep_how_fav: "Añádala a sus favoritos y la encontrará siempre.", keep_link: "El enlace también figura en cada correo y mensaje nuestro.", keep_warn: "Comparta este enlace solo con quienes se alojan con usted: quien lo tenga verá su código PIN y podrá abrir su habitación.", fav_button: "Añadir a mis favoritos", fav_keys_before: "Pulse ahora",
     home_title: "En su pantalla de inicio", home_text: "Ponga su página de estancia como app en su móvil. Así estará al tanto, recibirá su número de habitación, encontrará fácilmente su código PIN (incluso sin internet) e incluso abrirá las puertas durante su estancia.",
     home_button: "Añadir a mi pantalla de inicio", home_no: "No es necesario", home_done: "Listo",
     home_ios_1: "Toque el icono de compartir (cuadrado con una flecha hacia arriba), abajo o arriba en Safari.", home_ios_2: "Desplácese y elija \"Añadir a pantalla de inicio\".", home_ios_3: "Toque \"Añadir\" arriba a la derecha.",

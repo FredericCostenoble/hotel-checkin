@@ -159,9 +159,7 @@ const API = window.CHECKIN_API || "";
     return `<h2 class="ct"><span>${esc(t("intro_title"))}</span></h2>
       <p>${esc(t(data.completed ? "intro_done" : "intro_new"))}</p>
       ${stepsHtml()}
-      <div class="keep">${homeWanted() ? `<div id="home-card-in" class="home-in">${homeHtml()}</div>` : ""}
-      <p class="muted">${esc(t("intro_keep"))}</p>
-      ${warningHtml()}</div>`;
+      <div class="keep home-in">${keepHtml(true)}</div>`;
   }
 
   function payItemHtml() {
@@ -348,24 +346,39 @@ const API = window.CHECKIN_API || "";
   const mobile = () => /Android|iPhone|iPad|iPod|Mobi/i.test(navigator.userAgent)
     || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);  // iPad die zich als Mac voordoet
 
-  function homeWanted() {
-    return data && mobile() && data.state === "open" && data.phase !== "after" && !standalone()
-      && (data.demo || (!stored("gastapp:home") && !stored("gastapp:home-no:" + token)));  // voorbeeld: altijd tonen
+  // Welke knop het blok "Bewaar deze pagina" krijgt: "home" (gsm, nog niet op het beginscherm), "fav" (laptop) of "".
+  function keepMode() {
+    if (!data || data.state !== "open" || data.phase === "after" || standalone()) return "";
+    if (!mobile()) return "fav";
+    return data.demo || !stored("gastapp:home") ? "home" : "";  // voorbeeld: altijd tonen
   }
+  const homeWanted = () => keepMode() !== "";
+  let favHelp = false;
+  const isMac = /Mac/i.test(navigator.platform || "") && !isIos;
 
-  function homeHtml() {
+  // Eén blok: wat er op de pagina staat, hoe u ze bewaart (beginscherm of favorieten) en de waarschuwing.
+  function keepHtml(withWarning) {
     const h = data.hotel;
+    const mode = keepMode();
     const icon = h.app_icon ? `<img class="home-icon" src="${esc(h.app_icon)}" alt="" width="56" height="56">` : "";
-    let help = "";
-    if (homeHelp) {
+    const how = mode === "home" ? " " + t("keep_how_home") : mode === "fav" ? " " + t("keep_how_fav") : "";
+    let action = "";
+    if (mode === "home" && homeHelp) {
       const steps = isIos
         ? [[I.share(20), t("home_ios_1")], [I.plus(20), t("home_ios_2")], [I.check(20), t("home_ios_3")]]
         : [[I.dots(20), t("home_other_1")], [I.plus(20), t("home_other_2")]];
-      help = `<ol class="home-steps">${steps.map(([ic, s]) => `<li><span class="home-step-ic">${ic}</span><span>${esc(s)}</span></li>`).join("")}</ol>`;
+      action = `<ol class="home-steps">${steps.map(([ic, s]) => `<li><span class="home-step-ic">${ic}</span><span>${esc(s)}</span></li>`).join("")}</ol>
+        <button class="linkbtn" type="button" id="home-done">${esc(t("home_done"))}</button>`;
+    } else if (mode === "home") {
+      action = `<button class="btn" type="button" id="home-btn">${I.plus(22)}${esc(t("home_button"))}</button>`;
+    } else if (mode === "fav" && favHelp) {
+      action = `<div class="fav-keys">${esc(t("fav_keys_before"))} <kbd>${isMac ? "⌘" : "Ctrl"}</kbd> + <kbd>D</kbd></div>`;
+    } else if (mode === "fav") {
+      action = `<button class="btn" type="button" id="fav-btn">${I.plus(22)}${esc(t("fav_button"))}</button>`;
     }
-    return `<div class="home-head">${icon}<div><b>${esc(t("home_title"))}</b><div class="muted">${esc(t("home_text"))}</div></div></div>
-      ${homeHelp ? help : `<button class="btn" type="button" id="home-btn">${I.plus(22)}${esc(t("home_button"))}</button>`}
-      <button class="linkbtn" type="button" id="home-no">${esc(t(homeHelp ? "home_done" : "home_no"))}</button>`;
+    const warn = withWarning ? `<div class="note warn keep-warn">${I.lock(18)}<span>${esc(t("keep_warn"))}</span></div>` : "";
+    return `<div class="home-head">${icon}<b class="keep-title">${esc(t("keep_title"))}</b></div>
+      <p class="muted keep-text">${esc(t("keep_text"))}${esc(how)} ${esc(t("keep_link"))}</p>${action}${warn}`;
   }
 
   document.addEventListener("click", (e) => {
@@ -389,8 +402,10 @@ const API = window.CHECKIN_API || "";
       }
       renderCards();
     });
-    const n = $("home-no");
-    if (n) n.addEventListener("click", () => { store("gastapp:home-no:" + token, "1"); renderCards(); });
+    const d = $("home-done");
+    if (d) d.addEventListener("click", () => { homeHelp = false; renderCards(); });
+    const f = $("fav-btn");
+    if (f) f.addEventListener("click", () => { favHelp = true; renderCards(); });
   }
 
   function applyApp(h) {
@@ -446,7 +461,7 @@ const API = window.CHECKIN_API || "";
       set("todo-card", todoHtml());
       set("stay-card", stayHtml());
       set("practical-card", practicalHtml());
-      if (homeWanted()) set("home-card", homeHtml());
+      if (homeWanted()) set("home-card", keepHtml(false));
       order = ["access-card"].concat(homeWanted() ? ["home-card"] : [], ["contact-row"], payOpen() || payPending() ? ["todo-card"] : [], ["practical-card", "stay-card", "details-card"]);
     } else {
       set("intro-card", introHtml());
