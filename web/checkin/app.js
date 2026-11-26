@@ -338,6 +338,7 @@ const API = window.CHECKIN_API || "";
   let homeHelp = false;
   const ua = navigator.userAgent || "";
   const isIos = /iPhone|iPad|iPod/.test(ua) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  const iosSafari = +((ua.match(/Version\/(\d+)/) || [])[1] || 0);  // Safari-versie = iOS-versie (26 voor iOS 26)
   const standalone = () => window.matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
   window.addEventListener("beforeinstallprompt", (e) => { e.preventDefault(); installPrompt = e; if (data) renderCards(); });
   window.addEventListener("appinstalled", () => { installPrompt = null; store("gastapp:home", "1"); if (data) renderCards(); });
@@ -364,7 +365,9 @@ const API = window.CHECKIN_API || "";
     const how = mode === "home" ? " " + t("keep_how_home") : mode === "fav" ? " " + t("keep_how_fav") : "";
     let action = "";
     if (mode === "home" && homeHelp) {
-      const steps = isIos
+      const steps = isIos && iosSafari >= 26  // iOS 26: het deelicoon zit achter het menu naast het adres
+        ? [[I.dots(20), t("home_ios26_1")], [I.share(20), t("home_ios26_2")], [I.plus(20), t("home_ios_2")], [I.check(20), t("home_ios_3")]]
+        : isIos
         ? [[I.share(20), t("home_ios_1")], [I.plus(20), t("home_ios_2")], [I.check(20), t("home_ios_3")]]
         : [[I.dots(20), t("home_other_1")], [I.plus(20), t("home_other_2")]];
       action = `<ol class="home-steps">${steps.map(([ic, s]) => `<li><span class="home-step-ic">${ic}</span><span>${esc(s)}</span></li>`).join("")}</ol>
