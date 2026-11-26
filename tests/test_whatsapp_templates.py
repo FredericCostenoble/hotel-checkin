@@ -367,13 +367,13 @@ def test_rejected_version_rechecked_hourly_for_appeal():
     fake.status[sid] = "rejected"
     assert wa.check("lucca", client=fake.client(), min_age=timedelta(0))  # afgekeurd: gemeld
     n = fake.status_calls
-    assert wa.check("lucca", client=fake.client(), min_age=timedelta(0)) == []
-    assert fake.status_calls == n  # niet meteen opnieuw
+    assert wa.check("lucca", client=fake.client(), min_age=wa.CHECK_EVERY) == []
+    assert fake.status_calls == n  # de timer: niet meteen opnieuw, pas na een uur
     data = wa._load("lucca")
     data["room_change"]["de"]["pending"]["checked_at"] = (wa._now() - timedelta(hours=2)).isoformat()
     wa._save("lucca", data, "test")
     fake.status[sid] = "approved"
-    assert wa.check("lucca", client=fake.client(), min_age=timedelta(0)) == [data["room_change"]["de"]["pending"]["name"] + " goedgekeurd"]
+    assert wa.check("lucca", client=fake.client(), min_age=wa.CHECK_EVERY) == [data["room_change"]["de"]["pending"]["name"] + " goedgekeurd"]
     assert send_messages.whatsapp_template("lucca", "room_change", "de") == sid
 
 
