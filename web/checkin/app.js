@@ -336,7 +336,7 @@ const API = window.CHECKIN_API || "";
 
   function homeWanted() {
     return data && mobile() && data.state === "open" && data.phase !== "after" && !standalone()
-      && !stored("gastapp:home") && !stored("gastapp:home-no:" + token);
+      && (data.demo || (!stored("gastapp:home") && !stored("gastapp:home-no:" + token)));  // voorbeeld: altijd tonen
   }
 
   function homeHtml() {
